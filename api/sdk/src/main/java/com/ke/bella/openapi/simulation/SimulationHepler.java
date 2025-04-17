@@ -41,9 +41,9 @@ public class SimulationHepler {
 
     /**
      * request rewrite.
-     * 
+     *
      * @param req
-     * 
+     *
      * @return null if can not rewrite.
      */
     @SuppressWarnings("deprecation")
@@ -134,7 +134,7 @@ public class SimulationHepler {
                 JsonNode paramDef = entry.getValue();
 
                 // Type mapping
-                String pyType = mapTypeToPython(paramDef.get("type").asText());
+                String pyType = mapTypeToPython(paramDef.get("type").asText(null));
                 boolean isRequired = requiredParams.contains(paramName);
                 boolean hasEnum = paramDef.has("enum");
 
