@@ -2,9 +2,9 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>com.ke.bella.openapi</groupId>
+        <groupId>io.github.bella-top</groupId>
         <artifactId>bella-openapi</artifactId>
-        <version>2.0.2-SNAPSHOT</version>
+        <version>1.0.0</version>
     </parent>
     <artifactId>server</artifactId>
     <name>server</name>
@@ -29,12 +29,12 @@
             <artifactId>micrometer-core</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.ke.bella.openapi</groupId>
+            <groupId>io.github.bella-top</groupId>
             <artifactId>sdk</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.ke.bella.openapi</groupId>
+            <groupId>io.github.bella-top</groupId>
             <artifactId>spi</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
@@ -333,8 +333,8 @@
                                             <transform>PASCAL</transform>
                                             <expression>$0_D_B</expression>
                                         </pojoClass>
-                                        <pojoImplements>com.ke.bella.openapi.db.repo.Timed</pojoImplements>
-                                        <recordImplements>com.ke.bella.openapi.db.repo.Timed</recordImplements>
+                                        <pojoImplements>io.github.bella-top.db.repo.Timed</pojoImplements>
+                                        <recordImplements>io.github.bella-top.db.repo.Timed</recordImplements>
                                         <expression>user</expression>
                                     </table>
                                     <table>
@@ -346,8 +346,8 @@
                                             <transform>PASCAL</transform>
                                             <expression>$0_D_B</expression>
                                         </pojoClass>
-                                        <pojoImplements>com.ke.bella.openapi.db.repo.Timed</pojoImplements>
-                                        <recordImplements>com.ke.bella.openapi.db.repo.Timed</recordImplements>
+                                        <pojoImplements>io.github.bella-top.db.repo.Timed</pojoImplements>
+                                        <recordImplements>io.github.bella-top.db.repo.Timed</recordImplements>
                                         <expression>apikey_month_cost</expression>
                                     </table>
                                     <table>
@@ -359,8 +359,8 @@
                                             <transform>PASCAL</transform>
                                             <expression>$0_D_B</expression>
                                         </pojoClass>
-                                        <pojoImplements>com.ke.bella.openapi.db.repo.Timed</pojoImplements>
-                                        <recordImplements>com.ke.bella.openapi.db.repo.Timed</recordImplements>
+                                        <pojoImplements>io.github.bella-top.db.repo.Timed</pojoImplements>
+                                        <recordImplements>io.github.bella-top.db.repo.Timed</recordImplements>
                                         <expression>space</expression>
                                     </table>
                                     <table>
@@ -372,8 +372,8 @@
                                             <transform>PASCAL</transform>
                                             <expression>$0_D_B</expression>
                                         </pojoClass>
-                                        <pojoImplements>com.ke.bella.openapi.db.repo.Timed</pojoImplements>
-                                        <recordImplements>com.ke.bella.openapi.db.repo.Timed</recordImplements>
+                                        <pojoImplements>io.github.bella-top.db.repo.Timed</pojoImplements>
+                                        <recordImplements>io.github.bella-top.db.repo.Timed</recordImplements>
                                         <expression>space_role</expression>
                                     </table>
                                     <table>
@@ -385,8 +385,8 @@
                                             <transform>PASCAL</transform>
                                             <expression>$0_D_B</expression>
                                         </pojoClass>
-                                        <pojoImplements>com.ke.bella.openapi.db.repo.Timed</pojoImplements>
-                                        <recordImplements>com.ke.bella.openapi.db.repo.Timed</recordImplements>
+                                        <pojoImplements>io.github.bella-top.db.repo.Timed</pojoImplements>
+                                        <recordImplements>io.github.bella-top.db.repo.Timed</recordImplements>
                                         <expression>space_member</expression>
                                     </table>
                                     <table>
@@ -398,8 +398,8 @@
                                             <transform>PASCAL</transform>
                                             <expression>$0_D_B</expression>
                                         </pojoClass>
-                                        <pojoImplements>com.ke.bella.openapi.db.repo.Operator</pojoImplements>
-                                        <recordImplements>com.ke.bella.openapi.db.repo.Operator</recordImplements>
+                                        <pojoImplements>io.github.bella-top.db.repo.Operator</pojoImplements>
+                                        <recordImplements>io.github.bella-top.db.repo.Operator</recordImplements>
                                     </table>
                                 </tables>
                             </matchers>
@@ -411,7 +411,7 @@
                             <daos>false</daos>
                         </generate>
                         <target>
-                            <packageName>com.ke.bella.openapi</packageName>
+                            <packageName>io.github.bella-top</packageName>
                             <directory>src/codegen/java</directory>
                             <encoding>UTF-8</encoding>
                         </target>
