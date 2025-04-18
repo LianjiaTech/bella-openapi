@@ -1,6 +1,6 @@
 services:
   api:
-    image: ${REGISTRY:-saizhuolin}/bella-openapi-api:${VERSION:-latest}
+    image: ${REGISTRY:-bellatop}/bella-openapi-api:${VERSION:-latest}
     build: 
       context: ./api
     container_name: bella-openapi-api
@@ -34,7 +34,7 @@ services:
         condition: service_healthy
 
   web:
-    image: ${REGISTRY:-saizhuolin}/bella-openapi-web:${VERSION:-latest}
+    image: ${REGISTRY:-bellatop}/bella-openapi-web:${VERSION:-latest}
     build:
       context: ./web
       args:
