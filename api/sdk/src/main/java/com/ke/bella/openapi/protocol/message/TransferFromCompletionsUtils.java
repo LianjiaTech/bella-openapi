@@ -1,5 +1,14 @@
 package com.ke.bella.openapi.protocol.message;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.ke.bella.openapi.protocol.completion.CompletionRequest;
@@ -7,16 +16,9 @@ import com.ke.bella.openapi.protocol.completion.CompletionResponse;
 import com.ke.bella.openapi.protocol.completion.Message;
 import com.ke.bella.openapi.protocol.completion.StreamCompletionResponse;
 import com.ke.bella.openapi.utils.JacksonUtils;
+
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Slf4j
 public class TransferFromCompletionsUtils {
@@ -154,11 +156,10 @@ public class TransferFromCompletionsUtils {
         List<Message.ToolCall> toolCalls = new ArrayList<>();
         List<Message.MessageBuilder> messageBuilders = new ArrayList<>();
         messageBuilders.add(chatMessageBuilder);
-
+        MessageProcessingContext context = new MessageProcessingContext(contentParts, toolCalls, messageBuilders, inputMessage.getRole());
         if (contentObj instanceof String) {
             contentParts.add(JacksonUtils.toMap(ContentPart.ofText((String) contentObj)));
         } else if (contentObj instanceof List) {
-            MessageProcessingContext context = new MessageProcessingContext(contentParts, toolCalls, messageBuilders, inputMessage.getRole());
             processContentBlocks((List<MessageRequest.ContentBlock>) contentObj, context, nativeSupport);
         }
         
@@ -191,9 +192,9 @@ public class TransferFromCompletionsUtils {
             } else if (block instanceof MessageRequest.ToolResultContentBlock) {
                 lastToolResult = true;
                 processToolResultContentBlock((MessageRequest.ToolResultContentBlock) block, context, nativeSupport);
-            } else if (nativeSupport) {
+            } else {
                 lastToolResult = false;
-                processNativeContentBlock(block, context);
+                processThinkingContentBlock(block, context, nativeSupport);
             }
         }
     }
@@ -264,17 +265,29 @@ public class TransferFromCompletionsUtils {
         current.content(toolResultContentParts);
     }
 
-    private static void processNativeContentBlock(MessageRequest.ContentBlock block, MessageProcessingContext context) {
-        // 包含thinking block和 redacted_thinking block
-        if (context.getContentParts().isEmpty()) {
-            context.getContentParts().add(JacksonUtils.toMap(block));
-        } else if (block instanceof MessageRequest.ThinkingContentBlock) {
-            context.getContentParts().add(0, JacksonUtils.toMap(block));
-        } else if (block instanceof MessageRequest.RedactedThinkingContentBlock) {
-            if ("thinking".equals(context.getContentParts().get(0).get("type"))) {
-                context.getContentParts().add(1, JacksonUtils.toMap(block));
-            } else {
+    private static void processThinkingContentBlock(MessageRequest.ContentBlock block, MessageProcessingContext context, boolean nativeSupport) {
+        if(nativeSupport) {
+            // 包含thinking block和 redacted_thinking block
+            if(context.getContentParts().isEmpty()) {
+                context.getContentParts().add(JacksonUtils.toMap(block));
+            } else if(block instanceof MessageRequest.ThinkingContentBlock) {
                 context.getContentParts().add(0, JacksonUtils.toMap(block));
+            } else if(block instanceof MessageRequest.RedactedThinkingContentBlock) {
+                if("thinking".equals(context.getContentParts().get(0).get("type"))) {
+                    context.getContentParts().add(1, JacksonUtils.toMap(block));
+                } else {
+                    context.getContentParts().add(0, JacksonUtils.toMap(block));
+                }
+            }
+        } else {
+            Message.MessageBuilder builder = context.getMessageBuilders().get(context.getMessageBuilders().size() - 1);
+            if(block instanceof MessageRequest.ThinkingContentBlock) {
+                MessageRequest.ThinkingContentBlock thinkingContentBlock = (MessageRequest.ThinkingContentBlock) block;
+                builder.reasoning_content(thinkingContentBlock.getThinking());
+                builder.reasoning_content_signature(thinkingContentBlock.getSignature());
+            } else if(block instanceof MessageRequest.RedactedThinkingContentBlock) {
+                MessageRequest.RedactedThinkingContentBlock redactedThinkingContentBlock = (MessageRequest.RedactedThinkingContentBlock) block;
+                builder.redacted_reasoning_content(redactedThinkingContentBlock.getData());
             }
         }
     }
@@ -289,11 +302,12 @@ public class TransferFromCompletionsUtils {
 
     private static void finalizePendingMessage(List<Message.MessageBuilder> messageBuilders, 
                                              List<Map> contentParts, List<Message.ToolCall> toolCalls) {
+        Message.MessageBuilder messageBuilder = messageBuilders.get(messageBuilders.size() - 1);
         if (!contentParts.isEmpty()) {
-            messageBuilders.get(messageBuilders.size() - 1).content(contentParts);
+            messageBuilder.content(contentParts);
         }
         if (!toolCalls.isEmpty()) {
-            messageBuilders.get(messageBuilders.size() - 1).tool_calls(toolCalls);
+            messageBuilder.tool_calls(toolCalls);
         }
     }
 
@@ -433,11 +447,6 @@ public class TransferFromCompletionsUtils {
 
         responseBuilder.content(contentBlocks);
 
-        // 处理 thoughtSignature (Gemini 3 思维签名)
-        if (assistantMessage.getThoughtSignature() != null && !assistantMessage.getThoughtSignature().isEmpty()) {
-            responseBuilder.thoughtSignature(assistantMessage.getThoughtSignature());
-        }
-
         String finishReason = choice.getFinish_reason();
         String stopReason = mapFinishReason(finishReason);
         responseBuilder.stopReason(stopReason);
@@ -455,7 +464,7 @@ public class TransferFromCompletionsUtils {
         return responseBuilder.build();
     }
 
-    public static List<StreamMessageResponse> convertStreamResponse(StreamCompletionResponse streamChatResponse, boolean isToolCall) {
+    public static List<StreamMessageResponse> convertStreamResponse(StreamCompletionResponse streamChatResponse, boolean isToolCall, int contentIndex) {
         if (streamChatResponse == null) return null;
         List<StreamMessageResponse> responseList = new ArrayList<>();
         if (streamChatResponse.getError() != null) {
@@ -465,35 +474,26 @@ public class TransferFromCompletionsUtils {
             StreamCompletionResponse.Choice streamChoice = streamChatResponse.getChoices().get(0);
             Message delta = streamChoice.getDelta();
             String finishReasonStr = streamChoice.getFinish_reason();
-            int choiceIndex = streamChoice.getIndex(); // Typically 0 for non-parallel choices
 
             //Thinking content delta
             if(delta != null && (delta.getReasoning_content() != null)) {
                 String reasoningContent = delta.getReasoning_content();
                 if(!reasoningContent.isEmpty()) {
-                    responseList.add(StreamMessageResponse.contentBlockDelta(choiceIndex, new StreamMessageResponse.ThinkingDelta(reasoningContent)));
+                    responseList.add(StreamMessageResponse.contentBlockDelta(contentIndex, new StreamMessageResponse.ThinkingDelta(reasoningContent)));
                 }
             }
 
             if(delta != null && (delta.getReasoning_content_signature() != null)) {
                 String signature = delta.getReasoning_content_signature();
                 if(!signature.isEmpty()) {
-                    responseList.add(StreamMessageResponse.contentBlockDelta(choiceIndex, new StreamMessageResponse.SignatureDelta(signature)));
+                    responseList.add(StreamMessageResponse.contentBlockDelta(contentIndex, new StreamMessageResponse.SignatureDelta(signature)));
                 }
             }
 
             if(delta != null && (delta.getRedacted_reasoning_content() != null)) {
                 String redactedReasoningContent = delta.getRedacted_reasoning_content();
                 if(!redactedReasoningContent.isEmpty()) {
-                    responseList.add(StreamMessageResponse.contentBlockDelta(choiceIndex, new StreamMessageResponse.RedactedThinkingDelta(redactedReasoningContent)));
-                }
-            }
-
-            // ThoughtSignature delta (Gemini 3 思维签名)
-            if(delta != null && delta.getThoughtSignature() != null) {
-                String thoughtSignature = delta.getThoughtSignature();
-                if(!thoughtSignature.isEmpty()) {
-                    responseList.add(StreamMessageResponse.contentBlockDelta(choiceIndex, new StreamMessageResponse.SignatureDelta(thoughtSignature)));
+                    responseList.add(StreamMessageResponse.contentBlockDelta(contentIndex, new StreamMessageResponse.RedactedThinkingDelta(redactedReasoningContent)));
                 }
             }
 
@@ -501,21 +501,21 @@ public class TransferFromCompletionsUtils {
             if(delta != null && delta.getContent() != null) {
                 String textContent = (String) delta.getContent();
                 if(!textContent.isEmpty()) {
-                    responseList.add(StreamMessageResponse.contentBlockDelta(choiceIndex, new StreamMessageResponse.TextDelta(textContent)));
+                    responseList.add(StreamMessageResponse.contentBlockDelta(contentIndex, new StreamMessageResponse.TextDelta(textContent)));
                 }
             }
 
             // Tool call delta (start or argument delta)
             if(delta != null && CollectionUtils.isNotEmpty(delta.getTool_calls())) {
                 Message.ToolCall toolCallChunk = delta.getTool_calls().get(0);
-                int toolContentBlockIndex = toolCallChunk.getIndex(); // This is the index for the content block (tool_use)
 
                 if(toolCallChunk.getFunction() != null && StringUtils.isNotEmpty(toolCallChunk.getFunction().getName())) { // Start of a new tool call
-                    responseList.add(StreamMessageResponse.contentBlockStart(toolContentBlockIndex,
+                    contentIndex = contentIndex + 1;
+                    responseList.add(StreamMessageResponse.contentBlockStart(contentIndex,
                             new MessageResponse.ResponseToolUseBlock(toolCallChunk.getId(), toolCallChunk.getFunction().getName(), new HashMap<>())));
                 }
                 if(toolCallChunk.getFunction() != null && toolCallChunk.getFunction().getArguments() != null) { // Delta for arguments
-                    responseList.add(StreamMessageResponse.contentBlockDelta(toolContentBlockIndex,
+                    responseList.add(StreamMessageResponse.contentBlockDelta(contentIndex,
                             new StreamMessageResponse.InputJsonDelta(toolCallChunk.getFunction().getArguments())));
                 }
             }

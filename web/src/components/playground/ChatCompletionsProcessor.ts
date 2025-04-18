@@ -339,7 +339,7 @@ export class ChatCompletionsProcessor extends EventEmitter {
                   this.emit(ChatCompletionsEventType.DELTA, {
                     content: choice.delta.content,
                     role: choice.delta.role || 'assistant',
-                    thoughtSignature: (choice.delta as any).thoughtSignature,
+                    reasoning_content_signature: (choice.delta as any).reasoning_content_signature,
                     response: response
                   });
                 }
@@ -351,7 +351,7 @@ export class ChatCompletionsProcessor extends EventEmitter {
                     reasoning_content: choice.delta.reasoning_content,
                     role: choice.delta.role || 'assistant',
                     isReasoningContent: true,
-                    thoughtSignature: (choice.delta as any).thoughtSignature,
+                    reasoning_content_signature: (choice.delta as any).reasoning_content_signature,
                     response: response
                   });
                 }

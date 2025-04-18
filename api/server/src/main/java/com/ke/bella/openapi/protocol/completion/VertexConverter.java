@@ -181,7 +181,7 @@ public class VertexConverter {
         List<Part> parts = new ArrayList<>();
         
         // 使用 Message.thoughtSignature 字段
-        String thoughtSignature = message.getThoughtSignature();
+        String thoughtSignature = message.getReasoning_content_signature();
         addContentToParts(parts, message.getContent(), thoughtSignature);
         
         // Handle tool calls
@@ -511,7 +511,7 @@ public class VertexConverter {
                 : (inlineDataThoughtSignature != null ? inlineDataThoughtSignature : firstThoughtSignature);
 
         if (StringUtils.hasText(thoughtSignature)) {
-            builder.thoughtSignature(thoughtSignature);
+            builder.reasoning_content_signature(thoughtSignature);
         }
         
         return builder.build();

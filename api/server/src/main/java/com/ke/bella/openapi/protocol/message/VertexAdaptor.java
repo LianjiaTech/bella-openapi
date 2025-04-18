@@ -17,7 +17,7 @@ public class VertexAdaptor implements MessageDelegatorAdaptor<VertexProperty> {
 
     @Override
     public boolean isNativeSupport() {
-        return true;  // Vertex natively supports Messages API format
+        return false;
     }
 
     @Override
