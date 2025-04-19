@@ -85,6 +85,8 @@ Bella OpenAPI是一个综合性的AI开放API平台，提供以下主要组件�
 - `--restart-web`: 仅重启前端服务
 - `--restart-api`: 仅重启后端服务
 - `--nginx-port PORT`: 指定Nginx服务映射到的端口，默认为80
+- `--update-image`: 从远程仓库更新镜像，即使本地已存在
+- `--service CONTAINER_NAME:DOMAIN:PORT`: 配置额外服务的Nginx转发，格式为服务名:域名:端口，多个服务用逗号分隔，只支持同一docker网络下的服务，使用CONTAINER_NAME转发
 
 示例:
 ```bash
