@@ -47,7 +47,7 @@ export default function EmbeddingsPlayground() {
 
     try {
       const protocol = typeof window !== 'undefined' ? window.location.protocol : 'http:';
-      const host = api_host || 'localhost:8080';
+      const host = api_host || window.location.host;
 
       // 将输入文本按行分割为数组
       const inputs = input.split('\n').filter(line => line.trim() !== '');
@@ -107,18 +107,18 @@ export default function EmbeddingsPlayground() {
     if (!obj) return '';
     return JSON.stringify(obj, null, 2);
   };
-  
+
   // 截断文本并添加展开/收缩功能
   const truncateText = (text: string, index: number, maxLength: number = 50) => {
     if (!text) return '';
-    
+
     const isExpanded = expandedInputs.includes(index);
     if (isExpanded || text.length <= maxLength) {
       return (
         <span>
           {text}
           {text.length > maxLength && (
-            <span 
+            <span
               className="text-blue-600 hover:text-blue-800 cursor-pointer ml-2"
               onClick={(e) => {
                 e.stopPropagation();
@@ -131,11 +131,11 @@ export default function EmbeddingsPlayground() {
         </span>
       );
     }
-    
+
     return (
       <span>
         {text.substring(0, maxLength)}...
-        <span 
+        <span
           className="text-blue-600 hover:text-blue-800 cursor-pointer ml-2"
           onClick={(e) => {
             e.stopPropagation();
@@ -147,11 +147,11 @@ export default function EmbeddingsPlayground() {
       </span>
     );
   };
-  
+
   // 复制向量化结果
   const copyEmbedding = (index: number) => {
     if (!response || !response.data || index >= response.data.length) return;
-    
+
     const embedding = response.data[index].embedding;
     navigator.clipboard.writeText(JSON.stringify(embedding))
       .then(() => {
@@ -164,11 +164,11 @@ export default function EmbeddingsPlayground() {
         console.error('Failed to copy: ', err);
       });
   };
-  
+
   // 复制原始JSON响应
   const copyFullResponse = () => {
     if (!response) return;
-    
+
     navigator.clipboard.writeText(JSON.stringify(response, null, 2))
       .then(() => {
         setCopiedIndex(-1); // 使用-1表示复制了完整响应
@@ -198,21 +198,21 @@ export default function EmbeddingsPlayground() {
                   {truncateText(inputText, index)}
                 </span>
               </div>
-              
+
               <div className="mt-2">
                 <div className="flex items-start">
                   <span className="font-medium mr-2">向量:</span>
                   <div className="flex-1">
                     <div className="flex items-center">
-                      <div 
+                      <div
                         className="cursor-pointer text-blue-600 hover:text-blue-800 flex-1"
                         onClick={() => toggleEmbedding(index)}
                       >
                         [
                         {item.embedding[0].toFixed(8)},
                         {item.embedding[1].toFixed(8)},
-                        {expandedEmbeddings.includes(index) ? 
-                          <span className="text-blue-600">[收起]</span> : 
+                        {expandedEmbeddings.includes(index) ?
+                          <span className="text-blue-600">[收起]</span> :
                           <span className="text-blue-600">... (点击展开查看全部)</span>
                         }
                         ]
@@ -229,7 +229,7 @@ export default function EmbeddingsPlayground() {
                         )}
                       </button>
                     </div>
-                    
+
                     {expandedEmbeddings.includes(index) && (
                       <div className="mt-2 pl-2 max-h-60 overflow-y-auto border-l-2 border-gray-200">
                         <pre className="text-xs">
@@ -243,7 +243,7 @@ export default function EmbeddingsPlayground() {
             </div>
           );
         })}
-        
+
         <div className="mt-4 text-xs text-gray-500">
           <div className="flex items-center">
             <div className="font-medium">原始JSON响应:</div>
@@ -264,8 +264,8 @@ export default function EmbeddingsPlayground() {
               object: response.object,
               data: response.data.map(item => ({
                 object: item.object,
-                embedding: expandedEmbeddings.includes(item.index) ? 
-                  item.embedding : 
+                embedding: expandedEmbeddings.includes(item.index) ?
+                  item.embedding :
                   [item.embedding[0], item.embedding[1], "..."],
                 index: item.index
               }))

@@ -42,7 +42,7 @@ export default function RealtimeTranscriptionPlayground() {
   const getWebSocketUrl = () => {
     const protocol = typeof window !== 'undefined' ? window.location.protocol : 'http:';
     const wsProtocol = protocol === 'https:' ? 'wss:' : 'ws:';
-    const host = api_host || 'localhost:8080';
+    const host = api_host || window.location.host;
     return `${wsProtocol}//${host}/v1/audio/asr/stream?model=${model}`;
   };
 

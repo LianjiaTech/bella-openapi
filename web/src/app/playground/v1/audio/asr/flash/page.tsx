@@ -47,7 +47,7 @@ export default function FlashTranscriptionPlayground() {
     if (!selectedSource) return;
     if (typeof window === 'undefined') return;
     const protocol = typeof window !== 'undefined' ? window.location.protocol : 'http:';
-    const host = api_host || 'localhost:8080';
+    const host = api_host || window.location.host;
     // 创建 FlashAudioRecorder 实例
     const recorder = new FlashAudioRecorder({
       url: `${protocol}//${host}/v1/audio/asr/flash`,

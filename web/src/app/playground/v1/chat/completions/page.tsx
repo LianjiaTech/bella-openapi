@@ -66,7 +66,7 @@ export default function ChatCompletions() {
   // 初始化ChatCompletionsWriter
   useEffect(() => {
     const protocol = typeof window !== 'undefined' ? window.location.protocol : 'http:';
-    const host = api_host || 'localhost:8080';
+    const host = api_host || window.location.host;
     chatCompletionsWriterRef.current = new ChatCompletionsProcessor({
       url: `${protocol}//${host}/v1/chat/completions`,
       headers: {

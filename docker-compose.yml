@@ -8,7 +8,7 @@ services:
       - "8080"
     environment:
       - JAVA_OPTS=-server -Xms2048m -Xmx2048m -XX:MetaspaceSize=512m -XX:MaxMetaspaceSize=512m -Dbella.proxy.host=${PROXY_HOST:-} -Dbella.proxy.port=${PROXY_PORT:-} -Dbella.proxy.type=${PROXY_TYPE:-} -Dbella.proxy.domains=${PROXY_DOMAINS:-}
-      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-docker}
       - SERVER_DOMAIN=${SERVER_DOMAIN:-localhost}
       - SERVER=${SERVER:-http://localhost}
       - login.type=${LOGIN_TYPE:-}
@@ -68,8 +68,8 @@ services:
       MYSQL_DATABASE: bella_openapi
       MYSQL_USER: bella_user
       MYSQL_PASSWORD: 123456
-    expose:
-      - "3306"
+    ports:
+      - "3306:3306"
     volumes:
       - ./mysql/data:/var/lib/mysql
       - ./api/server/sql:/docker-entrypoint-initdb.d
@@ -84,8 +84,8 @@ services:
     image: redis:6
     container_name: bella-openapi-redis
     command: redis-server --requirepass 123456
-    expose:
-      - "6379"
+    ports:
+      - "6379:6379"
     volumes:
       - ./redis/data:/data
     privileged: true

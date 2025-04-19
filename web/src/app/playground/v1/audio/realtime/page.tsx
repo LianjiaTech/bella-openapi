@@ -69,7 +69,7 @@ export default function RealtimeAudioPlayground() {
     // 检测当前页面协议
     const protocol = typeof window !== 'undefined' ? window.location.protocol : 'http:';
     const wsProtocol = protocol === 'https:' ? 'wss:' : 'ws:';
-    const host = api_host || 'localhost:8080';
+    const host = api_host || window.location.host;
     return `${wsProtocol}//${host}/v1/audio/realtime?model=${model}`;
   };
 
@@ -235,8 +235,8 @@ export default function RealtimeAudioPlayground() {
 
       {/* 系统提示词编辑区域 */}
       <div className="mb-3 flex-shrink-0">
-        <div 
-          className="flex items-center cursor-pointer" 
+        <div
+          className="flex items-center cursor-pointer"
           onClick={() => {
             if (!isRecording) {
               if (isPromptExpanded) {
@@ -256,10 +256,10 @@ export default function RealtimeAudioPlayground() {
             </span>
           ) : null}
           {!isEditingPrompt && (
-            <svg 
-              xmlns="http://www.w3.org/2000/svg" 
-              className={`h-4 w-4 ml-1 transition-transform ${isPromptExpanded ? 'rotate-180' : ''}`} 
-              viewBox="0 0 20 20" 
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className={`h-4 w-4 ml-1 transition-transform ${isPromptExpanded ? 'rotate-180' : ''}`}
+              viewBox="0 0 20 20"
               fill="currentColor"
             >
               <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
