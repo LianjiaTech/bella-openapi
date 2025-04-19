@@ -197,7 +197,7 @@ next.js在dev环境做了预加载相关的优化，如果一定需要使用dev�
 ### 2. 初始化并启动系统，清除原有数据（开发、测试环境）
 
 1. 删除数据库：`docker exec -it bella-openapi-mysql mysql -uroot -p123456 -e "drop database bella_openapi;"` (如非默用户名和密码，请替换为您的用户名和密码)
-2. 停止服务：`./stop.sh`
+2. 停止服务：`docker-compose down`
 3. 删除mysql数据：`rm -rf ./mysql`
 4. 删除redis数据：`rm -rf ./redis`
 5. 重新构建并启动：`./start.sh -b`
