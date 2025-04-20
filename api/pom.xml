@@ -22,6 +22,17 @@
   <description>Bella OpenAPI SDK</description>
   <url>https://github.com/bella-top/bella-openapi</url>
 
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <java.version>1.8</java.version>
+    <spring-cloud.version>Hoxton.SR12</spring-cloud.version>
+    <ke-infrastructure.version>2.1.28</ke-infrastructure.version>
+    <jooq.version>3.14.15</jooq.version>
+    <redisson.version>3.9.1</redisson.version>
+    <apollo.version>2.1.0</apollo.version>
+  </properties>
+
   <licenses>
     <license>
       <name>The Apache License, Version 2.0</name>
@@ -57,15 +68,6 @@
     </snapshotRepository>
   </distributionManagement>
 
-
-  <properties>
-    <java.version>1.8</java.version>
-    <spring-cloud.version>Hoxton.SR12</spring-cloud.version>
-    <ke-infrastructure.version>2.1.28</ke-infrastructure.version>
-    <jooq.version>3.14.15</jooq.version>
-    <redisson.version>3.9.1</redisson.version>
-    <apollo.version>2.1.0</apollo.version>
-  </properties>
 
   <dependencyManagement>
     <dependencies>
