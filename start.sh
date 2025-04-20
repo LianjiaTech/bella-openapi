@@ -174,9 +174,11 @@ pre_pull_images() {
     # 拉取基础镜像（如果本地不存在）
     pull_image_if_not_exists "openjdk:8" "拉取 OpenJDK 镜像..."
     pull_image_if_not_exists "docker.ipigsy.com/library/node:20.11-alpine3.19" "拉取 Node.js 镜像..."
-    pull_image_if_not_exists "nginx:latest" "拉取 Nginx 镜像..."
-    pull_image_if_not_exists "mysql:8.0" "拉取 MySQL 镜像..."
-    pull_image_if_not_exists "redis:6" "拉取 Redis 镜像..."
+    if [ "$PUSH" == "false" ]; then
+        pull_image_if_not_exists "nginx:latest" "拉取 Nginx 镜像..."
+        pull_image_if_not_exists "mysql:8.0" "拉取 MySQL 镜像..."
+        pull_image_if_not_exists "redis:6" "拉取 Redis 镜像..."
+    fi
     
     # 如果不需要编译（没有 --build 参数），则拉取应用镜像
     if [ -z "$BUILD" ]; then

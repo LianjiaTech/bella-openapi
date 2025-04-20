@@ -1,0 +1,100 @@
+name: Check Version
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - main
+
+jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # 获取所有历史记录和标签
+      
+      - name: Set up JDK 8
+        uses: actions/setup-java@v3
+        with:
+          java-version: '8'
+          distribution: 'temurin'
+          cache: 'maven'
+      
+      - name: Check POM version against tags
+        id: check-version
+        run: |
+          # 获取最新的版本标签
+          git fetch --tags
+          
+          # 获取最新的 v 开头的标签
+          V_TAG=$(git tag -l "v*" | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1)
+          echo "Latest v tag: $V_TAG"
+          
+          # 获取最新的 sdk 开头的标签
+          SDK_TAG=$(git tag -l "sdk*" | grep -E '^sdk[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1)
+          echo "Latest sdk tag: $SDK_TAG"
+          
+          # 获取 POM 版本
+          cd api
+          POM_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          echo "POM version: $POM_VERSION"
+          
+          # 检查是否为 SNAPSHOT 版本
+          if [[ "$POM_VERSION" == *-SNAPSHOT* ]]; then
+            echo "❌ POM version ($POM_VERSION) is a SNAPSHOT version"
+            echo "::error::POM version cannot be a SNAPSHOT version for release. Please use a release version."
+            exit 1
+          fi
+          
+          # 如果没有任何标签，则通过检查
+          if [ -z "$V_TAG" ] && [ -z "$SDK_TAG" ]; then
+            echo "No existing tags found. POM version $POM_VERSION is valid for first tag."
+            exit 0
+          fi
+          
+          # 提取版本号
+          if [ -n "$V_TAG" ]; then
+            V_VERSION=${V_TAG#v}
+            echo "Latest v version: $V_VERSION"
+          else
+            V_VERSION="0.0.0"
+          fi
+          
+          if [ -n "$SDK_TAG" ]; then
+            SDK_VERSION=${SDK_TAG#sdk}
+            echo "Latest sdk version: $SDK_VERSION"
+          else
+            SDK_VERSION="0.0.0"
+          fi
+          
+          # 首先检查 POM 版本是否等于 SDK 版本
+          if [ -n "$SDK_TAG" ]; then
+            if [ "$SDK_VERSION" = "$POM_VERSION" ]; then
+              echo "✅ POM version ($POM_VERSION) is equal to latest sdk version ($SDK_VERSION)"
+              # 如果等于 SDK 版本，则通过检查
+              exit 0
+            fi
+          fi
+          
+          # 如果 SDK 检查未通过，再检查 POM 版本是否大于等于 V 版本
+          if [ -n "$V_TAG" ]; then
+            if [ "$(printf '%s\n' "$V_VERSION" "$POM_VERSION" | sort -V | head -n1)" = "$V_VERSION" ]; then
+              echo "✅ POM version ($POM_VERSION) is greater than or equal to latest v version ($V_VERSION)"
+              # 如果大于等于 V 版本，则通过检查
+              exit 0
+            else
+              echo "❌ POM version ($POM_VERSION) is less than latest v version ($V_VERSION)"
+              echo "::error::POM version ($POM_VERSION) must be either equal to latest sdk version ($SDK_VERSION) or greater than latest v version ($V_VERSION)"
+              exit 1
+            fi
+          else
+            # 如果没有 V 标签但有 SDK 标签，且 POM 版本不等于 SDK 版本，则失败
+            if [ -n "$SDK_TAG" ]; then
+              echo "❌ POM version ($POM_VERSION) is not equal to latest sdk version ($SDK_VERSION)"
+              echo "::error::POM version ($POM_VERSION) must be either equal to latest sdk version ($SDK_VERSION) or greater than latest v version ($V_VERSION)"
+              exit 1
+            fi
+          fi
