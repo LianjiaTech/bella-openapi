@@ -31,7 +31,7 @@ public class LoginFilter implements Filter {
     private final LoginProperties properties;
     private final SessionManager sessionManager;
     private static final String REDIRECT_HEADER = "X-Redirect-Login";
-    private static final String CONSOLE_HEADER = "X-BELLA_CONSOLE";
+    private static final String CONSOLE_HEADER = "X-BELLA-CONSOLE";
 
     public LoginFilter(LoginProperties properties, SessionManager sessionManager) {
         this.properties = properties;
