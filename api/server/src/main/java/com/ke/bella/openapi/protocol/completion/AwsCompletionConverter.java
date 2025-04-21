@@ -1,14 +1,26 @@
 package com.ke.bella.openapi.protocol.completion;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.tuple.Pair;
+import org.springframework.http.HttpStatus;
+
 import com.google.common.collect.Lists;
 import com.ke.bella.openapi.protocol.OpenapiResponse;
 import com.ke.bella.openapi.utils.DateTimeUtils;
 import com.ke.bella.openapi.utils.ImageUtils;
 import com.ke.bella.openapi.utils.JacksonUtils;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.collections4.MapUtils;
-import org.apache.commons.lang3.tuple.Pair;
-import org.springframework.http.HttpStatus;
+
 import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.core.document.Document;
 import software.amazon.awssdk.core.document.internal.MapDocument;
@@ -35,16 +47,6 @@ import software.amazon.awssdk.services.bedrockruntime.model.ToolUseBlock;
 import software.amazon.awssdk.services.bedrockruntime.model.ToolUseBlockDelta;
 import software.amazon.awssdk.services.bedrockruntime.model.ToolUseBlockStart;
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
-
 public class AwsCompletionConverter {
 
     /**
@@ -69,8 +71,7 @@ public class AwsCompletionConverter {
                     .system(pair.getLeft().isEmpty() ? null : pair.getLeft())
                     .messages(pair.getRight())
                     .inferenceConfig(convert2AwsReqConfig(openAIRequest))
-                    .toolConfig(CollectionUtils.isEmpty(openAIRequest.getTools()) ? null :
-                            convert2AwsTool(openAIRequest.getTools()));
+                    .toolConfig(CollectionUtils.isEmpty(openAIRequest.getTools()) ? null : convert2AwsTool(openAIRequest.getTools()));
             if(MapUtils.isNotEmpty(property.additionalParams)) {
                 builder.additionalModelRequestFields(convertObjectToDocument(property.additionalParams));
             }
@@ -243,7 +244,7 @@ public class AwsCompletionConverter {
         List<ContentBlock> currentContents = new ArrayList<>();
         for (com.ke.bella.openapi.protocol.completion.Message message : openAIMsgList) {
             String role = message.getRole().equals("tool") ? "user" : message.getRole();
-            if(role.equals("system")) {
+            if(role.equals("system") || role.equals("developer")) {
                 if(message.getContent() != null && !"".equals(message.getContent())) {
                     systemContentBlocks.add(convert2AwsSystemContent(message));
                 }
@@ -251,7 +252,7 @@ public class AwsCompletionConverter {
                 if(!role.equals(currentRole)) {
                     if(CollectionUtils.isNotEmpty(currentContents)) {
                         messages.add(software.amazon.awssdk.services.bedrockruntime.model.Message.builder()
-                                .role(role.equals("user") ? ConversationRole.USER : ConversationRole.ASSISTANT)
+                                .role(currentRole.equals("user") ? ConversationRole.USER : ConversationRole.ASSISTANT)
                                 .content(currentContents)
                                 .build());
                         currentContents = new ArrayList<>();
@@ -285,24 +286,41 @@ public class AwsCompletionConverter {
                             .content(ToolResultContentBlock.fromText(message.getContent().toString()))
                             .build()));
         } else {
-            if(message.getContent() instanceof String) {
-                contentBlocks.add(convert2TextBlock((String) message.getContent()));
-            } else {
-                List<Object> contentList = (List<Object>) message.getContent();
-                for (Object content : contentList) {
-                    Map contentMap = (Map) content;
-                    String type = contentMap.get("type").toString();
-                    if(type.equals("text")) {
-                        contentBlocks.add(convert2TextBlock(contentMap.get("text").toString()));
-                    } else if(type.equals("image_url")) {
-                        String url = ((Map) contentMap.get("image_url")).get("url").toString();
-                        contentBlocks.add(convert2ImageBlock(url));
-                    } else if(type.equals("function")) {
-                        List toolCalls = (List) contentMap.get("tool_calls");
-                        for (Object toolCall : toolCalls) {
-                            contentBlocks.add(convert2ToolUseBlock((Map) toolCall));
+            if(message.getContent() != null) {
+                if(message.getContent() instanceof String) {
+                    contentBlocks.add(convert2TextBlock((String) message.getContent()));
+                } else if(message.getContent() instanceof List) {
+                    List<Object> contentList = (List<Object>) message.getContent();
+                    for (Object content : contentList) {
+                        Map contentMap = (Map) content;
+                        String type = contentMap.get("type").toString();
+                        if(type.equals("text")) {
+                            contentBlocks.add(convert2TextBlock(contentMap.get("text").toString()));
+                        } else if(type.equals("image_url")) {
+                            String url = ((Map) contentMap.get("image_url")).get("url").toString();
+                            contentBlocks.add(convert2ImageBlock(url));
+                        } else if(type.equals("function")) {
+                            List toolCalls = (List) contentMap.get("tool_calls");
+                            for (Object toolCall : toolCalls) {
+                                Map toolCallMap = (Map) toolCall;
+                                String id = toolCallMap.get("id").toString();
+                                Map<String, Object> functionMap = (Map<String, Object>) toolCallMap.get("function");
+                                String name = functionMap.get("name").toString();
+                                String arguments = functionMap.get("arguments").toString();
+                                contentBlocks.add(convert2ToolUseBlock(id, name, arguments));
+                            }
                         }
                     }
+                }
+            }
+
+            // 处理 tool_calls
+            if(message.getTool_calls() != null && !message.getTool_calls().isEmpty()) {
+                for (com.ke.bella.openapi.protocol.completion.Message.ToolCall toolCall : message.getTool_calls()) {
+                    contentBlocks.add(convert2ToolUseBlock(
+                            toolCall.getId(),
+                            toolCall.getFunction().getName(),
+                            toolCall.getFunction().getArguments()));
                 }
             }
         }
@@ -314,13 +332,12 @@ public class AwsCompletionConverter {
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    private static ContentBlock convert2ToolUseBlock(Map toolCall) {
-        Map<String, Object> map = (Map<String, Object>) toolCall.get("function");
+    private static ContentBlock convert2ToolUseBlock(String toolUseId, String name, String arguments) {
         return ContentBlock.fromToolUse(ToolUseBlock
                 .builder()
-                .toolUseId(toolCall.get("tool_call_id").toString())
-                .name(map.get("name").toString())
-                .input(convertMapToDocument(JacksonUtils.deserialize(map.get("arguments").toString(), Map.class)))
+                .toolUseId(toolUseId)
+                .name(name)
+                .input(convertMapToDocument(JacksonUtils.deserialize(arguments, Map.class)))
                 .build());
     }
 
@@ -352,7 +369,8 @@ public class AwsCompletionConverter {
     }
 
     @SuppressWarnings({ "rawtypes" })
-    private static software.amazon.awssdk.services.bedrockruntime.model.Tool convert2AwsTool(com.ke.bella.openapi.protocol.completion.Message.Tool tool) {
+    private static software.amazon.awssdk.services.bedrockruntime.model.Tool convert2AwsTool(
+            com.ke.bella.openapi.protocol.completion.Message.Tool tool) {
         Map schemaMap = JacksonUtils.toMap(tool.getFunction().getParameters());
         software.amazon.awssdk.services.bedrockruntime.model.ToolSpecification.Builder toolBuilder = software.amazon.awssdk.services.bedrockruntime.model.ToolSpecification
                 .builder();
