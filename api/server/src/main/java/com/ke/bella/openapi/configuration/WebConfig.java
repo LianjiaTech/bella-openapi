@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
 import org.springframework.web.servlet.config.annotation.ContentNegotiationConfigurer;
@@ -15,6 +16,7 @@ import com.ke.bella.openapi.common.EntityConstants;
 import com.ke.bella.openapi.intercept.AuthorizationInterceptor;
 import com.ke.bella.openapi.intercept.ConcurrentStartInterceptor;
 import com.ke.bella.openapi.intercept.MonthQuotaInterceptor;
+import org.springframework.web.socket.server.standard.ServletServerContainerFactoryBean;
 
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
@@ -44,5 +46,14 @@ public class WebConfig implements WebMvcConfigurer {
         configurer
             .defaultContentType(MediaType.APPLICATION_JSON)
             .ignoreAcceptHeader(true);
+    }
+
+    @Bean
+    public ServletServerContainerFactoryBean createWebSocketContainer() {
+        ServletServerContainerFactoryBean container = new ServletServerContainerFactoryBean();
+        // 设置消息缓冲区大小为 256KB
+        container.setMaxTextMessageBufferSize(256 * 1024);
+        container.setMaxBinaryMessageBufferSize(256 * 1024);
+        return container;
     }
 }

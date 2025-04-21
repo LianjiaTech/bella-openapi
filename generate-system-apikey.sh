@@ -7,7 +7,7 @@
 DB_HOST=${DB_HOST:-"mysql"}
 DB_PORT=${DB_PORT:-"3306"}
 DB_NAME=${DB_NAME:-"bella_openapi"}
-DB_USER=${DB_USER:-"root"}
+DB_USER=${DB_USER:-"bella_user"}
 DB_PASS=${DB_PASS:-"123456"}
 MYSQL_CONTAINER="bella-openapi-mysql"
 OUTPUT_FILE="system-apikey.txt"
