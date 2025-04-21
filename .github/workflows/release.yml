@@ -58,10 +58,7 @@ jobs:
           
           echo "Current version: $VERSION, GroupId: $GROUP_ID, GroupPath: $GROUP_PATH"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          
-          # 等待几秒，确保 Maven 中央仓库的索引更新
-          sleep 5
-          
+
           # 检查 Parent POM 是否已发布
           PARENT_URL="https://repo1.maven.org/maven2/${GROUP_PATH}/bella-openapi/$VERSION/bella-openapi-$VERSION.pom"
           echo "Checking Parent POM URL: $PARENT_URL"
@@ -114,9 +111,8 @@ jobs:
       - name: Create SDK Tag
         if: env.MAVEN_PUBLISHED == 'true'
         run: |
-          VERSION=${{ steps.get-tag.outputs.version }}
-          VERSION_NO_V=$(echo $VERSION | sed 's/^v//')
-          SDK_TAG="sdk${VERSION_NO_V}"
+          SDK_VERSION="${{ steps.version-check.outputs.version }}"
+          SDK_TAG="sdk${SDK_VERSION}"
           
           # 配置 Git
           git config user.name "GitHub Actions Bot"
@@ -127,7 +123,7 @@ jobs:
             echo "SDK tag $SDK_TAG already exists, skipping tag creation"
           else
             # 创建带注释的标签
-            git tag -a $SDK_TAG -m "SDK Release $VERSION"
+            git tag -a $SDK_TAG -m "SDK Release $SDK_VERSION"
             
             # 推送标签
             git push origin $SDK_TAG
@@ -160,3 +156,56 @@ jobs:
           VERSION: ${{ steps.get-tag.outputs.version }}
         run: |
           ./start.sh --build --push --registry ${{ secrets.DOCKER_USERNAME }} --version $VERSION
+          echo "DOCKER_PUBLISHED=true" >> $GITHUB_ENV
+          echo "DOCKER_REGISTRY=${{ secrets.DOCKER_USERNAME }}" >> $GITHUB_ENV
+
+      - name: Create GitHub Release
+        if: success()
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.get-tag.outputs.version }}
+          release_name: Bella OpenAPI ${{ steps.get-tag.outputs.version }}
+          body: |
+            # Bella OpenAPI ${{ steps.get-tag.outputs.version }}
+            
+            ## SDK 信息
+            
+            SDK 版本: ${{ steps.version-check.outputs.version }}
+            
+            ```xml
+            <dependency>
+              <groupId>io.github.bella-top</groupId>
+              <artifactId>sdk</artifactId>
+              <version>${{ steps.version-check.outputs.version }}</version>
+            </dependency>
+            ```
+
+            ## SPI 信息
+            
+            SPI 版本: ${{ steps.version-check.outputs.version }}
+            
+            ```xml
+            <dependency>
+              <groupId>io.github.bella-top</groupId>
+              <artifactId>spi</artifactId>
+              <version>${{ steps.version-check.outputs.version }}</version>
+            </dependency>
+            ```
+            
+            ## Docker 镜像
+            
+            ### API 服务
+            ```
+            docker pull bellatop/bella-openapi-api:${{ steps.get-tag.outputs.version }}
+            ```
+            
+            ### Web 服务
+            ```
+            docker pull bellatop/bella-openapi-web:${{ steps.get-tag.outputs.version }}
+            ```
+            
+            支持的平台: linux/amd64, linux/arm64
+          draft: false
+          prerelease: false
