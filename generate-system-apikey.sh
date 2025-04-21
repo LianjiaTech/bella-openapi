@@ -50,7 +50,7 @@ fi
 
 # 检查数据库是否存在
 echo "检查数据库是否存在..."
-DB_EXISTS=$(docker exec -i $MYSQL_CONTAINER mysql -u$DB_USER -p$DB_PASS -e "SHOW DATABASES LIKE '$DB_NAME';" 2>/dev/null | grep -c "$DB_NAME")
+DB_EXISTS=$(docker exec -i $MYSQL_CONTAINER mysql -u$DB_USER --password=$DB_PASS -e "SHOW DATABASES LIKE '$DB_NAME';" 2>/dev/null | grep -c "$DB_NAME")
 
 if [ "$DB_EXISTS" -eq 0 ]; then
     echo "错误: 数据库 '$DB_NAME' 不存在。"
@@ -60,7 +60,7 @@ fi
 
 # 检查表是否存在
 echo "检查apikey表是否存在..."
-TABLE_EXISTS=$(docker exec -i $MYSQL_CONTAINER mysql -u$DB_USER -p$DB_PASS $DB_NAME -e "SHOW TABLES LIKE 'apikey';" 2>/dev/null | grep -c "apikey")
+TABLE_EXISTS=$(docker exec -i $MYSQL_CONTAINER mysql -u$DB_USER --password=$DB_PASS $DB_NAME -e "SHOW TABLES LIKE 'apikey';" 2>/dev/null | grep -c "apikey")
 
 if [ "$TABLE_EXISTS" -eq 0 ]; then
     echo "错误: 'apikey'表不存在。"
@@ -70,7 +70,7 @@ fi
 
 # 检查是否已存在系统API key
 echo "检查是否已存在系统API key..."
-EXISTING_KEY=$(docker exec -i $MYSQL_CONTAINER mysql -u$DB_USER -p$DB_PASS $DB_NAME -e "SELECT code FROM apikey WHERE owner_type='system' LIMIT 1;" 2>/dev/null | grep -v code)
+EXISTING_KEY=$(docker exec -i $MYSQL_CONTAINER mysql -u$DB_USER --password=$DB_PASS $DB_NAME -e "SELECT code FROM apikey WHERE owner_type='system' LIMIT 1;" 2>/dev/null | grep -v code)
 
 if [ -n "$EXISTING_KEY" ]; then
     echo "系统API key已存在，code: ${EXISTING_KEY}"
@@ -116,7 +116,7 @@ INSERT INTO apikey (
 );"
 
 # 执行SQL语句
-docker exec -i $MYSQL_CONTAINER mysql -u$DB_USER -p$DB_PASS $DB_NAME <<EOF
+docker exec -i $MYSQL_CONTAINER mysql -u$DB_USER --password=$DB_PASS $DB_NAME <<EOF
 $INSERT_SQL
 EOF
 
