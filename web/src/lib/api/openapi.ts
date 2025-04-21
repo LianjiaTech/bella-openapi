@@ -10,7 +10,7 @@ const baseURL = !api_host
 export const openapi: AxiosInstance = axios.create({
     baseURL: baseURL,
     headers: {
-        'X-BELLA_CONSOLE': true
+        'X-BELLA-CONSOLE': true
     },
     withCredentials: true
 });
