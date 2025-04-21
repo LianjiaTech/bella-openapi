@@ -79,6 +79,11 @@ export function UserNav({ user }: UserNavProps) {
                         日志查询
                     </Link>
                 </DropdownMenuItem>
+                <DropdownMenuItem>
+                    <Link href="https://github.com/LianjiaTech/bella-openapi/wiki/Bella-Openapi-Doc" className="w-full text-sm">
+                        Docs
+                    </Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleLogout} className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900 dark:hover:text-red-300">
                     登出
                 </DropdownMenuItem>

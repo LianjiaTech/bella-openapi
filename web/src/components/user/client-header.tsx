@@ -56,6 +56,7 @@ const MainNav: React.FC<{ userInfo: any }> = ({ userInfo }) => {
         { href: '/meta/console', label: '元数据管理', permission: '/console/model/**' },
         { href: '/monitor', label: '能力点监控' },
         { href: '/logs', label: '日志查询' },
+        { href: 'https://github.com/LianjiaTech/bella-openapi/wiki/Bella-Openapi-Doc', label: 'Docs' }
     ];
     
     return (
