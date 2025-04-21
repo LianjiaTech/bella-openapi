@@ -115,7 +115,8 @@ jobs:
         if: env.MAVEN_PUBLISHED == 'true'
         run: |
           VERSION=${{ steps.get-tag.outputs.version }}
-          SDK_TAG="sdk${VERSION}"
+          VERSION_NO_V=$(echo $VERSION | sed 's/^v//')
+          SDK_TAG="sdk${VERSION_NO_V}"
           
           # 配置 Git
           git config user.name "GitHub Actions Bot"
