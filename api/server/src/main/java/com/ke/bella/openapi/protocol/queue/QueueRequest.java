@@ -1,12 +1,10 @@
 package com.ke.bella.openapi.protocol.queue;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import scala.Int;
 
 public class QueueRequest {
     @Data
