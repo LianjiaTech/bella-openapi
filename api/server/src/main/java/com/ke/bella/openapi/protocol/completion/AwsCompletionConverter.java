@@ -5,6 +5,7 @@ import com.ke.bella.openapi.protocol.OpenapiResponse;
 import com.ke.bella.openapi.utils.DateTimeUtils;
 import com.ke.bella.openapi.utils.ImageUtils;
 import com.ke.bella.openapi.utils.JacksonUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -12,6 +13,8 @@ import org.springframework.http.HttpStatus;
 import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.core.document.Document;
 import software.amazon.awssdk.core.document.internal.MapDocument;
+import software.amazon.awssdk.services.bedrockruntime.model.AnyToolChoice;
+import software.amazon.awssdk.services.bedrockruntime.model.AutoToolChoice;
 import software.amazon.awssdk.services.bedrockruntime.model.ContentBlock;
 import software.amazon.awssdk.services.bedrockruntime.model.ContentBlockDelta;
 import software.amazon.awssdk.services.bedrockruntime.model.ContentBlockStart;
@@ -25,8 +28,10 @@ import software.amazon.awssdk.services.bedrockruntime.model.InferenceConfigurati
 import software.amazon.awssdk.services.bedrockruntime.model.Message;
 import software.amazon.awssdk.services.bedrockruntime.model.ReasoningContentBlock;
 import software.amazon.awssdk.services.bedrockruntime.model.ReasoningTextBlock;
+import software.amazon.awssdk.services.bedrockruntime.model.SpecificToolChoice;
 import software.amazon.awssdk.services.bedrockruntime.model.SystemContentBlock;
 import software.amazon.awssdk.services.bedrockruntime.model.TokenUsage;
+import software.amazon.awssdk.services.bedrockruntime.model.ToolChoice;
 import software.amazon.awssdk.services.bedrockruntime.model.ToolConfiguration;
 import software.amazon.awssdk.services.bedrockruntime.model.ToolInputSchema;
 import software.amazon.awssdk.services.bedrockruntime.model.ToolResultBlock;
@@ -39,12 +44,14 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+@Slf4j
 public class AwsCompletionConverter {
 
     /**
@@ -69,8 +76,9 @@ public class AwsCompletionConverter {
                     .system(pair.getLeft().isEmpty() ? null : pair.getLeft())
                     .messages(pair.getRight())
                     .inferenceConfig(convert2AwsReqConfig(openAIRequest))
-                    .toolConfig(CollectionUtils.isEmpty(openAIRequest.getTools()) ? null :
-                            convert2AwsTool(openAIRequest.getTools()));
+                    .toolConfig(CollectionUtils.isEmpty(openAIRequest.getTools())
+                            ? null
+                            : convert2AwsTool(openAIRequest.getTools(), openAIRequest.getTool_choice()));
             if(MapUtils.isNotEmpty(property.additionalParams)) {
                 builder.additionalModelRequestFields(convertObjectToDocument(property.additionalParams));
             }
@@ -91,7 +99,9 @@ public class AwsCompletionConverter {
                     .system(pair.getLeft().isEmpty() ? null : pair.getLeft())
                     .messages(pair.getRight())
                     .inferenceConfig(convert2AwsReqConfig(openAIRequest))
-                    .toolConfig(CollectionUtils.isEmpty(openAIRequest.getTools()) ? null : convert2AwsTool(openAIRequest.getTools()));
+                    .toolConfig(CollectionUtils.isEmpty(openAIRequest.getTools())
+                            ? null
+                            : convert2AwsTool(openAIRequest.getTools(), openAIRequest.getTool_choice()));
             if(MapUtils.isNotEmpty(property.additionalParams)) {
                 builder.additionalModelRequestFields(convertObjectToDocument(property.additionalParams));
             }
@@ -243,7 +253,7 @@ public class AwsCompletionConverter {
         List<ContentBlock> currentContents = new ArrayList<>();
         for (com.ke.bella.openapi.protocol.completion.Message message : openAIMsgList) {
             String role = message.getRole().equals("tool") ? "user" : message.getRole();
-            if(role.equals("system")) {
+            if(role.equals("system") || role.equals("developer")) {
                 if(message.getContent() != null && !"".equals(message.getContent())) {
                     systemContentBlocks.add(convert2AwsSystemContent(message));
                 }
@@ -251,7 +261,7 @@ public class AwsCompletionConverter {
                 if(!role.equals(currentRole)) {
                     if(CollectionUtils.isNotEmpty(currentContents)) {
                         messages.add(software.amazon.awssdk.services.bedrockruntime.model.Message.builder()
-                                .role(role.equals("user") ? ConversationRole.USER : ConversationRole.ASSISTANT)
+                                .role(currentRole.equals("user") ? ConversationRole.USER : ConversationRole.ASSISTANT)
                                 .content(currentContents)
                                 .build());
                         currentContents = new ArrayList<>();
@@ -285,24 +295,40 @@ public class AwsCompletionConverter {
                             .content(ToolResultContentBlock.fromText(message.getContent().toString()))
                             .build()));
         } else {
-            if(message.getContent() instanceof String) {
-                contentBlocks.add(convert2TextBlock((String) message.getContent()));
-            } else {
-                List<Object> contentList = (List<Object>) message.getContent();
-                for (Object content : contentList) {
-                    Map contentMap = (Map) content;
-                    String type = contentMap.get("type").toString();
-                    if(type.equals("text")) {
-                        contentBlocks.add(convert2TextBlock(contentMap.get("text").toString()));
-                    } else if(type.equals("image_url")) {
-                        String url = ((Map) contentMap.get("image_url")).get("url").toString();
-                        contentBlocks.add(convert2ImageBlock(url));
-                    } else if(type.equals("function")) {
-                        List toolCalls = (List) contentMap.get("tool_calls");
-                        for (Object toolCall : toolCalls) {
-                            contentBlocks.add(convert2ToolUseBlock((Map) toolCall));
+            if(message.getContent() != null) {
+                if(message.getContent() instanceof String) {
+                    contentBlocks.add(convert2TextBlock((String) message.getContent()));
+                } else if(message.getContent() instanceof List) {
+                    List<Object> contentList = (List<Object>) message.getContent();
+                    for (Object content : contentList) {
+                        Map contentMap = (Map) content;
+                        String type = contentMap.get("type").toString();
+                        if(type.equals("text")) {
+                            contentBlocks.add(convert2TextBlock(contentMap.get("text").toString()));
+                        } else if(type.equals("image_url")) {
+                            String url = ((Map) contentMap.get("image_url")).get("url").toString();
+                            contentBlocks.add(convert2ImageBlock(url));
+                        } else if(type.equals("function")) {
+                            List toolCalls = (List) contentMap.get("tool_calls");
+                            for (Object toolCall : toolCalls) {
+                                Map toolCallMap = (Map) toolCall;
+                                String id = toolCallMap.get("id").toString();
+                                Map<String, Object> functionMap = (Map<String, Object>) toolCallMap.get("function");
+                                String name = functionMap.get("name").toString();
+                                String arguments = functionMap.get("arguments").toString();
+                                contentBlocks.add(convert2ToolUseBlock(id, name, arguments));
+                            }
                         }
                     }
+                }
+            }
+
+            if(message.getTool_calls() != null && !message.getTool_calls().isEmpty()) {
+                for (com.ke.bella.openapi.protocol.completion.Message.ToolCall toolCall : message.getTool_calls()) {
+                    contentBlocks.add(convert2ToolUseBlock(
+                            toolCall.getId(),
+                            toolCall.getFunction().getName(),
+                            toolCall.getFunction().getArguments()));
                 }
             }
         }
@@ -314,13 +340,12 @@ public class AwsCompletionConverter {
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    private static ContentBlock convert2ToolUseBlock(Map toolCall) {
-        Map<String, Object> map = (Map<String, Object>) toolCall.get("function");
+    private static ContentBlock convert2ToolUseBlock(String toolUseId, String name, String arguments) {
         return ContentBlock.fromToolUse(ToolUseBlock
                 .builder()
-                .toolUseId(toolCall.get("tool_call_id").toString())
-                .name(map.get("name").toString())
-                .input(convertMapToDocument(JacksonUtils.deserialize(map.get("arguments").toString(), Map.class)))
+                .toolUseId(toolUseId)
+                .name(name)
+                .input(convertMapToDocument(JacksonUtils.deserialize(arguments, Map.class)))
                 .build());
     }
 
@@ -341,18 +366,68 @@ public class AwsCompletionConverter {
                 .build();
     }
 
-    private static ToolConfiguration convert2AwsTool(List<com.ke.bella.openapi.protocol.completion.Message.Tool> tools) {
+    private static ToolConfiguration convert2AwsTool(List<com.ke.bella.openapi.protocol.completion.Message.Tool> tools, Object toolChoice) {
         List<software.amazon.awssdk.services.bedrockruntime.model.Tool> list = new ArrayList<>();
         for (com.ke.bella.openapi.protocol.completion.Message.Tool tool : tools) {
             list.add(convert2AwsTool(tool));
         }
-        return ToolConfiguration.builder()
-                .tools(list)
-                .build();
+
+        ToolConfiguration.Builder builder = ToolConfiguration.builder().tools(list);
+
+        if(toolChoice == null) {
+            // 默认为auto
+            builder.toolChoice(ToolChoice.fromAuto(AutoToolChoice.builder().build()));
+        } else if(toolChoice instanceof String) {
+            String choice = (String) toolChoice;
+            switch (choice.toLowerCase()) {
+            case "none":
+                // AWS没有直接对应的"none"选项
+                builder.tools(Collections.emptyList());
+                builder.toolChoice(ToolChoice.fromAuto(AutoToolChoice.builder().build()));
+                break;
+            case "auto":
+                builder.toolChoice(ToolChoice.fromAuto(AutoToolChoice.builder().build()));
+                break;
+            case "required":
+                builder.toolChoice(ToolChoice.fromAny(AnyToolChoice.builder().build()));
+                break;
+            default:
+                builder.toolChoice(ToolChoice.fromAuto(AutoToolChoice.builder().build())); // 默认为auto
+                break;
+            }
+        } else if(toolChoice instanceof Map) {
+            try {
+                Map<String, Object> choiceMap = (Map<String, Object>) toolChoice;
+                String type = (String) choiceMap.get("type");
+
+                if("function".equals(type)) {
+                    // 指定特定函数
+                    String functionName = (String) choiceMap.get("name");
+                    if(functionName != null && !functionName.isEmpty()) {
+                        // 使用fromTool方法并设置工具名称
+                        builder.toolChoice(ToolChoice.fromTool(SpecificToolChoice.builder().name(functionName).build()));
+                    } else {
+                        builder.toolChoice(ToolChoice.fromAuto(AutoToolChoice.builder().build())); // 如果未指定函数名，默认为auto
+                    }
+                } else {
+                    // 其他内置工具类型，默认为auto
+                    builder.toolChoice(ToolChoice.fromAuto(AutoToolChoice.builder().build()));
+                }
+            } catch (Exception e) {
+                LOGGER.warn("Failed to parse toolChoice object: {}", e.getMessage());
+                builder.toolChoice(ToolChoice.fromAuto(AutoToolChoice.builder().build())); // 解析失败，默认为auto
+            }
+        } else {
+            // 其他类型，默认为auto
+            builder.toolChoice(ToolChoice.fromAuto(AutoToolChoice.builder().build()));
+        }
+
+        return builder.build();
     }
 
     @SuppressWarnings({ "rawtypes" })
-    private static software.amazon.awssdk.services.bedrockruntime.model.Tool convert2AwsTool(com.ke.bella.openapi.protocol.completion.Message.Tool tool) {
+    private static software.amazon.awssdk.services.bedrockruntime.model.Tool convert2AwsTool(
+            com.ke.bella.openapi.protocol.completion.Message.Tool tool) {
         Map schemaMap = JacksonUtils.toMap(tool.getFunction().getParameters());
         software.amazon.awssdk.services.bedrockruntime.model.ToolSpecification.Builder toolBuilder = software.amazon.awssdk.services.bedrockruntime.model.ToolSpecification
                 .builder();

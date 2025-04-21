@@ -81,7 +81,7 @@ export default function SpeechPlayground() {
 
       // 准备请求参数
       const protocol = typeof window !== 'undefined' ? window.location.protocol : 'http:';
-      const host = api_host || 'localhost:8080';
+      const host = api_host || window.location.host;
       const url = `${protocol}//${host}/v1/audio/speech`;
 
       const requestBody = {

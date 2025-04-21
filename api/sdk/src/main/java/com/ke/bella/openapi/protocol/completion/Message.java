@@ -88,7 +88,7 @@ public class Message {
 
         @JsonProperty("id")
         public String getId() {
-            return StringUtils.isBlank(id) ? UUID.randomUUID().toString() : id;
+            return StringUtils.isBlank(id) ? "" : id;
         }
 
         public static ToolCall fromFunctionName(String name, int index) {

@@ -15,13 +15,16 @@
     <relativePath />
   </parent>
 
-  <groupId>com.ke.bella.openapi</groupId>
+  <groupId>io.github.bella-top</groupId>
   <artifactId>bella-openapi</artifactId>
-  <version>2.0.2-SNAPSHOT</version>
+  <version>1.0.0</version>
   <name>bella-openapi</name>
-  <description>bella-openapi</description>
+  <description>Bella OpenAPI SDK</description>
+  <url>https://github.com/bella-top/bella-openapi</url>
 
   <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <java.version>1.8</java.version>
     <spring-cloud.version>Hoxton.SR12</spring-cloud.version>
     <ke-infrastructure.version>2.1.28</ke-infrastructure.version>
@@ -29,6 +32,42 @@
     <redisson.version>3.9.1</redisson.version>
     <apollo.version>2.1.0</apollo.version>
   </properties>
+
+  <licenses>
+    <license>
+      <name>The Apache License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <name>Bella</name>
+      <email>bellatop999@gmail.com</email>
+      <organization>Bella</organization>
+      <organizationUrl>https://api.bella.top</organizationUrl>
+    </developer>
+  </developers>
+
+  <scm>
+    <connection>scm:git:git://github.com/bella-top/bella-openapi.git</connection>
+    <developerConnection>scm:git:ssh://github.com:bella-top/bella-openapi.git</developerConnection>
+    <url>https://github.com/bella-top/bella-openapi/tree/main</url>
+  </scm>
+
+  <distributionManagement>
+    <repository>
+      <id>central</id>
+      <name>Central Repository</name>
+      <url>https://central.sonatype.com/maven/v1</url>
+    </repository>
+    <snapshotRepository>
+      <id>central</id>
+      <name>Central Repository</name>
+      <url>https://central.sonatype.com/maven/v1</url>
+    </snapshotRepository>
+  </distributionManagement>
+
 
   <dependencyManagement>
     <dependencies>
@@ -77,15 +116,87 @@
     </dependencies>
   </dependencyManagement>
 
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-deploy-plugin</artifactId>
-        <configuration>
-          <skip>false</skip>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
+  <profiles>
+    <profile>
+      <id>release</id>
+      <build>
+        <plugins>
+          <!-- 源码插件 -->
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-source-plugin</artifactId>
+            <version>3.2.1</version>
+            <executions>
+              <execution>
+                <id>attach-sources</id>
+                <goals>
+                  <goal>jar-no-fork</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+
+          <!-- Javadoc插件 -->
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <version>3.3.0</version>
+            <configuration>
+              <encoding>UTF-8</encoding>
+              <charset>UTF-8</charset>
+              <docencoding>UTF-8</docencoding>
+              <failOnError>false</failOnError>
+              <doclint>none</doclint>
+            </configuration>
+            <executions>
+              <execution>
+                <id>attach-javadocs</id>
+                <goals>
+                  <goal>jar</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+
+          <!-- GPG签名插件 -->
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-gpg-plugin</artifactId>
+            <version>3.0.1</version>
+            <configuration>
+              <gpgArguments>
+                <arg>--pinentry-mode</arg>
+                <arg>loopback</arg>
+              </gpgArguments>
+              <passphrase>${env.MAVEN_GPG_PASSPHRASE}</passphrase>
+            </configuration>
+            <executions>
+              <execution>
+                <id>sign-artifacts</id>
+                <phase>verify</phase>
+                <goals>
+                  <goal>sign</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+
+          <!-- maven deploy插件 -->
+          <plugin>
+            <groupId>org.sonatype.central</groupId>
+            <artifactId>central-publishing-maven-plugin</artifactId>
+            <version>0.7.0</version>
+            <extensions>true</extensions>
+            <configuration>
+              <publishingServerId>central</publishingServerId>
+              <autoPublish>true</autoPublish>
+              <excludeArtifacts>
+                <excludeArtifact>server</excludeArtifact>
+              </excludeArtifacts>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>

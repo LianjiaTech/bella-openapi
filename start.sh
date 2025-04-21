@@ -8,11 +8,11 @@ show_help() {
     echo "  -b, --build      重新构建服务"
     echo "  -r, --rebuild    强制重新构建服务（不使用缓存）"
     echo "  -e, --env ENV    指定环境（dev, test, prod）"
-    echo "  --skip-auth      新生成系统API Key时跳过管理员授权步骤"
     echo "  -v, --version VERSION 指定镜像版本"
+    echo "  --skip-auth      新生成系统API Key时跳过管理员授权步骤"
     echo "  --push           构建后推送镜像到仓库（自动设置--build，推送后不启动）"
-    echo "  --registry username   指定推送的docker仓库 (username)"
     echo "  --update-image   从远程仓库更新镜像，即使本地已存在"
+    echo "  --registry username   指定推送的docker仓库 (username)"
     echo "  --github-oauth CLIENT_ID:CLIENT_SECRET    配置GitHub OAuth"
     echo "  --google-oauth CLIENT_ID:CLIENT_SECRET    配置Google OAuth"
     echo "  --server URL                              配置服务域名，必须包含协议前缀 (例如: http://example.com 或 https://example.com)"
@@ -24,6 +24,7 @@ show_help() {
     echo "  --proxy-domains DOMAINS                   配置需要通过代理访问的域名，多个域名用逗号分隔"
     echo "  --restart SERVICE                         重启指定服务，不重新编译 (例如: api 或 web)"
     echo "  --nginx-port PORT                         指定Nginx服务映射到的端口，默认为80"
+    echo "  --services SERVICES                       配置动态服务，只支持同docker服务网络下部署的服务，使用容器名转发，格式为 '服务名1:域名1:端口1,服务名2:域名2:端口2'"
     echo ""
     echo "示例:"
     echo "  ./start.sh           启动服务（如果已存在编译文件则不重新构建）"
@@ -42,6 +43,7 @@ show_help() {
     echo "  ./start.sh --restart api    仅重启 API 服务，不重新编译"
     echo "  ./start.sh --restart web    仅重启 Web 服务，不重新编译"
     echo "  ./start.sh --nginx-port 8080  使用端口8080启动Nginx服务，其他服务不占用物理机端口"
+    echo "  ./start.sh --services 'service1:example1.com:80,service2:example2.com:8080'   配置动态服务"
     echo ""
     echo "版本参数:"
     echo "  --version VERSION    指定镜像版本，例如 --version v1.0.0"
@@ -74,6 +76,8 @@ PROXY_TYPE=""
 PROXY_DOMAINS=""
 # Nginx端口
 NGINX_PORT="80"
+# 动态服务配置
+SERVICES=""
 
 # 添加重试函数
 retry_command() {
@@ -170,9 +174,11 @@ pre_pull_images() {
     # 拉取基础镜像（如果本地不存在）
     pull_image_if_not_exists "openjdk:8" "拉取 OpenJDK 镜像..."
     pull_image_if_not_exists "docker.ipigsy.com/library/node:20.11-alpine3.19" "拉取 Node.js 镜像..."
-    pull_image_if_not_exists "nginx:latest" "拉取 Nginx 镜像..."
-    pull_image_if_not_exists "mysql:8.0" "拉取 MySQL 镜像..."
-    pull_image_if_not_exists "redis:6" "拉取 Redis 镜像..."
+    if [ "$PUSH" == "false" ]; then
+        pull_image_if_not_exists "nginx:latest" "拉取 Nginx 镜像..."
+        pull_image_if_not_exists "mysql:8.0" "拉取 MySQL 镜像..."
+        pull_image_if_not_exists "redis:6" "拉取 Redis 镜像..."
+    fi
     
     # 如果不需要编译（没有 --build 参数），则拉取应用镜像
     if [ -z "$BUILD" ]; then
@@ -186,6 +192,170 @@ pre_pull_images() {
     fi
     
     echo "所有镜像拉取完成"
+}
+
+# 生成服务配置
+generate_service_configs() {
+    # 如果没有配置服务，返回空
+    if [ -z "$SERVICES" ]; then
+        echo "# 没有配置动态服务"
+        return
+    fi
+    
+    # 初始化服务配置字符串
+    local service_configs=""
+    
+    # 处理每个服务配置
+    IFS=',' read -ra SERVICE_ARRAY <<< "$SERVICES"
+    for service_config in "${SERVICE_ARRAY[@]}"; do
+        # 解析服务配置（格式：服务名:域名:端口）
+        IFS=':' read -ra CONFIG <<< "$service_config"
+        local service_name="${CONFIG[0]}"
+        local service_domain="${CONFIG[1]}"
+        local service_port="${CONFIG[2]:-80}"
+        
+        if [ -z "$service_name" ] || [ -z "$service_domain" ] || [ -z "$service_port" ]; then
+            echo "警告: 服务配置格式不正确: $service_config，应为 服务名:域名:端口"
+            continue
+        fi
+        
+        # 获取容器名（服务名加前缀）
+        local container_name="$service_name"
+        
+        # 生成服务配置
+        service_configs+=$(cat <<EOF
+
+# $service_name 服务域名配置
+server {
+    listen       80;
+    listen  [::]:80;
+    server_name  $service_domain;
+
+    # 访问日志
+    access_log  /var/log/nginx/$(echo $service_name | tr -d ' ').access.log  main;
+
+    # 添加resolver指令，避免启动时检查upstream主机
+    resolver 127.0.0.11 valid=30s;
+
+    # 所有请求转发到 $service_name 服务
+    location / {
+        set \$backend "$container_name:$service_port";
+        proxy_pass http://\$backend;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header X-Forwarded-Host \$host;
+        proxy_set_header X-Forwarded-Port \$server_port;
+        
+        # 添加WebSocket支持
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+        
+        # 确保原始请求方法和头信息传递
+        proxy_pass_request_headers on;
+        proxy_pass_request_body on;
+    }
+}
+EOF
+)
+    done
+    
+    echo "$service_configs"
+}
+
+# 构建函数 - 处理所有构建逻辑
+build_services() {
+    # 设置缓存选项
+    CACHE_OPT=""
+    if [ -n "$NO_CACHE" ]; then
+        CACHE_OPT="--no-cache"
+    fi
+    
+    # 执行 API 服务的 Maven 编译
+    echo "执行 API 服务的 Maven 编译..."
+    chmod +x api/build.sh
+    ./api/build.sh
+    if [ $? -ne 0 ]; then
+        echo "错误: API 服务编译失败，退出执行"
+        exit 1
+    fi
+    
+    # 根据是否需要推送镜像选择构建方式
+    if [ "$PUSH" = true ] && [ -n "$REGISTRY" ]; then
+        # 多架构构建并推送
+        if docker buildx version >/dev/null 2>&1; then
+            echo "使用 buildx 进行多架构构建并推送..."
+            
+            # 清理 builder 缓存，避免磁盘空间不足
+            echo "清理 buildx 缓存..."
+            docker buildx prune -f
+            
+            # 删除并重新创建 builder 实例，确保干净的构建环境
+            echo "重新创建 buildx builder 实例..."
+            docker buildx rm multibuilder 2>/dev/null || true
+            docker buildx create --name multibuilder --driver docker-container --bootstrap --use
+            
+            # 确认 builder 状态
+            echo "检查 builder 状态..."
+            docker buildx inspect --bootstrap
+            
+            # 推送时使用多架构
+            PLATFORMS="linux/amd64,linux/arm64"
+            echo "推送多架构镜像，支持平台: $PLATFORMS"
+            
+            # 构建并推送 API 多架构镜像
+            echo "构建并推送 API 多架构镜像..."
+            docker buildx build $CACHE_OPT \
+                --platform $PLATFORMS \
+                --build-arg VERSION=${VERSION:-v1.0.0} \
+                --build-arg REGISTRY=${REGISTRY:-bellatop} \
+                -t ${REGISTRY:-bellatop}/bella-openapi-api:${VERSION:-v1.0.0} \
+                -t ${REGISTRY:-bellatop}/bella-openapi-api:latest \
+                --push ./api
+                
+            # 构建并推送 Web 多架构镜像
+            echo "构建并推送 Web 多架构镜像..."
+            docker buildx build $CACHE_OPT \
+                --platform $PLATFORMS \
+                --build-arg VERSION=${VERSION:-v1.0.0} \
+                --build-arg REGISTRY=${REGISTRY:-bellatop} \
+                -t ${REGISTRY:-bellatop}/bella-openapi-web:${VERSION:-v1.0.0} \
+                -t ${REGISTRY:-bellatop}/bella-openapi-web:latest \
+                --push ./web
+                
+            echo "验证多架构镜像..."
+            docker buildx imagetools inspect ${REGISTRY:-bellatop}/bella-openapi-api:${VERSION:-v1.0.0}
+            docker buildx imagetools inspect ${REGISTRY:-bellatop}/bella-openapi-web:${VERSION:-v1.0.0}
+                
+            echo "✅ 多架构镜像已成功推送到 ${REGISTRY:-bellatop}"
+            echo "   这些镜像可以在任何支持的平台上运行，包括:"
+            echo "   - x86_64/amd64 系统 (大多数 Linux 服务器、Intel Mac、Windows)"
+            echo "   - ARM64 系统 (Apple Silicon Mac、AWS Graviton、树莓派 4 64位)"
+            
+            # 推送后不自动启动服务，直接退出
+            echo ""
+            echo "镜像已成功推送，可以在服务器上使用以下命令拉取和启动服务:"
+            echo "./start.sh --registry ${REGISTRY:-bellatop} --version ${VERSION:-v1.0.0}"
+            exit 0
+        else
+            echo "错误: buildx 不可用，无法构建多架构镜像"
+            exit 1
+        fi
+    else
+        # 本地构建，使用 docker-compose
+        echo "本地构建，使用 docker-compose..."
+        if [ -n "$NO_CACHE" ]; then
+            echo "强制重新构建（不使用缓存）..."
+            docker-compose build --no-cache --build-arg VERSION=${VERSION:-v1.0.0} --build-arg REGISTRY=${REGISTRY:-bellatop} --build-arg NODE_ENV=$NODE_ENV --build-arg DEPLOY_ENV=$DEPLOY_ENV
+        else
+            echo "重新构建..."
+            docker-compose build --build-arg VERSION=${VERSION:-v1.0.0} --build-arg REGISTRY=${REGISTRY:-bellatop} --build-arg NODE_ENV=$NODE_ENV --build-arg DEPLOY_ENV=$DEPLOY_ENV
+        fi
+    fi
 }
 
 # 解析命令行参数
@@ -276,6 +446,10 @@ while [[ $# -gt 0 ]]; do
             NGINX_PORT="$2"
             shift 2
             ;;
+        --services)
+            SERVICES="$2"
+            shift 2
+            ;;
         *)
             echo "未知选项: $1"
             show_help
@@ -283,6 +457,38 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
+
+pre_pull_images
+
+# 执行构建（如果需要）
+if [ -n "$BUILD" ] || [ -n "$FORCE_RECREATE" ]; then
+    echo "构建服务..."
+    build_services
+fi
+
+# 如果指定了重启特定服务
+if [ -n "$RESTART_SERVICE" ]; then
+    echo "重启 $RESTART_SERVICE 服务..."
+    docker-compose restart $RESTART_SERVICE
+    echo "$RESTART_SERVICE 服务已重启"
+    exit 0
+fi
+
+# 生成动态服务配置
+if [ -n "$SERVICES" ]; then
+    echo "生成动态服务配置..."
+    # 生成动态服务配置并写入到文件中
+    DYNAMIC_SERVICE_CONFIGS=$(generate_service_configs)
+else
+    # 如果没有配置服务，创建一个只包含注释的配置文件
+    DYNAMIC_SERVICE_CONFIGS="# 没有配置动态服务"
+fi
+# 创建nginx配置目录（如果不存在）
+mkdir -p ./nginx/conf.d
+# 删除旧的配置文件
+rm -rf ./nginx/conf.d/dynamic-services.conf
+# 将动态服务配置写入到单独的配置文件中
+echo "$DYNAMIC_SERVICE_CONFIGS" > ./nginx/conf.d/dynamic-services.conf
 
 # 处理OAuth配置
 if [ -n "$GITHUB_OAUTH" ]; then
@@ -376,9 +582,6 @@ fi
 export VERSION=$VERSION
 export NGINX_PORT=$NGINX_PORT
 
-# 预先拉取所需的 Docker 镜像
-pre_pull_images
-
 # 验证环境参数
 if [[ "$ENV" != "dev" && "$ENV" != "test" && "$ENV" != "prod" ]]; then
     echo "错误: 环境必须是 dev, test 或 prod"
@@ -408,15 +611,9 @@ echo "环境: $ENV (前端: NODE_ENV=$NODE_ENV, DEPLOY_ENV=$DEPLOY_ENV, 后端: 
 echo "镜像版本: $VERSION"
 
 # 导出环境变量，供 docker-compose.yml 使用
-export SPRING_PROFILE=$SPRING_PROFILE
+export SPRING_PROFILES_ACTIVE=$SPRING_PROFILE
 export NODE_ENV=$NODE_ENV
 export DEPLOY_ENV=$DEPLOY_ENV
-
-# 根据环境修改 docker-compose.yml 文件中的环境变量
-sed -i.bak "s/SPRING_PROFILES_ACTIVE=.*/SPRING_PROFILES_ACTIVE=$SPRING_PROFILE/g" docker-compose.yml
-rm docker-compose.yml.bak
-
-echo "启动 Bella OpenAPI 服务..."
 
 # 检查 docker 和 docker-compose 是否安装
 if ! command -v docker &> /dev/null; then
@@ -427,111 +624,6 @@ fi
 if ! command -v docker-compose &> /dev/null; then
     echo "错误: docker-compose 未安装"
     exit 1
-fi
-
-# 构建函数 - 处理所有构建逻辑
-build_services() {
-    # 设置缓存选项
-    CACHE_OPT=""
-    if [ -n "$NO_CACHE" ]; then
-        CACHE_OPT="--no-cache"
-    fi
-    
-    # 执行 API 服务的 Maven 编译
-    echo "执行 API 服务的 Maven 编译..."
-    chmod +x api/build.sh
-    ./api/build.sh
-    if [ $? -ne 0 ]; then
-        echo "错误: API 服务编译失败，退出执行"
-        exit 1
-    fi
-    
-    # 根据是否需要推送镜像选择构建方式
-    if [ "$PUSH" = true ] && [ -n "$REGISTRY" ]; then
-        # 多架构构建并推送
-        if docker buildx version >/dev/null 2>&1; then
-            echo "使用 buildx 进行多架构构建并推送..."
-            
-            # 清理 builder 缓存，避免磁盘空间不足
-            echo "清理 buildx 缓存..."
-            docker buildx prune -f
-            
-            # 删除并重新创建 builder 实例，确保干净的构建环境
-            echo "重新创建 buildx builder 实例..."
-            docker buildx rm multibuilder 2>/dev/null || true
-            docker buildx create --name multibuilder --driver docker-container --bootstrap --use
-            
-            # 确认 builder 状态
-            echo "检查 builder 状态..."
-            docker buildx inspect --bootstrap
-            
-            # 推送时使用多架构
-            PLATFORMS="linux/amd64,linux/arm64"
-            echo "推送多架构镜像，支持平台: $PLATFORMS"
-            
-            # 构建并推送 API 多架构镜像
-            echo "构建并推送 API 多架构镜像..."
-            docker buildx build $CACHE_OPT \
-                --platform $PLATFORMS \
-                --build-arg VERSION=${VERSION:-v1.0.0} \
-                --build-arg REGISTRY=${REGISTRY:-bellatop} \
-                -t ${REGISTRY:-bellatop}/bella-openapi-api:${VERSION:-v1.0.0} \
-                -t ${REGISTRY:-bellatop}/bella-openapi-api:latest \
-                --push ./api
-                
-            # 构建并推送 Web 多架构镜像
-            echo "构建并推送 Web 多架构镜像..."
-            docker buildx build $CACHE_OPT \
-                --platform $PLATFORMS \
-                --build-arg VERSION=${VERSION:-v1.0.0} \
-                --build-arg REGISTRY=${REGISTRY:-bellatop} \
-                -t ${REGISTRY:-bellatop}/bella-openapi-web:${VERSION:-v1.0.0} \
-                -t ${REGISTRY:-bellatop}/bella-openapi-web:latest \
-                --push ./web
-                
-            echo "验证多架构镜像..."
-            docker buildx imagetools inspect ${REGISTRY:-bellatop}/bella-openapi-api:${VERSION:-v1.0.0}
-            docker buildx imagetools inspect ${REGISTRY:-bellatop}/bella-openapi-web:${VERSION:-v1.0.0}
-                
-            echo "✅ 多架构镜像已成功推送到 ${REGISTRY:-bellatop}"
-            echo "   这些镜像可以在任何支持的平台上运行，包括:"
-            echo "   - x86_64/amd64 系统 (大多数 Linux 服务器、Intel Mac、Windows)"
-            echo "   - ARM64 系统 (Apple Silicon Mac、AWS Graviton、树莓派 4 64位)"
-            
-            # 推送后不自动启动服务，直接退出
-            echo ""
-            echo "镜像已成功推送，可以在服务器上使用以下命令拉取和启动服务:"
-            echo "./start.sh --registry ${REGISTRY:-bellatop} --version ${VERSION:-v1.0.0}"
-            exit 0
-        else
-            echo "错误: buildx 不可用，无法构建多架构镜像"
-            exit 1
-        fi
-    else
-        # 本地构建，使用 docker-compose
-        echo "本地构建，使用 docker-compose..."
-        if [ -n "$NO_CACHE" ]; then
-            echo "强制重新构建（不使用缓存）..."
-            docker-compose build --no-cache --build-arg VERSION=${VERSION:-v1.0.0} --build-arg REGISTRY=${REGISTRY:-bellatop} --build-arg NODE_ENV=$NODE_ENV --build-arg DEPLOY_ENV=$DEPLOY_ENV
-        else
-            echo "重新构建..."
-            docker-compose build --build-arg VERSION=${VERSION:-v1.0.0} --build-arg REGISTRY=${REGISTRY:-bellatop} --build-arg NODE_ENV=$NODE_ENV --build-arg DEPLOY_ENV=$DEPLOY_ENV
-        fi
-    fi
-}
-
-# 执行构建（如果需要）
-if [ -n "$BUILD" ] || [ -n "$FORCE_RECREATE" ]; then
-    echo "构建服务..."
-    build_services
-fi
-
-# 如果指定了重启特定服务
-if [ -n "$RESTART_SERVICE" ]; then
-    echo "重启 $RESTART_SERVICE 服务..."
-    docker-compose restart $RESTART_SERVICE
-    echo "$RESTART_SERVICE 服务已重启"
-    exit 0
 fi
 
 # 启动服务

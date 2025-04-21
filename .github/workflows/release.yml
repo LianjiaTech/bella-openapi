@@ -1,0 +1,161 @@
+name: Release Bella OpenAPI
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_run:
+    workflows: ["Create Release Tag"]
+    types:
+      - completed
+    branches:
+      - main
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Get tag version
+        id: get-tag
+        run: |
+          if [[ "${{ github.event_name }}" == "push" && "${{ github.ref_type }}" == "tag" ]]; then
+            # 直接从标签推送事件中获取标签名
+            TAG="${{ github.ref_name }}"
+          else
+            # 从仓库中获取最新的标签
+            git fetch --tags
+            TAG=$(git tag -l "v*" | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1)
+            echo "Retrieved latest tag: $TAG"
+          fi
+          VERSION=$TAG
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Using tag and version: $TAG"
+
+      - name: Set up JDK 8
+        uses: actions/setup-java@v3
+        with:
+          java-version: '8'
+          distribution: 'temurin'
+          cache: 'maven'
+          server-id: central
+          server-username: CENTRAL_USERNAME
+          server-password: CENTRAL_TOKEN
+          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+
+      - name: Check if version exists in Maven Central
+        id: version-check
+        run: |
+          cd api
+          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          GROUP_ID=$(mvn help:evaluate -Dexpression=project.groupId -q -DforceStdout)
+          # 将点号替换为斜杠，用于构建 URL 路径
+          GROUP_PATH=${GROUP_ID//./\/}
+          
+          echo "Current version: $VERSION, GroupId: $GROUP_ID, GroupPath: $GROUP_PATH"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          
+          # 等待几秒，确保 Maven 中央仓库的索引更新
+          sleep 5
+          
+          # 检查 Parent POM 是否已发布
+          PARENT_URL="https://repo1.maven.org/maven2/${GROUP_PATH}/bella-openapi/$VERSION/bella-openapi-$VERSION.pom"
+          echo "Checking Parent POM URL: $PARENT_URL"
+          if curl -s --head --fail "$PARENT_URL" &>/dev/null; then
+            echo "Parent POM version $VERSION already exists in Maven Central"
+            echo "SKIP_MAVEN_PUBLISH=true" >> $GITHUB_ENV
+            exit 0
+          else
+            echo "Parent POM version $VERSION does not exist in Maven Central"
+          fi
+          
+          # 检查 SDK 模块是否已发布
+          SDK_URL="https://repo1.maven.org/maven2/${GROUP_PATH}/sdk/$VERSION/sdk-$VERSION.jar"
+          echo "Checking SDK URL: $SDK_URL"
+          if curl -s --head --fail "$SDK_URL" &>/dev/null; then
+            echo "SDK version $VERSION already exists in Maven Central"
+            echo "SKIP_MAVEN_PUBLISH=true" >> $GITHUB_ENV
+            exit 0
+          else
+            echo "SDK version $VERSION does not exist in Maven Central"
+          fi
+          
+          # 检查 SPI 模块是否已发布
+          SPI_URL="https://repo1.maven.org/maven2/${GROUP_PATH}/spi/$VERSION/spi-$VERSION.jar"
+          echo "Checking SPI URL: $SPI_URL"
+          if curl -s --head --fail "$SPI_URL" &>/dev/null; then
+            echo "SPI version $VERSION already exists in Maven Central"
+            echo "SKIP_MAVEN_PUBLISH=true" >> $GITHUB_ENV
+            exit 0
+          else
+            echo "SPI version $VERSION does not exist in Maven Central"
+          fi
+          
+          # 如果所有检查都通过，设置为可以发布
+          echo "No existing versions found in Maven Central. Proceeding with publish."
+          echo "SKIP_MAVEN_PUBLISH=false" >> $GITHUB_ENV
+
+      - name: Publish to Central Portal
+        id: maven-publish
+        if: env.SKIP_MAVEN_PUBLISH != 'true'
+        env:
+          CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
+          CENTRAL_TOKEN: ${{ secrets.CENTRAL_TOKEN }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: |
+          cd api
+          mvn clean deploy -P release -pl sdk,spi -am -DskipTests -e
+          echo "MAVEN_PUBLISHED=true" >> $GITHUB_ENV
+
+      - name: Create SDK Tag
+        if: env.MAVEN_PUBLISHED == 'true'
+        run: |
+          VERSION=${{ steps.get-tag.outputs.version }}
+          SDK_TAG="sdk${VERSION}"
+          
+          # 配置 Git
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          
+          # 检查标签是否已存在
+          if git tag -l "$SDK_TAG" | grep -q "$SDK_TAG"; then
+            echo "SDK tag $SDK_TAG already exists, skipping tag creation"
+          else
+            # 创建带注释的标签
+            git tag -a $SDK_TAG -m "SDK Release $VERSION"
+            
+            # 推送标签
+            git push origin $SDK_TAG
+            
+            echo "Successfully created and pushed SDK tag: $SDK_TAG"
+          fi
+
+      - name: Skip Maven Publish (Version already exists)
+        if: env.SKIP_MAVEN_PUBLISH == 'true'
+        run: |
+          echo "Skipping Maven publish as version already exists in Maven Central"
+          echo "Continuing with Docker image build and push"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to Docker Registry
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Install docker-compose
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker-compose
+
+      - name: Build and Push Docker images
+        env:
+          VERSION: ${{ steps.get-tag.outputs.version }}
+        run: |
+          ./start.sh --build --push --registry ${{ secrets.DOCKER_USERNAME }} --version $VERSION

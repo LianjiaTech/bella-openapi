@@ -17,7 +17,7 @@ RUN npm config set registry https://registry.npmmirror.com/
 
 # 使用 cnpm 安装依赖，更稳定
 RUN npm install -g cnpm --registry=https://registry.npmmirror.com/ \
-    && cnpm install --no-audit --no-fund
+    && cnpm install --no-audit --no-fund --ignore-scripts
 
 # build resources
 FROM base AS builder
