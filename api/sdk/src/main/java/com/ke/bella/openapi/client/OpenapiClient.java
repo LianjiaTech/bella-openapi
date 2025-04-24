@@ -277,7 +277,7 @@ public class OpenapiClient {
 
     public Boolean log(EndpointProcessData processData, String consoleApikey) {
         Assert.hasText(processData.getEndpoint(), "endpoint can not be null");
-        Assert.hasText(processData.getApikey(), "apikey can not be null");
+        Assert.hasText(processData.getAkSha(), "akSha can not be null");
         Assert.hasText(processData.getBellaTraceId(), "bella trace id can not be null");
         processData.setInnerLog(false);
         String url = openapiHost + "/v1/log";

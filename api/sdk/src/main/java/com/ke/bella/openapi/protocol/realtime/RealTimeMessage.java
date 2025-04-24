@@ -1,7 +1,9 @@
 package com.ke.bella.openapi.protocol.realtime;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ke.bella.openapi.protocol.OpenapiResponse;
+import com.ke.bella.openapi.protocol.asr.AsrRequest;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -16,6 +18,7 @@ import java.util.Map;
 public class RealTimeMessage extends OpenapiResponse {
     private static final long serialVersionUID = 1L;
 
+    @JsonIgnore
     private String apikey;
 
     /**

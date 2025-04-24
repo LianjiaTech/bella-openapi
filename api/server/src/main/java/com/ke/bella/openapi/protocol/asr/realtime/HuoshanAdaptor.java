@@ -28,12 +28,13 @@ public class HuoshanAdaptor implements RealTimeAsrAdaptor<HuoshanProperty> {
 
     @Override
     public WebSocket startTranscription(String url, HuoshanProperty property, RealTimeMessage request, Callbacks.WebSocketCallback callback) {
-        Request.Builder builder = authorizationRequestBuilder(property.getAuth());
-        builder.url(url);
-        WebSocket webSocket = HttpUtils.websocketRequest(builder.build(), new BellaWebSocketListener(callback));
-        webSocket.send(JacksonUtils.serialize(request));
+        WebSocket webSocket = HttpUtils.websocketRequest(createRequest(url, property), new BellaWebSocketListener(callback));
         callback.started();
         return webSocket;
+    }
+
+    protected Request createRequest(String url, HuoshanProperty property) {
+        return authorizationRequestBuilder(property.getAuth()).url(url).build();
     }
 
     @Override
@@ -59,7 +60,7 @@ public class HuoshanAdaptor implements RealTimeAsrAdaptor<HuoshanProperty> {
     public Callbacks.WebSocketCallback createCallback(Callbacks.Sender sender, EndpointProcessData processData, EndpointLogger logger,
             String taskId, RealTimeMessage request, HuoshanProperty property) {
         HuoshanRealTimeAsrRequest huoshanRealTimeAsrRequest = new HuoshanRealTimeAsrRequest(request, property);
-        return new HuoshanStreamAsrCallback(huoshanRealTimeAsrRequest, sender, processData, logger, new converter(taskId));
+        return new HuoshanStreamAsrCallback(huoshanRealTimeAsrRequest, sender, processData, logger, new Converter(taskId));
     }
 
     @Override
@@ -72,7 +73,7 @@ public class HuoshanAdaptor implements RealTimeAsrAdaptor<HuoshanProperty> {
         return HuoshanProperty.class;
     }
 
-    public static class converter implements Function<HuoshanRealTimeAsrResponse, List<String>> {
+    private static class Converter implements Function<HuoshanRealTimeAsrResponse, List<String>> {
 
         private final String taskId;
 
@@ -80,7 +81,7 @@ public class HuoshanAdaptor implements RealTimeAsrAdaptor<HuoshanProperty> {
 
         int index = -1;
 
-        public converter(String taskId) {
+        public Converter(String taskId) {
             this.taskId = taskId;
         }
 
@@ -128,10 +129,6 @@ public class HuoshanAdaptor implements RealTimeAsrAdaptor<HuoshanProperty> {
                 result.add(JacksonUtils.serialize(completion));
             }
             return result;
-        }
-
-        private void addMessage(String msg) {
-
         }
     }
 }
