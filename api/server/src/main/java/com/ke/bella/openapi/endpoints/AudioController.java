@@ -72,7 +72,8 @@ public class AudioController {
      * 实时语音识别WebSocket接口
      */
     @RequestMapping({"/realtime", "/asr/stream"})
-    public void asrStream(@RequestParam(required = false) String model, HttpServletRequest request, HttpServletResponse response)
+    public void asrStream(@RequestParam(required = false) String model,
+            HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         if(!"websocket".equalsIgnoreCase(request.getHeader("Upgrade"))) {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);

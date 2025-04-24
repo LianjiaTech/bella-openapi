@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
+import com.ke.bella.openapi.protocol.log.EndpointLogger;
+import com.ke.bella.openapi.protocol.realtime.RealTimeMessage;
 import okhttp3.WebSocket;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.stereotype.Component;
@@ -35,28 +37,9 @@ public class HuoshanAdaptor implements FlashAsrAdaptor<HuoshanProperty> {
         HuoshanRealTimeAsrRequest huoshanRequest = new HuoshanRealTimeAsrRequest(request, property);
         CompletableFuture<List<String>> future = new CompletableFuture();
         Callbacks.Sender sender = buildSender(future);
-        HuoshanStreamAsrCallback callback = new HuoshanStreamAsrCallback(huoshanRequest, sender, processData, null, response -> {
-            if(response.getResult() == null) {
-                return Lists.newArrayList();
-            }
-            return response.getResult().stream()
-                    .map(result -> {
-                        if(CollectionUtils.isEmpty(result.getUtterances())) {
-                            return Lists.newArrayList(result);
-                        } else {
-                            return result.getUtterances();
-                        }
-                    }).flatMap(List::stream)
-                    .map(result -> {
-                        Text text = Text.builder().beginTime(result.getBeginTime())
-                                .endTime(result.getEnd_time())
-                                .text(result.getText())
-                                .build();
-                        return JacksonUtils.serialize(text);
-                    }).collect(Collectors.toList());
-        });
-        Request httpRequest = authorizationRequestBuilder(property.getAuth()).url(url).build();
-        WebSocket webSocket = HttpUtils.websocketRequest(httpRequest, new BellaWebSocketListener(callback));
+        Callbacks.WebSocketCallback callback = createCallback(huoshanRequest, sender, processData);
+        Request websocketRequest = createRequest(url, property);
+        WebSocket webSocket = HttpUtils.websocketRequest(websocketRequest, new BellaWebSocketListener(callback));
         FlashAsrResponse response = responseConverter(future, processData);
         webSocket.close(1000, "client close");
         return response;
@@ -82,7 +65,34 @@ public class HuoshanAdaptor implements FlashAsrAdaptor<HuoshanProperty> {
         private int endTime;
     }
 
-    private Callbacks.Sender buildSender(CompletableFuture<List<String>> future) {
+    protected Callbacks.WebSocketCallback createCallback(HuoshanRealTimeAsrRequest huoshanRequest, Callbacks.Sender sender, EndpointProcessData processData) {
+        return new HuoshanStreamAsrCallback(huoshanRequest, sender, processData, null, response -> {
+            if(response.getResult() == null) {
+                return Lists.newArrayList();
+            }
+            return response.getResult().stream()
+                    .map(result -> {
+                        if(CollectionUtils.isEmpty(result.getUtterances())) {
+                            return Lists.newArrayList(result);
+                        } else {
+                            return result.getUtterances();
+                        }
+                    }).flatMap(List::stream)
+                    .map(result -> {
+                        Text text = Text.builder().beginTime(result.getBeginTime())
+                                .endTime(result.getEnd_time())
+                                .text(result.getText())
+                                .build();
+                        return JacksonUtils.serialize(text);
+                    }).collect(Collectors.toList());
+        });
+    }
+
+    protected Request createRequest(String url, HuoshanProperty property) {
+        return authorizationRequestBuilder(property.getAuth()).url(url).build();
+    }
+
+    protected Callbacks.Sender buildSender(CompletableFuture<List<String>> future) {
         return new Callbacks.Sender() {
             final List<String> texts = new ArrayList<>();
             @Override

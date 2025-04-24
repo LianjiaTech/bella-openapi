@@ -57,7 +57,7 @@ public class FunctionCallContentBuffer extends Reader {
         notifyAll();
 
         last = msg;
-        if(msg.getChoices() == null || msg.getChoices().isEmpty() || StringUtils.isNoneEmpty(msg.finishReason())) {
+        if(msg.getChoices().isEmpty() || StringUtils.isNoneEmpty(msg.finishReason())) {
             lasts.add(msg);
         }
     }

@@ -19,6 +19,7 @@ import java.util.Map;
 public class EndpointProcessData {
     @JsonIgnore
     private String apikey;
+    private String akSha;
     private String requestId;
     private String accountType;
     private String accountCode;
