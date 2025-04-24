@@ -54,6 +54,13 @@ public class HuoshanLMAdaptor extends HuoshanAdaptor {
     }
 
     @Override
+    public boolean stopTranscription(WebSocket webSocket, RealTimeMessage request, Callbacks.WebSocketCallback callback) {
+        HuoshanStreamLMAsrCallback huoshanCallback = (HuoshanStreamLMAsrCallback) callback;
+        huoshanCallback.sendAudioData(webSocket, null, true);
+        return true;
+    }
+
+    @Override
     public String getDescription() {
         return "火山大模型协议";
     }
