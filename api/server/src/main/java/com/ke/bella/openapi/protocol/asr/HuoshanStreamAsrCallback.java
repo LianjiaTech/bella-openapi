@@ -86,7 +86,6 @@ public class HuoshanStreamAsrCallback implements Callbacks.WebSocketCallback {
     // 序列号管理
     private int audioSequence = 0;
 
-    private byte[] cached;
 
     public HuoshanStreamAsrCallback(HuoshanRealTimeAsrRequest request, Callbacks.Sender sender, EndpointProcessData processData,
             EndpointLogger logger, Function<HuoshanRealTimeAsrResponse, List<String>> converter) {
@@ -129,6 +128,7 @@ public class HuoshanStreamAsrCallback implements Callbacks.WebSocketCallback {
 
     @Override
     public void onClosing(WebSocket webSocket, int code, String reason) {
+        complete();
         webSocket.close(1000, "Client closing");
     }
 

@@ -44,6 +44,10 @@ public class StreamCompletionResponse extends OpenapiResponse {
     @JsonIgnore
     private StreamCompletionResponse standardFormat;
 
+    public List<Choice> getChoices() {
+        return choices == null ? Lists.newArrayList() : choices;
+    }
+
     public String content() {
         if(CollectionUtils.isNotEmpty(choices)) {
             return choices.get(0).content();
