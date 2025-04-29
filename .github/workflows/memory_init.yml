@@ -44,4 +44,4 @@ jobs:
           GIT_REMOTE: ${{ github.server_url }}/${{ github.repository }}
           GITHUB_TOKEN: ${{ secrets.GIT_TOKEN }}
         run: |
-          bella-file-memory --mode bot -m gpt-4o -t 0.7 --git-url "${{ github.server_url }}/${{ github.repository }}" --git-token "${{ secrets.GIT_TOKEN }}" -u "${{ secrets.OPENAI_API_BASE }}" -k "${{ secrets.OPENAI_API_KEY }}"
+          bella-file-memory --mode bot -b develop -m gpt-4o -t 0.7 --git-url "${{ github.server_url }}/${{ github.repository }}" --git-token "${{ secrets.GIT_TOKEN }}" -u "${{ secrets.OPENAI_API_BASE }}" -k "${{ secrets.OPENAI_API_KEY }}"

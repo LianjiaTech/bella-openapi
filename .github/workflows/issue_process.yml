@@ -53,4 +53,4 @@ jobs:
           ISSUE_ID: ${{ steps.issue.outputs.issue_id }}
         run: |
           # Run bella-issues-bot in bot mode - it will handle branch creation and pushing
-          bella-issues-bot --mode bot --issue-id ${{ steps.issue.outputs.issue_id }} --core-model coder-model --data-model gpt-4o --core-temperature 0.7 --data-temperature 0.7 --requirement "${{ steps.issue.outputs.requirement }}" --git-url "${{ github.server_url }}/${{ github.repository }}" --git-token "${{ secrets.GIT_TOKEN }}" -u "${{ secrets.OPENAI_API_BASE }}" -k "${{ secrets.OPENAI_API_KEY }}"
+          bella-issues-bot --mode bot -b develop --issue-id ${{ steps.issue.outputs.issue_id }} --core-model coder-model --data-model gpt-4o --core-temperature 0.7 --data-temperature 0.7 --requirement "${{ steps.issue.outputs.requirement }}" --git-url "${{ github.server_url }}/${{ github.repository }}" --git-token "${{ secrets.GIT_TOKEN }}" -u "${{ secrets.OPENAI_API_BASE }}" -k "${{ secrets.OPENAI_API_KEY }}"
