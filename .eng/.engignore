@@ -1,0 +1,42 @@
+# bella-issues-bot 忽略文件配置示例
+# 类似于.gitignore的语法
+# .gitignore中已经配置的规则，无需额外配置
+
+#忽略内部配置
+*-prod.yml
+*-test.yml
+*-local.yml
+*-preview.yml
+*-dev.yml
+*-ut.yml
+api/server/src/test/resources
+wbe/package-lock.json
+web/yarn.lock
+
+# 忽略大型数据文件
+*.csv
+*.parquet
+
+#忽略图片音视频
+*.ico
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.webp
+*.wav
+*.mp3
+*.pcm
+*.mp4
+*.env
+*.woff
+
+#必须配置
+.git/
+.eng/
+.git/
+.eng/
+.github/
+.gitignore
+LICENSE
