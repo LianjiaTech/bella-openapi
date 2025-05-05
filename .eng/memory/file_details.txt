@@ -247,14 +247,14 @@ api/server/src/main/java/com/ke/bella/openapi/protocol/asr/HuoshanLMRealTimeAsrR
 api/server/src/main/java/com/ke/bella/openapi/protocol/asr/HuoshanRealTimeAsrRequest.java:HuoshanRealTimeAsrRequest.java定义了用于实时ASR请求的Java类，包含属性如uid、appId、token、和音频配置。通过使用AsrRequest与HuoshanProperty初始化，用于语音识别请求的数据封装。
 api/server/src/main/java/com/ke/bella/openapi/protocol/asr/HuoshanRealTimeAsrResponse.java:这个文件定义了HuoshanRealTimeAsrResponse类和几个内部静态类，表示实时语音识别的响应结果，包含识别文本和置信度，并提供了将结果转换为RealTimeMessage.Word对象的方法。
 api/server/src/main/java/com/ke/bella/openapi/protocol/asr/HuoshanStreamAsrCallback.java:此文件实现了Huoshan ASR服务的WebSocket回调，用于语音转文字处理。主要类是HuoshanStreamAsrCallback，负责WebSocket生命周期的事件处理、音频数据的发送和解析服务器响应。与日志记录器和请求处理密切交互。
-api/server/src/main/java/com/ke/bella/openapi/protocol/asr/HuoshanStreamLMAsrCallback.java:实现实时语音识别的WebSocket回调处理，包含ClientRequest等类，用于发送客户端请求和接收处理服务器响应，与音频流数据交互。
+api/server/src/main/java/com/ke/bella/openapi/protocol/asr/HuoshanStreamLMAsrCallback.java:这个文件实现了火山流式语音识别的WebSocket回调功能，主要处理音频数据的发送和接收。关键类是HuoshanStreamLMAsrCallback，它继承自WebSocketListener。文件中定义了多个内部类用于构建请求，处理音频数据和解析响应。与其他文件的主要交互在于通过回调机制与发送器和日志器交互。
 api/server/src/main/java/com/ke/bella/openapi/protocol/asr/flash/FlashAsrAdaptor.java:这个文件定义了 Flash ASR 适配器接口 `FlashAsrAdaptor`，用于快速音频识别服务，提供方法 `asr` 实现 ASR 请求处理。
 api/server/src/main/java/com/ke/bella/openapi/protocol/asr/flash/FlashAsrLogHandler.java:这个文件定义了FlashAsrLogHandler类，实现了EndpointLogHandler接口，用于处理Flash ASR端点的日志记录。
 api/server/src/main/java/com/ke/bella/openapi/protocol/asr/flash/HuoshanAdaptor.java:实现了FlashAsrAdaptor接口，处理火山协议相关的ASR请求。包含asr方法用于发送请求与处理响应，创建如createCallback等回调方法，主要与HuoshanRealTimeAsrRequest交互。
 api/server/src/main/java/com/ke/bella/openapi/protocol/asr/flash/HuoshanLMAdaptor.java:实现火山大模型协议的适配器，创建请求和回调，处理ASR响应，为火山协议提供接口。
 api/server/src/main/java/com/ke/bella/openapi/protocol/asr/flash/KeAdaptor.java:KeAdaptor类实现了FlashAsrAdaptor接口，负责处理ASR请求，通过HTTP请求与外部服务交互进行语音识别。
 api/server/src/main/java/com/ke/bella/openapi/protocol/asr/realtime/HuoshanAdaptor.java:HuoshanAdaptor实现了RealTimeAsrAdaptor接口，处理火山协议的实时语音识别，包括建立WebSocket连接及发送音频数据。
-api/server/src/main/java/com/ke/bella/openapi/protocol/asr/realtime/HuoshanLMAdaptor.java:定义了HuoshanLMAdaptor类，继承HuoshanAdaptor，用于连接火山引擎的实时语音识别服务，处理音频数据传输与结果解析。
+api/server/src/main/java/com/ke/bella/openapi/protocol/asr/realtime/HuoshanLMAdaptor.java:这个文件定义了火山大模型流式语音识别的适配器，主要用于创建请求和处理实时语音识别回调。关键类是HuoshanLMAdaptor，它继承自HuoshanAdaptor。文件中包含了Converter内部类，用于将识别结果转换为特定格式。与其他文件的交互主要通过创建和使用HuoshanStreamLMAsrCallback对象来实现。
 api/server/src/main/java/com/ke/bella/openapi/protocol/asr/realtime/KeAdaptor.java:该类继承并实现实时ASR适配器接口，使用了组件注解实现Spring管理Bean。
 api/server/src/main/java/com/ke/bella/openapi/protocol/asr/realtime/RealTimeAsrAdaptor.java:这个文件定义了实时 ASR 适配器接口 `RealTimeAsrAdaptor`，用于处理实时音频流的 ASR 服务，提供默认端点实现。
 api/server/src/main/java/com/ke/bella/openapi/protocol/asr/realtime/RealTimeAsrLogHandler.java:RealTimeAsrLogHandler继承自RealTimeLogHandler，处理ASR流式日志，与/endpoint路径相结合。

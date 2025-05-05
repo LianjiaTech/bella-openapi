@@ -55,6 +55,8 @@ public class HuoshanLMAdaptor extends HuoshanAdaptor {
 
     @Override
     public boolean stopTranscription(WebSocket webSocket, RealTimeMessage request, Callbacks.WebSocketCallback callback) {
+        HuoshanStreamLMAsrCallback huoshanCallback = (HuoshanStreamLMAsrCallback) callback;
+        huoshanCallback.sendAudioData(webSocket, null, true);
         return true;
     }
 
