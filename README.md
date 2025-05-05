@@ -1,4 +1,7 @@
-# Bella OpenAPI
+# Bella OpenAPI\
+
+[![Static Badge](https://img.shields.io/badge/read-deepwiki-blue?style=flat-square)](https://deepwiki.com/LianjiaTech/bella-openapi)
+
 
 Bella OpenAPI是一个提供了丰富的AI调用能力的API网关，可类比openrouter，与之不同的是除了提供聊天补全(chat-completion)能力外，还提供了文本向量化(text-embedding)、语音识别(ASR)、语音合成(TTS)、文生图、图生图等多种AI能力，同时集成了计费、限流和资源管理功能。且集成的所有能力都经过了大规模生产环境的验证。
 

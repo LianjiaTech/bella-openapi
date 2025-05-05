@@ -538,7 +538,7 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
      */
     private byte[] gzipCompress(byte[] src) {
         if (src == null || src.length == 0) {
-            return new byte[0];
+            src = new byte[0];
         }
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         GZIPOutputStream gzip = null;
