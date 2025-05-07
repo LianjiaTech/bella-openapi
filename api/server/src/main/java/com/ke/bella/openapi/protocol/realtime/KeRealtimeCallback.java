@@ -140,8 +140,8 @@ public class KeRealtimeCallback implements Callbacks.WebSocketCallback {
 
     private void complete() {
         if (!end) {
-            sender.close();
             processData.getMetrics().put("ttlt", DateTimeUtils.getCurrentMills() - startTime);
+            sender.close();
             logger.log(processData);
             end = true;
         }
