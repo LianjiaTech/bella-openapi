@@ -181,8 +181,8 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
      */
     private void complete() {
         if (!end) {
-            sender.close();
             processData.getMetrics().put("ttlt", DateTimeUtils.getCurrentMills() - startTime);
+            sender.close();
             if(request.isAsync() && logger != null) {
                 logger.log(processData);
             }
@@ -245,7 +245,7 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
         ModelRequest modelRequest = new ModelRequest();
         modelRequest.setReqid(processData.getRequestId());
         modelRequest.setShow_utterances(true);
-        modelRequest.setResult_type(request.getResultType());
+        modelRequest.setResult_type("single");
         modelRequest.setSequence(1);
         // 大模型特有参数
         modelRequest.setModel_name("bigmodel"); // 大模型名称
@@ -377,11 +377,6 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
         int messageSerial = (message[2] & 0xf0) >> 4;
         int messageCompress = message[2] & 0x0f;
 
-        // 解析序列号和负载
-        byte[] sequenceBytes = new byte[4];
-        System.arraycopy(message, headerLen, sequenceBytes, 0, 4);
-        int sequence = bytesToInt(sequenceBytes);
-
         // 解析负载大小
         byte[] payloadSizeBytes = new byte[4];
         System.arraycopy(message, headerLen + 4, payloadSizeBytes, 0, 4);
@@ -428,9 +423,10 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
                 return;
             }
 
-            // 根据序列号判断是中间响应还是最终响应
-            boolean isFinal = sequence < 0;
+            // 判断是中间响应还是最终响应
+            boolean isFinal = messageTypeFlag == (NEG_WITH_SEQUENCE & 0x0f);
             if (isFinal) {
+                response.setCompletion(true);
                 handleFinalResponse(response);
             } else {
                 handleIntermediateResponse(response);

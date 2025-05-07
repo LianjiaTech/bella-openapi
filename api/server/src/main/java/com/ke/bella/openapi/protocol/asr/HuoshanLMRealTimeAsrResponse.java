@@ -18,7 +18,7 @@ public class HuoshanLMRealTimeAsrResponse {
     private AudioInfo audio_info;
     private int code;
     private String message;
-    private int sequence;
+    private boolean completion;
     private Result result;
 
     @Data

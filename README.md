@@ -1,4 +1,4 @@
-# Bella OpenAPI\
+# Bella OpenAPI
 
 [![Static Badge](https://img.shields.io/badge/read-deepwiki-blue?style=flat-square)](https://deepwiki.com/LianjiaTech/bella-openapi)
 

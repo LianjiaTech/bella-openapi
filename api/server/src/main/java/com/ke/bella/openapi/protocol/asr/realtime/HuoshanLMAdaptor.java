@@ -146,7 +146,7 @@ public class HuoshanLMAdaptor extends HuoshanAdaptor {
             }
 
             // 处理最终结束信号
-            if (response.getSequence() < 0) {
+            if (response.isCompletion()) {
                 RealTimeMessage completion = RealTimeMessage.completion(taskId);
                 result.add(JacksonUtils.serialize(completion));
             }
