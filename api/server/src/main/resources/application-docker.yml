@@ -3,9 +3,9 @@
 #-------------------------------------------------------
 spring:
   datasource:
-    url: jdbc:mysql://mysql:3306/bella_openapi?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
-    username: bella_user
-    password: 123456
+    url: jdbc:mysql://${DB_HOST:mysql}:${DB_PORT:3306}/${DB_NAME:bella_openapi}?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+    username: ${DB_USER:bella_user}
+    password: ${DB_PASSWORD:123456}
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       connection-init-sql: SET NAMES utf8mb4
@@ -22,8 +22,8 @@ spring:
     redisson:
       config: |
         singleServerConfig:
-          address: "redis://redis:6379"
-          password: "123456"
+          address: "redis://${REDIS_HOST:redis}:${REDIS_PORT:6379}"
+          password: "${REDIS_PASSWORD:123456}"
         codec: !<org.redisson.client.codec.StringCodec> {}
 
 management:
@@ -60,7 +60,7 @@ bella:
     server-login-url: ${cas.server.login:}
     client-host: ${SERVER:http://localhost}
     client-support: true
-    client-index-url: ${SERVER:http://localhos}
+    client-index-url: ${SERVER:http://localhost}
   oauth:
     client-index: ${SERVER:http://localhost}
     redirect: ${SERVER:http://localhost}
