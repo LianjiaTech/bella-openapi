@@ -1,4 +1,4 @@
-README.md:这个文件是Bella OpenAPI项目的自述文件，详细介绍了项目的核心功能和系统优势。它描述了AI能力点、元数据管理、统一登录服务、计费与限流等功能，还提供了快速启动指南和常见问题的解决方案。
+README.md:Bella OpenAPI项目的介绍文档，主要描述其功能、系统优势和快速启动指南。包含的功能有AI能力点、元数据管理、统一登录服务、计费与限流等。提供了与其他文件如配置详情和启动与部署详情的链接。
 api/.editorconfig:项目的代码格式配置文件，规范化各类文件的缩进和编码格式。
 api/Dockerfile:这个文件是用于构建bella-openapi项目的Dockerfile，设置了运行环境和所需目录以及端口暴露。
 api/build.sh:此脚本用于编译API服务，包含Maven构建流程及相关配置。
@@ -136,9 +136,9 @@ api/server/sql/05-20240920_alter_apikey.sql:SQL脚本文件，用于修改apikey
 api/server/sql/06-20240925_alter_model.sql:SQL脚本，用于修改model表，添加linked_to字段，该字段用于记录模型的软链信息。
 api/server/sql/07-20241212_alter_channel.sql:SQL脚本用于修改channel表，添加字段trial_enabled以标识是否支持试用。
 api/server/sql/08-user.sql:该SQL文件用于创建用户表，定义了用户的ID、用户名、邮箱等字段及唯一键。
-api/server/sql/09-20250227_alter_endpoint.sql:SQL脚本，修改endpoint表结构，增加document_url字段以存储文档地址。
+api/server/sql/09-20250227_alter_endpoint.sql:SQL脚本文件，用于在endpoint表中添加名为document_url的列，用来存储文档地址信息。
 api/server/sql/10-20250306_alter.channel.sql:SQL脚本文件，用于修改channel表结构，增加所有者信息和可见性字段。
-api/server/sql/11-20250312_alter_endpoint.sql:SQL脚本，修改endpoint表以添加新的计费脚本字段，确保字符集为utf8mb4。
+api/server/sql/11-20250312_alter_endpoint.sql:SQL脚本文件，用于在endpoint表中添加名为cost_script的列，用来存储计费脚本信息。
 api/server/src/codegen/java/com/ke/bella/openapi/DefaultCatalog.java:这个文件是由jOOQ生成的类，定义了数据库的默认目录DefaultCatalog。包含默认的模式DEFAULT_SCHEMA。没有额外的关键类或函数，定位于数据库架构定义。
 api/server/src/codegen/java/com/ke/bella/openapi/DefaultSchema.java:由jOOQ生成的数据库默认Schema类，包含表定义和Schema的元数据信息。
 api/server/src/codegen/java/com/ke/bella/openapi/Indexes.java:通过jOOQ生成，建模数据库默认模式中表的索引，包括MODEL_AUTHORIZER_REL_IDX_AUTHORIZER_CODE等，提供查询优化支持，不直接与其他文件交互。
@@ -331,7 +331,7 @@ api/server/src/main/java/com/ke/bella/openapi/utils/ImageUtils.java:图像工具
 api/server/src/main/java/com/ke/bella/openapi/utils/PunctuationUtils.java:提供工具方法，用于确定字符串是否以标点符号结尾。
 api/server/src/main/java/com/ke/bella/openapi/utils/SseHelper.java:提供SSE连接管理的帮助类SseHelper，包含连接创建、事件发送及异常处理的方法，增强SSE通信的稳定性和可管理性。
 api/server/src/main/java/com/ke/bella/openapi/utils/TokenCounter.java:提供字符串和图像token计数的工具类，通过不同编码模型计算文本token数量及图像分辨率调整后的token数。与图像处理和文本编码相关工具交互。
-api/server/src/main/resources/application-docker.yml:Docker环境的Spring应用配置文件，定义数据源、Redis及登录配置等。
+api/server/src/main/resources/application-docker.yml:Docker环境的Spring Boot配置文件，定义了MySQL和Redis的连接配置、OAuth认证设置、日志级别等信息。
 api/server/src/main/resources/application.yml:该文件是Spring Boot应用程序的配置文件，设置了服务器、数据源、缓存、Swagger等配置，负责应用程序的初始参数。
 api/server/src/main/resources/bootstrap.yml:服务启动配置文件，配置服务端口、Dubbo端口等，帮助服务在启动时加载初始配置。
 api/server/src/main/resources/logback-spring.xml:配置Logback日志框架，包括日志文件的大小、历史、路径设置及不同环境下的日志策略。
@@ -387,7 +387,7 @@ nginx/conf.d/default.conf:Nginx配置文件，用于反向代理，请求/v1, /c
 package-lock.json:记录了bella-openapi项目的所有依赖及其版本信息，确保项目在不同环境中的一致性。
 package.json:定义了项目的JavaScript依赖项，以npm包管理格式列出所有所需的库及其版本范围。
 start-details.md:提供Bella OpenAPI的启动与部署说明，涵盖项目概述、前提条件、启动服务、环境变量配置、服务管理和系统初始化等。
-start.sh:这是一个用于管理和部署服务的shell脚本。它支持构建、重启服务、配置环境变量、设置代理、处理OAuth、生成动态服务配置等功能。关键函数包括retry_command(), pull_image_if_not_exists(), build_services()和generate_service_configs()。通过命令行参数与其他脚本和服务进行交互。
+start.sh:Shell脚本，用于通过Docker Compose启动和管理Bella OpenAPI服务，支持构建、推送镜像、配置OAuth等多种功能。
 stop.sh:这个shell脚本用于停止Bella OpenAPI服务，使用docker-compose停止api和web服务。
 web/.dockerignore:该.dockerignore文件用于在构建Docker镜像时排除特定文件和目录，例如日志、node_modules、.env文件等。
 web/Dockerfile:该Dockerfile用于构建Web应用的Docker镜像，包括基础环境设置、依赖安装、构建过程及最终运行时配置，优化和加速部署流程。
