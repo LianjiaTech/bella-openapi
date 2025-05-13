@@ -25,6 +25,7 @@ show_help() {
     echo "  --restart SERVICE                         重启指定服务，不重新编译 (例如: api 或 web)"
     echo "  --nginx-port PORT                         指定Nginx服务映射到的端口，默认为80"
     echo "  --services SERVICES                       配置动态服务，只支持同docker服务网络下部署的服务，使用容器名转发，格式为 '服务名1:域名1:端口1,服务名2:域名2:端口2'"
+    echo "  --compose-dir DIR                         指定docker-compose.yml文件所在的目录，默认为当前目录"
     echo ""
     echo "示例:"
     echo "  ./start.sh           启动服务（如果已存在编译文件则不重新构建）"
@@ -44,6 +45,7 @@ show_help() {
     echo "  ./start.sh --restart web    仅重启 Web 服务，不重新编译"
     echo "  ./start.sh --nginx-port 8080  使用端口8080启动Nginx服务，其他服务不占用物理机端口"
     echo "  ./start.sh --services 'service1:example1.com:80,service2:example2.com:8080'   配置动态服务"
+    echo "  ./start.sh --compose-dir /config/bella-openapi   使用指定目录下的docker-compose.yml文件"
     echo ""
     echo "版本参数:"
     echo "  --version VERSION    指定镜像版本，例如 --version v1.0.0"
@@ -78,6 +80,9 @@ PROXY_DOMAINS=""
 NGINX_PORT="80"
 # 动态服务配置
 SERVICES=""
+# Docker compose配置
+COMPOSE_DIR="."
+COMPOSE_FILE="docker-compose.yml"
 
 # 添加重试函数
 retry_command() {
@@ -350,10 +355,10 @@ build_services() {
         echo "本地构建，使用 docker-compose..."
         if [ -n "$NO_CACHE" ]; then
             echo "强制重新构建（不使用缓存）..."
-            docker-compose build --no-cache --build-arg VERSION=${VERSION:-v1.0.0} --build-arg REGISTRY=${REGISTRY:-bellatop} --build-arg NODE_ENV=$NODE_ENV --build-arg DEPLOY_ENV=$DEPLOY_ENV
+            docker-compose -f "$COMPOSE_FILE_PATH" build --no-cache --build-arg VERSION=${VERSION:-v1.0.0} --build-arg REGISTRY=${REGISTRY:-bellatop} --build-arg NODE_ENV=$NODE_ENV --build-arg DEPLOY_ENV=$DEPLOY_ENV
         else
             echo "重新构建..."
-            docker-compose build --build-arg VERSION=${VERSION:-v1.0.0} --build-arg REGISTRY=${REGISTRY:-bellatop} --build-arg NODE_ENV=$NODE_ENV --build-arg DEPLOY_ENV=$DEPLOY_ENV
+            docker-compose -f "$COMPOSE_FILE_PATH" build --build-arg VERSION=${VERSION:-v1.0.0} --build-arg REGISTRY=${REGISTRY:-bellatop} --build-arg NODE_ENV=$NODE_ENV --build-arg DEPLOY_ENV=$DEPLOY_ENV
         fi
     fi
 }
@@ -450,6 +455,10 @@ while [[ $# -gt 0 ]]; do
             SERVICES="$2"
             shift 2
             ;;
+        --compose-dir)
+            COMPOSE_DIR="$2"
+            shift 2
+            ;;
         *)
             echo "未知选项: $1"
             show_help
@@ -457,6 +466,10 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
+
+# 设置项目根目录和docker-compose文件路径
+export PROJECT_ROOT="$(pwd)"
+COMPOSE_FILE_PATH="${COMPOSE_DIR}/${COMPOSE_FILE}"
 
 pre_pull_images
 
@@ -469,7 +482,7 @@ fi
 # 如果指定了重启特定服务
 if [ -n "$RESTART_SERVICE" ]; then
     echo "重启 $RESTART_SERVICE 服务..."
-    docker-compose restart $RESTART_SERVICE
+    docker-compose -f "$COMPOSE_FILE_PATH" restart $RESTART_SERVICE
     echo "$RESTART_SERVICE 服务已重启"
     exit 0
 fi
@@ -630,11 +643,11 @@ fi
 echo "启动服务..."
 if [ -n "$FORCE_RECREATE" ]; then
     echo "强制重新创建容器..."
-    docker-compose up -d --force-recreate --no-deps
+    docker-compose -f "$COMPOSE_FILE_PATH" up -d --force-recreate --no-deps
     UP_RESULT=$?
 else
     echo "正在启动服务..."
-    docker-compose up -d
+    docker-compose -f "$COMPOSE_FILE_PATH" up -d
     UP_RESULT=$?
 fi
 
@@ -650,7 +663,7 @@ echo "检查服务状态..."
 sleep 5  # 等待服务启动
 
 # 获取服务状态
-SERVICES_STATUS=$(docker-compose ps --services --filter "status=running")
+SERVICES_STATUS=$(docker-compose -f "$COMPOSE_FILE_PATH" ps --services --filter "status=running")
 
 # 检查 API 服务
 if ! echo "$SERVICES_STATUS" | grep -q "api"; then
