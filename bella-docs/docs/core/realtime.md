@@ -312,7 +312,7 @@
 
 ### 3.1 Java 接入示例
 
-实时语音接口的 Java 实现可以参考项目中的 [RealtimeDemo.java](/api/server/src/test/java/com/ke/bella/openapi/RealtimeDemo.java) 类。
+实时语音接口的 Java 实现可以参考项目中的 [RealtimeDemo.java](https://github.com/LianjiaTech/bella-openapi/blob/develop/api/server/src/test/java/com/ke/bella/openapi/RealtimeDemo.java) 类。
 
 该示例展示了如何使用 OkHttp 库实现 WebSocket 连接，并完成以下功能：
 
@@ -327,7 +327,7 @@
 
 ### 3.2 JavaScript 接入示例
 
-实时语音接口的 JavaScript 实现可以参考项目中的 [RealtimeAudioRecorder.ts](/web/src/components/playground/RealtimeAudioRecorder.ts) 类。
+实时语音接口的 JavaScript 实现可以参考项目中的 [RealtimeAudioRecorder.ts](https://github.com/LianjiaTech/bella-openapi/blob/develop/web/src/components/playground/RealtimeAudioRecorder.ts) 类。
 
 
 ### 3.3 可用的语音合成音色

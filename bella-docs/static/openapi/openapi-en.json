@@ -1,0 +1,6577 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Bella-Openapi",
+    "version": "1.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080",
+      "description": "Generated server url"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/v1/meta/channel/private": {
+      "put": {
+        "tags": [
+          "信息查询"
+        ],
+        "operationId": "updatePrivateChannel",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChannelUpdateOp"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "信息查询"
+        ],
+        "operationId": "createPrivateChannel",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChannelCreateOp"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelDB"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/model": {
+      "put": {
+        "tags": [
+          "元数据管理"
+        ],
+        "operationId": "updateModel",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelOp"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "元数据管理"
+        ],
+        "operationId": "createModel",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelOp"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelDB"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/endpoint": {
+      "put": {
+        "tags": [
+          "元数据管理"
+        ],
+        "operationId": "updateEndpoint",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EndpointOp"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "元数据管理"
+        ],
+        "operationId": "createEndpoint",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EndpointOp"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/EndpointDB"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/channel": {
+      "put": {
+        "tags": [
+          "元数据管理"
+        ],
+        "operationId": "updateChannel",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChannelUpdateOp"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "元数据管理"
+        ],
+        "operationId": "createChannel",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChannelCreateOp"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelDB"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/space/role/create": {
+      "post": {
+        "tags": [
+          "空间管理"
+        ],
+        "operationId": "createRole",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRoleOp"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/space/owner/change": {
+      "post": {
+        "tags": [
+          "空间管理"
+        ],
+        "operationId": "changeSpaceOwner",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeSpaceOwnerOp"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/space/name/update": {
+      "post": {
+        "tags": [
+          "空间管理"
+        ],
+        "operationId": "updateSpaceName",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSpaceNameOp"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/space/member/update": {
+      "post": {
+        "tags": [
+          "空间管理"
+        ],
+        "operationId": "updateMember",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMemberRoleOp"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/space/member/remove": {
+      "post": {
+        "tags": [
+          "空间管理"
+        ],
+        "operationId": "removeMember",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RemoveMemberOp"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/space/member/exit": {
+      "post": {
+        "tags": [
+          "空间管理"
+        ],
+        "operationId": "exitSpace",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExitSpaceOp"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/space/member/create": {
+      "post": {
+        "tags": [
+          "空间管理"
+        ],
+        "operationId": "createMember",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMemberOp"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/space/create": {
+      "post": {
+        "tags": [
+          "空间管理"
+        ],
+        "operationId": "createSpace",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSpaceOp"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/route": {
+      "post": {
+        "tags": [
+          "路由"
+        ],
+        "operationId": "route",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RouteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RouteResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/meta/channel/private/inactivate": {
+      "post": {
+        "tags": [
+          "信息查询"
+        ],
+        "operationId": "inactivatePrivateChannel",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChannelStatusOp"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/meta/channel/private/activate": {
+      "post": {
+        "tags": [
+          "信息查询"
+        ],
+        "operationId": "activatePrivateChannel",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChannelStatusOp"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/log": {
+      "post": {
+        "tags": [
+          "日志"
+        ],
+        "operationId": "record",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EndpointProcessData"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/embeddings": {
+      "post": {
+        "tags": [
+          "chat"
+        ],
+        "operationId": "embedding",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmbeddingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/chat/completions": {
+      "post": {
+        "tags": [
+          "chat"
+        ],
+        "operationId": "completion",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompletionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/audio/transcriptions/file": {
+      "post": {
+        "tags": [
+          "audio能力点"
+        ],
+        "operationId": "transcribeAudio",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AudioTranscriptionReq"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AudioTranscriptionResp"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/audio/transcriptions/file/result": {
+      "post": {
+        "tags": [
+          "audio能力点"
+        ],
+        "operationId": "getTranscriptionResult",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AudioTranscriptionResultReq"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AudioTranscriptionResultResp"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/audio/speech": {
+      "post": {
+        "tags": [
+          "audio能力点"
+        ],
+        "operationId": "speech",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TtsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/v1/audio/asr/flash": {
+      "post": {
+        "tags": [
+          "audio能力点"
+        ],
+        "operationId": "flashAsr",
+        "parameters": [
+          {
+            "name": "format",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "wav"
+            }
+          },
+          {
+            "name": "sample_rate",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 16000
+            }
+          },
+          {
+            "name": "max_sentence_silence",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 3000
+            }
+          },
+          {
+            "name": "model",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlashAsrResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/apikey/create": {
+      "post": {
+        "tags": [
+          "信息查询"
+        ],
+        "operationId": "createApikey",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApikeyCreateOp"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/userInfo/manager": {
+      "post": {
+        "tags": [
+          "用户信息管理"
+        ],
+        "operationId": "addManager",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Operator"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserDB"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/script/model/map/refresh": {
+      "post": {
+        "tags": [
+          "script-console-controller"
+        ],
+        "operationId": "refresh",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/script/lua/reload": {
+      "post": {
+        "tags": [
+          "script-console-controller"
+        ],
+        "operationId": "reloadLuaScript",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScriptInfo"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/model/publish": {
+      "post": {
+        "tags": [
+          "元数据管理"
+        ],
+        "operationId": "publishModel",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelVisibilityOp"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/model/publish/cancel": {
+      "post": {
+        "tags": [
+          "元数据管理"
+        ],
+        "operationId": "cancelPublishModel",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelVisibilityOp"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/model/link": {
+      "post": {
+        "tags": [
+          "元数据管理"
+        ],
+        "operationId": "linkModel",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelLinkOp"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/model/inactivate": {
+      "post": {
+        "tags": [
+          "元数据管理"
+        ],
+        "operationId": "inactivateModel",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelStatusOp"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/model/authorize": {
+      "post": {
+        "tags": [
+          "元数据管理"
+        ],
+        "operationId": "authorizeModel",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelAuthorizerOp"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/model/activate": {
+      "post": {
+        "tags": [
+          "元数据管理"
+        ],
+        "operationId": "activateModel",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelStatusOp"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/endpoint/inactivate": {
+      "post": {
+        "tags": [
+          "元数据管理"
+        ],
+        "operationId": "inactivateEndpoint",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EndpointStatusOp"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/endpoint/category": {
+      "post": {
+        "tags": [
+          "元数据管理"
+        ],
+        "operationId": "addCategoryWithEndpoint",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EndpointCategoriesOp"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "元数据管理"
+        ],
+        "operationId": "removeCategoryWithEndpoint",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EndpointCategoriesOp"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/endpoint/category/replace": {
+      "post": {
+        "tags": [
+          "元数据管理"
+        ],
+        "operationId": "replaceCategoryWithEndpoint",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EndpointCategoriesOp"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/endpoint/activate": {
+      "post": {
+        "tags": [
+          "元数据管理"
+        ],
+        "operationId": "activateEndpoint",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EndpointStatusOp"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/channel/inactivate": {
+      "post": {
+        "tags": [
+          "元数据管理"
+        ],
+        "operationId": "inactivateChannel",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChannelStatusOp"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/channel/activate": {
+      "post": {
+        "tags": [
+          "元数据管理"
+        ],
+        "operationId": "activateChannel",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChannelStatusOp"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/category": {
+      "post": {
+        "tags": [
+          "元数据管理"
+        ],
+        "operationId": "createCategory",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CategoryCreateOp"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoryDB"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/category/inactivate/": {
+      "post": {
+        "tags": [
+          "元数据管理"
+        ],
+        "operationId": "inactivateCategory",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CategoryStatusOp"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/category/activate": {
+      "post": {
+        "tags": [
+          "元数据管理"
+        ],
+        "operationId": "activateCategory",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CategoryStatusOp"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/apikey/role/update": {
+      "post": {
+        "tags": [
+          "API Key管理"
+        ],
+        "operationId": "updateRole",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoleOp"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/apikey/reset": {
+      "post": {
+        "tags": [
+          "API Key管理"
+        ],
+        "operationId": "reset",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CodeOp"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/apikey/rename": {
+      "post": {
+        "tags": [
+          "API Key管理"
+        ],
+        "operationId": "rename",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NameOp"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/apikey/quota/update": {
+      "post": {
+        "tags": [
+          "API Key管理"
+        ],
+        "operationId": "updateQuota",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuotaOp"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/apikey/inactivate": {
+      "post": {
+        "tags": [
+          "API Key管理"
+        ],
+        "operationId": "inactivate",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CodeOp"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/apikey/certify": {
+      "post": {
+        "tags": [
+          "API Key管理"
+        ],
+        "operationId": "certify",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CertifyOp"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/apikey/bindService": {
+      "post": {
+        "tags": [
+          "API Key管理"
+        ],
+        "operationId": "bindService",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ServiceOp"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/apikey/apply": {
+      "post": {
+        "tags": [
+          "API Key管理"
+        ],
+        "operationId": "apply",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplyOp"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/apikey/activate": {
+      "post": {
+        "tags": [
+          "API Key管理"
+        ],
+        "operationId": "activate",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CodeOp"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/space/role/list": {
+      "get": {
+        "tags": [
+          "空间管理"
+        ],
+        "operationId": "listRole",
+        "parameters": [
+          {
+            "name": "memberUid",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RoleWithSpace"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/space/member/role": {
+      "get": {
+        "tags": [
+          "空间管理"
+        ],
+        "operationId": "getMemberRole",
+        "parameters": [
+          {
+            "name": "memberUid",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "spaceCode",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoleWithSpace"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/space/member/list": {
+      "get": {
+        "tags": [
+          "空间管理"
+        ],
+        "operationId": "listMember",
+        "parameters": [
+          {
+            "name": "spaceCode",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Member"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/space/list": {
+      "get": {
+        "tags": [
+          "空间管理"
+        ],
+        "operationId": "listSpace",
+        "parameters": [
+          {
+            "name": "spaceCodes",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Space"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/space/get": {
+      "get": {
+        "tags": [
+          "空间管理"
+        ],
+        "operationId": "getSpace",
+        "parameters": [
+          {
+            "name": "spaceCode",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Space"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/metrics": {
+      "get": {
+        "tags": [
+          "metrics查询"
+        ],
+        "operationId": "query",
+        "parameters": [
+          {
+            "name": "endpoint",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "channelType",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "model"
+            }
+          },
+          {
+            "name": "model",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MetricsQueryResult"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/meta/supplier/list": {
+      "get": {
+        "tags": [
+          "信息查询"
+        ],
+        "operationId": "listSuppliers",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/meta/schema/priceInfo": {
+      "get": {
+        "tags": [
+          "信息查询"
+        ],
+        "operationId": "getPriceInfoSchema",
+        "parameters": [
+          {
+            "name": "entityType",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "entityCode",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/JsonSchema"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/meta/schema/modelProperty": {
+      "get": {
+        "tags": [
+          "信息查询"
+        ],
+        "operationId": "getModelPropertySchema",
+        "parameters": [
+          {
+            "name": "endpoints",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "uniqueItems": true,
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/JsonSchema"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/meta/schema/modelFeature": {
+      "get": {
+        "tags": [
+          "信息查询"
+        ],
+        "operationId": "getModelFeatureSchema",
+        "parameters": [
+          {
+            "name": "endpoints",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "uniqueItems": true,
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/JsonSchema"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/meta/schema/channelInfo": {
+      "get": {
+        "tags": [
+          "信息查询"
+        ],
+        "operationId": "getChannelInfoSchema",
+        "parameters": [
+          {
+            "name": "entityType",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "entityCode",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "protocol",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/JsonSchema"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/meta/protocol/list": {
+      "get": {
+        "tags": [
+          "信息查询"
+        ],
+        "operationId": "listProtocols",
+        "parameters": [
+          {
+            "name": "entityType",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "entityCode",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/meta/property/voice": {
+      "get": {
+        "tags": [
+          "信息查询"
+        ],
+        "operationId": "fetchVoiceProperty",
+        "parameters": [
+          {
+            "name": "condition",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ChannelCondition"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/VoiceProperties"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/meta/model/page": {
+      "get": {
+        "tags": [
+          "信息查询"
+        ],
+        "operationId": "pageModel",
+        "parameters": [
+          {
+            "name": "condition",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ModelCondition"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageModelDB"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/meta/model/list": {
+      "get": {
+        "tags": [
+          "信息查询"
+        ],
+        "operationId": "listModel",
+        "parameters": [
+          {
+            "name": "condition",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ModelCondition"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ModelDB"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/meta/model/list/for-selection": {
+      "get": {
+        "tags": [
+          "信息查询"
+        ],
+        "operationId": "listModelForSelection",
+        "parameters": [
+          {
+            "name": "condition",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ModelCondition"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Model"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/meta/model/info/{name}": {
+      "get": {
+        "tags": [
+          "信息查询"
+        ],
+        "operationId": "getModel",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelDB"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/meta/endpoint/page": {
+      "get": {
+        "tags": [
+          "信息查询"
+        ],
+        "operationId": "pageEndpoint",
+        "parameters": [
+          {
+            "name": "condition",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/EndpointCondition"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageEndpointDB"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/meta/endpoint/list": {
+      "get": {
+        "tags": [
+          "信息查询"
+        ],
+        "operationId": "listEndpoint",
+        "parameters": [
+          {
+            "name": "condition",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/EndpointCondition"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EndpointDB"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/meta/endpoint/info/{code}": {
+      "get": {
+        "tags": [
+          "信息查询"
+        ],
+        "operationId": "getEndpoint",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/EndpointDB"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/meta/endpoint/details": {
+      "get": {
+        "tags": [
+          "信息查询"
+        ],
+        "operationId": "listEndpointDetails",
+        "parameters": [
+          {
+            "name": "condition",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/EndpointDetailsCondition"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/EndpointDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/meta/channel/page": {
+      "get": {
+        "tags": [
+          "信息查询"
+        ],
+        "operationId": "pageChannel",
+        "parameters": [
+          {
+            "name": "condition",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ChannelCondition"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageChannelDB"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/meta/channel/list": {
+      "get": {
+        "tags": [
+          "信息查询"
+        ],
+        "operationId": "listChannel",
+        "parameters": [
+          {
+            "name": "condition",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ChannelCondition"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ChannelDB"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/meta/category/tree": {
+      "get": {
+        "tags": [
+          "信息查询"
+        ],
+        "operationId": "listTree",
+        "parameters": [
+          {
+            "name": "condition",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CategoryTreeCondition"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/EndpointCategoryTree"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/meta/category/tree/all": {
+      "get": {
+        "tags": [
+          "信息查询"
+        ],
+        "operationId": "listAllTree",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EndpointCategoryTree"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/meta/category/page": {
+      "get": {
+        "tags": [
+          "信息查询"
+        ],
+        "operationId": "pageCategory",
+        "parameters": [
+          {
+            "name": "condition",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CategoryCondition"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageCategoryDB"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/meta/category/list": {
+      "get": {
+        "tags": [
+          "信息查询"
+        ],
+        "operationId": "listCategory",
+        "parameters": [
+          {
+            "name": "condition",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CategoryCondition"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CategoryDB"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/apikey/whoami": {
+      "get": {
+        "tags": [
+          "信息查询"
+        ],
+        "operationId": "whoami",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApikeyInfo"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/apikey/permission/check": {
+      "get": {
+        "tags": [
+          "信息查询"
+        ],
+        "operationId": "permissionCheck",
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/userInfo": {
+      "get": {
+        "tags": [
+          "用户信息管理"
+        ],
+        "operationId": "whoami_1",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operator"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/script/check/model/map": {
+      "get": {
+        "tags": [
+          "script-console-controller"
+        ],
+        "operationId": "listMap",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/ModelDB"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/model/list": {
+      "get": {
+        "tags": [
+          "元数据管理"
+        ],
+        "operationId": "listModels",
+        "parameters": [
+          {
+            "name": "condition",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ModelCondition"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ModelDB"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/model/details": {
+      "get": {
+        "tags": [
+          "元数据管理"
+        ],
+        "operationId": "getModelDetails",
+        "parameters": [
+          {
+            "name": "modelName",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/apikey/page": {
+      "get": {
+        "tags": [
+          "API Key管理"
+        ],
+        "operationId": "pageApikey",
+        "parameters": [
+          {
+            "name": "condition",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ApikeyCondition"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageApikeyDB"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/apikey/fetchBySha": {
+      "get": {
+        "tags": [
+          "API Key管理"
+        ],
+        "operationId": "fetchBySha",
+        "parameters": [
+          {
+            "name": "sha",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "onlyActive",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApikeyInfo"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/apikey/fetchByCode": {
+      "get": {
+        "tags": [
+          "API Key管理"
+        ],
+        "operationId": "fetchByCode",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "onlyActive",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApikeyInfo"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/console/apikey/cost/{akCode}": {
+      "get": {
+        "tags": [
+          "API Key管理"
+        ],
+        "operationId": "listApiKeyBillings",
+        "parameters": [
+          {
+            "name": "akCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ApikeyMonthCostDB"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/audio/realtime": {
+      "get": {
+        "tags": [
+          "audio能力点"
+        ],
+        "operationId": "asrStream",
+        "parameters": [
+          {
+            "name": "model",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "audio能力点"
+        ],
+        "operationId": "asrStream_3",
+        "parameters": [
+          {
+            "name": "model",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "audio能力点"
+        ],
+        "operationId": "asrStream_2",
+        "parameters": [
+          {
+            "name": "model",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "audio能力点"
+        ],
+        "operationId": "asrStream_5",
+        "parameters": [
+          {
+            "name": "model",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "options": {
+        "tags": [
+          "audio能力点"
+        ],
+        "operationId": "asrStream_6",
+        "parameters": [
+          {
+            "name": "model",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "head": {
+        "tags": [
+          "audio能力点"
+        ],
+        "operationId": "asrStream_1",
+        "parameters": [
+          {
+            "name": "model",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "audio能力点"
+        ],
+        "operationId": "asrStream_4",
+        "parameters": [
+          {
+            "name": "model",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/v1/audio/asr/stream": {
+      "get": {
+        "tags": [
+          "audio能力点"
+        ],
+        "operationId": "asrStream_7",
+        "parameters": [
+          {
+            "name": "model",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "audio能力点"
+        ],
+        "operationId": "asrStream_10",
+        "parameters": [
+          {
+            "name": "model",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "audio能力点"
+        ],
+        "operationId": "asrStream_9",
+        "parameters": [
+          {
+            "name": "model",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "audio能力点"
+        ],
+        "operationId": "asrStream_12",
+        "parameters": [
+          {
+            "name": "model",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "options": {
+        "tags": [
+          "audio能力点"
+        ],
+        "operationId": "asrStream_13",
+        "parameters": [
+          {
+            "name": "model",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "head": {
+        "tags": [
+          "audio能力点"
+        ],
+        "operationId": "asrStream_8",
+        "parameters": [
+          {
+            "name": "model",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "audio能力点"
+        ],
+        "operationId": "asrStream_11",
+        "parameters": [
+          {
+            "name": "model",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ChannelUpdateOp": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "spaceCode": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "managerAk": {
+            "type": "string"
+          },
+          "optionalInfo": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "priority": {
+            "type": "string"
+          },
+          "channelCode": {
+            "type": "string"
+          },
+          "channelInfo": {
+            "type": "string"
+          },
+          "priceInfo": {
+            "type": "string"
+          },
+          "trialEnabled": {
+            "type": "string",
+            "format": "byte"
+          }
+        }
+      },
+      "ModelOp": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "spaceCode": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "managerAk": {
+            "type": "string"
+          },
+          "optionalInfo": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "modelName": {
+            "type": "string"
+          },
+          "endpoints": {
+            "uniqueItems": true,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "ownerType": {
+            "type": "string"
+          },
+          "ownerCode": {
+            "type": "string"
+          },
+          "ownerName": {
+            "type": "string"
+          },
+          "documentUrl": {
+            "type": "string"
+          },
+          "properties": {
+            "type": "string"
+          },
+          "features": {
+            "type": "string"
+          }
+        }
+      },
+      "EndpointOp": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "spaceCode": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "managerAk": {
+            "type": "string"
+          },
+          "optionalInfo": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "endpoint": {
+            "type": "string"
+          },
+          "endpointName": {
+            "type": "string"
+          },
+          "maintainerCode": {
+            "type": "string"
+          },
+          "maintainerName": {
+            "type": "string"
+          },
+          "documentUrl": {
+            "type": "string"
+          },
+          "costScript": {
+            "type": "string"
+          },
+          "testPriceInfo": {
+            "type": "string"
+          },
+          "testUsage": {
+            "type": "object"
+          }
+        }
+      },
+      "CreateRoleDetail": {
+        "required": [
+          "roleCode",
+          "roleName"
+        ],
+        "type": "object",
+        "properties": {
+          "roleCode": {
+            "maxLength": 64,
+            "minLength": 0,
+            "type": "string"
+          },
+          "roleName": {
+            "maxLength": 64,
+            "minLength": 0,
+            "type": "string"
+          },
+          "roleDesc": {
+            "maxLength": 64,
+            "minLength": 0,
+            "type": "string"
+          }
+        }
+      },
+      "CreateRoleOp": {
+        "required": [
+          "roles",
+          "spaceCode"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "spaceCode": {
+            "maxLength": 64,
+            "minLength": 0,
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "managerAk": {
+            "type": "string"
+          },
+          "optionalInfo": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreateRoleDetail"
+            }
+          }
+        }
+      },
+      "ChangeSpaceOwnerOp": {
+        "required": [
+          "ownerUid",
+          "spaceCode"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "spaceCode": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "managerAk": {
+            "type": "string"
+          },
+          "optionalInfo": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "ownerUid": {
+            "type": "string"
+          }
+        }
+      },
+      "UpdateSpaceNameOp": {
+        "required": [
+          "spaceCode"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "spaceCode": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "managerAk": {
+            "type": "string"
+          },
+          "optionalInfo": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "spaceName": {
+            "maxLength": 128,
+            "minLength": 0,
+            "type": "string"
+          }
+        }
+      },
+      "UpdateMemberRoleOp": {
+        "required": [
+          "memberUid",
+          "roleCode",
+          "spaceCode"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "spaceCode": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "managerAk": {
+            "type": "string"
+          },
+          "optionalInfo": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "memberUid": {
+            "type": "string"
+          },
+          "roleCode": {
+            "type": "string"
+          }
+        }
+      },
+      "RemoveMemberOp": {
+        "required": [
+          "memberUid",
+          "spaceCode"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "spaceCode": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "managerAk": {
+            "type": "string"
+          },
+          "optionalInfo": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "memberUid": {
+            "type": "string"
+          }
+        }
+      },
+      "ExitSpaceOp": {
+        "required": [
+          "memberUid",
+          "spaceCode"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "spaceCode": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "managerAk": {
+            "type": "string"
+          },
+          "optionalInfo": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "memberUid": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateMemberOp": {
+        "required": [
+          "roleCode",
+          "spaceCode"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "spaceCode": {
+            "maxLength": 64,
+            "minLength": 0,
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "managerAk": {
+            "type": "string"
+          },
+          "optionalInfo": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "roleCode": {
+            "maxLength": 64,
+            "minLength": 0,
+            "type": "string"
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Member"
+            }
+          }
+        }
+      },
+      "Member": {
+        "type": "object",
+        "properties": {
+          "memberUid": {
+            "type": "string"
+          },
+          "memberName": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateSpaceOp": {
+        "required": [
+          "ownerName",
+          "ownerUid",
+          "spaceName"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "spaceCode": {
+            "maxLength": 64,
+            "minLength": 0,
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "managerAk": {
+            "type": "string"
+          },
+          "optionalInfo": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "spaceName": {
+            "maxLength": 128,
+            "minLength": 0,
+            "type": "string"
+          },
+          "spaceDescription": {
+            "maxLength": 255,
+            "minLength": 0,
+            "type": "string"
+          },
+          "ownerUid": {
+            "maxLength": 64,
+            "minLength": 0,
+            "type": "string"
+          },
+          "ownerName": {
+            "maxLength": 64,
+            "minLength": 0,
+            "type": "string"
+          }
+        }
+      },
+      "RouteRequest": {
+        "type": "object",
+        "properties": {
+          "apikey": {
+            "type": "string"
+          },
+          "endpoint": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          }
+        }
+      },
+      "RouteResult": {
+        "type": "object",
+        "properties": {
+          "channelCode": {
+            "type": "string"
+          },
+          "entityType": {
+            "type": "string"
+          },
+          "entityCode": {
+            "type": "string"
+          },
+          "protocol": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "channelInfo": {
+            "type": "object"
+          },
+          "priceInfo": {
+            "type": "string"
+          }
+        }
+      },
+      "ChannelCreateOp": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "spaceCode": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "managerAk": {
+            "type": "string"
+          },
+          "optionalInfo": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "entityType": {
+            "type": "string"
+          },
+          "entityCode": {
+            "type": "string"
+          },
+          "dataDestination": {
+            "type": "string"
+          },
+          "priority": {
+            "type": "string"
+          },
+          "protocol": {
+            "type": "string"
+          },
+          "supplier": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "channelInfo": {
+            "type": "string"
+          },
+          "priceInfo": {
+            "type": "string"
+          },
+          "trialEnabled": {
+            "type": "string",
+            "format": "byte"
+          },
+          "ownerType": {
+            "type": "string"
+          },
+          "ownerCode": {
+            "type": "string"
+          },
+          "ownerName": {
+            "type": "string"
+          },
+          "visibility": {
+            "type": "string"
+          }
+        }
+      },
+      "ChannelDB": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "entityType": {
+            "type": "string"
+          },
+          "entityCode": {
+            "type": "string"
+          },
+          "channelCode": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "ownerType": {
+            "type": "string"
+          },
+          "ownerCode": {
+            "type": "string"
+          },
+          "ownerName": {
+            "type": "string"
+          },
+          "visibility": {
+            "type": "string"
+          },
+          "trialEnabled": {
+            "type": "string",
+            "format": "byte"
+          },
+          "dataDestination": {
+            "type": "string"
+          },
+          "priority": {
+            "type": "string"
+          },
+          "protocol": {
+            "type": "string"
+          },
+          "supplier": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "channelInfo": {
+            "type": "string"
+          },
+          "priceInfo": {
+            "type": "string"
+          },
+          "cuid": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "cuName": {
+            "type": "string"
+          },
+          "muid": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "muName": {
+            "type": "string"
+          },
+          "ctime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "mtime": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ChannelStatusOp": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "spaceCode": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "managerAk": {
+            "type": "string"
+          },
+          "optionalInfo": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "channelCode": {
+            "type": "string"
+          }
+        }
+      },
+      "ApikeyInfo": {
+        "type": "object",
+        "properties": {
+          "apikey": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "serviceId": {
+            "type": "string"
+          },
+          "akSha": {
+            "type": "string"
+          },
+          "akDisplay": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "outEntityCode": {
+            "type": "string"
+          },
+          "parentCode": {
+            "type": "string"
+          },
+          "ownerType": {
+            "type": "string"
+          },
+          "ownerCode": {
+            "type": "string"
+          },
+          "ownerName": {
+            "type": "string"
+          },
+          "roleCode": {
+            "type": "string"
+          },
+          "safetySceneCode": {
+            "type": "string"
+          },
+          "safetyLevel": {
+            "type": "string",
+            "format": "byte"
+          },
+          "monthQuota": {
+            "type": "number"
+          },
+          "rolePath": {
+            "$ref": "#/components/schemas/RolePath"
+          },
+          "status": {
+            "type": "string"
+          },
+          "remark": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "parentInfo": {
+            "$ref": "#/components/schemas/ApikeyInfo"
+          }
+        }
+      },
+      "EndpointProcessData": {
+        "type": "object",
+        "properties": {
+          "akSha": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "accountType": {
+            "type": "string"
+          },
+          "accountCode": {
+            "type": "string"
+          },
+          "akCode": {
+            "type": "string"
+          },
+          "parentAkCode": {
+            "type": "string"
+          },
+          "endpoint": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "channelCode": {
+            "type": "string"
+          },
+          "user": {
+            "type": "string"
+          },
+          "requestMillis": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "requestTime": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "firstPackageTime": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "transcriptionDuration": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "duration": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "request": {
+            "type": "object"
+          },
+          "response": {
+            "$ref": "#/components/schemas/OpenapiResponse"
+          },
+          "usage": {
+            "type": "object"
+          },
+          "metrics": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "forwardUrl": {
+            "type": "string"
+          },
+          "protocol": {
+            "type": "string"
+          },
+          "priceInfo": {
+            "type": "string"
+          },
+          "encodingType": {
+            "type": "string"
+          },
+          "supplier": {
+            "type": "string"
+          },
+          "requestRiskData": {
+            "type": "object"
+          },
+          "bellaTraceId": {
+            "type": "string"
+          },
+          "functionCallSimulate": {
+            "type": "boolean"
+          },
+          "channelRequestId": {
+            "type": "string"
+          },
+          "cost": {
+            "type": "number"
+          },
+          "innerLog": {
+            "type": "boolean"
+          },
+          "maxWaitSec": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "private": {
+            "type": "boolean"
+          },
+          "apikeyInfo": {
+            "$ref": "#/components/schemas/ApikeyInfo"
+          },
+          "mock": {
+            "type": "boolean"
+          }
+        }
+      },
+      "OpenapiError": {
+        "type": "object",
+        "properties": {
+          "sensitive": {
+            "type": "object"
+          },
+          "code": {
+            "type": "string"
+          },
+          "httpCode": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "message": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "param": {
+            "type": "string"
+          }
+        }
+      },
+      "OpenapiResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/OpenapiError"
+          },
+          "sensitives": {
+            "type": "object"
+          },
+          "requestRiskData": {
+            "type": "object"
+          }
+        }
+      },
+      "RolePath": {
+        "type": "object",
+        "properties": {
+          "included": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "excluded": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "EmbeddingRequest": {
+        "type": "object",
+        "properties": {
+          "user": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "input": {
+            "type": "object"
+          },
+          "dimensions": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "encoding_format": {
+            "type": "string"
+          }
+        }
+      },
+      "CompletionRequest": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string"
+          },
+          "user": {
+            "type": "string"
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "functions": {
+            "type": "array",
+            "deprecated": true,
+            "items": {
+              "$ref": "#/components/schemas/Function"
+            }
+          },
+          "tools": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Tool"
+            }
+          },
+          "function_call": {
+            "type": "object",
+            "deprecated": true
+          },
+          "tool_choice": {
+            "type": "object"
+          },
+          "temperature": {
+            "type": "number",
+            "format": "float"
+          },
+          "top_p": {
+            "type": "number",
+            "format": "float"
+          },
+          "n": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "stream": {
+            "type": "boolean"
+          },
+          "stream_options": {
+            "$ref": "#/components/schemas/StreamOptions"
+          },
+          "stop": {
+            "type": "object"
+          },
+          "max_tokens": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "presence_penalty": {
+            "type": "number",
+            "format": "float"
+          },
+          "frequency_penalty": {
+            "type": "number",
+            "format": "float"
+          },
+          "logit_bias": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "response_format": {
+            "type": "object"
+          },
+          "seed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "parallel_tool_calls": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Function": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "maxLength": 64,
+            "minLength": 0,
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "parameters": {
+            "$ref": "#/components/schemas/FunctionParameter"
+          }
+        }
+      },
+      "FunctionCall": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "arguments": {
+            "type": "string"
+          }
+        }
+      },
+      "FunctionParameter": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "required": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "properties": {
+            "type": "object"
+          }
+        }
+      },
+      "Message": {
+        "required": [
+          "role"
+        ],
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string"
+          },
+          "content": {
+            "type": "object"
+          },
+          "reasoning_content": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "function_call": {
+            "$ref": "#/components/schemas/FunctionCall"
+          },
+          "tool_calls": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ToolCall"
+            }
+          },
+          "tool_call_id": {
+            "type": "string"
+          }
+        }
+      },
+      "StreamOptions": {
+        "type": "object",
+        "properties": {
+          "include_usage": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Tool": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "function": {
+            "$ref": "#/components/schemas/Function"
+          }
+        }
+      },
+      "ToolCall": {
+        "type": "object",
+        "properties": {
+          "index": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "type": {
+            "type": "string"
+          },
+          "function": {
+            "$ref": "#/components/schemas/FunctionCall"
+          },
+          "id": {
+            "type": "string"
+          }
+        }
+      },
+      "AudioTranscriptionReq": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "user": {
+            "type": "string"
+          },
+          "callback_url": {
+            "type": "string"
+          },
+          "channel_number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "speaker_diarization": {
+            "type": "boolean"
+          },
+          "speaker_number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "hot_word": {
+            "type": "string"
+          },
+          "language": {
+            "type": "string"
+          },
+          "candidate": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "audio_mode": {
+            "type": "string"
+          },
+          "standard_wav": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "language_type": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "trans_mode": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "eng_smoothproc": {
+            "type": "boolean"
+          },
+          "eng_collogproc": {
+            "type": "boolean"
+          },
+          "eng_vad_mdn": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "eng_vad_margin": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "eng_rlang": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "vocab_id": {
+            "type": "string"
+          },
+          "sample_rate": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "enable_words": {
+            "type": "boolean"
+          },
+          "enable_vad": {
+            "type": "boolean"
+          },
+          "chunk_length": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "enable_semantic_sentence_detection": {
+            "type": "boolean"
+          },
+          "enable_punctuation_prediction": {
+            "type": "boolean"
+          },
+          "max_end_silence": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "AudioTranscriptionResp": {
+        "type": "object",
+        "properties": {
+          "task_id": {
+            "type": "string"
+          }
+        }
+      },
+      "AudioTranscriptionResultReq": {
+        "required": [
+          "task_id"
+        ],
+        "type": "object",
+        "properties": {
+          "task_id": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "AudioTranscriptionResultResp": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        }
+      },
+      "TtsRequest": {
+        "type": "object",
+        "properties": {
+          "user": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "input": {
+            "type": "string"
+          },
+          "voice": {
+            "type": "string"
+          },
+          "speed": {
+            "type": "number",
+            "format": "double"
+          },
+          "stream": {
+            "type": "boolean"
+          },
+          "response_format": {
+            "type": "string"
+          },
+          "sample_rate": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "FlashAsrResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/OpenapiError"
+          },
+          "sensitives": {
+            "type": "object"
+          },
+          "requestRiskData": {
+            "type": "object"
+          },
+          "user": {
+            "type": "string"
+          },
+          "task_id": {
+            "type": "string"
+          },
+          "flash_result": {
+            "$ref": "#/components/schemas/FlashResult"
+          }
+        }
+      },
+      "FlashResult": {
+        "type": "object",
+        "properties": {
+          "duration": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sentences": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Sentence"
+            }
+          }
+        }
+      },
+      "Sentence": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string"
+          },
+          "begin_time": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "end_time": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "ApikeyCreateOp": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "spaceCode": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "managerAk": {
+            "type": "string"
+          },
+          "optionalInfo": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "name": {
+            "type": "string"
+          },
+          "parentCode": {
+            "type": "string"
+          },
+          "safetyLevel": {
+            "type": "string",
+            "format": "byte"
+          },
+          "outEntityCode": {
+            "type": "string"
+          },
+          "monthQuota": {
+            "type": "number"
+          },
+          "roleCode": {
+            "type": "string"
+          },
+          "paths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "remark": {
+            "type": "string"
+          }
+        }
+      },
+      "Operator": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "spaceCode": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "managerAk": {
+            "type": "string"
+          },
+          "optionalInfo": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          }
+        }
+      },
+      "UserDB": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "managerAk": {
+            "type": "string"
+          },
+          "optionalInfo": {
+            "type": "string"
+          },
+          "ctime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "mtime": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ScriptInfo": {
+        "type": "object",
+        "properties": {
+          "scriptName": {
+            "type": "string"
+          },
+          "defaultName": {
+            "type": "string"
+          }
+        }
+      },
+      "ModelDB": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "modelName": {
+            "type": "string"
+          },
+          "documentUrl": {
+            "type": "string"
+          },
+          "visibility": {
+            "type": "string"
+          },
+          "ownerType": {
+            "type": "string"
+          },
+          "ownerCode": {
+            "type": "string"
+          },
+          "ownerName": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "properties": {
+            "type": "string"
+          },
+          "features": {
+            "type": "string"
+          },
+          "linkedTo": {
+            "type": "string"
+          },
+          "cuid": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "cuName": {
+            "type": "string"
+          },
+          "muid": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "muName": {
+            "type": "string"
+          },
+          "ctime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "mtime": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ModelVisibilityOp": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "spaceCode": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "managerAk": {
+            "type": "string"
+          },
+          "optionalInfo": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "modelName": {
+            "type": "string"
+          }
+        }
+      },
+      "ModelLinkOp": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "spaceCode": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "managerAk": {
+            "type": "string"
+          },
+          "optionalInfo": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "modelName": {
+            "type": "string"
+          },
+          "linkedTo": {
+            "type": "string"
+          }
+        }
+      },
+      "ModelStatusOp": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "spaceCode": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "managerAk": {
+            "type": "string"
+          },
+          "optionalInfo": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "modelName": {
+            "type": "string"
+          }
+        }
+      },
+      "ModelAuthorizer": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "spaceCode": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "managerAk": {
+            "type": "string"
+          },
+          "optionalInfo": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "authorizerType": {
+            "type": "string"
+          },
+          "authorizerCode": {
+            "type": "string"
+          },
+          "authorizerName": {
+            "type": "string"
+          }
+        }
+      },
+      "ModelAuthorizerOp": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "spaceCode": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "managerAk": {
+            "type": "string"
+          },
+          "optionalInfo": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "model": {
+            "type": "string"
+          },
+          "authorizers": {
+            "uniqueItems": true,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ModelAuthorizer"
+            }
+          }
+        }
+      },
+      "EndpointDB": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "endpoint": {
+            "type": "string"
+          },
+          "endpointCode": {
+            "type": "string"
+          },
+          "endpointName": {
+            "type": "string"
+          },
+          "documentUrl": {
+            "type": "string"
+          },
+          "maintainerCode": {
+            "type": "string"
+          },
+          "maintainerName": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "costScript": {
+            "type": "string"
+          },
+          "cuid": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "cuName": {
+            "type": "string"
+          },
+          "muid": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "muName": {
+            "type": "string"
+          },
+          "ctime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "mtime": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "EndpointStatusOp": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "spaceCode": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "managerAk": {
+            "type": "string"
+          },
+          "optionalInfo": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "endpoint": {
+            "type": "string"
+          }
+        }
+      },
+      "EndpointCategoriesOp": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "spaceCode": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "managerAk": {
+            "type": "string"
+          },
+          "optionalInfo": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "endpoint": {
+            "type": "string"
+          },
+          "categoryCodes": {
+            "uniqueItems": true,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "CategoryCreateOp": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "spaceCode": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "managerAk": {
+            "type": "string"
+          },
+          "optionalInfo": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "parentCode": {
+            "type": "string"
+          },
+          "categoryName": {
+            "type": "string"
+          }
+        }
+      },
+      "CategoryDB": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "categoryCode": {
+            "type": "string"
+          },
+          "categoryName": {
+            "type": "string"
+          },
+          "parentCode": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "cuid": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "cuName": {
+            "type": "string"
+          },
+          "muid": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "muName": {
+            "type": "string"
+          },
+          "ctime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "mtime": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CategoryStatusOp": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "spaceCode": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "managerAk": {
+            "type": "string"
+          },
+          "optionalInfo": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "categoryCode": {
+            "type": "string"
+          }
+        }
+      },
+      "RoleOp": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "spaceCode": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "managerAk": {
+            "type": "string"
+          },
+          "optionalInfo": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "code": {
+            "type": "string"
+          },
+          "roleCode": {
+            "type": "string"
+          },
+          "paths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "CodeOp": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "spaceCode": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "managerAk": {
+            "type": "string"
+          },
+          "optionalInfo": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "code": {
+            "type": "string"
+          }
+        }
+      },
+      "NameOp": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "spaceCode": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "managerAk": {
+            "type": "string"
+          },
+          "optionalInfo": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "QuotaOp": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "spaceCode": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "managerAk": {
+            "type": "string"
+          },
+          "optionalInfo": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "code": {
+            "type": "string"
+          },
+          "monthQuota": {
+            "type": "number"
+          }
+        }
+      },
+      "CertifyOp": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "spaceCode": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "managerAk": {
+            "type": "string"
+          },
+          "optionalInfo": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "code": {
+            "type": "string"
+          },
+          "certifyCode": {
+            "type": "string"
+          }
+        }
+      },
+      "ServiceOp": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "spaceCode": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "managerAk": {
+            "type": "string"
+          },
+          "optionalInfo": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "code": {
+            "type": "string"
+          },
+          "serviceId": {
+            "type": "string"
+          }
+        }
+      },
+      "ApplyOp": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "spaceCode": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "managerAk": {
+            "type": "string"
+          },
+          "optionalInfo": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "name": {
+            "type": "string"
+          },
+          "ownerType": {
+            "type": "string"
+          },
+          "ownerCode": {
+            "type": "string"
+          },
+          "ownerName": {
+            "type": "string"
+          },
+          "roleCode": {
+            "type": "string"
+          },
+          "monthQuota": {
+            "type": "number"
+          },
+          "remark": {
+            "type": "string"
+          }
+        }
+      },
+      "RoleWithSpace": {
+        "type": "object",
+        "properties": {
+          "roleCode": {
+            "type": "string"
+          },
+          "spaceCode": {
+            "type": "string"
+          },
+          "spaceName": {
+            "type": "string"
+          }
+        }
+      },
+      "Space": {
+        "type": "object",
+        "properties": {
+          "spaceCode": {
+            "type": "string"
+          },
+          "spaceName": {
+            "type": "string"
+          },
+          "ownerUid": {
+            "type": "string"
+          }
+        }
+      },
+      "MetricsQueryResult": {
+        "type": "object",
+        "properties": {
+          "channelCode": {
+            "type": "string"
+          },
+          "entityCode": {
+            "type": "string"
+          },
+          "endpoint": {
+            "type": "string"
+          },
+          "metrics": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          }
+        }
+      },
+      "JsonSchema": {
+        "type": "object",
+        "properties": {
+          "params": {
+            "uniqueItems": true,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TypeSchema"
+            }
+          }
+        }
+      },
+      "TypeSchema": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "valueType": {
+            "type": "string"
+          },
+          "selections": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "child": {
+            "$ref": "#/components/schemas/JsonSchema"
+          }
+        }
+      },
+      "ChannelCondition": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "entityType": {
+            "type": "string"
+          },
+          "entityCode": {
+            "type": "string"
+          },
+          "entityCodes": {
+            "uniqueItems": true,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "supplier": {
+            "type": "string"
+          },
+          "protocol": {
+            "type": "string"
+          },
+          "priority": {
+            "type": "string"
+          },
+          "dataDestination": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "visibility": {
+            "type": "string"
+          },
+          "ownerType": {
+            "type": "string"
+          },
+          "ownerCode": {
+            "type": "string"
+          }
+        }
+      },
+      "VoiceProperties": {
+        "type": "object",
+        "properties": {
+          "voiceTypes": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ModelCondition": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "personalCode": {
+            "type": "string"
+          },
+          "orgCodes": {
+            "uniqueItems": true,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "modelName": {
+            "type": "string"
+          },
+          "ownerName": {
+            "type": "string"
+          },
+          "endpoint": {
+            "type": "string"
+          },
+          "endpoints": {
+            "uniqueItems": true,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "modelNames": {
+            "uniqueItems": true,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "visibility": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "maxInputTokensLimit": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "maxOutputTokensLimit": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "features": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "dataDestination": {
+            "type": "string"
+          },
+          "supplier": {
+            "type": "string"
+          },
+          "includeLinkedTo": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PageModelDB": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ModelDB"
+            }
+          },
+          "limit": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "has_more": {
+            "type": "boolean"
+          }
+        }
+      },
+      "IPriceInfo": {
+        "type": "object",
+        "properties": {
+          "unit": {
+            "type": "string"
+          }
+        }
+      },
+      "Model": {
+        "type": "object",
+        "properties": {
+          "cuid": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "cuName": {
+            "type": "string"
+          },
+          "muid": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "muName": {
+            "type": "string"
+          },
+          "ctime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "mtime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "modelName": {
+            "type": "string"
+          },
+          "documentUrl": {
+            "type": "string"
+          },
+          "visibility": {
+            "type": "string"
+          },
+          "ownerType": {
+            "type": "string"
+          },
+          "ownerCode": {
+            "type": "string"
+          },
+          "ownerName": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "properties": {
+            "type": "string"
+          },
+          "features": {
+            "type": "string"
+          },
+          "linkedTo": {
+            "type": "string"
+          },
+          "priceDetails": {
+            "$ref": "#/components/schemas/PriceDetails"
+          },
+          "terminalModel": {
+            "type": "string"
+          }
+        }
+      },
+      "PriceDetails": {
+        "type": "object",
+        "properties": {
+          "priceInfo": {
+            "$ref": "#/components/schemas/IPriceInfo"
+          },
+          "displayPrice": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "unit": {
+            "type": "string"
+          }
+        }
+      },
+      "EndpointCondition": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "endpoint": {
+            "type": "string"
+          },
+          "endpointCode": {
+            "type": "string"
+          },
+          "endpointName": {
+            "type": "string"
+          },
+          "categoryCode": {
+            "uniqueItems": true,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "endpoints": {
+            "uniqueItems": true,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "maintainerCode": {
+            "type": "string"
+          },
+          "maintainerName": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      },
+      "PageEndpointDB": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EndpointDB"
+            }
+          },
+          "limit": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "has_more": {
+            "type": "boolean"
+          }
+        }
+      },
+      "EndpointDetailsCondition": {
+        "type": "object",
+        "properties": {
+          "endpoint": {
+            "type": "string"
+          },
+          "modelName": {
+            "type": "string"
+          },
+          "features": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "EndpointDetails": {
+        "type": "object",
+        "properties": {
+          "endpoint": {
+            "type": "string"
+          },
+          "models": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Model"
+            }
+          },
+          "features": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EnumDto"
+            }
+          },
+          "priceDetails": {
+            "$ref": "#/components/schemas/PriceDetails"
+          }
+        }
+      },
+      "EnumDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "PageChannelDB": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChannelDB"
+            }
+          },
+          "limit": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "has_more": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CategoryTreeCondition": {
+        "type": "object",
+        "properties": {
+          "categoryCode": {
+            "type": "string"
+          },
+          "includeEndpoint": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      },
+      "Endpoint": {
+        "type": "object",
+        "properties": {
+          "cuid": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "cuName": {
+            "type": "string"
+          },
+          "muid": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "muName": {
+            "type": "string"
+          },
+          "ctime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "mtime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endpoint": {
+            "type": "string"
+          },
+          "endpointCode": {
+            "type": "string"
+          },
+          "endpointName": {
+            "type": "string"
+          },
+          "maintainerCode": {
+            "type": "string"
+          },
+          "maintainerName": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      },
+      "EndpointCategoryTree": {
+        "type": "object",
+        "properties": {
+          "categoryCode": {
+            "type": "string"
+          },
+          "categoryName": {
+            "type": "string"
+          },
+          "endpoints": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Endpoint"
+            }
+          },
+          "children": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EndpointCategoryTree"
+            }
+          }
+        }
+      },
+      "CategoryCondition": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "categoryCode": {
+            "type": "string"
+          },
+          "categoryName": {
+            "type": "string"
+          },
+          "parentCode": {
+            "type": "string"
+          },
+          "topCategory": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      },
+      "PageCategoryDB": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CategoryDB"
+            }
+          },
+          "limit": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "has_more": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Channel": {
+        "type": "object",
+        "properties": {
+          "cuid": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "cuName": {
+            "type": "string"
+          },
+          "muid": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "muName": {
+            "type": "string"
+          },
+          "ctime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "mtime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "entityType": {
+            "type": "string"
+          },
+          "entityCode": {
+            "type": "string"
+          },
+          "channelCode": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "dataDestination": {
+            "type": "string"
+          },
+          "priority": {
+            "type": "string"
+          },
+          "protocol": {
+            "type": "string"
+          },
+          "supplier": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "channelInfo": {
+            "type": "string"
+          },
+          "priceInfo": {
+            "type": "string"
+          },
+          "trialEnabled": {
+            "type": "string",
+            "format": "byte"
+          }
+        }
+      },
+      "ModelDetails": {
+        "type": "object",
+        "properties": {
+          "cuid": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "cuName": {
+            "type": "string"
+          },
+          "muid": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "muName": {
+            "type": "string"
+          },
+          "ctime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "mtime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "model": {
+            "$ref": "#/components/schemas/Model"
+          },
+          "channels": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Channel"
+            }
+          }
+        }
+      },
+      "ApikeyCondition": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "personalCode": {
+            "type": "string"
+          },
+          "orgCodes": {
+            "uniqueItems": true,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "ownerType": {
+            "type": "string"
+          },
+          "ownerCode": {
+            "type": "string"
+          },
+          "parentCode": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "serviceId": {
+            "type": "string"
+          },
+          "searchParam": {
+            "type": "string"
+          },
+          "outEntityCode": {
+            "type": "string"
+          },
+          "includeChild": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      },
+      "ApikeyDB": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "code": {
+            "type": "string"
+          },
+          "akSha": {
+            "type": "string"
+          },
+          "akDisplay": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "parentCode": {
+            "type": "string"
+          },
+          "outEntityCode": {
+            "type": "string"
+          },
+          "serviceId": {
+            "type": "string"
+          },
+          "ownerType": {
+            "type": "string"
+          },
+          "ownerCode": {
+            "type": "string"
+          },
+          "ownerName": {
+            "type": "string"
+          },
+          "roleCode": {
+            "type": "string"
+          },
+          "certifyCode": {
+            "type": "string"
+          },
+          "safetySceneCode": {
+            "type": "string"
+          },
+          "safetyLevel": {
+            "type": "string",
+            "format": "byte"
+          },
+          "monthQuota": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string"
+          },
+          "remark": {
+            "type": "string"
+          },
+          "cuid": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "cuName": {
+            "type": "string"
+          },
+          "muid": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "muName": {
+            "type": "string"
+          },
+          "ctime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "mtime": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "PageApikeyDB": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApikeyDB"
+            }
+          },
+          "limit": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "has_more": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ApikeyMonthCostDB": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "akCode": {
+            "type": "string"
+          },
+          "month": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "ctime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "mtime": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "Authorization": {
+        "type": "apiKey",
+        "name": "Authorization",
+        "in": "header"
+      }
+    }
+  }
+}

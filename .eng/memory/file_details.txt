@@ -1,4 +1,5 @@
-README.md:Bella OpenAPI项目的介绍文档，主要描述其功能、系统优势和快速启动指南。包含的功能有AI能力点、元数据管理、统一登录服务、计费与限流等。提供了与其他文件如配置详情和启动与部署详情的链接。
+README.md:这个文件介绍了Bella OpenAPI项目的主要功能和系统优势，包括AI能力点、元数据管理、统一登录服务、计费与限流等多个方面。文件中详细描述了系统的架构和优势，如高性能缓存设计和分布式限流机制。还提供了快速启动的教程和常见问题的解决方案。
+README_EN.md:This file provides an English overview of the Bella OpenAPI project, highlighting its main functionalities and system advantages. It covers AI capabilities, metadata management, unified login service, and billing & rate limiting, along with detailed descriptions of system architecture and advantages like high-performance cache design and distributed rate limiting. A quick start guide and solutions to common issues are also included.
 api/.editorconfig:项目的代码格式配置文件，规范化各类文件的缩进和编码格式。
 api/Dockerfile:这个文件是用于构建bella-openapi项目的Dockerfile，设置了运行环境和所需目录以及端口暴露。
 api/build.sh:此脚本用于编译API服务，包含Maven构建流程及相关配置。

@@ -57,7 +57,7 @@ Bella OpenAPI是一个综合性的AI开放API平台，提供以下主要组件�
 
 ## 启动服务
 
-启动服务时通常需要配置用户登录，方法见：[GitHub OAuth配置攻略](config-details.md#github-oauth配置攻略)
+启动服务时通常需要配置用户登录，方法见：[GitHub OAuth配置攻略](./configuration-details.md#github-oauth配置攻略)
 
 ```bash
 ./start.sh [选项] （如果本地不存在镜像，会拉取远端镜像）

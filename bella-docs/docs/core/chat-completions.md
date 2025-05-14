@@ -44,7 +44,7 @@ POST /v1/chat/completions
 | model | string | 是 | 要使用的模型 ID |
 | messages | array | 是 | 包含对话历史的消息数组。根据使用的模型不同，支持不同的消息类型（模态），如文本、图像和音频 |
 | tools | array | 否 | 模型可以调用的工具列表。目前仅支持函数作为工具。使用此参数提供模型可能生成JSON输入的函数列表。最多支持128个函数 |
-| tool_choice | string/object | 否 | 控制模型是否调用工具。<br>- `"none"`: 模型不会调用任何工具，而是生成消息<br>- `"auto"`: 模型可以在生成消息或调用一个或多个工具之间选择<br>- `"required"`: 模型必须调用一个或多个工具<br>- 也可以通过对象指定特定工具：`{"type": "function", "function": {"name": "my_function"}}`<br><br>当没有工具时，默认为`"none"`；有工具时，默认为`"auto"` |
+| tool_choice | string/object | 否 | 控制模型是否调用工具。<br/>- `"none"`: 模型不会调用任何工具，而是生成消息<br/>- `"auto"`: 模型可以在生成消息或调用一个或多个工具之间选择<br/>- `"required"`: 模型必须调用一个或多个工具<br/>- 也可以通过对象指定特定工具：`{"type": "function", "function": {"name": "my_function"}}`<br/><br/>当没有工具时，默认为`"none"`；有工具时，默认为`"auto"` |
 | temperature | number | 否 | 采样温度，默认为 1。较低的值使输出更加确定性 |
 | top_p | number | 否 | 核采样的概率质量，默认为 1 |
 | n | integer | 否 | 为每个输入消息生成的聊天完成数量，默认为 1 |
