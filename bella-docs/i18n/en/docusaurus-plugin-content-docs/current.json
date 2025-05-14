@@ -1,0 +1,18 @@
+{
+  "version.label": {
+    "message": "Next",
+    "description": "The label for version current"
+  },
+  "sidebar.documentationSidebar.category.配置与部署 (Configuration & Deployment)": {
+    "message": "配置与部署 (Configuration & Deployment)",
+    "description": "The label for category 配置与部署 (Configuration & Deployment) in sidebar documentationSidebar"
+  },
+  "sidebar.documentationSidebar.category.核心功能 (Core Features)": {
+    "message": "核心功能 (Core Features)",
+    "description": "The label for category 核心功能 (Core Features) in sidebar documentationSidebar"
+  },
+  "sidebar.documentationSidebar.doc.介绍": {
+    "message": "介绍",
+    "description": "The label for the doc item 介绍 in sidebar documentationSidebar, linking to the doc intro"
+  }
+}

@@ -2,15 +2,12 @@
 
 [![Static Badge](https://img.shields.io/badge/read-deepwiki-blue?style=flat-square)](https://deepwiki.com/LianjiaTech/bella-openapi)
 
-中文 | [English](./README_EN.md)
-
-
 
 Bella OpenAPI是一个提供了丰富的AI调用能力的API网关，可类比openrouter，与之不同的是除了提供聊天补全(chat-completion)能力外，还提供了文本向量化(text-embedding)、语音识别(ASR)、语音合成(TTS)、文生图、图生图等多种AI能力，同时集成了计费、限流和资源管理功能。且集成的所有能力都经过了大规模生产环境的验证。
 
 - 我们部署了线上体验版的Bella OpenAPI，您可以登录访问[Bella OpenAPI](https://api.bella.top)
 - 如需快速启动并体验服务，请阅读：[快速启动](#快速启动)
-- 想了解详细的环境变量配置和启动部署细节，请阅读：[配置详情](./bella-docs/docs/configuration-details.md) 和 [启动与部署详情](./bella-docs/docs/startup-deployment-details.md)
+- 想了解详细的环境变量配置和启动部署细节，请阅读：[配置详情](./configuration-details.md) 和 [启动与部署详情](./startup-deployment-details.md)
 
 ## 目录
 
@@ -177,7 +174,7 @@ Bella OpenAPI是一个提供了丰富的AI调用能力的API网关，可类比op
 ./start.sh 
 ./start.sh --github-oauth CLIENT_ID:CLIENT_SECRET --google-oauth CLIENT_ID:CLIENT_SECRET --server URL （通过启动参数配置oauth登录服务和服务域名）
 ```
-注意：如果需要配置用户登录，方法见：[OAuth配置](./bella-docs/docs/configuration-details.md#OAuth配置)
+注意：如果需要配置用户登录，方法见：[OAuth配置](./configuration-details.md#OAuth配置)
 
 - 启动服务后会自动检查是否存在系统ak，如果不存在则执行生成系统ak和管理员授权
 - 如果不想在启动时进行管理员授权（仍会检查系统ak是否需要生成），可以使用`--skip-auth`参数：
@@ -193,7 +190,7 @@ Bella OpenAPI是一个提供了丰富的AI调用能力的API网关，可类比op
 - `--server URL`: 配置服务域名
 - `--skip-auth`: 跳过管理员授权流程
 
-更多详细的启动选项和配置说明，请参阅 [启动与部署详情](./bella-docs/docs/startup-deployment-details.md)。
+更多详细的启动选项和配置说明，请参阅 [启动与部署详情](./startup-deployment-details.md)。
 
 ## 常见问题与解决方案
 
@@ -211,12 +208,12 @@ next.js在dev环境做了预加载相关的优化，如果一定需要使用dev�
 
 ### 3. MySQL 或 Redis 容器启动失败
 
-如果您遇到 MySQL 或 Redis 容器启动失败的问题，通常是由于数据目录权限问题或系统配置导致的。详细解决方案请参阅 [启动与部署详情](./bella-docs/docs/startup-deployment-details.md#3-mysql-或-redis-容器启动失败)。
+如果您遇到 MySQL 或 Redis 容器启动失败的问题，通常是由于数据目录权限问题或系统配置导致的。详细解决方案请参阅 [启动与部署详情](./startup-deployment-details.md#3-mysql-或-redis-容器启动失败)。
 
 ## 相关文档
 
-- [配置详情](./bella-docs/docs/configuration-details.md.md) - 详细介绍环境变量配置、数据库配置、缓存配置、Apollo配置和登录服务配置
-- [启动与部署详情](./bella-docs/docs/startup-deployment-details.md) - 详细介绍启动服务、环境变量配置、服务管理和系统初始化等内容
+- [配置详情](./configuration-details.md) - 详细介绍环境变量配置、数据库配置、缓存配置、Apollo配置和登录服务配置
+- [启动与部署详情](./startup-deployment-details.md) - 详细介绍启动服务、环境变量配置、服务管理和系统初始化等内容
 
 ---
 *最后更新: 2025-03-31*
