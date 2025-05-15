@@ -154,6 +154,8 @@ public class CompletionResponse extends OpenapiResponse {
         private int completion_tokens;
         private int prompt_tokens;
         private int total_tokens;
+		private int cache_write_input_tokens;
+		private int cache_read_input_tokens;
 
         public TokenUsage add(TokenUsage u) {
             this.completion_tokens += u.completion_tokens;

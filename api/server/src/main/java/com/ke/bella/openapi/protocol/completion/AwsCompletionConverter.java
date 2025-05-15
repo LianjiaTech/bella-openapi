@@ -39,6 +39,7 @@ import software.amazon.awssdk.services.bedrockruntime.model.ToolResultContentBlo
 import software.amazon.awssdk.services.bedrockruntime.model.ToolUseBlock;
 import software.amazon.awssdk.services.bedrockruntime.model.ToolUseBlockDelta;
 import software.amazon.awssdk.services.bedrockruntime.model.ToolUseBlockStart;
+import software.amazon.awssdk.services.bedrockruntime.model.CachePointBlock;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -204,6 +205,8 @@ public class AwsCompletionConverter {
         tokenUsage.setPrompt_tokens(usage.inputTokens());
         tokenUsage.setCompletion_tokens(usage.outputTokens());
         tokenUsage.setTotal_tokens(usage.totalTokens());
+		tokenUsage.setCache_read_input_tokens(usage.cacheReadInputTokens());
+		tokenUsage.setCache_write_input_tokens(usage.cacheWriteInputTokens());
         return StreamCompletionResponse.builder()
                 .created(DateTimeUtils.getCurrentSeconds())
                 .usage(tokenUsage).build();
@@ -282,7 +285,29 @@ public class AwsCompletionConverter {
     }
 
     private static SystemContentBlock convert2AwsSystemContent(com.ke.bella.openapi.protocol.completion.Message openAiMsg) {
-        return SystemContentBlock.builder().text(openAiMsg.getContent().toString()).build();
+        SystemContentBlock.Builder builder = SystemContentBlock.builder();
+
+        Object content = openAiMsg.getContent();
+        if (content instanceof List) {
+            List<?> contentList = (List<?>) content;
+            if (!contentList.isEmpty() && contentList.get(0) instanceof Map) {
+                Map<?, ?> contentMap = (Map<?, ?>) contentList.get(0);
+                if (contentMap.containsKey("text")) {
+                    builder.text(contentMap.get("text").toString());
+
+                    // Add cache point if cache_control is present, always use "default" type
+                    if (contentMap.containsKey("cache_control")) {
+                        builder.cachePoint(CachePointBlock.builder()
+                                .type("default")
+                                .build());
+                    }
+                }
+            }
+        } else if (content != null) {
+            builder.text(content.toString());
+        }
+
+        return builder.build();
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
@@ -304,10 +329,11 @@ public class AwsCompletionConverter {
                         Map contentMap = (Map) content;
                         String type = contentMap.get("type").toString();
                         if(type.equals("text")) {
-                            contentBlocks.add(convert2TextBlock(contentMap.get("text").toString()));
+                            contentBlocks.add(convert2TextBlock(contentMap));
                         } else if(type.equals("image_url")) {
                             String url = ((Map) contentMap.get("image_url")).get("url").toString();
-                            contentBlocks.add(convert2ImageBlock(url));
+                            Map<String, Object> cacheControl = (Map<String, Object>) contentMap.get("cache_control");
+                            contentBlocks.add(convert2ImageBlock(url, cacheControl));
                         } else if(type.equals("function")) {
                             List toolCalls = (List) contentMap.get("tool_calls");
                             for (Object toolCall : toolCalls) {
@@ -339,7 +365,7 @@ public class AwsCompletionConverter {
         return ContentBlock.fromText(text);
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
+	@SuppressWarnings({ "unchecked", "rawtypes" })
     private static ContentBlock convert2ToolUseBlock(String toolUseId, String name, String arguments) {
         return ContentBlock.fromToolUse(ToolUseBlock
                 .builder()
@@ -349,21 +375,45 @@ public class AwsCompletionConverter {
                 .build());
     }
 
-    private static ContentBlock convert2ImageBlock(String image) {
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    private static ContentBlock convert2TextBlock(Map<String, Object> contentMap) {
+        ContentBlock.Builder blockBuilder = ContentBlock.builder().text(contentMap.get("text").toString());
+
+        // Handle cache_control if present, always use "default" type
+        if (contentMap.containsKey("cache_control")) {
+            blockBuilder.cachePoint(CachePointBlock.builder()
+                    .type("default")
+                    .build());
+        }
+
+        return blockBuilder.build();
+    }
+
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    private static ContentBlock convert2ImageBlock(String image, Map<String, Object> cacheControl) {
         if(!ImageUtils.isDateBase64(image)) {
             throw new IllegalArgumentException("aws的图片仅支持data base64String");
         }
         String format = ImageUtils.extractImageFormat(image);
         String base64String = ImageUtils.extractBase64ImageData(image);
         byte[] decodedBytes = Base64.getDecoder().decode(base64String);
-        return ContentBlock.builder()
+
+        ContentBlock.Builder blockBuilder = ContentBlock.builder()
                 .image(ImageBlock.builder()
                         .format(format)
                         .source(ImageSource.builder()
                                 .bytes(SdkBytes.fromByteArray(decodedBytes))
                                 .build())
-                        .build())
-                .build();
+                        .build());
+
+        // Add cache point if cache_control is present
+        if (cacheControl != null) {
+            blockBuilder.cachePoint(CachePointBlock.builder()
+                    .type("default")
+                    .build());
+        }
+
+        return blockBuilder.build();
     }
 
     private static ToolConfiguration convert2AwsTool(List<com.ke.bella.openapi.protocol.completion.Message.Tool> tools, Object toolChoice) {
