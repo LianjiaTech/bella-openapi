@@ -31,6 +31,7 @@
     <jooq.version>3.14.15</jooq.version>
     <redisson.version>3.9.1</redisson.version>
     <apollo.version>2.1.0</apollo.version>
+    <awssdk.version>2.31.42</awssdk.version>
   </properties>
 
   <licenses>
