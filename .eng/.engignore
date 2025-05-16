@@ -40,3 +40,6 @@ web/yarn.lock
 .github/
 .gitignore
 LICENSE
+
+#忽略docs-site
+bella-docs

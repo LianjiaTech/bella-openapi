@@ -3,11 +3,8 @@ package com.ke.bella.openapi.protocol.completion;
 import java.net.URI;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import java.time.temporal.Temporal;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
-
 import org.apache.commons.lang3.StringUtils;
 
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -16,9 +13,14 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.core.SdkSystemSetting;
 import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
 import software.amazon.awssdk.core.exception.SdkClientException;
+import software.amazon.awssdk.http.Protocol;
+import software.amazon.awssdk.http.SdkHttpConfigurationOption;
+import software.amazon.awssdk.http.apache.ApacheHttpClient;
+import software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
+import software.amazon.awssdk.utils.AttributeMap;
 import software.amazon.awssdk.utils.ToString;
 
 public class AwsClientManager {
@@ -35,7 +37,13 @@ public class AwsClientManager {
                         .endpointOverride(URI.create(endpoint))
                         .credentialsProvider(provide(accessKeyId, secretKey))
                         .region(Region.of(region))
-                        .overrideConfiguration(ClientOverrideConfiguration.builder().apiCallTimeout(Duration.of(180, ChronoUnit.SECONDS)).build())
+                        .httpClient(ApacheHttpClient.builder()
+                                .buildWithDefaults(AttributeMap.builder()
+                                        .put(SdkHttpConfigurationOption.PROTOCOL, Protocol.HTTP1_1)
+                                        .build()))
+                        .overrideConfiguration(ClientOverrideConfiguration.builder()
+                                .apiCallTimeout(Duration.of(180, ChronoUnit.SECONDS))
+                                .build())
                         .build());
     }
 
@@ -45,7 +53,13 @@ public class AwsClientManager {
                         .endpointOverride(URI.create(endpoint))
                         .credentialsProvider(provide(accessKeyId, secretKey))
                         .region(Region.of(region))
-                        .overrideConfiguration(ClientOverrideConfiguration.builder().apiCallTimeout(Duration.of(180, ChronoUnit.SECONDS)).build())
+                        .httpClient(NettyNioAsyncHttpClient.builder()
+                                .buildWithDefaults(AttributeMap.builder()
+                                        .put(SdkHttpConfigurationOption.PROTOCOL, Protocol.HTTP1_1)
+                                        .build()))
+                        .overrideConfiguration(ClientOverrideConfiguration.builder()
+                                .apiCallTimeout(Duration.of(180, ChronoUnit.SECONDS))
+                                .build())
                         .build());
     }
 
