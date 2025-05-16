@@ -8,7 +8,7 @@ Bella OpenAPI is an API gateway providing rich AI capabilities, comparable to op
 
 - We have deployed an online experience version of Bella OpenAPI. You can log in and access [Bella OpenAPI](https://api.bella.top)
 - For quick startup and service experience, please read: [Quick Start](#quick-start)
-- To understand detailed environment variable configuration and startup deployment details, please read: [Configuration Details](./bella-docs/i18n/en/docusaurus-plugin-content-docs/current/configuration-details.md) and [Startup and Deployment Details](./bella-docs/i18n/en/docusaurus-plugin-content-docs/current/startup-deployment-details.md)
+- To understand detailed environment variable configuration and startup deployment details, please read: [Configuration Details](https://bella-top.github.io/bella-docs/en/docs/configuration-details) and [Startup and Deployment Details](https://bella-top.github.io/bella-docs/en/docs/startup-deployment-details)
 
 ## Table of Contents
 
@@ -173,7 +173,7 @@ If the image doesn't exist locally, it will pull from the remote repository
 ./start.sh 
 ./start.sh --github-oauth CLIENT_ID:CLIENT_SECRET --google-oauth CLIENT_ID:CLIENT_SECRET --server URL (configure oauth login service and service domain through startup parameters)
 ```
-Note: If you need to configure user login, see: [OAuth Configuration](./bella-docs/i18n/en/docusaurus-plugin-content-docs/current/configuration-details.md#oauth-configuration)
+Note: If you need to configure user login, see: [OAuth Configuration](https://bella-top.github.io/bella-docs/en/docs/configuration-details#oauth-configuration)
 
 - After starting the service, it will automatically check if a system ak exists; if not, it will generate a system ak and administrator authorization
 - If you don't want to perform administrator authorization at startup (it will still check if the system ak needs to be generated), you can use the `--skip-auth` parameter:
@@ -189,7 +189,7 @@ Common options:
 - `--server URL`: Configure service domain
 - `--skip-auth`: Skip administrator authorization process
 
-For more detailed startup options and configuration instructions, please refer to [Startup and Deployment Details](./bella-docs/i18n/en/docusaurus-plugin-content-docs/current/startup-deployment-details.md).
+For more detailed startup options and configuration instructions, please refer to [Startup and Deployment Details](https://bella-top.github.io/bella-docs/en/docs/startup-deployment-details).
 
 ## FAQ and Solutions
 
@@ -205,14 +205,10 @@ Next.js has implemented preloading optimizations in the dev environment. If you 
 4. Delete Redis data: `rm -rf ./redis`
 5. Rebuild and restart: `./start.sh -b`
 
-### 3. MySQL or Redis container fails to start
-
-If you encounter MySQL or Redis container startup failures, it's usually due to data directory permission issues or system configuration. For detailed solutions, please refer to [Startup and Deployment Details](./bella-docs/i18n/en/docusaurus-plugin-content-docs/current/startup-deployment-details.md#3-mysql-or-redis-container-fails-to-start).
-
 ## Related Documentation
 
-- [Configuration Details](./bella-docs/i18n/en/docusaurus-plugin-content-docs/current/configuration-details.md) - Detailed introduction to environment variable configuration, database configuration, cache configuration, Apollo configuration, and login service configuration
-- [Startup and Deployment Details](./bella-docs/i18n/en/docusaurus-plugin-content-docs/current/startup-deployment-details.md) - Detailed introduction to starting services, environment variable configuration, service management, and system initialization
+- [Configuration Details](https://bella-top.github.io/bella-docs/en/docs/configuration-details) - Detailed introduction to environment variable configuration, database configuration, cache configuration, Apollo configuration, and login service configuration
+- [Startup and Deployment Details](https://bella-top.github.io/bella-docs/en/docs/startup-deployment-details) - Detailed introduction to starting services, environment variable configuration, service management, and system initialization
 
 ---
 *Last updated: 2025-03-31*
