@@ -1,10 +1,10 @@
-README.md:这个文件介绍了Bella OpenAPI项目的主要功能和系统优势，包括AI能力点、元数据管理、统一登录服务、计费与限流等多个方面。文件中详细描述了系统的架构和优势，如高性能缓存设计和分布式限流机制。还提供了快速启动的教程和常见问题的解决方案。
-README_EN.md:This file provides an English overview of the Bella OpenAPI project, highlighting its main functionalities and system advantages. It covers AI capabilities, metadata management, unified login service, and billing & rate limiting, along with detailed descriptions of system architecture and advantages like high-performance cache design and distributed rate limiting. A quick start guide and solutions to common issues are also included.
+README.md:README.md 是 Bella OpenAPI 项目的中文介绍文档，与 README_EN.md 内容相似，提供了项目功能、系统优势、快速启动等信息的中文版本。文件详细描述了 AI 能力点和元数据管理的结构，但未涉及具体的代码实现。
+README_EN.md:README_EN.md 文件是 Bella OpenAPI 项目的英文介绍文档，详细说明了项目的功能、系统优势、快速启动指南以及常见问题。文件重点介绍了 AI 能力、元数据管理、统一登录服务等核心功能，但未涉及代码实现。
 api/.editorconfig:项目的代码格式配置文件，规范化各类文件的缩进和编码格式。
 api/Dockerfile:这个文件是用于构建bella-openapi项目的Dockerfile，设置了运行环境和所需目录以及端口暴露。
 api/build.sh:此脚本用于编译API服务，包含Maven构建流程及相关配置。
 api/lombok.config:该配置文件用于控制lombok插件行为，例如日志字段名称、是否静态等。
-api/pom.xml:此文件是Maven的POM文件，定义了Bella OpenAPI项目的父模块信息和子模块(server, sdk, spi)的配置。包含Spring Boot和Spring Cloud等依赖管理，声明了项目的开发者和源码管理信息。
+api/pom.xml:api/pom.xml 是 Maven 项目的配置文件，定义了项目的模块、依赖管理和构建插件。主要功能是管理项目的依赖和构建过程，包含的关键配置有 Spring Boot、Spring Cloud 以及各种插件如 maven-source-plugin 和 maven-gpg-plugin，和 server、sdk、spi 模块的交互显著。
 api/run.sh:用于启动Java应用的脚本，设置JVM及GC参数，并根据环境变量适配不同配置。
 api/sdk/pom.xml:这个文件是 Maven 项目对象模型配置文件，定义了 `sdk` 模块的依赖和插件，涉及 Spring, Lombok, OkHttp 等。
 api/sdk/src/main/java/com/ke/bella/openapi/BaseDto.java:BaseDto类是Bella API中数据传输对象的基类，提供了创建和修改用户的基础信息，如用户ID与名称及时间戳，用于其他DTO的继承。
