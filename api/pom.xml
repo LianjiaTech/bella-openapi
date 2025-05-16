@@ -20,7 +20,7 @@
   <version>1.0.3</version>
   <name>bella-openapi</name>
   <description>Bella OpenAPI SDK</description>
-  <url>https://github.com/bella-top/bella-openapi</url>
+  <url>https://github.com/LianjiaTech/bella-openapi</url>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -31,6 +31,7 @@
     <jooq.version>3.14.15</jooq.version>
     <redisson.version>3.9.1</redisson.version>
     <apollo.version>2.1.0</apollo.version>
+    <awssdk.version>2.31.42</awssdk.version>
   </properties>
 
   <licenses>
@@ -50,9 +51,9 @@
   </developers>
 
   <scm>
-    <connection>scm:git:git://github.com/bella-top/bella-openapi.git</connection>
-    <developerConnection>scm:git:ssh://github.com:bella-top/bella-openapi.git</developerConnection>
-    <url>https://github.com/bella-top/bella-openapi/tree/main</url>
+    <connection>scm:git:git://github.com/LianjiaTech/bella-openapi.git</connection>
+    <developerConnection>scm:git:ssh://github.com:LianjiaTech/bella-openapi.git</developerConnection>
+    <url>https://github.com/LianjiaTech/bella-openapi/tree/develop</url>
   </scm>
 
   <distributionManagement>
