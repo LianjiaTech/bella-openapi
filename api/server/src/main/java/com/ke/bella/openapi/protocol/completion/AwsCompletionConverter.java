@@ -286,28 +286,42 @@ public class AwsCompletionConverter {
     private static List<SystemContentBlock> convert2AwsSystemContent(com.ke.bella.openapi.protocol.completion.Message openAiMsg) {
         List<SystemContentBlock> blocks = new ArrayList<>();
         Object content = openAiMsg.getContent();
-        String textContent = null;
         boolean hasCacheControl = false;
 
         if (content instanceof List) {
             List<?> contentList = (List<?>) content;
-            if (!contentList.isEmpty() && contentList.get(0) instanceof Map) {
-                Map<?, ?> contentMap = (Map<?, ?>) contentList.get(0);
-                if (contentMap.containsKey("text")) {
-                    textContent = contentMap.get("text").toString();
-                    hasCacheControl = contentMap.containsKey("cache_control");
+            for (Object item : contentList) {
+                if (item instanceof Map) {
+                    Map<?, ?> contentMap = (Map<?, ?>) item;
+                    if (contentMap.containsKey("text")) {
+                        String textContent = contentMap.get("text").toString();
+                        if (textContent != null && !textContent.isEmpty()) {
+                            blocks.add(SystemContentBlock.builder().text(textContent).build());
+                        }
+
+                        // Track if any item has cache_control
+                        if (contentMap.containsKey("cache_control")) {
+                            hasCacheControl = true;
+                        }
+                    }
+                }
+            }
+
+            // If no blocks were added from list processing, fall back to using content as string
+            if (blocks.isEmpty() && content != null) {
+                String textContent = content.toString();
+                if (textContent != null && !textContent.isEmpty()) {
+                    blocks.add(SystemContentBlock.builder().text(textContent).build());
                 }
             }
         } else if (content != null) {
-            textContent = content.toString();
+            String textContent = content.toString();
+            if (textContent != null && !textContent.isEmpty()) {
+                blocks.add(SystemContentBlock.builder().text(textContent).build());
+            }
         }
 
-        // Add text block if we have text content
-        if (textContent != null && !textContent.isEmpty()) {
-            blocks.add(SystemContentBlock.builder().text(textContent).build());
-        }
-
-        // Add cache point block if needed
+        // Add cache point at the end if needed
         if (hasCacheControl) {
             blocks.add(SystemContentBlock.builder()
                     .cachePoint(CachePointBlock.builder()
