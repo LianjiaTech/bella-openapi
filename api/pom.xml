@@ -20,7 +20,7 @@
   <version>1.0.3</version>
   <name>bella-openapi</name>
   <description>Bella OpenAPI SDK</description>
-  <url>https://github.com/bella-top/bella-openapi</url>
+  <url>https://github.com/LianjiaTech/bella-openapi</url>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -51,9 +51,9 @@
   </developers>
 
   <scm>
-    <connection>scm:git:git://github.com/bella-top/bella-openapi.git</connection>
-    <developerConnection>scm:git:ssh://github.com:bella-top/bella-openapi.git</developerConnection>
-    <url>https://github.com/bella-top/bella-openapi/tree/main</url>
+    <connection>scm:git:git://github.com/LianjiaTech/bella-openapi.git</connection>
+    <developerConnection>scm:git:ssh://github.com:LianjiaTech/bella-openapi.git</developerConnection>
+    <url>https://github.com/LianjiaTech/bella-openapi/tree/develop</url>
   </scm>
 
   <distributionManagement>
