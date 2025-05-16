@@ -4,7 +4,7 @@ api/.editorconfig:项目的代码格式配置文件，规范化各类文件的�
 api/Dockerfile:这个文件是用于构建bella-openapi项目的Dockerfile，设置了运行环境和所需目录以及端口暴露。
 api/build.sh:此脚本用于编译API服务，包含Maven构建流程及相关配置。
 api/lombok.config:该配置文件用于控制lombok插件行为，例如日志字段名称、是否静态等。
-api/pom.xml:Maven项目对象模型文件，定义了项目的模块化结构及依赖管理，包括server、sdk、spi模块。
+api/pom.xml:此文件是Maven的POM文件，定义了Bella OpenAPI项目的父模块信息和子模块(server, sdk, spi)的配置。包含Spring Boot和Spring Cloud等依赖管理，声明了项目的开发者和源码管理信息。
 api/run.sh:用于启动Java应用的脚本，设置JVM及GC参数，并根据环境变量适配不同配置。
 api/sdk/pom.xml:这个文件是 Maven 项目对象模型配置文件，定义了 `sdk` 模块的依赖和插件，涉及 Spring, Lombok, OkHttp 等。
 api/sdk/src/main/java/com/ke/bella/openapi/BaseDto.java:BaseDto类是Bella API中数据传输对象的基类，提供了创建和修改用户的基础信息，如用户ID与名称及时间戳，用于其他DTO的继承。
@@ -128,7 +128,7 @@ api/sdk/src/main/java/com/ke/bella/openapi/utils/Renders.java:提供Pebble模板
 api/sdk/src/main/resources/com/ke/bella/openapi/simulation/PythonFuncCall.g4:这个文件定义了PythonFuncCall语法的ANTLR语法规则，用于解析带有函数调用的Python代码块。
 api/sdk/src/main/resources/com/ke/bella/openapi/simulation/function_call_template.pebble:这是一个Pebble模板文件，用于生成模型中的函数调用能力，引入了响应用户请求的多种策略。
 api/sdk/src/main/resources/com/ke/bella/opnepai/mock/content.txt:这个文件包含《道德经》全文及其译文，用于文本分析或演示。没有关键类或函数，与其他文件没有直接交互。
-api/server/pom.xml:项目的Maven配置文件，定义了项目的依赖、插件和构建配置。关键依赖包括Spring Boot及JOOQ等，能够与数据库进行交互。
+api/server/pom.xml:此文件是server模块的Maven POM文件，继承自父POM(bella-openapi)，定义了模块的依赖，如Spring Boot、Jooq等，并配置了数据库连接属性以及代码生成插件。
 api/server/sql/01-apikey.sql:该SQL文件用于创建apikey、apikey_role和apikey_month_cost三个数据库表，这些表用于存储API密钥、角色及每月花费等信息。
 api/server/sql/02-meta.sql:SQL脚本文件，创建和管理应用中的数据库表结构，涉及模型、能力点和通道等表，定义了相关的字段和约束，用于系统的数据存储及关系定义。
 api/server/sql/03-space.sql:该SQL文件用于创建空间、空间角色和空间成员信息表，定义了相应的字段和键。
@@ -263,8 +263,8 @@ api/server/src/main/java/com/ke/bella/openapi/protocol/completion/AliAdaptor.jav
 api/server/src/main/java/com/ke/bella/openapi/protocol/completion/AliCompletionRequest.java:此文件定义了AliCompletionRequest类，用于封装请求模型的参数和配置。包含内部类AliCompletionInput和AliCompletionParameters，支持模型推理参数设置。没有明显的外部交互。
 api/server/src/main/java/com/ke/bella/openapi/protocol/completion/AliCompletionResponse.java:阿里完成响应类，定义了处理来自阿里的响应信息的结构，支持JSON属性绑定，用于接收完成模型的反馈。
 api/server/src/main/java/com/ke/bella/openapi/protocol/completion/AwsAdaptor.java:这个文件实现了CompletionAdaptor接口，负责处理与AWS协议相关的操作。提供了文本生成请求和流式文本生成的功能。关键类/方法：AwsCompletionConverter、completion、streamCompletion等。
-api/server/src/main/java/com/ke/bella/openapi/protocol/completion/AwsClientManager.java:这个文件定义了AwsClientManager类，负责管理AWS客户端的创建和缓存。它包含用于创建同步和异步BedrockRuntime客户端的方法，以及用于提供AWS凭据的AwsAuthorizationProvider类。
-api/server/src/main/java/com/ke/bella/openapi/protocol/completion/AwsCompletionConverter.java:AwsCompletionConverter.java负责将OpenAI请求转换为AWS请求，并处理响应。包括convert2AwsRequest等方法，用于请求转换和响应解析。与AWS Bedrock Runtime集成，处理对话请求的转换。
+api/server/src/main/java/com/ke/bella/openapi/protocol/completion/AwsClientManager.java:此Java文件定义了AwsClientManager类，负责管理AWS BedrockRuntime客户端的创建和缓存。包含同步和异步客户端的创建方法及内部认证提供者AwsAuthorizationProvider类。
+api/server/src/main/java/com/ke/bella/openapi/protocol/completion/AwsCompletionConverter.java:这个文件实现了一个转换器类AwsCompletionConverter，用于将OpenAI的请求和响应转换为AWS Bedrock服务的格式。主要包含的方法有convert2AwsRequest、convert2AwsStreamRequest、convert2OpenAIResponse等，用于不同类型的数据转换。文件中使用了多种AWS SDK类，与AWS服务进行交互，并且依赖于多个内部工具类如JacksonUtils和DateTimeUtils。
 api/server/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionAdaptor.java:定义CompletionAdaptor接口，用于处理补全请求，支持普通和流式补全。关联CompletionProperty类，用于异步或同步数据补全。
 api/server/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionAdaptorDelegator.java:CompletionAdaptorDelegator.java定义了一个接口，用于处理完成请求和流式完成请求，主要提供了completion和streamCompletion方法，处理请求的实际逻辑由实装类提供。
 api/server/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionLogHandler.java:处理Completion接口的日志记录，计算完成请求的时间和令牌使用。
