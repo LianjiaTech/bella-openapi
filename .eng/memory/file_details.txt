@@ -62,7 +62,7 @@ api/sdk/src/main/java/com/ke/bella/openapi/protocol/asr/HuoshanProperty.java:定
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/asr/flash/FlashAsrPriceInfo.java:实现了FlashAsrPriceInfo类，提供ASR的价格信息描述。
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/asr/flash/FlashAsrResponse.java:这个文件定义了FlashAsrResponse类，继承自OpenapiResponse，用于ASR语音识别的闪电响应，包括任务ID、用户信息和闪电结果等。
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/AliProperty.java:AliProperty类继承自CompletionProperty，主要描述阿里云完成任务的属性，例如鉴权配置和部署名称等。
-api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/AwsProperty.java:描述了AWS相关的属性配置类，用于协议适配器中。支持区域、部署名称等配置，提供鉴权和思考过程支持。
+api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/AwsProperty.java:
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionModelFeatures.java:定义了CompletionModelFeatures类，描述了完成模型的功能特性，如流式输出和函数调用，主要用于模型功能配置。
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionModelProperties.java:定义了CompletionModelProperties类，实现IModelProperties接口，用于描述完成模型的输入和输出上下文属性。
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionPriceInfo.java:实现CompletionPriceInfo类，提供完成操作的价格信息。
@@ -264,7 +264,7 @@ api/server/src/main/java/com/ke/bella/openapi/protocol/completion/AliCompletionR
 api/server/src/main/java/com/ke/bella/openapi/protocol/completion/AliCompletionResponse.java:阿里完成响应类，定义了处理来自阿里的响应信息的结构，支持JSON属性绑定，用于接收完成模型的反馈。
 api/server/src/main/java/com/ke/bella/openapi/protocol/completion/AwsAdaptor.java:这个文件实现了CompletionAdaptor接口，负责处理与AWS协议相关的操作。提供了文本生成请求和流式文本生成的功能。关键类/方法：AwsCompletionConverter、completion、streamCompletion等。
 api/server/src/main/java/com/ke/bella/openapi/protocol/completion/AwsClientManager.java:此Java文件定义了AwsClientManager类，负责管理AWS BedrockRuntime客户端的创建和缓存。包含同步和异步客户端的创建方法及内部认证提供者AwsAuthorizationProvider类。
-api/server/src/main/java/com/ke/bella/openapi/protocol/completion/AwsCompletionConverter.java:这个文件实现了将OpenAI请求和响应转换为AWS格式的功能。主要包含的关键类是AwsCompletionConverter，提供了多种静态方法用于转换请求和响应，如convert2AwsRequest、convert2OpenAIResponse等。通过工具配置和消息生成与其他文件交互，特别是与AWS SDK相关的模型类。
+api/server/src/main/java/com/ke/bella/openapi/protocol/completion/AwsCompletionConverter.java:
 api/server/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionAdaptor.java:定义CompletionAdaptor接口，用于处理补全请求，支持普通和流式补全。关联CompletionProperty类，用于异步或同步数据补全。
 api/server/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionAdaptorDelegator.java:CompletionAdaptorDelegator.java定义了一个接口，用于处理完成请求和流式完成请求，主要提供了completion和streamCompletion方法，处理请求的实际逻辑由实装类提供。
 api/server/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionLogHandler.java:处理Completion接口的日志记录，计算完成请求的时间和令牌使用。
