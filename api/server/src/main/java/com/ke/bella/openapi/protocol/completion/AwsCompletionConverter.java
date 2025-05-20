@@ -68,7 +68,7 @@ public class AwsCompletionConverter {
      * @return
      */
     public static ConverseRequest convert2AwsRequest(CompletionRequest openAIRequest, AwsProperty property) {
-        Pair<List<SystemContentBlock>, List<Message>> pair = generateMsg(openAIRequest.getMessages());
+        Pair<List<SystemContentBlock>, List<Message>> pair = generateMsg(openAIRequest.getMessages(), property);
         try {
             rewriteMaxTokens(openAIRequest, property);
             ConverseRequest.Builder builder = ConverseRequest
@@ -93,7 +93,7 @@ public class AwsCompletionConverter {
         try {
             rewriteMaxTokens(openAIRequest, property);
             Pair<List<SystemContentBlock>, List<software.amazon.awssdk.services.bedrockruntime.model.Message>> pair = generateMsg(
-                    openAIRequest.getMessages());
+                    openAIRequest.getMessages(), property);
             ConverseStreamRequest.Builder builder = ConverseStreamRequest
                     .builder()
                     .modelId(openAIRequest.getModel())
@@ -247,7 +247,7 @@ public class AwsCompletionConverter {
         return toolCall;
     }
 
-    private static Pair<List<SystemContentBlock>, List<Message>> generateMsg(List<com.ke.bella.openapi.protocol.completion.Message> openAIMsgList) {
+    private static Pair<List<SystemContentBlock>, List<Message>> generateMsg(List<com.ke.bella.openapi.protocol.completion.Message> openAIMsgList, AwsProperty property) {
         List<SystemContentBlock> systemContentBlocks = new ArrayList<>();
         List<software.amazon.awssdk.services.bedrockruntime.model.Message> messages = new ArrayList<>();
         String currentRole = "";
@@ -257,7 +257,7 @@ public class AwsCompletionConverter {
             if(role.equals("system") || role.equals("developer")) {
                 if(message.getContent() != null && !"".equals(message.getContent())) {
                     // Get list of SystemContentBlocks (might be multiple if both text and cachePoint needed)
-                    systemContentBlocks.addAll(convert2AwsSystemContent(message));
+                    systemContentBlocks.addAll(convert2AwsSystemContent(message, property));
                 }
             } else {
                 if(!role.equals(currentRole)) {
@@ -270,7 +270,7 @@ public class AwsCompletionConverter {
                     }
                     currentRole = role;
                 }
-                List<ContentBlock> contents = convert2AwsContent(message);
+                List<ContentBlock> contents = convert2AwsContent(message, property);
                 currentContents.addAll(contents);
             }
         }
@@ -283,7 +283,7 @@ public class AwsCompletionConverter {
         return Pair.of(systemContentBlocks, messages);
     }
 
-    private static List<SystemContentBlock> convert2AwsSystemContent(com.ke.bella.openapi.protocol.completion.Message openAiMsg) {
+    private static List<SystemContentBlock> convert2AwsSystemContent(com.ke.bella.openapi.protocol.completion.Message openAiMsg, AwsProperty property) {
         List<SystemContentBlock> blocks = new ArrayList<>();
         Object content = openAiMsg.getContent();
         boolean hasCacheControl = false;
@@ -322,7 +322,7 @@ public class AwsCompletionConverter {
         }
 
         // Add cache point at the end if needed
-        if (hasCacheControl) {
+        if (hasCacheControl && property.supportCache) {
             blocks.add(SystemContentBlock.builder()
                     .cachePoint(CachePointBlock.builder()
                             .type("default")
@@ -334,7 +334,7 @@ public class AwsCompletionConverter {
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    private static List<ContentBlock> convert2AwsContent(com.ke.bella.openapi.protocol.completion.Message message) {
+    private static List<ContentBlock> convert2AwsContent(com.ke.bella.openapi.protocol.completion.Message message, AwsProperty property) {
         List<ContentBlock> contentBlocks = new ArrayList<>();
         if(message.getRole().equals("tool")) {
             contentBlocks.add(ContentBlock.fromToolResult(
@@ -352,11 +352,11 @@ public class AwsCompletionConverter {
                         Map contentMap = (Map) content;
                         String type = contentMap.get("type").toString();
                         if(type.equals("text")) {
-                            contentBlocks.addAll(convert2TextBlock(contentMap));
+                            contentBlocks.addAll(convert2TextBlock(contentMap, property));
                         } else if(type.equals("image_url")) {
                             String url = ((Map) contentMap.get("image_url")).get("url").toString();
                             Map<String, Object> cacheControl = (Map<String, Object>) contentMap.get("cache_control");
-                            contentBlocks.addAll(convert2ImageBlock(url, cacheControl));
+                            contentBlocks.addAll(convert2ImageBlock(url, cacheControl, property));
                         } else if(type.equals("function")) {
                             List toolCalls = (List) contentMap.get("tool_calls");
                             for (Object toolCall : toolCalls) {
@@ -399,14 +399,14 @@ public class AwsCompletionConverter {
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    private static List<ContentBlock> convert2TextBlock(Map<String, Object> contentMap) {
+    private static List<ContentBlock> convert2TextBlock(Map<String, Object> contentMap, AwsProperty property) {
 		List<ContentBlock> contentBlocks = new ArrayList<>();
 
         ContentBlock.Builder textBlock = ContentBlock.builder().text(contentMap.get("text").toString());
 		contentBlocks.add(textBlock.build());
 
         // Handle cache_control if present, always use "default" type
-        if (contentMap.containsKey("cache_control")) {
+        if (contentMap.containsKey("cache_control") && property.supportCache) {
             contentBlocks.add(ContentBlock.builder()
                     .cachePoint(CachePointBlock.builder()
                             .type("default")
@@ -418,7 +418,7 @@ public class AwsCompletionConverter {
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    private static List<ContentBlock> convert2ImageBlock(String image, Map<String, Object> cacheControl) {
+    private static List<ContentBlock> convert2ImageBlock(String image, Map<String, Object> cacheControl, AwsProperty property) {
         if(!ImageUtils.isDateBase64(image)) {
             throw new IllegalArgumentException("aws的图片仅支持data base64String");
         }
@@ -439,7 +439,7 @@ public class AwsCompletionConverter {
 		contentBlocks.add(imageBlock.build());
 
         // Add cache point if cache_control is present
-        if (cacheControl != null) {
+        if (cacheControl != null && property.supportCache) {
             contentBlocks.add(ContentBlock.builder()
                     .cachePoint(CachePointBlock.builder()
                             .type("default")
