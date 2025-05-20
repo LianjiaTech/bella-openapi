@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -20,7 +21,8 @@ public class AwsProperty extends CompletionProperty {
     String region;
     String deployName;
     boolean supportThink;
-    Map<String, Object> additionalParams;
+    boolean supportCache;
+    Map<String, Object> additionalParams = new HashMap<>();
     Integer budgetTokens;
     Integer defaultMaxTokens;
 
