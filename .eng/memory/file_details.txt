@@ -1,5 +1,5 @@
-README.md:README.md 是 Bella OpenAPI 项目的中文介绍文档，与 README_EN.md 内容相似，提供了项目功能、系统优势、快速启动等信息的中文版本。文件详细描述了 AI 能力点和元数据管理的结构，但未涉及具体的代码实现。
-README_EN.md:README_EN.md 文件是 Bella OpenAPI 项目的英文介绍文档，详细说明了项目的功能、系统优势、快速启动指南以及常见问题。文件重点介绍了 AI 能力、元数据管理、统一登录服务等核心功能，但未涉及代码实现。
+README.md:这个文件是Bella OpenAPI项目的中文README文档，主要介绍了项目的核心功能、系统优势、快速启动步骤、常见问题及解决方案。文件详细描述了AI能力点、元数据管理、统一登录服务以及计费与限流等功能。与其他文件的交互主要通过提供的文档链接来实现，例如配置详情和启动部署详情。
+README_EN.md:这个文件是Bella OpenAPI项目的英文README文档，与中文版本内容基本相同，提供了项目的核心功能、系统优势、快速启动步骤、常见问题及解决方案的说明。它也详细描述了AI能力点、元数据管理等，并通过文档链接与其他文件进行交互。
 api/.editorconfig:项目的代码格式配置文件，规范化各类文件的缩进和编码格式。
 api/Dockerfile:这个文件是用于构建bella-openapi项目的Dockerfile，设置了运行环境和所需目录以及端口暴露。
 api/build.sh:此脚本用于编译API服务，包含Maven构建流程及相关配置。
@@ -384,7 +384,7 @@ doc/realtime.md:实时语音对话接口文档，详细描述了接口功能、�
 doc/tts.md:语音合成接口文档，描述了如何根据文本生成语音，包括请求方法、参数、响应格式及示例。支持多种声音和音频格式，是其他开发者进行语音合成集成的指南。
 docker-compose.yml:定义了多个Docker服务的编排配置，包括API服务、Web服务、Nginx、MySQL和Redis服务。配置了环境变量、端口和依赖关系等。
 generate-system-apikey.sh:用于生成系统API key并插入数据库的脚本。通过检查Docker中的MySQL容器，生成API key、计算SHA值并插入数据库表，保存访问密钥到文件中。
-nginx/conf.d/default.conf:Nginx配置文件，用于反向代理，请求/v1, /console, /openapi路径转发到API服务，其他转发到Web服务。
+nginx/conf.d/default.conf:这个文件是Nginx的配置文件，定义了服务器的基本设置和路径转发规则。主要将/v1、/console、/openapi路径的请求转发到api服务，其他请求转发到web服务。文件通过代理设置与bella-openapi-api和bella-openapi-web服务进行交互。
 package-lock.json:记录了bella-openapi项目的所有依赖及其版本信息，确保项目在不同环境中的一致性。
 package.json:定义了项目的JavaScript依赖项，以npm包管理格式列出所有所需的库及其版本范围。
 start-details.md:提供Bella OpenAPI的启动与部署说明，涵盖项目概述、前提条件、启动服务、环境变量配置、服务管理和系统初始化等。
