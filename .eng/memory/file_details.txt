@@ -67,7 +67,7 @@ api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionModelFe
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionModelProperties.java:定义了CompletionModelProperties类，实现IModelProperties接口，用于描述完成模型的输入和输出上下文属性。
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionPriceInfo.java:实现CompletionPriceInfo类，提供完成操作的价格信息。
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionProperty.java:定义Completion配置属性类，实现协议属性接口，包含编码类型、队列名等配置。
-api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionRequest.java:该文件定义了CompletionRequest类，表示发往OpenAPI的请求。
+api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionRequest.java:这个文件定义了CompletionRequest类，主要用于构建开放API的请求。它实现了UserRequest接口，并包含多个字段如model、user、messages等，用于配置API请求的参数和行为。
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionResponse.java:该文件定义了CompletionResponse类，包含OpenAPI响应的细节信息与Choice内部类。
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionSseListener.java:实现了CompletionSseListener类，用于处理SSE事件流中的完成消息，通过Callback接口进行回调。
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/Message.java:定义了Message类，用于描述协议消息的结构体，包含角色、内容、功能调用等信息。
@@ -494,8 +494,8 @@ web/src/components/ui/textarea.tsx:这个文件定义了Textarea组件，允许�
 web/src/components/ui/toast.tsx:实现Toast消息提示组件，支持提示消息的显示和关闭，使用Radix UI库和React。
 web/src/components/ui/toaster.tsx:这个文件实现了Toaster组件，主要用于显示即时通知。使用了useToast钩子管理通知状态。
 web/src/components/ui/tooltip.tsx:定义了提示工具组件使用Radix UI的Tooltip Primitive，包括触发和内容显示。用于创建可悬停查看的提示信息。
-web/src/components/user/client-header.tsx:client-header.tsx定义了React组件ClientHeader，它是一个用户界面组件，用于在网页上显示包含导航栏和用户信息的头部，用到了UserNav等子组件，处理登录会话、用户信息及权限等功能。
-web/src/components/user/user-nav.tsx:用户导航组件，显示用户信息和导航选项。包括登出功能，链接到主页、能力点监控等页面。依赖next/link和用户权限检测以动态显示内容。
+web/src/components/user/client-header.tsx:这个文件定义了ClientHeader组件，用于在页面顶部展示用户信息和导航栏。它通过useUser Hook获取用户信息，并根据用户状态显示不同的导航栏组件。
+web/src/components/user/user-nav.tsx:这个文件实现了UserNav组件，用于展示用户的导航菜单，包括用户信息展示和登出功能。它使用了DropdownMenu组件来实现下拉菜单，并与openapi API交互以处理用户登出请求。
 web/src/config.ts:config.ts中定义了与环境变量相关的API地址配置，用于应用的HTTP请求目标。
 web/src/hooks/use-toast.ts:定义通知弹窗（toast）的状态管理和操作，允许创建、更新、消除通知，并提供自定义样式。
 web/src/lib/ant-path-matcher.ts:ant-path-matcher.ts实现了路径匹配功能，模仿Spring的AntPathMatcher。包含静态方法match和doMatch，用于路径与模式的比较操作。是一个路径匹配实用工具。
