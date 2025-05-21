@@ -80,7 +80,7 @@ export function UserNav({ user }: UserNavProps) {
                     </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem>
-                    <Link href="https://github.com/LianjiaTech/bella-openapi/wiki/Bella-Openapi-Doc" className="w-full text-sm">
+                    <Link href="https://doc.bella.top" className="w-full text-sm">
                         Docs
                     </Link>
                 </DropdownMenuItem>

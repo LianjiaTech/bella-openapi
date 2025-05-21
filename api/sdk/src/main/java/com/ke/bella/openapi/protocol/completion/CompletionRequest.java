@@ -150,6 +150,11 @@ public class CompletionRequest implements UserRequest, Serializable {
 
     private Boolean parallel_tool_calls;
 
+    /**
+     * 是否开启思考模式
+     */
+    private Boolean enable_thinking;
+
     @Data
     public static class StreamOptions {
         /**
