@@ -1,5 +1,5 @@
-README.md:README.md 是 Bella OpenAPI 项目的中文介绍文档，与 README_EN.md 内容相似，提供了项目功能、系统优势、快速启动等信息的中文版本。文件详细描述了 AI 能力点和元数据管理的结构，但未涉及具体的代码实现。
-README_EN.md:README_EN.md 文件是 Bella OpenAPI 项目的英文介绍文档，详细说明了项目的功能、系统优势、快速启动指南以及常见问题。文件重点介绍了 AI 能力、元数据管理、统一登录服务等核心功能，但未涉及代码实现。
+README.md:这个文件是Bella OpenAPI项目的中文README文档，主要介绍了项目的核心功能、系统优势、快速启动步骤、常见问题及解决方案。文件详细描述了AI能力点、元数据管理、统一登录服务以及计费与限流等功能。与其他文件的交互主要通过提供的文档链接来实现，例如配置详情和启动部署详情。
+README_EN.md:这个文件是Bella OpenAPI项目的英文README文档，与中文版本内容基本相同，提供了项目的核心功能、系统优势、快速启动步骤、常见问题及解决方案的说明。它也详细描述了AI能力点、元数据管理等，并通过文档链接与其他文件进行交互。
 api/.editorconfig:项目的代码格式配置文件，规范化各类文件的缩进和编码格式。
 api/Dockerfile:这个文件是用于构建bella-openapi项目的Dockerfile，设置了运行环境和所需目录以及端口暴露。
 api/build.sh:此脚本用于编译API服务，包含Maven构建流程及相关配置。
@@ -67,7 +67,7 @@ api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionModelFe
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionModelProperties.java:定义了CompletionModelProperties类，实现IModelProperties接口，用于描述完成模型的输入和输出上下文属性。
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionPriceInfo.java:实现CompletionPriceInfo类，提供完成操作的价格信息。
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionProperty.java:定义Completion配置属性类，实现协议属性接口，包含编码类型、队列名等配置。
-api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionRequest.java:该文件定义了CompletionRequest类，表示发往OpenAPI的请求。
+api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionRequest.java:这个文件定义了CompletionRequest类，主要用于构建开放API的请求。它实现了UserRequest接口，并包含多个字段如model、user、messages等，用于配置API请求的参数和行为。
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionResponse.java:该文件定义了CompletionResponse类，包含OpenAPI响应的细节信息与Choice内部类。
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionSseListener.java:实现了CompletionSseListener类，用于处理SSE事件流中的完成消息，通过Callback接口进行回调。
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/Message.java:定义了Message类，用于描述协议消息的结构体，包含角色、内容、功能调用等信息。
@@ -384,7 +384,7 @@ doc/realtime.md:实时语音对话接口文档，详细描述了接口功能、�
 doc/tts.md:语音合成接口文档，描述了如何根据文本生成语音，包括请求方法、参数、响应格式及示例。支持多种声音和音频格式，是其他开发者进行语音合成集成的指南。
 docker-compose.yml:定义了多个Docker服务的编排配置，包括API服务、Web服务、Nginx、MySQL和Redis服务。配置了环境变量、端口和依赖关系等。
 generate-system-apikey.sh:用于生成系统API key并插入数据库的脚本。通过检查Docker中的MySQL容器，生成API key、计算SHA值并插入数据库表，保存访问密钥到文件中。
-nginx/conf.d/default.conf:Nginx配置文件，用于反向代理，请求/v1, /console, /openapi路径转发到API服务，其他转发到Web服务。
+nginx/conf.d/default.conf:这个文件是Nginx的配置文件，定义了服务器的基本设置和路径转发规则。主要将/v1、/console、/openapi路径的请求转发到api服务，其他请求转发到web服务。文件通过代理设置与bella-openapi-api和bella-openapi-web服务进行交互。
 package-lock.json:记录了bella-openapi项目的所有依赖及其版本信息，确保项目在不同环境中的一致性。
 package.json:定义了项目的JavaScript依赖项，以npm包管理格式列出所有所需的库及其版本范围。
 start-details.md:提供Bella OpenAPI的启动与部署说明，涵盖项目概述、前提条件、启动服务、环境变量配置、服务管理和系统初始化等。
@@ -494,8 +494,8 @@ web/src/components/ui/textarea.tsx:这个文件定义了Textarea组件，允许�
 web/src/components/ui/toast.tsx:实现Toast消息提示组件，支持提示消息的显示和关闭，使用Radix UI库和React。
 web/src/components/ui/toaster.tsx:这个文件实现了Toaster组件，主要用于显示即时通知。使用了useToast钩子管理通知状态。
 web/src/components/ui/tooltip.tsx:定义了提示工具组件使用Radix UI的Tooltip Primitive，包括触发和内容显示。用于创建可悬停查看的提示信息。
-web/src/components/user/client-header.tsx:client-header.tsx定义了React组件ClientHeader，它是一个用户界面组件，用于在网页上显示包含导航栏和用户信息的头部，用到了UserNav等子组件，处理登录会话、用户信息及权限等功能。
-web/src/components/user/user-nav.tsx:用户导航组件，显示用户信息和导航选项。包括登出功能，链接到主页、能力点监控等页面。依赖next/link和用户权限检测以动态显示内容。
+web/src/components/user/client-header.tsx:这个文件定义了ClientHeader组件，用于在页面顶部展示用户信息和导航栏。它通过useUser Hook获取用户信息，并根据用户状态显示不同的导航栏组件。
+web/src/components/user/user-nav.tsx:这个文件实现了UserNav组件，用于展示用户的导航菜单，包括用户信息展示和登出功能。它使用了DropdownMenu组件来实现下拉菜单，并与openapi API交互以处理用户登出请求。
 web/src/config.ts:config.ts中定义了与环境变量相关的API地址配置，用于应用的HTTP请求目标。
 web/src/hooks/use-toast.ts:定义通知弹窗（toast）的状态管理和操作，允许创建、更新、消除通知，并提供自定义样式。
 web/src/lib/ant-path-matcher.ts:ant-path-matcher.ts实现了路径匹配功能，模仿Spring的AntPathMatcher。包含静态方法match和doMatch，用于路径与模式的比较操作。是一个路径匹配实用工具。

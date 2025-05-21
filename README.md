@@ -1,8 +1,9 @@
 # Bella OpenAPI
 
-[![Static Badge](https://img.shields.io/badge/read-deepwiki-blue?style=flat-square)](https://deepwiki.com/LianjiaTech/bella-openapi)
+[![Static Badge](https://img.shields.io/badge/docs-more-yellow?style=flat-square)](https://doc.bella.top/)
+[![Static Badge](https://img.shields.io/badge/wiki-deep-blue?style=flat-square)](https://deepwiki.com/LianjiaTech/bella-openapi)
 
-中文 | [English](./README_EN.md)
+中文 | [English](./README_EN.md) | [了解更多](https://doc.bella.top/)
 
 
 

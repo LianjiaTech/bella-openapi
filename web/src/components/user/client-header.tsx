@@ -28,8 +28,8 @@ interface NavLinkProps {
 
 const NavLink: React.FC<NavLinkProps> = ({ href, children, active }) => {
     return (
-        <Link 
-            href={href} 
+        <Link
+            href={href}
             className={`relative px-4 py-2 text-sm font-medium transition-all duration-200 ease-in-out ${
                 active 
                 ? 'text-gray-800 dark:text-gray-200' 
@@ -48,7 +48,7 @@ const NavLink: React.FC<NavLinkProps> = ({ href, children, active }) => {
 
 const MainNav: React.FC<{ userInfo: any }> = ({ userInfo }) => {
     const pathname = usePathname();
-    
+
     const navItems = [
         { href: '/', label: '主页' },
         { href: '/playground', label: 'Playground' },
@@ -56,14 +56,14 @@ const MainNav: React.FC<{ userInfo: any }> = ({ userInfo }) => {
         { href: '/meta/console', label: '元数据管理', permission: '/console/model/**' },
         { href: '/monitor', label: '能力点监控' },
         { href: '/logs', label: '日志查询' },
-        { href: 'https://github.com/LianjiaTech/bella-openapi/wiki/Bella-Openapi-Doc', label: 'Docs' }
+        { href: 'https://doc.bella.top', label: 'Docs' }
     ];
-    
+
     return (
         <nav className="flex items-center h-12">
             {navItems.map((item) => (
                 (!item.permission || hasPermission(userInfo, item.permission)) && (
-                    <NavLink 
+                    <NavLink
                         key={item.href}
                         href={item.href}
                         active={pathname === item.href || pathname.startsWith(`${item.href}/`)}

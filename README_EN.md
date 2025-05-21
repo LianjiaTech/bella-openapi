@@ -1,8 +1,9 @@
 # Bella OpenAPI
 
-[![Static Badge](https://img.shields.io/badge/read-deepwiki-blue?style=flat-square)](https://deepwiki.com/LianjiaTech/bella-openapi)
+[![Static Badge](https://img.shields.io/badge/docs-more-yellow?style=flat-square)](https://doc.bella.top/en)
+[![Static Badge](https://img.shields.io/badge/wiki-deep-blue?style=flat-square)](https://deepwiki.com/LianjiaTech/bella-openapi)
 
-English | [中文](./README.md)
+English | [中文](./README.md) | [learmore](https://doc.bella.top/en)
 
 Bella OpenAPI is an API gateway providing rich AI capabilities, comparable to openrouter. Unlike openrouter, in addition to chat-completion capabilities, it also offers text-embedding, automatic speech recognition (ASR), text-to-speech (TTS), text-to-image, image-to-image, and many other AI capabilities, while integrating billing, rate limiting, and resource management functionalities. All integrated capabilities have been validated in large-scale production environments.
 
