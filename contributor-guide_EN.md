@@ -1,6 +1,6 @@
 # Bella OpenAPI Contributor Guide
 
-English | [中文](./contributor-guild.md)
+English | [中文](./contributor-guide.md)
 
 Welcome to the Bella OpenAPI project! This guide aims to help you get started and contribute to the project. We greatly appreciate your interest and contributions.
 
