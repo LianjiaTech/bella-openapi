@@ -9,7 +9,7 @@ Bella OpenAPI is an API gateway providing rich AI capabilities, comparable to op
 
 - We have deployed an online experience version of Bella OpenAPI. You can log in and access [Bella OpenAPI](https://api.bella.top)
 - For quick startup and service experience, please read: [Quick Start](#quick-start)
-- To understand detailed environment variable configuration and startup deployment details, please read: [Configuration Details](https://bella-top.github.io/bella-docs/en/docs/configuration-details) and [Startup and Deployment Details](https://bella-top.github.io/bella-docs/en/docs/startup-deployment-details)
+- To understand detailed environment variable configuration and startup deployment details, please read: [Configuration Details](https://doc.bella.top/en/docs/bella-openapi/configuration-details) and [Startup and Deployment Details](https://doc.bella.top/en/docs/bella-openapi/startup-deployment-details)
 
 ## Table of Contents
 
@@ -174,7 +174,7 @@ If the image doesn't exist locally, it will pull from the remote repository
 ./start.sh 
 ./start.sh --github-oauth CLIENT_ID:CLIENT_SECRET --google-oauth CLIENT_ID:CLIENT_SECRET --server URL (configure oauth login service and service domain through startup parameters)
 ```
-Note: If you need to configure user login, see: [OAuth Configuration](https://bella-top.github.io/bella-docs/en/docs/configuration-details#oauth-configuration)
+Note: If you need to configure user login, see: [OAuth Configuration](https://doc.bella.top/en/docs/bella-openapi/configuration-details#oauth-configuration)
 
 - After starting the service, it will automatically check if a system ak exists; if not, it will generate a system ak and administrator authorization
 - If you don't want to perform administrator authorization at startup (it will still check if the system ak needs to be generated), you can use the `--skip-auth` parameter:
@@ -190,7 +190,7 @@ Common options:
 - `--server URL`: Configure service domain
 - `--skip-auth`: Skip administrator authorization process
 
-For more detailed startup options and configuration instructions, please refer to [Startup and Deployment Details](https://bella-top.github.io/bella-docs/en/docs/startup-deployment-details).
+For more detailed startup options and configuration instructions, please refer to [Startup and Deployment Details](https://doc.bella.top/en/docs/bella-openapi/startup-deployment-details).
 
 ## FAQ and Solutions
 
@@ -208,8 +208,8 @@ Next.js has implemented preloading optimizations in the dev environment. If you 
 
 ## Related Documentation
 
-- [Configuration Details](https://bella-top.github.io/bella-docs/en/docs/configuration-details) - Detailed introduction to environment variable configuration, database configuration, cache configuration, Apollo configuration, and login service configuration
-- [Startup and Deployment Details](https://bella-top.github.io/bella-docs/en/docs/startup-deployment-details) - Detailed introduction to starting services, environment variable configuration, service management, and system initialization
+- [Configuration Details](https://doc.bella.top/en/docs/bella-openapi/configuration-details) - Detailed introduction to environment variable configuration, database configuration, cache configuration, Apollo configuration, and login service configuration
+- [Startup and Deployment Details](https://doc.bella.top/en/docs/bella-openapi/startup-deployment-details) - Detailed introduction to starting services, environment variable configuration, service management, and system initialization
 
 ---
 *Last updated: 2025-03-31*
