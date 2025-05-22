@@ -79,3 +79,5 @@ system-apikey.txt
 node_modules/
 
 nginx/conf.d/dynamic-services.conf
+
+web/.env
