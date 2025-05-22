@@ -66,6 +66,10 @@ bella:
     cookie-max-age: -1
     cookie-domain: localhost
     cookie-context-path: /
+  openapi:
+    fallback:
+      max-models: 3
+      default-timeout-seconds: 30
 
 app:
   id: bella-openapi

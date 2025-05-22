@@ -46,6 +46,12 @@ public class ChannelRouter {
         if(StringUtils.isBlank(endpoint) && StringUtils.isBlank(model)) {
             throw new BizParamCheckException("没有可用渠道");
         }
+        
+        // If model contains commas, extract the first model
+        if (model != null && model.contains(",")) {
+            model = model.split(",")[0].trim();
+        }
+
         List<ChannelDB> channels;
         String entityCode;
         if(model != null) {

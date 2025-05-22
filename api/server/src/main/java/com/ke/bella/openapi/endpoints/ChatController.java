@@ -24,6 +24,7 @@ import com.ke.bella.openapi.protocol.completion.CompletionResponse;
 import com.ke.bella.openapi.protocol.completion.QueueAdaptor;
 import com.ke.bella.openapi.protocol.completion.ToolCallSimulator;
 import com.ke.bella.openapi.protocol.completion.callback.StreamCallbackProvider;
+import com.ke.bella.openapi.protocol.completion.ModelFallbackHandler;
 import com.ke.bella.openapi.protocol.limiter.LimiterManager;
 import com.ke.bella.openapi.protocol.log.EndpointLogger;
 import com.ke.bella.openapi.safety.ISafetyCheckService;
@@ -52,44 +53,32 @@ public class ChatController {
     private ISafetyCheckService.IChatSafetyCheckService safetyCheckService;
     @Autowired
     private JobQueueService jobQueueService;
+    @Autowired
+    private ModelFallbackHandler fallbackHandler;
+    
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @PostMapping("/completions")
     public Object completion(@RequestBody CompletionRequest request) {
         String endpoint = EndpointContext.getRequest().getRequestURI();
         String model = request.getModel();
         EndpointContext.setEndpointData(endpoint, model, request);
-        boolean isMock = EndpointContext.getProcessData().isMock();
-        ChannelDB channel = router.route(endpoint, model, EndpointContext.getApikey(), isMock);
-        EndpointContext.setEndpointData(channel);
-        if(!EndpointContext.getProcessData().isPrivate()) {
-            limiterManager.incrementConcurrentCount(EndpointContext.getProcessData().getAkCode(), model);
-        }
-        Object requestRiskData = safetyCheckService.safetyCheck(SafetyCheckRequest.Chat.convertFrom(request,
-                    EndpointContext.getProcessData(), EndpointContext.getApikey()), isMock);
-        EndpointContext.getProcessData().setRequestRiskData(requestRiskData);
-        EndpointProcessData processData = EndpointContext.getProcessData();
-        String protocol = processData.getProtocol();
-        String url = processData.getForwardUrl();
-        String channelInfo = channel.getChannelInfo();
-        CompletionAdaptor adaptor = adaptorManager.getProtocolAdaptor(endpoint, protocol, CompletionAdaptor.class);
-        CompletionProperty property = (CompletionProperty) JacksonUtils.deserialize(channelInfo, adaptor.getPropertyClass());
-        if(isMock) {
-            fillMockProperty(property);
-        }
-        adaptor = decorateAdaptor(adaptor, property, processData);
-
-        EndpointContext.setEncodingType(property.getEncodingType());
+        
+        // Parse fallback models if they exist in comma-separated format
+        request.parseModelFallbacks();
+        
         if(request.isStream()) {
-            SseEmitter sse = SseHelper.createSse(1000L * 60 * 5, EndpointContext.getProcessData().getRequestId());
-            adaptor.streamCompletion(request, url, property, StreamCallbackProvider.provide(sse, processData, EndpointContext.getApikey(), logger, safetyCheckService, property));
-            return sse;
+            return handleStreamCompletion(request, endpoint);
+        } else {
+            // For non-streaming requests, use the fallback handler
+            Object requestRiskData = prepareRequestAndSafetyCheck(request, endpoint);
+            CompletionResponse response = fallbackHandler.handleCompletion(request, endpoint, null, requestRiskData);
+            
+            // Perform safety check on the response
+            boolean isMock = EndpointContext.getProcessData().isMock();
+            Object responseRiskData = safetyCheckService.safetyCheck(SafetyCheckRequest.Chat.convertFrom(response, EndpointContext.getProcessData(), EndpointContext.getApikey()), isMock);
+            response.setSensitives(responseRiskData);
+            return response;
         }
-
-        CompletionResponse response = adaptor.completion(request, url, property);
-        Object responseRiskData = safetyCheckService.safetyCheck(SafetyCheckRequest.Chat.convertFrom(response, EndpointContext.getProcessData(), EndpointContext.getApikey()), isMock);
-        response.setSensitives(responseRiskData);
-        response.setRequestRiskData(requestRiskData);
-        return response;
     }
 
     private void fillMockProperty(CompletionProperty property) {
@@ -114,5 +103,77 @@ public class ChatController {
             adaptor = new ToolCallSimulator<>(adaptor, processData);
         }
         return adaptor;
+    }
+    
+    /**
+     * Handles streaming completion requests
+     */
+    private SseEmitter handleStreamCompletion(CompletionRequest request, String endpoint) {
+        // Streaming doesn't support fallbacks, so we use the original flow
+        prepareRequestAndSafetyCheck(request, endpoint);
+        
+        EndpointProcessData processData = EndpointContext.getProcessData();
+        String url = processData.getForwardUrl();
+        
+        // Get the adaptor and property
+        String protocol = processData.getProtocol();
+        CompletionAdaptor adaptor = adaptorManager.getProtocolAdaptor(endpoint, protocol, CompletionAdaptor.class);
+        
+        String channelInfo = EndpointContext.getProcessData().getChannel().getChannelInfo();
+        CompletionProperty property = (CompletionProperty) JacksonUtils.deserialize(channelInfo, adaptor.getPropertyClass());
+        
+        if(processData.isMock()) {
+            fillMockProperty(property);
+        }
+        
+        adaptor = decorateAdaptor(adaptor, property, processData);
+        EndpointContext.setEncodingType(property.getEncodingType());
+        
+        SseEmitter sse = SseHelper.createSse(1000L * 60 * 5, processData.getRequestId());
+        adaptor.streamCompletion(request, url, property, 
+            StreamCallbackProvider.provide(sse, processData, EndpointContext.getApikey(), logger, safetyCheckService, property));
+        
+        return sse;
+    }
+    
+    /**
+     * Prepares the request by setting up channel, safety checks, etc.
+     * Returns the request risk data.
+     */
+    private Object prepareRequestAndSafetyCheck(CompletionRequest request, String endpoint) {
+        boolean isMock = EndpointContext.getProcessData().isMock();
+        String model = request.getModel();
+        
+        ChannelDB channel = router.route(endpoint, model, EndpointContext.getApikey(), isMock);
+        EndpointContext.setEndpointData(channel);
+        
+        if(!EndpointContext.getProcessData().isPrivate()) {
+            limiterManager.incrementConcurrentCount(EndpointContext.getProcessData().getAkCode(), model);
+        }
+        
+        Object requestRiskData = safetyCheckService.safetyCheck(
+            SafetyCheckRequest.Chat.convertFrom(request, EndpointContext.getProcessData(), EndpointContext.getApikey()), 
+            isMock
+        );
+        
+        EndpointContext.getProcessData().setRequestRiskData(requestRiskData);
+        return requestRiskData;
+    }
+    
+    /**
+     * Execute a completion request with the given model
+     */
+    public CompletionResponse executeCompletion(CompletionRequest request, String endpoint, CompletionAdaptor<?> baseAdaptor, Object requestRiskData) {
+        EndpointProcessData processData = EndpointContext.getProcessData();
+        String protocol = processData.getProtocol();
+        String url = processData.getForwardUrl();
+        String channelInfo = processData.getChannel().getChannelInfo();
+        
+        CompletionAdaptor<?> adaptor = baseAdaptor != null ? baseAdaptor : 
+            adaptorManager.getProtocolAdaptor(endpoint, protocol, CompletionAdaptor.class);
+        CompletionProperty property = (CompletionProperty) JacksonUtils.deserialize(channelInfo, adaptor.getPropertyClass());
+        adaptor = decorateAdaptor(adaptor, property, processData);
+        
+        return adaptor.completion(request, url, property);
     }
 }

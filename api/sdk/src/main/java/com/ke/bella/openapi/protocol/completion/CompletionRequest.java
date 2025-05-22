@@ -21,6 +21,9 @@ public class CompletionRequest implements UserRequest, Serializable {
      * ID of the model to use
      */
     private String model;
+    
+    @JsonInclude(Include.NON_NULL)
+    private List<String> fallbackModels;
 
     /**
      * A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse. Learn more.
@@ -48,7 +51,7 @@ public class CompletionRequest implements UserRequest, Serializable {
     /**
      * Deprecated in favor of tool_choice. Controls how the model responds to function calls. "none" means the model does not call a function, and
      * responds to the end-user. "auto" means the model can pick between an end-user or calling a function. Specifying a particular function via
-     * {"name":\ "my_function"} forces the model to call that function. "none" is the default when no functions are present. "auto" is the default if
+     * {"name":"my_function"} forces the model to call that function. "none" is the default when no functions are present. "auto" is the default if
      * functions are present.
      */
     @Nullable
@@ -165,6 +168,27 @@ public class CompletionRequest implements UserRequest, Serializable {
          */
         private boolean include_usage = true;
     }
+
+    /**
+     * Parses the model field and extracts primary and fallback models.
+     * If model contains comma-separated values, the first one becomes the primary model
+     * and the rest become fallback models.
+     */
+    public void parseModelFallbacks() {
+        if (model == null || !model.contains(",")) {
+            return;
+        }
+        
+        String[] models = model.split(",");
+        if (models.length > 1) {
+            // Set the first model as the primary model
+            this.model = models[0].trim();
+            
+            // Set the rest as fallback models
+            this.fallbackModels = new ArrayList<>();
+            for (int i = 1; i < models.length; i++) {
+                this.fallbackModels.add(models[i].trim());
+            }
+        }
+    }
 }
-
-
