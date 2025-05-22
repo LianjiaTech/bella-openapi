@@ -1,168 +1,18 @@
 # 项目文件描述
 
 
-- api/server/src/main/java/com/ke/bella/openapi/endpoints/ChatController.java: ChatController类定义了用于处理聊天完成请求的REST接口，包含请求路由、安全检查、协议适配及响应逻辑。通过Spring框架实现REST控制器功能。
-
-- api/server/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionRequest.java: 无描述
-
 - api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionRequest.java: 这个文件定义了CompletionRequest类，主要用于构建开放API的请求。它实现了UserRequest接口，并包含多个字段如model、user、messages等，用于配置API请求的参数和行为。
-
-- api/server/src/main/java/com/ke/bella/openapi/protocol/ChannelRouter.java: 负责渠道路由选择的逻辑，包括筛选和选择可用的渠道，主要类是ChannelRouter，与ChannelService和ModelService交互。
 
 - api/server/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionAdaptor.java: 定义CompletionAdaptor接口，用于处理补全请求，支持普通和流式补全。关联CompletionProperty类，用于异步或同步数据补全。
 
-- api/server/src/main/java/com/ke/bella/openapi/protocol/completion/OpenAIAdaptor.java: 用于适配OpenAI协议完成请求的适配器类，实现了流式及非流式任务请求。
+- api/server/src/main/java/com/ke/bella/openapi/endpoints/ChatController.java: ChatController类定义了用于处理聊天完成请求的REST接口，包含请求路由、安全检查、协议适配及响应逻辑。通过Spring框架实现REST控制器功能。
 
-- api/server/src/main/java/com/ke/bella/openapi/service/ModelService.java: 负责管理模型，包括创建、更新、状态和可见性变更等功能，主要类是ModelService，使用CacheManager进行缓存管理，与ModelRepo等多个服务交互。
-
-- api/server/src/main/java/com/ke/bella/openapi/service/ChannelService.java: ChannelService类提供了创建、更新和管理渠道的服务，实现了渠道信息的缓存和自动更新，以及与渠道数据库的交互。支持并发管理、费用验证等功能。
-
-- api/server/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionResponse.java: 无描述
-
-- api/server/src/main/java/com/ke/bella/openapi/protocol/completion/StreamCompletionResponse.java: 无描述
-
-- api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionResponse.java: 该文件定义了CompletionResponse类，包含OpenAPI响应的细节信息与Choice内部类。
-
-- api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/StreamCompletionResponse.java: 定义了流式任务的响应类，包含响应内容、推理结果及相关工具调用信息。
+- api/server/src/main/java/com/ke/bella/openapi/protocol/ChannelRouter.java: 负责渠道路由选择的逻辑，包括筛选和选择可用的渠道，主要类是ChannelRouter，与ChannelService和ModelService交互。
 
 - api/server/src/main/resources/application.yml: 该文件是Spring Boot应用程序的配置文件，设置了服务器、数据源、缓存、Swagger等配置，负责应用程序的初始参数。
 
-- api/server/src/main/java/com/ke/bella/openapi/intercept/RequestUserAdvice.java: 实现请求用户权限的建议拦截器，根据请求头设置用户数据，通过EndpointContext进行上下文管理。
-
-- api/server/src/main/java/com/ke/bella/openapi/utils/HttpUtils.java: 无描述
-
-- api/sdk/src/main/java/com/ke/bella/openapi/utils/HttpUtils.java: 这个文件提供了各种HTTP请求的实用工具类HttpUtils，例如同步和异步请求、流处理、WebSocket请求等。关键函数包括httpRequest、streamRequest等，用于与外部API的网络通信。
-
 
 # 文件内容
-
-
-
-```
-File: api/server/src/main/java/com/ke/bella/openapi/endpoints/ChatController.java
-1 package com.ke.bella.openapi.endpoints;
-2 
-3 import java.util.Map;
-4 
-5 import com.ke.bella.openapi.protocol.completion.CompletionAdaptorDelegator;
-6 import org.apache.commons.lang3.StringUtils;
-7 import org.springframework.beans.factory.annotation.Autowired;
-8 import org.springframework.web.bind.annotation.PostMapping;
-9 import org.springframework.web.bind.annotation.RequestBody;
-10 import org.springframework.web.bind.annotation.RequestMapping;
-11 import org.springframework.web.bind.annotation.RestController;
-12 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-13 
-14 import com.ke.bella.openapi.BellaContext;
-15 import com.ke.bella.openapi.EndpointContext;
-16 import com.ke.bella.openapi.EndpointProcessData;
-17 import com.ke.bella.openapi.annotations.EndpointAPI;
-18 import com.ke.bella.openapi.protocol.AdaptorManager;
-19 import com.ke.bella.openapi.protocol.ChannelRouter;
-20 import com.ke.bella.openapi.protocol.completion.CompletionAdaptor;
-21 import com.ke.bella.openapi.protocol.completion.CompletionProperty;
-22 import com.ke.bella.openapi.protocol.completion.CompletionRequest;
-23 import com.ke.bella.openapi.protocol.completion.CompletionResponse;
-24 import com.ke.bella.openapi.protocol.completion.QueueAdaptor;
-25 import com.ke.bella.openapi.protocol.completion.ToolCallSimulator;
-26 import com.ke.bella.openapi.protocol.completion.callback.StreamCallbackProvider;
-27 import com.ke.bella.openapi.protocol.limiter.LimiterManager;
-28 import com.ke.bella.openapi.protocol.log.EndpointLogger;
-29 import com.ke.bella.openapi.safety.ISafetyCheckService;
-30 import com.ke.bella.openapi.safety.SafetyCheckRequest;
-31 import com.ke.bella.openapi.service.JobQueueService;
-32 import com.ke.bella.openapi.tables.pojos.ChannelDB;
-33 import com.ke.bella.openapi.utils.JacksonUtils;
-34 import com.ke.bella.openapi.utils.SseHelper;
-35 
-36 import io.swagger.v3.oas.annotations.tags.Tag;
-37 
-38 @EndpointAPI
-39 @RestController
-40 @RequestMapping("/v1/chat")
-41 @Tag(name = "chat")
-42 public class ChatController {
-43     @Autowired
-44     private ChannelRouter router;
-45     @Autowired
-46     private AdaptorManager adaptorManager;
-47     @Autowired
-48     private LimiterManager limiterManager;
-49     @Autowired
-50     private EndpointLogger logger;
-51     @Autowired
-52     private ISafetyCheckService.IChatSafetyCheckService safetyCheckService;
-53     @Autowired
-54     private JobQueueService jobQueueService;
-55     @SuppressWarnings({ "rawtypes", "unchecked" })
-56     @PostMapping("/completions")
-57     public Object completion(@RequestBody CompletionRequest request) {
-58         String endpoint = EndpointContext.getRequest().getRequestURI();
-59         String model = request.getModel();
-60         EndpointContext.setEndpointData(endpoint, model, request);
-61         boolean isMock = EndpointContext.getProcessData().isMock();
-62         ChannelDB channel = router.route(endpoint, model, EndpointContext.getApikey(), isMock);
-63         EndpointContext.setEndpointData(channel);
-64         if(!EndpointContext.getProcessData().isPrivate()) {
-65             limiterManager.incrementConcurrentCount(EndpointContext.getProcessData().getAkCode(), model);
-66         }
-67         Object requestRiskData = safetyCheckService.safetyCheck(SafetyCheckRequest.Chat.convertFrom(request,
-68                     EndpointContext.getProcessData(), EndpointContext.getApikey()), isMock);
-69         EndpointContext.getProcessData().setRequestRiskData(requestRiskData);
-70         EndpointProcessData processData = EndpointContext.getProcessData();
-71         String protocol = processData.getProtocol();
-72         String url = processData.getForwardUrl();
-73         String channelInfo = channel.getChannelInfo();
-74         CompletionAdaptor adaptor = adaptorManager.getProtocolAdaptor(endpoint, protocol, CompletionAdaptor.class);
-75         CompletionProperty property = (CompletionProperty) JacksonUtils.deserialize(channelInfo, adaptor.getPropertyClass());
-76         if(isMock) {
-77             fillMockProperty(property);
-78         }
-79         adaptor = decorateAdaptor(adaptor, property, processData);
-80 
-81         EndpointContext.setEncodingType(property.getEncodingType());
-82         if(request.isStream()) {
-83             SseEmitter sse = SseHelper.createSse(1000L * 60 * 5, EndpointContext.getProcessData().getRequestId());
-84             adaptor.streamCompletion(request, url, property, StreamCallbackProvider.provide(sse, processData, EndpointContext.getApikey(), logger, safetyCheckService, property));
-85             return sse;
-86         }
-87 
-88         CompletionResponse response = adaptor.completion(request, url, property);
-89         Object responseRiskData = safetyCheckService.safetyCheck(SafetyCheckRequest.Chat.convertFrom(response, EndpointContext.getProcessData(), EndpointContext.getApikey()), isMock);
-90         response.setSensitives(responseRiskData);
-91         response.setRequestRiskData(requestRiskData);
-92         return response;
-93     }
-94 
-95     private void fillMockProperty(CompletionProperty property) {
-96         Map<String, String> requestInfo = BellaContext.getHeaders();
-97         String functionCallSimulate = requestInfo.get("X-BELLA-FUNCTION-SIMULATE");
-98         String mergeReasoningContent = requestInfo.get("X-BELLA-MERGE-REASONING");
-99         String splitReasoningFromContent = requestInfo.get("X-BELLA-SPLIT-REASONING");
-100         property.setFunctionCallSimulate("true".equals(functionCallSimulate) || property.isFunctionCallSimulate());
-101         property.setMergeReasoningContent("true".equals(mergeReasoningContent) || property.isMergeReasoningContent());
-102         property.setSplitReasoningFromContent("true".equals(splitReasoningFromContent) || property.isSplitReasoningFromContent());
-103     }
-104 
-105     private CompletionAdaptor<?> decorateAdaptor(CompletionAdaptor<?> adaptor, CompletionProperty property, EndpointProcessData processData) {
-106         if(StringUtils.isNotBlank(property.getQueueName())) {
-107             if(adaptor instanceof CompletionAdaptorDelegator) {
-108                 adaptor = new QueueAdaptor<>((CompletionAdaptorDelegator<?>)adaptor, jobQueueService, jobQueueService, processData);
-109             } else {
-110                 throw new IllegalStateException(adaptor.getClass().getSimpleName() + "不支持请求代理");
-111             }
-112         }
-113         if(property.isFunctionCallSimulate()) {
-114             adaptor = new ToolCallSimulator<>(adaptor, processData);
-115         }
-116         return adaptor;
-117     }
-118 }
-119
-```
-
-
-
 
 
 
@@ -339,6 +189,156 @@ File: api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionR
 169 
 170 
 171
+```
+
+
+
+
+```
+File: api/server/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionAdaptor.java
+1 package com.ke.bella.openapi.protocol.completion;
+2 
+3 import com.ke.bella.openapi.protocol.Callbacks;
+4 import com.ke.bella.openapi.protocol.IProtocolAdaptor;
+5 
+6 public interface CompletionAdaptor<T extends CompletionProperty> extends IProtocolAdaptor {
+7 
+8     CompletionResponse completion(CompletionRequest request, String url, T property);
+9 
+10     void streamCompletion(CompletionRequest request, String url, T property, Callbacks.StreamCompletionCallback callback);
+11 
+12     @Override
+13     default String endpoint() {
+14         return "/v1/chat/completions";
+15     }
+16 }
+17
+```
+
+
+
+
+```
+File: api/server/src/main/java/com/ke/bella/openapi/endpoints/ChatController.java
+1 package com.ke.bella.openapi.endpoints;
+2 
+3 import java.util.Map;
+4 
+5 import com.ke.bella.openapi.protocol.completion.CompletionAdaptorDelegator;
+6 import org.apache.commons.lang3.StringUtils;
+7 import org.springframework.beans.factory.annotation.Autowired;
+8 import org.springframework.web.bind.annotation.PostMapping;
+9 import org.springframework.web.bind.annotation.RequestBody;
+10 import org.springframework.web.bind.annotation.RequestMapping;
+11 import org.springframework.web.bind.annotation.RestController;
+12 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+13 
+14 import com.ke.bella.openapi.BellaContext;
+15 import com.ke.bella.openapi.EndpointContext;
+16 import com.ke.bella.openapi.EndpointProcessData;
+17 import com.ke.bella.openapi.annotations.EndpointAPI;
+18 import com.ke.bella.openapi.protocol.AdaptorManager;
+19 import com.ke.bella.openapi.protocol.ChannelRouter;
+20 import com.ke.bella.openapi.protocol.completion.CompletionAdaptor;
+21 import com.ke.bella.openapi.protocol.completion.CompletionProperty;
+22 import com.ke.bella.openapi.protocol.completion.CompletionRequest;
+23 import com.ke.bella.openapi.protocol.completion.CompletionResponse;
+24 import com.ke.bella.openapi.protocol.completion.QueueAdaptor;
+25 import com.ke.bella.openapi.protocol.completion.ToolCallSimulator;
+26 import com.ke.bella.openapi.protocol.completion.callback.StreamCallbackProvider;
+27 import com.ke.bella.openapi.protocol.limiter.LimiterManager;
+28 import com.ke.bella.openapi.protocol.log.EndpointLogger;
+29 import com.ke.bella.openapi.safety.ISafetyCheckService;
+30 import com.ke.bella.openapi.safety.SafetyCheckRequest;
+31 import com.ke.bella.openapi.service.JobQueueService;
+32 import com.ke.bella.openapi.tables.pojos.ChannelDB;
+33 import com.ke.bella.openapi.utils.JacksonUtils;
+34 import com.ke.bella.openapi.utils.SseHelper;
+35 
+36 import io.swagger.v3.oas.annotations.tags.Tag;
+37 
+38 @EndpointAPI
+39 @RestController
+40 @RequestMapping("/v1/chat")
+41 @Tag(name = "chat")
+42 public class ChatController {
+43     @Autowired
+44     private ChannelRouter router;
+45     @Autowired
+46     private AdaptorManager adaptorManager;
+47     @Autowired
+48     private LimiterManager limiterManager;
+49     @Autowired
+50     private EndpointLogger logger;
+51     @Autowired
+52     private ISafetyCheckService.IChatSafetyCheckService safetyCheckService;
+53     @Autowired
+54     private JobQueueService jobQueueService;
+55     @SuppressWarnings({ "rawtypes", "unchecked" })
+56     @PostMapping("/completions")
+57     public Object completion(@RequestBody CompletionRequest request) {
+58         String endpoint = EndpointContext.getRequest().getRequestURI();
+59         String model = request.getModel();
+60         EndpointContext.setEndpointData(endpoint, model, request);
+61         boolean isMock = EndpointContext.getProcessData().isMock();
+62         ChannelDB channel = router.route(endpoint, model, EndpointContext.getApikey(), isMock);
+63         EndpointContext.setEndpointData(channel);
+64         if(!EndpointContext.getProcessData().isPrivate()) {
+65             limiterManager.incrementConcurrentCount(EndpointContext.getProcessData().getAkCode(), model);
+66         }
+67         Object requestRiskData = safetyCheckService.safetyCheck(SafetyCheckRequest.Chat.convertFrom(request,
+68                     EndpointContext.getProcessData(), EndpointContext.getApikey()), isMock);
+69         EndpointContext.getProcessData().setRequestRiskData(requestRiskData);
+70         EndpointProcessData processData = EndpointContext.getProcessData();
+71         String protocol = processData.getProtocol();
+72         String url = processData.getForwardUrl();
+73         String channelInfo = channel.getChannelInfo();
+74         CompletionAdaptor adaptor = adaptorManager.getProtocolAdaptor(endpoint, protocol, CompletionAdaptor.class);
+75         CompletionProperty property = (CompletionProperty) JacksonUtils.deserialize(channelInfo, adaptor.getPropertyClass());
+76         if(isMock) {
+77             fillMockProperty(property);
+78         }
+79         adaptor = decorateAdaptor(adaptor, property, processData);
+80 
+81         EndpointContext.setEncodingType(property.getEncodingType());
+82         if(request.isStream()) {
+83             SseEmitter sse = SseHelper.createSse(1000L * 60 * 5, EndpointContext.getProcessData().getRequestId());
+84             adaptor.streamCompletion(request, url, property, StreamCallbackProvider.provide(sse, processData, EndpointContext.getApikey(), logger, safetyCheckService, property));
+85             return sse;
+86         }
+87 
+88         CompletionResponse response = adaptor.completion(request, url, property);
+89         Object responseRiskData = safetyCheckService.safetyCheck(SafetyCheckRequest.Chat.convertFrom(response, EndpointContext.getProcessData(), EndpointContext.getApikey()), isMock);
+90         response.setSensitives(responseRiskData);
+91         response.setRequestRiskData(requestRiskData);
+92         return response;
+93     }
+94 
+95     private void fillMockProperty(CompletionProperty property) {
+96         Map<String, String> requestInfo = BellaContext.getHeaders();
+97         String functionCallSimulate = requestInfo.get("X-BELLA-FUNCTION-SIMULATE");
+98         String mergeReasoningContent = requestInfo.get("X-BELLA-MERGE-REASONING");
+99         String splitReasoningFromContent = requestInfo.get("X-BELLA-SPLIT-REASONING");
+100         property.setFunctionCallSimulate("true".equals(functionCallSimulate) || property.isFunctionCallSimulate());
+101         property.setMergeReasoningContent("true".equals(mergeReasoningContent) || property.isMergeReasoningContent());
+102         property.setSplitReasoningFromContent("true".equals(splitReasoningFromContent) || property.isSplitReasoningFromContent());
+103     }
+104 
+105     private CompletionAdaptor<?> decorateAdaptor(CompletionAdaptor<?> adaptor, CompletionProperty property, EndpointProcessData processData) {
+106         if(StringUtils.isNotBlank(property.getQueueName())) {
+107             if(adaptor instanceof CompletionAdaptorDelegator) {
+108                 adaptor = new QueueAdaptor<>((CompletionAdaptorDelegator<?>)adaptor, jobQueueService, jobQueueService, processData);
+109             } else {
+110                 throw new IllegalStateException(adaptor.getClass().getSimpleName() + "不支持请求代理");
+111             }
+112         }
+113         if(property.isFunctionCallSimulate()) {
+114             adaptor = new ToolCallSimulator<>(adaptor, processData);
+115         }
+116         return adaptor;
+117     }
+118 }
+119
 ```
 
 
@@ -552,1149 +552,6 @@ File: api/server/src/main/java/com/ke/bella/openapi/protocol/ChannelRouter.java
 
 
 ```
-File: api/server/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionAdaptor.java
-1 package com.ke.bella.openapi.protocol.completion;
-2 
-3 import com.ke.bella.openapi.protocol.Callbacks;
-4 import com.ke.bella.openapi.protocol.IProtocolAdaptor;
-5 
-6 public interface CompletionAdaptor<T extends CompletionProperty> extends IProtocolAdaptor {
-7 
-8     CompletionResponse completion(CompletionRequest request, String url, T property);
-9 
-10     void streamCompletion(CompletionRequest request, String url, T property, Callbacks.StreamCompletionCallback callback);
-11 
-12     @Override
-13     default String endpoint() {
-14         return "/v1/chat/completions";
-15     }
-16 }
-17
-```
-
-
-
-
-```
-File: api/server/src/main/java/com/ke/bella/openapi/protocol/completion/OpenAIAdaptor.java
-1 package com.ke.bella.openapi.protocol.completion;
-2 
-3 import org.apache.commons.collections4.MapUtils;
-4 import org.apache.commons.lang3.StringUtils;
-5 import org.springframework.stereotype.Component;
-6 
-7 import com.ke.bella.openapi.protocol.Callbacks;
-8 import com.ke.bella.openapi.protocol.Callbacks.StreamCompletionCallback;
-9 import com.ke.bella.openapi.utils.DateTimeUtils;
-10 import com.ke.bella.openapi.utils.HttpUtils;
-11 import com.ke.bella.openapi.utils.JacksonUtils;
-12 
-13 import okhttp3.MediaType;
-14 import okhttp3.Request;
-15 import okhttp3.RequestBody;
-16 
-17 @Component("OpenAICompletion")
-18 public class OpenAIAdaptor implements CompletionAdaptorDelegator<OpenAIProperty> {
-19 
-20     public final Callbacks.SseEventConverter<StreamCompletionResponse> sseConverter = new Callbacks.DefaultSseConverter();
-21 
-22     Callbacks.ChannelErrorCallback<CompletionResponse> errorCallback = (errorResponse, res) -> {
-23         if(errorResponse.getError() != null) {
-24             errorResponse.getError().setHttpCode(res.code());
-25         }
-26     };
-27 
-28     @Override
-29     public CompletionResponse completion(CompletionRequest request, String url, OpenAIProperty property, Callbacks.HttpDelegator delegator) {
-30         CompletionResponse response;
-31         if(delegator == null) {
-32             Request httpRequest = buildRequest(request, url, property);
-33             response = HttpUtils.httpRequest(httpRequest, CompletionResponse.class, errorCallback);
-34         } else {
-35             response = delegator.request(request, CompletionResponse.class, errorCallback);
-36         }
-37         ResponseHelper.splitReasoningFromContent(response, property);
-38         response.setCreated(DateTimeUtils.getCurrentSeconds());
-39         return response;
-40     }
-41 
-42     @Override
-43     public void streamCompletion(CompletionRequest request, String url, OpenAIProperty property, StreamCompletionCallback callback,
-44             Callbacks.StreamDelegator delegator) {
-45         CompletionSseListener listener = new CompletionSseListener(callback, sseConverter);
-46         if(delegator == null) {
-47             Request httpRequest = buildRequest(request, url, property);
-48             HttpUtils.streamRequest(httpRequest, listener);
-49         } else {
-50             delegator.request(request, listener);
-51         }
-52     }
-53     @Override
-54     public CompletionResponse completion(CompletionRequest request, String url, OpenAIProperty property) {
-55         return completion(request, url, property, null);
-56     }
-57 
-58     @Override
-59     public void streamCompletion(CompletionRequest request, String url, OpenAIProperty property, StreamCompletionCallback callback) {
-60         streamCompletion(request, url, property, callback, null);
-61     }
-62 
-63     private Request buildRequest(CompletionRequest request, String url, OpenAIProperty property) {
-64         if(property.supportStreamOptions && request.isStream()) {
-65             request.setStream_options(new CompletionRequest.StreamOptions());
-66         }
-67         request.setModel(property.getDeployName());
-68         if(StringUtils.isNotEmpty(property.getApiVersion())) {
-69             url += property.getApiVersion();
-70         }
-71         Request.Builder builder = authorizationRequestBuilder(property.getAuth())
-72                 .url(url)
-73                 .post(RequestBody.create(MediaType.parse("application/json"), JacksonUtils.serialize(request)));
-74         if(MapUtils.isNotEmpty(property.getExtraHeaders())) {
-75             property.getExtraHeaders().forEach(builder::addHeader);
-76         }
-77         return builder.build();
-78     }
-79 
-80     @Override
-81     public String getDescription() {
-82         return "OpenAI协议";
-83     }
-84 
-85     @Override
-86     public Class<OpenAIProperty> getPropertyClass() {
-87         return OpenAIProperty.class;
-88     }
-89 }
-90
-```
-
-
-
-
-```
-File: api/server/src/main/java/com/ke/bella/openapi/service/ModelService.java
-1 package com.ke.bella.openapi.service;
-2 
-3 import com.alicp.jetcache.CacheManager;
-4 import com.alicp.jetcache.anno.CacheType;
-5 import com.alicp.jetcache.anno.Cached;
-6 import com.alicp.jetcache.template.QuickConfig;
-7 import com.google.common.collect.Lists;
-8 import com.google.common.collect.Sets;
-9 import com.ke.bella.openapi.Operator;
-10 import com.ke.bella.openapi.common.EntityConstants;
-11 import com.ke.bella.openapi.db.repo.ModelRepo;
-12 import com.ke.bella.openapi.db.repo.Page;
-13 import com.ke.bella.openapi.BellaContext;
-14 import com.ke.bella.openapi.metadata.Channel;
-15 import com.ke.bella.openapi.metadata.Condition;
-16 import com.ke.bella.openapi.metadata.MetaDataOps;
-17 import com.ke.bella.openapi.metadata.Model;
-18 import com.ke.bella.openapi.metadata.ModelDetails;
-19 import com.ke.bella.openapi.tables.pojos.ChannelDB;
-20 import com.ke.bella.openapi.tables.pojos.EndpointDB;
-21 import com.ke.bella.openapi.tables.pojos.ModelAuthorizerRelDB;
-22 import com.ke.bella.openapi.tables.pojos.ModelDB;
-23 import com.ke.bella.openapi.tables.pojos.ModelEndpointRelDB;
-24 import org.apache.commons.collections4.CollectionUtils;
-25 import org.apache.commons.lang3.StringUtils;
-26 import org.springframework.beans.factory.annotation.Autowired;
-27 import org.springframework.context.ApplicationContext;
-28 import org.springframework.stereotype.Component;
-29 import org.springframework.transaction.annotation.Transactional;
-30 import org.springframework.util.Assert;
-31 
-32 import javax.annotation.PostConstruct;
-33 import java.time.Duration;
-34 import java.util.ArrayList;
-35 import java.util.Arrays;
-36 import java.util.List;
-37 import java.util.Map;
-38 import java.util.Set;
-39 import java.util.concurrent.TimeUnit;
-40 import java.util.function.Function;
-41 import java.util.stream.Collectors;
-42 
-43 import static com.ke.bella.openapi.common.EntityConstants.ACTIVE;
-44 import static com.ke.bella.openapi.common.EntityConstants.INACTIVE;
-45 import static com.ke.bella.openapi.common.EntityConstants.MODEL;
-46 import static com.ke.bella.openapi.common.EntityConstants.PRIVATE;
-47 import static com.ke.bella.openapi.common.EntityConstants.PUBLIC;
-48 import static com.ke.bella.openapi.console.MetadataValidator.generateInvalidModelJsonKeyMessage;
-49 import static com.ke.bella.openapi.console.MetadataValidator.json2Map;
-50 import static com.ke.bella.openapi.console.MetadataValidator.matchPath;
-51 
-52 /**
-53  * Author: Stan Sai Date: 2024/8/2 11:31 description:
-54  */
-55 @Component
-56 public class ModelService {
-57     @Autowired
-58     private ModelRepo modelRepo;
-59     @Autowired
-60     private EndpointService endpointService;
-61     @Autowired
-62     private ChannelService channelService;
-63     @Autowired
-64     private ApikeyService apikeyService;
-65     @Autowired
-66     private CacheManager cacheManager;
-67     @Autowired
-68     private ApplicationContext applicationContext;
-69     private static final String modelTerminalCacheKey = "model:terminal:";
-70     private static final String modelMapCacheKey = "model:map:";
-71 
-72 
-73     @PostConstruct
-74     public void postConstruct() {
-75         QuickConfig modelTerminalConfig = QuickConfig.newBuilder(modelTerminalCacheKey)
-76                 .localLimit(500)
-77                 .cacheNullValue(true)
-78                 .cacheType(CacheType.BOTH)
-79                 .syncLocal(true)
-80                 .penetrationProtect(true)
-81                 .penetrationProtectTimeout(Duration.ofSeconds(10))
-82                 .build();
-83         cacheManager.getOrCreateCache(modelTerminalConfig);
-84         QuickConfig modelCacheConfig = QuickConfig.newBuilder(modelMapCacheKey)
-85                 .expire(Duration.ofDays(3650))
-86                 .localExpire(Duration.ofMinutes(5))
-87                 .localLimit(1)
-88                 .cacheNullValue(true)
-89                 .cacheType(CacheType.BOTH)
-90                 .syncLocal(true)
-91                 .penetrationProtect(true)
-92                 .penetrationProtectTimeout(Duration.ofSeconds(10))
-93                 .build();
-94         cacheManager.getOrCreateCache(modelCacheConfig);
-95     }
-96 
-97     @Transactional
-98     public ModelDB createModel(MetaDataOps.ModelOp op) {
-99         modelRepo.checkExist(op.getModelName(), false);
-100         checkEndpoint(op.getEndpoints());
-101         checkPropertyAndFeatures(op.getProperties(), op.getFeatures(), op.getEndpoints(), op.getModelName());
-102         ModelDB db = modelRepo.insert(op);
-103         modelRepo.batchInsertModelEndpoints(op.getModelName(), op.getEndpoints());
-104         updateModelCache(op.getModelName(), op.getModelName());
-105         return db;
-106     }
-107 
-108     @Transactional
-109     public void updateModel(MetaDataOps.ModelOp op) {
-110         modelRepo.checkExist(op.getModelName(), true);
-111         if(CollectionUtils.isNotEmpty(op.getEndpoints())) {
-112             checkEndpoint(op.getEndpoints());
-113             List<ModelEndpointRelDB> originEndpoints = modelRepo.listEndpointsByModelName(op.getModelName());
-114             Set<String> inserts = Sets.newHashSet(op.getEndpoints());
-115             List<Long> deletes = new ArrayList<>();
-116             originEndpoints.forEach(origin -> {
-117                         if(op.getEndpoints().contains(origin.getEndpoint())) {
-118                             inserts.remove(origin.getEndpoint());
-119                         } else {
-120                             deletes.add(origin.getId());
-121                         }
-122                     }
-123             );
-124             if(CollectionUtils.isNotEmpty(deletes)) {
-125                 modelRepo.batchDeleteModelEndpoints(deletes);
-126             }
-127             if(CollectionUtils.isNotEmpty(inserts)) {
-128                 modelRepo.batchInsertModelEndpoints(op.getModelName(), inserts);
-129             }
-130         }
-131         checkPropertyAndFeatures(op.getProperties(), op.getFeatures(), op.getEndpoints(), op.getModelName());
-132         if(StringUtils.isNotEmpty(op.getDocumentUrl()) || StringUtils.isNotEmpty(op.getProperties())
-133                 || StringUtils.isNotEmpty(op.getFeatures())) {
-134             modelRepo.update(op, op.getModelName());
-135         }
-136         updateModelCache(op.getModelName(), null);
-137     }
-138 
-139     private void checkPropertyAndFeatures(String properties, String features, Set<String> endpoints, String model) {
-140         if(properties == null  && features == null) {
-141             return;
-142         }
-143         List<String> basisEndpoints = getAllBasicEndpoints(endpoints, model);
-144         if(properties != null) {
-145             checkJson(properties, "properties", basisEndpoints);
-146         }
-147         if(features != null) {
-148             checkJson(features, "features", basisEndpoints);
-149         }
-150     }
-151 
-152     private void checkJson(String jsonStr, String field, List<String> basisEndpoints) {
-153         if(jsonStr.equals("{}")) {
-154             return;
-155         }
-156         Map<String, Object> map = json2Map(jsonStr);
-157         Assert.isTrue(map != null && !map.isEmpty(), field + "非json格式");
-158         for (String endpoint : basisEndpoints) {
-159             String invalidMessage = generateInvalidModelJsonKeyMessage(map, endpoint, field);
-160             Assert.isNull(invalidMessage, invalidMessage);
-161         }
-162     }
-163 
-164     private List<String> getAllBasicEndpoints(Set<String> endpoints, String model) {
-165         List<ModelEndpointRelDB> dbs = modelRepo.listEndpointsByModelName(model);
-166         Set<String> set = dbs.stream().map(ModelEndpointRelDB::getEndpoint).collect(Collectors.toSet());
-167         if(CollectionUtils.isNotEmpty(endpoints)) {
-168             set.addAll(endpoints);
-169         }
-170         return set.stream().filter(path ->
-171                 Arrays.stream(EntityConstants.SystemBasicEndpoint.values())
-172                         .map(EntityConstants.SystemBasicEndpoint::getEndpoint)
-173                         .anyMatch(match -> matchPath(match, path))).collect(Collectors.toList());
-174     }
-175 
-176     public List<String> getAllEndpoints(String model) {
-177         List<ModelEndpointRelDB> dbs = modelRepo.listEndpointsByModelName(model);
-178         return dbs.stream().map(ModelEndpointRelDB::getEndpoint).collect(Collectors.toList());
-179     }
-180 
-181     private void checkEndpoint(Set<String> endpoints) {
-182         Condition.EndpointCondition condition = Condition.EndpointCondition.builder()
-183                 .endpoints(endpoints)
-184                 .build();
-185         List<EndpointDB> dbs = endpointService.listByCondition(condition);
-186         Assert.isTrue(dbs.size() == endpoints.size(), () -> {
-187             Set<String> temp = Sets.newHashSet(endpoints);
-188             dbs.stream().map(EndpointDB::getEndpoint).collect(Collectors.toList()).forEach(temp::remove);
-189             return "能力点不存在：\r\n" + String.join(",", temp);
-190         });
-191     }
-192 
-193     @Transactional
-194     public void changeStatus(String modelName, boolean active) {
-195         modelRepo.checkExist(modelName, true);
-196         String status = active ? ACTIVE : INACTIVE;
-197         modelRepo.updateStatus(modelName, status);
-198         updateModelCache(modelName, null);
-199     }
-200 
-201     @Transactional
-202     public void changeVisibility(String modelName, boolean publish) {
-203         modelRepo.checkExist(modelName, true);
-204         String visibility = publish ? PUBLIC : PRIVATE;
-205         modelRepo.updateVisibility(modelName, visibility);
-206         updateModelCache(modelName, null);
-207     }
-208 
-209     @Transactional
-210     public void modelAuthorize(MetaDataOps.ModelAuthorizerOp op) {
-211         modelRepo.checkExist(op.getModel(), true);
-212         checkOwnerPermission(op.getModel());
-213         List<ModelAuthorizerRelDB> origins = modelRepo.listAuthorizersByModelName(op.getModel());
-214         Set<MetaDataOps.ModelAuthorizer> inserts = Sets.newHashSet(op.getAuthorizers());
-215         List<Long> deletes = new ArrayList<>();
-216         origins.forEach(origin -> {
-217                     MetaDataOps.ModelAuthorizer authorizer = MetaDataOps.ModelAuthorizer
-218                             .builder()
-219                             .authorizerType(origin.getAuthorizerType())
-220                             .authorizerCode(origin.getAuthorizerCode())
-221                             .build();
-222                     if(op.getAuthorizers().contains(authorizer)) {
-223                         inserts.remove(authorizer);
-224                     } else {
-225                         deletes.add(origin.getId());
-226                     }
-227                 }
-228         );
-229         if(CollectionUtils.isNotEmpty(deletes)) {
-230             modelRepo.batchDeleteModelAuthorizers(deletes);
-231         }
-232         if(CollectionUtils.isNotEmpty(inserts)) {
-233             modelRepo.batchInsertModelAuthorizers(op.getModel(), inserts);
-234         }
-235     }
-236 
-237     @Transactional
-238     public void modelLink(MetaDataOps.ModelLinkOp op) {
-239         cacheManager.getCache(modelMapCacheKey).tryLockAndRun("lock", 10, TimeUnit.SECONDS, ()-> {
-240             doModelLink(op);
-241         });
-242     }
-243 
-244     private void doModelLink(MetaDataOps.ModelLinkOp op) {
-245         ModelDB db = modelRepo.queryByUniqueKeyForUpdateNoWait(op.getModelName());
-246         Assert.isTrue(db != null, "实体不存在");
-247         if(db.getLinkedTo().equals(op.getLinkedTo())) {
-248             return;
-249         }
-250         String terminal = op.getModelName();
-251         if(StringUtils.isNotEmpty(op.getLinkedTo())) {
-252             List<String> path = getPath(op.getLinkedTo());
-253             Assert.isTrue(CollectionUtils.isNotEmpty(path), "linedTo实体不存在");
-254             Assert.isTrue(!path.contains(op.getModelName()), "出现循环");
-255             terminal = path.get(path.size() - 1);
-256         }
-257         modelRepo.update(op, op.getModelName());
-258         doUpdateModelCache(op.getModelName(), terminal);
-259     }
-260 
-261     @Cached(name = modelTerminalCacheKey, key = "#modelName")
-262     public String fetchTerminalModelName(String modelName) {
-263         List<String> path = getPath(modelName);
-264         return CollectionUtils.isEmpty(path) ? modelName : path.get(path.size() - 1);
-265     }
-266 
-267 
-268     @Cached(name = modelMapCacheKey, key = "#key")
-269     public Map<String, ModelDB> queryWithCache(String key) {
-270         List<ModelDB> list = modelRepo.listAll();
-271         return list.stream().collect(Collectors.toMap(ModelDB::getModelName, Function.identity()));
-272     }
-273 
-274     public void refreshModelMap() {
-275         List<ModelDB> list = modelRepo.listAll();
-276         Map<String, ModelDB> map = list.stream().collect(Collectors.toMap(ModelDB::getModelName, Function.identity()));
-277         cacheManager.getCache(modelMapCacheKey).put("all", map);
-278     }
-279 
-280     public List<String> getPath(String target) {
-281         Map<String, ModelDB> map = applicationContext.getBean(ModelService.class).queryWithCache("all");
-282         return getPath(target, map);
-283     }
-284 
-285     private List<String> getPath(String target, Map<String, ModelDB> map) {
-286         List<String> path = new ArrayList<>();
-287         String name = target;
-288         while(StringUtils.isNotEmpty(name) && map.containsKey(name)) {
-289             path.add( name);
-290             name = map.get(name).getLinkedTo();
-291         }
-292         return path;
-293     }
-294 
-295     private String getTerminalName(String modelName, Map<String, ModelDB> map)  {
-296         List<String> path = getPath(modelName, map);
-297         return CollectionUtils.isEmpty(path) ? modelName : path.get(path.size() - 1);
-298     }
-299 
-300      public ModelDetails getModelDetails(String modelName) {
-301         Model model = modelRepo.queryByUniqueKey(modelName, Model.class);
-302         Assert.notNull(model, "实体不存在");
-303         List<Channel> channels = channelService
-304                 .listByCondition(Condition.ChannelCondition.builder().entityType("model").entityCode(modelName)
-305                         .visibility(PUBLIC)
-306                         .build(), Channel.class);
-307         ModelDetails modelDetails = new ModelDetails();
-308         modelDetails.setChannels(channels);
-309         modelDetails.setModel(model);
-310         return modelDetails;
-311     }
-312 
-313     private void updateModelCache(String modelName, String terminal) {
-314         cacheManager.getCache(modelMapCacheKey).tryLockAndRun("lock", 10, TimeUnit.SECONDS, ()-> {
-315             doUpdateModelCache(modelName, terminal);
-316         });
-317     }
-318 
-319     private void doUpdateModelCache(String modelName, String terminal) {
-320         ModelDB modelDB = modelRepo.queryByUniqueKey(modelName);
-321         Map<String, ModelDB> map = applicationContext.getBean(ModelService.class).queryWithCache("all");
-322         map.put(modelName, modelDB);
-323         cacheManager.getCache(modelMapCacheKey).put("all", map);
-324         if(StringUtils.isNotEmpty(terminal)) {
-325             cacheManager.getCache(modelTerminalCacheKey).put(modelName, terminal);
-326         }
-327     }
-328 
-329     private void checkOwnerPermission(String model) {
-330         ModelDB db = modelRepo.queryByUniqueKey(model);
-331         Operator operator = BellaContext.getOperator();
-332         //todo: 检查 operator 是否是 Owner
-333     }
-334 
-335     public ModelDB getActiveByModelName(String modelName) {
-336         ModelDB db = getOne(modelName);
-337         return db == null || db.getStatus().equals(INACTIVE) ? null : db;
-338     }
-339 
-340     public ModelDB getOne(String modelName) {
-341         return modelRepo.queryByUniqueKey(modelName);
-342     }
-343 
-344     public ModelDB getOneForUpdate(String modelName) {
-345         return modelRepo.queryByUniqueKeyForUpdate(modelName);
-346     }
-347 
-348     public List<ModelDB> listByCondition(Condition.ModelCondition condition) {
-349         fillModelNames(condition);
-350         return modelRepo.list(condition);
-351     }
-352 
-353     public Page<ModelDB> pageByCondition(Condition.ModelCondition condition) {
-354         return modelRepo.page(condition);
-355     }
-356 
-357     public List<Model> listByConditionForSelectList(Condition.ModelCondition condition) {
-358         if(!fillModelNames(condition)) {
-359             return Lists.newArrayList();
-360         }
-361         Map<String, ModelDB> map = applicationContext.getBean(ModelService.class).queryWithCache("all");
-362         return listByCondition(condition).stream()
-363                 .map(db->{
-364                     Model model = new Model();
-365                     model.setModelName(db.getModelName());
-366                     model.setTerminalModel(getTerminalName(db.getModelName(), map));
-367                     return model;
-368                 })
-369                 .collect(Collectors.toList());
-370     }
-371 
-372     public List<ModelDB> listByConditionWithPermission(Condition.ModelCondition condition, boolean apikeyFirst) {
-373         apikeyService.fillPermissionCode(condition, apikeyFirst);
-374         if(!fillModelNames(condition)) {
-375             return Lists.newArrayList();
-376         }
-377         return listByCondition(condition);
-378     }
-379 
-380     public Page<ModelDB> pageByConditionWithPermission(Condition.ModelCondition condition, boolean apikeyFirst) {
-381         apikeyService.fillPermissionCode(condition, apikeyFirst);
-382         if(!fillModelNames(condition)) {
-383             return new Page<>();
-384         }
-385         return pageByCondition(condition);
-386     }
-387 
-388     private boolean fillModelNames(Condition.ModelCondition condition) {
-389         if(StringUtils.isEmpty(condition.getDataDestination()) && StringUtils.isEmpty(condition.getSupplier())) {
-390             return true;
-391         }
-392         Condition.ChannelCondition channelCondition = new Condition.ChannelCondition();
-393         channelCondition.setStatus(ACTIVE);
-394         channelCondition.setDataDestination(condition.getDataDestination());
-395         channelCondition.setSupplier(condition.getSupplier());
-396         channelCondition.setEntityType(MODEL);
-397         List<ChannelDB> channels = channelService.listByCondition(channelCondition);
-398         Set<String> modelNames = channels.stream()
-399                 .map(ChannelDB::getEntityCode)
-400                 .filter(entityCode -> CollectionUtils.isEmpty(condition.getModelNames())
-401                         || condition.getModelNames().contains(entityCode))
-402                 .collect(Collectors.toSet());
-403         condition.setModelNames(modelNames);
-404         condition.setIncludeLinkedTo(true);
-405         return CollectionUtils.isNotEmpty(modelNames);
-406     }
-407 }
-408
-```
-
-
-
-
-```
-File: api/server/src/main/java/com/ke/bella/openapi/service/ChannelService.java
-1 package com.ke.bella.openapi.service;
-2 
-3 import com.alicp.jetcache.Cache;
-4 import com.alicp.jetcache.CacheManager;
-5 import com.alicp.jetcache.anno.CacheType;
-6 import com.alicp.jetcache.anno.Cached;
-7 import com.alicp.jetcache.template.QuickConfig;
-8 import com.ke.bella.openapi.db.repo.ChannelRepo;
-9 import com.ke.bella.openapi.db.repo.Page;
-10 import com.ke.bella.openapi.metadata.Condition;
-11 import com.ke.bella.openapi.metadata.MetaDataOps;
-12 import com.ke.bella.openapi.metadata.PriceDetails;
-13 import com.ke.bella.openapi.protocol.AdaptorManager;
-14 import com.ke.bella.openapi.protocol.IPriceInfo;
-15 import com.ke.bella.openapi.protocol.cost.CostCalculator;
-16 import com.ke.bella.openapi.tables.pojos.ChannelDB;
-17 import com.ke.bella.openapi.tables.pojos.EndpointDB;
-18 import com.ke.bella.openapi.tables.pojos.ModelDB;
-19 import com.ke.bella.openapi.utils.JacksonUtils;
-20 import lombok.AllArgsConstructor;
-21 import lombok.Builder;
-22 import lombok.Data;
-23 import lombok.NoArgsConstructor;
-24 import org.apache.commons.lang3.StringUtils;
-25 import org.springframework.beans.factory.annotation.Autowired;
-26 import org.springframework.stereotype.Component;
-27 import org.springframework.transaction.annotation.Transactional;
-28 import org.springframework.util.Assert;
-29 
-30 import javax.annotation.PostConstruct;
-31 import java.lang.reflect.Field;
-32 import java.time.Duration;
-33 import java.util.ArrayList;
-34 import java.util.Arrays;
-35 import java.util.HashMap;
-36 import java.util.LinkedHashMap;
-37 import java.util.List;
-38 import java.util.Map;
-39 import java.util.stream.Collectors;
-40 
-41 import static com.ke.bella.openapi.common.EntityConstants.ACTIVE;
-42 import static com.ke.bella.openapi.common.EntityConstants.ENDPOINT;
-43 import static com.ke.bella.openapi.common.EntityConstants.INACTIVE;
-44 import static com.ke.bella.openapi.common.EntityConstants.MODEL;
-45 import static com.ke.bella.openapi.common.EntityConstants.PUBLIC;
-46 
-47 /**
-48  * Author: Stan Sai Date: 2024/8/2 11:35 description:
-49  */
-50 @Component
-51 public class ChannelService {
-52     @Autowired
-53     private ChannelRepo channelRepo;
-54     @Autowired
-55     private EndpointService endpointService;
-56     @Autowired
-57     private ModelService modelService;
-58     @Autowired
-59     private AdaptorManager adaptorManager;
-60     @Autowired
-61     private CacheManager cacheManager;
-62     private static final String channelCacheKey = "channels:active:";
-63 
-64     @PostConstruct
-65     public void postConstruct() {
-66         QuickConfig quickConfig = QuickConfig.newBuilder(channelCacheKey)
-67                 .cacheNullValue(true)
-68                 .cacheType(CacheType.BOTH)
-69                 .syncLocal(true)
-70                 .localExpire(Duration.ofSeconds(30))
-71                 .penetrationProtect(true)
-72                 .penetrationProtectTimeout(Duration.ofSeconds(10))
-73                 .build();
-74         cacheManager.getOrCreateCache(quickConfig);
-75     }
-76 
-77     @Transactional
-78     public ChannelDB createChannel(MetaDataOps.ChannelCreateOp op) {
-79         List<String> endpoints = new ArrayList<>();
-80         if(op.getEntityType().equals(ENDPOINT)) {
-81             EndpointDB endpoint = endpointService.getOne(EndpointService.UniqueKeyQuery.builder()
-82                     .endpoint(op.getEntityCode()).build());
-83             Assert.notNull(endpoint, "能力点实体不存在");
-84             endpoints.add(endpoint.getEndpoint());
-85         } else {
-86             ModelDB model = modelService.getOne(op.getEntityCode());
-87             Assert.notNull(model, "模型实体不存在");
-88             endpoints = modelService.getAllEndpoints(model.getModelName());
-89 
-90         }
-91         endpoints.forEach(endpoint -> Assert.isTrue(CostCalculator.validate(endpoint, op.getPriceInfo()), "priceInfo invalid"));
-92         endpoints.forEach(endpoint -> Assert.isTrue(adaptorManager.support(endpoint, op.getProtocol()), "不支持的协议"));
-93 
-94         if (StringUtils.isEmpty(op.getVisibility())) {
-95             op.setVisibility(PUBLIC);
-96         }
-97         
-98         //todo: 根据协议检查channelInfo
-99         ChannelDB channelDB = channelRepo.insert(op);
-100         updateCache(channelDB.getEntityType(), channelDB.getEntityCode());
-101         return channelDB;
-102     }
-103 
-104     @Transactional
-105     public void updateChannel(MetaDataOps.ChannelUpdateOp op) {
-106         channelRepo.checkExist(op.getChannelCode(), true);
-107         if(StringUtils.isNotEmpty(op.getPriceInfo())) {
-108             List<String> endpoints = new ArrayList<>();
-109             Entity entity = getEntityInfoByCode(op.getChannelCode());
-110             if(entity.getEntityCode().equals(MODEL)) {
-111                 ModelDB model = modelService.getOne(entity.getEntityCode());
-112                 endpoints = modelService.getAllEndpoints(model.getModelName());
-113             } else {
-114                 endpoints.add(entity.getEntityCode());
-115             }
-116             endpoints.forEach(endpoint -> Assert.isTrue(CostCalculator.validate(endpoint, op.getPriceInfo()), "priceInfo invalid"));
-117         }
-118         //todo: 根据协议检查channelInfo
-119         channelRepo.update(op, op.getChannelCode());
-120         updateCache(op.getChannelCode());
-121     }
-122 
-123     @Transactional
-124     public void changeStatus(String channelCode, boolean active) {
-125         channelRepo.checkExist(channelCode, true);
-126         String status = active ? ACTIVE : INACTIVE;
-127         channelRepo.updateStatus(channelCode, status);
-128         updateCache(channelCode);
-129     }
-130 
-131     public Entity getEntityInfoByCode(String code) {
-132         ChannelDB channel = channelRepo.queryByUniqueKey(code);
-133         return Entity.builder()
-134                 .entityType(channel.getEntityType())
-135                 .entityCode(channel.getEntityCode())
-136                 .build();
-137     }
-138 
-139     public ChannelDB getOne(String channelCode) {
-140         return channelRepo.queryByUniqueKey(channelCode);
-141     }
-142 
-143     public ChannelDB getActiveByChannelCode(String channelCode) {
-144         ChannelDB db = getOne(channelCode);
-145         return db == null || db.getStatus().equals(INACTIVE) ? null : db;
-146     }
-147 
-148     public List<ChannelDB> listActivesWithDb(String entityType, String entityCode) {
-149         return listByCondition(Condition.ChannelCondition.builder()
-150                 .status(ACTIVE)
-151                 .entityType(entityType)
-152                 .entityCode(entityCode)
-153                 .build());
-154     }
-155 
-156     @Cached(name = channelCacheKey, key = "#entityType + ':' + #entityCode")
-157     public List<ChannelDB> listActives(String entityType, String entityCode) {
-158         if(entityType == null || entityCode == null) {
-159             return null;
-160         }
-161         return listActivesWithDb(entityType, entityCode);
-162     }
-163 
-164     public List<String> listSuppliers() {
-165         return channelRepo.listSuppliers();
-166     }
-167 
-168     private void updateCache(String channelCode) {
-169         ChannelDB db = channelRepo.queryByUniqueKey(channelCode);
-170         updateCache(db.getEntityType(), db.getEntityCode());
-171     }
-172 
-173     private void updateCache(String entityType, String entityCode) {
-174         List<ChannelDB> channels = listByCondition(Condition.ChannelCondition.builder()
-175                 .status(ACTIVE)
-176                 .entityType(entityType)
-177                 .entityCode(entityCode)
-178                 .build());
-179         Cache<String, List<ChannelDB>> cache = cacheManager.getCache(channelCacheKey);
-180         cache.put(entityType + ":" + entityCode, channels);
-181     }
-182 
-183     public List<ChannelDB> listByCondition(Condition.ChannelCondition condition) {
-184         return channelRepo.list(condition);
-185     }
-186 
-187     public <H> List<H> listByCondition(Condition.ChannelCondition condition, Class<H> type) {
-188         return channelRepo.list(condition, type);
-189     }
-190 
-191     public Page<ChannelDB> pageByCondition(Condition.ChannelCondition condition) {
-192         return channelRepo.page(condition);
-193     }
-194 
-195     public Map<String, PriceDetails> getPriceInfo(List<String> entityCodes, Class<? extends IPriceInfo> type) {
-196         Map<String, String> prices = channelRepo.queryPriceInfo(entityCodes);
-197         Map<String, Field> fields = Arrays.stream(type.getDeclaredFields()).map(field -> {
-198             field.setAccessible(true);
-199             return field;
-200         }).collect(Collectors.toMap(Field::getName, f -> f));
-201         Map<String, PriceDetails> result = new HashMap<>();
-202         prices.forEach((k, v) -> {
-203             IPriceInfo priceInfo = JacksonUtils.deserialize(v, type);
-204             if(priceInfo != null) {
-205                 PriceDetails details = new PriceDetails();
-206                 details.setUnit(priceInfo.getUnit());
-207                 details.setPriceInfo(priceInfo);
-208                 details.setDisplayPrice(new LinkedHashMap<>());
-209                 priceInfo.description().forEach((filedName, desc) -> {
-210                     try {
-211                         Object val = fields.get(filedName).get(priceInfo);
-212                         details.getDisplayPrice().put(desc, val == null ? "N/A" : val.toString());
-213                     } catch (IllegalAccessException e) {
-214                         throw new RuntimeException(e);
-215                     }
-216                 });
-217                 result.put(k, details);
-218             }
-219         });
-220         return result;
-221     }
-222 
-223     @Data
-224     @NoArgsConstructor
-225     @AllArgsConstructor
-226     @Builder
-227     public static class Entity {
-228         private String entityType;
-229         private String entityCode;
-230     }
-231 }
-232
-```
-
-
-
-
-
-
-
-
-```
-File: api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionResponse.java
-1 package com.ke.bella.openapi.protocol.completion;
-2 
-3 import java.util.List;
-4 
-5 import org.apache.commons.collections4.CollectionUtils;
-6 
-7 import com.fasterxml.jackson.annotation.JsonInclude;
-8 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-9 import com.ke.bella.openapi.protocol.OpenapiResponse;
-10 import com.ke.bella.openapi.protocol.completion.Message.ToolCall;
-11 
-12 import lombok.AllArgsConstructor;
-13 import lombok.Data;
-14 import lombok.NoArgsConstructor;
-15 import lombok.experimental.SuperBuilder;
-16 import org.springframework.util.Assert;
-17 
-18 @Data
-19 @JsonInclude(Include.NON_NULL)
-20 @NoArgsConstructor
-21 @AllArgsConstructor
-22 @SuperBuilder
-23 public class CompletionResponse extends OpenapiResponse {
-24 
-25     private List<Choice> choices;
-26     /**
-27      * 时间戳
-28      */
-29     private long created;
-30     /**
-31      * 唯一id
-32      */
-33     private String id;
-34     /**
-35      * 调用模型
-36      */
-37     private String model;
-38 
-39     /**
-40      * This fingerprint represents the backend configuration that the model runs with.<br/><br/> Can be used in conjunction with the seed request
-41      * parameter to understand when backend changes have been made that might impact determinism.
-42      */
-43     private String system_fingerprint;
-44 
-45     /**
-46      * 调用接口
-47      */
-48     private String object;
-49 
-50     private TokenUsage usage;
-51 
-52     public String content() {
-53         if(CollectionUtils.isNotEmpty(choices)) {
-54             return choices.get(0).content();
-55         } else {
-56             return "";
-57         }
-58     }
-59 
-60     public String reasoning() {
-61         if(CollectionUtils.isNotEmpty(choices)) {
-62             return choices.get(0).reasoning();
-63         } else {
-64             return "";
-65         }
-66     }
-67 
-68     public String finishReason() {
-69         if(CollectionUtils.isNotEmpty(choices)) {
-70             return choices.get(0).getFinish_reason();
-71         } else {
-72             return null;
-73         }
-74     }
-75 
-76     public void setContent(String content) {
-77         Assert.notEmpty(choices, "choices must not be null");
-78         choices.get(0).setContent(content);
-79     }
-80 
-81     public void setReasoning(String reasoning) {
-82         Assert.notNull(choices, "choices must not be null");
-83         choices.get(0).setReasoning(reasoning);
-84     }
-85 
-86     @Data
-87     @JsonInclude(Include.NON_NULL)
-88     @SuperBuilder
-89     @NoArgsConstructor
-90     public static class Choice {
-91 
-92         /**
-93          * Every response will include a finish_reason. The possible values for finish_reason are:
-94          * <p>
-95          * stop: API returned complete message, or a message terminated by one of the stop sequences provided via the stop parameter length:
-96          * Incomplete model output due to max_tokens parameter or token limit function_call: The model decided to call a function content_filter:
-97          * Omitted content due to a flag from our content filters null: API response still in progress or incomplete
-98          */
-99         private String finish_reason;
-100         private int index;
-101         private Message message;
-102 
-103         public String content() {
-104             if(message != null && message.getContent() != null) {
-105                 return message.getContent().toString();
-106             } else {
-107                 return "";
-108             }
-109         }
-110 
-111         public String reasoning() {
-112             if(message != null) {
-113                 return message.getReasoning_content();
-114             } else {
-115                 return "";
-116             }
-117         }
-118 
-119         public void setContent(String content) {
-120             Assert.notNull(message, "message must not be null");
-121             message.setContent(content);
-122         }
-123 
-124         public void setReasoning(String reasoning) {
-125             Assert.notNull(message, "message must not be null");
-126             message.setReasoning_content(reasoning);
-127         }
-128     }
-129 
-130     public static Choice toolcallChoice(String reasoning, List<ToolCall> calls) {
-131         Choice c = Choice.builder()
-132                 .message(Message.builder()
-133                         .role("assistant")
-134                         .reasoning_content(reasoning)
-135                         .tool_calls(calls)
-136                         .build())
-137                 .build();
-138         return c;
-139     }
-140 
-141     public static Choice assistantMessageChoice(String reasoning, String content) {
-142         Choice c = Choice.builder()
-143                 .message(Message.builder()
-144                         .role("assistant")
-145                         .reasoning_content(reasoning)
-146                         .content(content)
-147                         .build())
-148                 .build();
-149         return c;
-150     }
-151 
-152     @Data
-153     public static class TokenUsage {
-154         private int completion_tokens;
-155         private int prompt_tokens;
-156         private int total_tokens;
-157 
-158         public TokenUsage add(TokenUsage u) {
-159             this.completion_tokens += u.completion_tokens;
-160             this.prompt_tokens += u.prompt_tokens;
-161             this.total_tokens += u.total_tokens;
-162             return this;
-163         }
-164     }
-165 
-166 }
-167 
-168
-```
-
-
-
-
-```
-File: api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/StreamCompletionResponse.java
-1 package com.ke.bella.openapi.protocol.completion;
-2 
-3 import com.fasterxml.jackson.annotation.JsonIgnore;
-4 import com.fasterxml.jackson.annotation.JsonInclude;
-5 import com.google.common.collect.Lists;
-6 import com.ke.bella.openapi.protocol.OpenapiResponse;
-7 import com.ke.bella.openapi.protocol.completion.Message.ToolCall;
-8 import lombok.AllArgsConstructor;
-9 import lombok.Builder;
-10 import lombok.Data;
-11 import lombok.NoArgsConstructor;
-12 import lombok.experimental.SuperBuilder;
-13 import org.apache.commons.collections4.CollectionUtils;
-14 import org.springframework.util.Assert;
-15 
-16 import java.util.Arrays;
-17 import java.util.List;
-18 
-19 @Data
-20 @SuperBuilder
-21 @AllArgsConstructor
-22 @NoArgsConstructor
-23 @JsonInclude(JsonInclude.Include.NON_NULL)
-24 public class StreamCompletionResponse extends OpenapiResponse {
-25     public static final String CHAT_COMPLETION_CHUNK_OBJECT = "chat.completion.chunk";
-26 
-27     /**
-28      * 时间戳
-29      */
-30     private long created;
-31     /**
-32      * 唯一id
-33      */
-34     private String id;
-35     /**
-36      * 调用模型
-37      */
-38     private String model;
-39 
-40     private CompletionResponse.TokenUsage usage;
-41 
-42     private List<Choice> choices;
-43 
-44     @JsonIgnore
-45     private StreamCompletionResponse standardFormat;
-46 
-47     public List<Choice> getChoices() {
-48         return choices == null ? Lists.newArrayList() : choices;
-49     }
-50 
-51     public String content() {
-52         if(CollectionUtils.isNotEmpty(choices)) {
-53             return choices.get(0).content();
-54         } else {
-55             return "";
-56         }
-57     }
-58 
-59     public String reasoning() {
-60         if(CollectionUtils.isNotEmpty(choices)) {
-61             return choices.get(0).reasoning();
-62         } else {
-63             return "";
-64         }
-65     }
-66 
-67     public List<ToolCall> toolCalls() {
-68         if(CollectionUtils.isNotEmpty(choices)) {
-69             return choices.get(0).getDelta().getTool_calls();
-70         } else {
-71             return null;
-72         }
-73     }
-74 
-75     public void setContent(String content) {
-76         Assert.notEmpty(choices, "choices must not be null");
-77         choices.get(0).setContent(content);
-78     }
-79 
-80     public void setReasoning(String reasoning) {
-81         Assert.notNull(choices, "choices must not be null");
-82         choices.get(0).setReasoning(reasoning);
-83     }
-84 
-85     public void setToolCall(ToolCall toolCall) {
-86         Assert.notNull(choices, "choices must not be null");
-87         choices.get(0).setTooCall(toolCall);
-88     }
-89 
-90     public void setFinishReason(String finishReason) {
-91         Assert.notNull(choices, "choices must not be null");
-92         choices.get(0).setFinish_reason(finishReason);
-93     }
-94 
-95     public String finishReason() {
-96         if(CollectionUtils.isNotEmpty(choices)
-97                 && choices.get(0).getFinish_reason() != null) {
-98             return choices.get(0).getFinish_reason();
-99         } else {
-100             return "";
-101         }
-102     }
-103 
-104     @Data
-105     @AllArgsConstructor
-106     @NoArgsConstructor
-107     @Builder
-108     @JsonInclude(JsonInclude.Include.NON_NULL)
-109     public static class Choice {
-110 
-111         /**
-112          * Every response will include a finish_reason. The possible values for
-113          * finish_reason are:
-114          * <p>
-115          * stop: API returned complete message, or a message terminated by one
-116          * of the stop sequences provided via the stop parameter length:
-117          * Incomplete model output due to max_tokens parameter or token limit
-118          * function_call: The model decided to call a function content_filter:
-119          * Omitted content due to a
-120          * flag from our content filters null: API response still in progress or
-121          * incomplete
-122          */
-123         private String finish_reason;
-124         private int index;
-125         private Message delta;
-126 
-127         public String content() {
-128             if(delta != null && delta.getContent() != null) {
-129                 return delta.getContent().toString();
-130             } else {
-131                 return "";
-132             }
-133         }
-134 
-135         public String reasoning() {
-136             if(delta != null) {
-137                 return delta.getReasoning_content();
-138             } else {
-139                 return "";
-140             }
-141         }
-142 
-143         public void setContent(String content) {
-144             Assert.notNull(delta, "delta must not be null");
-145             delta.setContent(content);
-146         }
-147 
-148         public void setReasoning(String reasoning) {
-149             Assert.notNull(delta, "delta must not be null");
-150             delta.setReasoning_content(reasoning);
-151         }
-152 
-153         public void setTooCall(ToolCall toolCall) {
-154             Assert.notNull(delta, "delta must not be null");
-155             delta.setTool_calls(Lists.newArrayList(toolCall));
-156         }
-157     }
-158 
-159     public static List<Choice> toolcallChoice(ToolCall fc) {
-160         Choice choice = Choice.builder()
-161                 .delta(Message.builder()
-162                         .role("assistant")
-163                         .tool_calls(Arrays.asList(fc))
-164                         .tool_call_id(fc.getId())
-165                         .build())
-166                 .build();
-167         return Arrays.asList(choice);
-168 
-169     }
-170 
-171     public static List<Choice> assistantMessageChoice(String delta) {
-172         Choice choice = Choice.builder()
-173                 .delta(Message.builder()
-174                         .role("assistant")
-175                         .content(delta)
-176                         .build())
-177                 .build();
-178         return Arrays.asList(choice);
-179     }
-180 
-181 }
-182
-```
-
-
-
-
-```
 File: api/server/src/main/resources/application.yml
 1 server:
 2   tomcat:
@@ -1821,324 +678,11 @@ File: api/server/src/main/resources/application.yml
 
 
 
-```
-File: api/server/src/main/java/com/ke/bella/openapi/intercept/RequestUserAdvice.java
-1 package com.ke.bella.openapi.intercept;
-2 
-3 import com.ke.bella.openapi.EndpointContext;
-4 import com.ke.bella.openapi.protocol.UserRequest;
-5 import lombok.extern.slf4j.Slf4j;
-6 import org.springframework.core.MethodParameter;
-7 import org.springframework.http.HttpInputMessage;
-8 import org.springframework.http.converter.HttpMessageConverter;
-9 import org.springframework.util.StringUtils;
-10 import org.springframework.web.bind.annotation.RestControllerAdvice;
-11 import org.springframework.web.servlet.mvc.method.annotation.RequestBodyAdviceAdapter;
-12 
-13 import java.lang.reflect.Type;
-14 
-15 @RestControllerAdvice
-16 @Slf4j
-17 public class RequestUserAdvice extends RequestBodyAdviceAdapter  {
-18     @Override
-19     public boolean supports(MethodParameter methodParameter, Type targetType, Class<? extends HttpMessageConverter<?>> converterType) {
-20         Class<?> clazz = methodParameter.getContainingClass();
-21         return clazz.getName().startsWith("com.ke.bella.openapi.endpoints.");
-22     }
-23 
-24     @Override
-25     public Object afterBodyRead(Object request, HttpInputMessage inputMessage, MethodParameter parameter, Type targetType,
-26             Class<? extends HttpMessageConverter<?>> converterType) {
-27         String user = null;
-28         if(request instanceof UserRequest) {
-29             user = ((UserRequest) request).getUser();
-30         }
-31         if(StringUtils.isEmpty(user)) {
-32             user = EndpointContext.getRequest().getHeader("ucid");
-33         }
-34         EndpointContext.getProcessData().setUser(user);
-35         return super.afterBodyRead(request, inputMessage, parameter, targetType, converterType);
-36     }
-37 }
-38
-```
-
-
-
-
-
-
-```
-File: api/sdk/src/main/java/com/ke/bella/openapi/utils/HttpUtils.java
-1 package com.ke.bella.openapi.utils;
-2 
-3 import com.fasterxml.jackson.core.type.TypeReference;
-4 import com.ke.bella.openapi.common.exception.ChannelException;
-5 import com.ke.bella.openapi.protocol.BellaEventSourceListener;
-6 import com.ke.bella.openapi.protocol.BellaStreamCallback;
-7 import com.ke.bella.openapi.protocol.BellaWebSocketListener;
-8 import com.ke.bella.openapi.protocol.Callbacks;
-9 import okhttp3.ConnectionPool;
-10 import okhttp3.Dispatcher;
-11 import okhttp3.OkHttpClient;
-12 import okhttp3.Request;
-13 import okhttp3.Response;
-14 import okhttp3.ResponseBody;
-15 import okhttp3.WebSocket;
-16 import okhttp3.internal.Util;
-17 import okhttp3.sse.EventSources;
-18 
-19 import java.io.IOException;
-20 import java.util.Optional;
-21 import java.util.concurrent.CompletableFuture;
-22 import java.util.concurrent.ExecutionException;
-23 import java.util.concurrent.ExecutorService;
-24 import java.util.concurrent.SynchronousQueue;
-25 import java.util.concurrent.ThreadPoolExecutor;
-26 import java.util.concurrent.TimeUnit;
-27 import java.util.function.Function;
-28 
-29 /**
-30  * Author: Stan Sai Date: 2024/8/14 12:09 description:
-31  */
-32 public class HttpUtils {
-33     private static final ConnectionPool connectionPool = new ConnectionPool(1500, 5, TimeUnit.MINUTES);
-34     private static final ExecutorService executorService = new ThreadPoolExecutor(0, Integer.MAX_VALUE, 60, TimeUnit.SECONDS,
-35             new SynchronousQueue<>(), Util.threadFactory("OkHttp Dispatcher", false));
-36     private static final int defaultConnectionTimeout = 120;
-37     private static final int defaultReadTimeout = 300;
-38     private static final OkHttpClient.Builder clientBuilder = clientBuilder();
-39     public static OkHttpClient defaultOkhttpClient() {
-40         OkHttpClient.Builder builder = clientBuilder()
-41                 .connectTimeout(defaultConnectionTimeout, TimeUnit.SECONDS)
-42                 .readTimeout(defaultReadTimeout, TimeUnit.SECONDS);
-43         return builder.build();
-44     }
-45     private static OkHttpClient.Builder clientBuilder() {
-46         Dispatcher dispatcher = new Dispatcher(executorService);
-47         dispatcher.setMaxRequests(2000);
-48         dispatcher.setMaxRequestsPerHost(500);
-49         return new OkHttpClient.Builder()
-50                 .proxySelector(ProxyUtils.getProxySelector())
-51                 .connectionPool(connectionPool)
-52                 .dispatcher(dispatcher)
-53                 .pingInterval(30, TimeUnit.SECONDS);
-54     }
-55 
-56     public static Response httpRequest(Request request, int connectionTimeout, int readTimeout) throws IOException {
-57         return clientBuilder.connectTimeout(connectionTimeout, TimeUnit.SECONDS).readTimeout(readTimeout, TimeUnit.SECONDS)
-58                 .build().newCall(request).execute();
-59     }
-60 
-61     public static Response httpRequest(Request request) throws IOException {
-62         return httpRequest(request, defaultConnectionTimeout, defaultReadTimeout);
-63     }
-64 
-65     public static void streamRequest(Request request, BellaStreamCallback callback) {
-66         streamRequest(request, callback, defaultConnectionTimeout, defaultReadTimeout);
-67     }
-68 
-69     public static void streamRequest(Request request, BellaEventSourceListener listener) {
-70         streamRequest(request, listener, defaultConnectionTimeout, defaultReadTimeout);
-71     }
-72 
-73     public static void streamRequest(Request request, BellaStreamCallback callback, int connectionTimeout, int readTimeout) {
-74         CompletableFuture<?> future = new CompletableFuture<>();
-75         callback.setConnectionInitFuture(future);
-76         clientBuilder.connectTimeout(connectionTimeout, TimeUnit.SECONDS)
-77                 .readTimeout(readTimeout, TimeUnit.SECONDS).build().newCall(request).enqueue(callback);
-78         try {
-79             future.get();
-80         } catch (InterruptedException interruptedException) {
-81             interruptedException.printStackTrace();
-82             Thread.currentThread().interrupt();
-83         }  catch (ExecutionException e) {
-84             if(e.getCause() instanceof RuntimeException) {
-85                 throw (RuntimeException) e.getCause();
-86             }
-87             throw new RuntimeException(e);
-88         }
-89     }
-90 
-91     public static void streamRequest(Request request, BellaEventSourceListener listener, int connectionTimeout, int readTimeout) {
-92         CompletableFuture<?> future = new CompletableFuture<>();
-93         listener.setConnectionInitFuture(future);
-94         EventSources.createFactory(clientBuilder.connectTimeout(connectionTimeout, TimeUnit.SECONDS)
-95                 .readTimeout(readTimeout, TimeUnit.SECONDS).build()).newEventSource(request, listener);
-96         try {
-97             future.get();
-98         } catch (InterruptedException interruptedException) {
-99             interruptedException.printStackTrace();
-100             Thread.currentThread().interrupt();
-101         }  catch (ExecutionException e) {
-102             if(e.getCause() instanceof RuntimeException) {
-103                 throw (RuntimeException) e.getCause();
-104             }
-105             throw new RuntimeException(e);
-106         }
-107     }
-108 
-109     public static <T> T httpRequest(Request request, Class<T> clazz) {
-110         return doHttpRequest(request, bytes -> JacksonUtils.deserialize(bytes, clazz), null, defaultConnectionTimeout, defaultReadTimeout);
-111     }
-112 
-113     public static <T> T httpRequest(Request request, TypeReference<T> typeReference) {
-114         return doHttpRequest(request, bytes -> JacksonUtils.deserialize(bytes, typeReference), null, defaultConnectionTimeout, defaultReadTimeout);
-115     }
-116 
-117     public static <T> T httpRequest(Request request, Class<T> clazz, Callbacks.ChannelErrorCallback<T> errorCallback) {
-118         return doHttpRequest(request, bytes -> JacksonUtils.deserialize(bytes, clazz), errorCallback, defaultConnectionTimeout, defaultReadTimeout);
-119     }
-120 
-121     public static <T> T httpRequest(Request request, TypeReference<T> typeReference, Callbacks.ChannelErrorCallback<T> errorCallback) {
-122         return doHttpRequest(request, bytes -> JacksonUtils.deserialize(bytes, typeReference), errorCallback, defaultConnectionTimeout, defaultReadTimeout);
-123     }
-124 
-125     public static <T> T httpRequest(Request request, Class<T> clazz, int connectionTimeout, int readTimeout) {
-126         return doHttpRequest(request, bytes -> JacksonUtils.deserialize(bytes, clazz), null, connectionTimeout, readTimeout);
-127     }
-128 
-129     public static <T> T httpRequest(Request request, TypeReference<T> typeReference, int connectionTimeout, int readTimeout) {
-130         return doHttpRequest(request, bytes -> JacksonUtils.deserialize(bytes, typeReference), null, connectionTimeout, readTimeout);
-131     }
-132 
-133     public static <T> T httpRequest(Request request, Class<T> clazz, Callbacks.ChannelErrorCallback<T> errorCallback, int connectionTimeout, int readTimeout) {
-134         return doHttpRequest(request, bytes -> JacksonUtils.deserialize(bytes, clazz), errorCallback, connectionTimeout, readTimeout);
-135     }
-136 
-137     public static <T> T httpRequest(Request request, TypeReference<T> typeReference, Callbacks.ChannelErrorCallback<T> errorCallback, int connectionTimeout, int readTimeout) {
-138         return doHttpRequest(request, bytes -> JacksonUtils.deserialize(bytes, typeReference), errorCallback, connectionTimeout, readTimeout);
-139     }
-140 
-141     private static  <T> T doHttpRequest(Request request, Function<byte[], T> responseConvert, Callbacks.ChannelErrorCallback<T> errorCallback, int connectionTimeout, int readTimeout) {
-142         T result = null;
-143         try {
-144             Response response = HttpUtils.httpRequest(request, connectionTimeout, readTimeout);
-145             if(response.body() != null) {
-146                 result = responseConvert.apply(response.body().bytes());
-147             }
-148             if(response.code() > 299) {
-149                 if(result == null) {
-150                     if(response.code() > 499 && response.code() < 600) {
-151                         String message = "供应商返回：code: " + response.code() + " message: " + response.message();
-152                         throw ChannelException.fromResponse(503, message);
-153                     }
-154                     throw ChannelException.fromResponse(response.code(), response.message());
-155                 } else {
-156                     if(errorCallback != null) {
-157                         errorCallback.callback(result, response);
-158                     }
-159                 }
-160             }
-161             return result;
-162         } catch (IOException e) {
-163             throw ChannelException.fromException(e);
-164         }
-165     }
-166 
-167     public static byte[] doHttpRequest(Request request) {
-168         Response response = null;
-169         ResponseBody body = null;
-170         try {
-171             response = HttpUtils.httpRequest(request);
-172             body = response.body();
-173 
-174             byte[] bodyBytes = null;
-175             if(body != null) {
-176                 bodyBytes = body.bytes();
-177             }
-178 
-179             if(!response.isSuccessful()) {
-180                 throw new IllegalStateException(String.format("failed to do http request, code: %s, message: %s ",
-181                         response.code(),
-182                         Optional.ofNullable(bodyBytes).map(String::new).orElse(null)));
-183             } else {
-184                 return bodyBytes;
-185             }
-186 
-187         } catch (IOException e) {
-188             throw new IllegalStateException(e);
-189         } finally {
-190             if(response != null) {
-191                 response.close();
-192             }
-193             if(body != null) {
-194                 body.close();
-195             }
-196         }
-197     }
-198 
-199     /**
-200      * 当且仅当http code为2xx时进行反序列化
-201      *
-202      * @param request
-203      * @param reference
-204      *
-205      * @return
-206      *
-207      * @param <T>
-208      */
-209     public static <T> T doHttpRequest(Request request, TypeReference<T> reference) {
-210         Response response = null;
-211         ResponseBody body = null;
-212         try {
-213             response = HttpUtils.httpRequest(request);
-214             body = response.body();
-215 
-216             String bodyStr = null;
-217             if(body != null) {
-218                 bodyStr = body.string();
-219             }
-220 
-221             if(!response.isSuccessful()) {
-222                 throw new IllegalStateException(String.format("failed to do http request, code: %s, message: %s ",
-223                         response.code(),
-224                         Optional.ofNullable(bodyStr).map(String::new).orElse(null)));
-225             } else {
-226                 return JacksonUtils.deserialize(bodyStr, reference);
-227             }
-228 
-229         } catch (IOException e) {
-230             throw new IllegalStateException(e);
-231         } finally {
-232             if(response != null) {
-233                 response.close();
-234             }
-235             if(body != null) {
-236                 body.close();
-237             }
-238         }
-239     }
-240 
-241     public static WebSocket websocketRequest(Request request, BellaWebSocketListener listener) {
-242         CompletableFuture<?> future = new CompletableFuture<>();
-243         listener.setConnectionInitFuture(future);
-244         WebSocket webSocket = defaultOkhttpClient().newWebSocket(request, listener);
-245         try {
-246             future.get();
-247             return webSocket;
-248         } catch (InterruptedException interruptedException) {
-249             Thread.currentThread().interrupt();
-250             throw new RuntimeException(interruptedException);
-251         }  catch (ExecutionException e) {
-252             if(e.getCause() instanceof RuntimeException) {
-253                 throw (RuntimeException) e.getCause();
-254             }
-255             throw new RuntimeException(e);
-256         }
-257     }
-258 }
-259
-```
-
-
-
-
 # 用户需求
 
-chat completion接口支持备选模型功能：
+重新实现这个需求，目前的实现过于复杂。不需要考虑超时时间了。
+只需要满足以下两点：
 
 - 请求中可以存在多个模型，使用逗号分隔
+
 - 支持的最大模型数，可配置
-- 用户可以在请求的header中设置一个最大超时时间
-- 在最大超时时间内，如果请求失败，则选择下一个模型进行重试

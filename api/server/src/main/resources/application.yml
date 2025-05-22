@@ -67,9 +67,7 @@ bella:
     cookie-domain: localhost
     cookie-context-path: /
   openapi:
-    fallback:
-      max-models: 3
-      default-timeout-seconds: 30
+    max-models-per-request: 3
 
 app:
   id: bella-openapi

@@ -11,6 +11,7 @@ import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
+import java.util.Arrays;
 
 @Data
 @SuperBuilder
@@ -18,12 +19,16 @@ import java.util.Map;
 public class CompletionRequest implements UserRequest, Serializable {
     private static final long serialVersionUID = 1L;
     /**
-     * ID of the model to use
+     * ID of the model to use. Can be a comma-separated list of models.
      */
     private String model;
-    
-    @JsonInclude(Include.NON_NULL)
-    private List<String> fallbackModels;
+
+    /**
+     * Gets the list of models from the comma-separated string
+     */
+    public List<String> getModelList() {
+        return model != null ? Arrays.asList(model.split(",")) : null;
+    }
 
     /**
      * A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse. Learn more.
@@ -167,28 +172,5 @@ public class CompletionRequest implements UserRequest, Serializable {
          * All other chunks will also include a usage field, but with a null value.
          */
         private boolean include_usage = true;
-    }
-
-    /**
-     * Parses the model field and extracts primary and fallback models.
-     * If model contains comma-separated values, the first one becomes the primary model
-     * and the rest become fallback models.
-     */
-    public void parseModelFallbacks() {
-        if (model == null || !model.contains(",")) {
-            return;
-        }
-        
-        String[] models = model.split(",");
-        if (models.length > 1) {
-            // Set the first model as the primary model
-            this.model = models[0].trim();
-            
-            // Set the rest as fallback models
-            this.fallbackModels = new ArrayList<>();
-            for (int i = 1; i < models.length; i++) {
-                this.fallbackModels.add(models[i].trim());
-            }
-        }
     }
 }

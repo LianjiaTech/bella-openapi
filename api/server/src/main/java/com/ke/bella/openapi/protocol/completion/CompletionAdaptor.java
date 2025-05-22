@@ -13,4 +13,9 @@ public interface CompletionAdaptor<T extends CompletionProperty> extends IProtoc
     default String endpoint() {
         return "/v1/chat/completions";
     }
+    
+    /**
+     * Whether this adaptor supports multiple models in a single request
+     */
+    default boolean supportsMultipleModels() { return true; }
 }
