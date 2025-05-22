@@ -1,5 +1,5 @@
-README.md:这个文件是Bella OpenAPI项目的README，介绍了项目的核心功能、系统优势和快速启动指南。文件详细描述了项目提供的AI能力、元数据管理、计费与限流等功能，并提供了相关文档链接，可帮助用户快速上手和部署服务。
-README_EN.md:该文件是Bella OpenAPI项目的英文版README，介绍了项目的主要功能和特性。文件详细描述了AI能力、元数据管理、统一登录服务、计费和速率限制等核心功能。还包括系统优势的详细说明，如在大规模生产环境中的验证、丰富的AI功能和高性能缓存设计。
+README.md:Bella OpenAPI的中文介绍文档，内容与README_EN.md相似，提供对AI能力、系统优势、快速启动和常见问题的详细说明，适合中文用户使用。
+README_EN.md:Bella OpenAPI的英文介绍文档，描述其作为API网关的主要功能，包括AI能力、元数据管理、统一登录服务、计费与限流等。文档详细列出系统的优势和部署方法，提供了使用Docker Compose快速启动的指导。
 api/.editorconfig:项目的代码格式配置文件，规范化各类文件的缩进和编码格式。
 api/Dockerfile:这个文件是用于构建bella-openapi项目的Dockerfile，设置了运行环境和所需目录以及端口暴露。
 api/build.sh:此脚本用于编译API服务，包含Maven构建流程及相关配置。
