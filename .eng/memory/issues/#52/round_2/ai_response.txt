@@ -1,0 +1,703 @@
+I'll implement support for fallback models in streaming requests. Let me analyze the current code and make the necessary changes.
+
+Let's start by updating the existing code to support fallback models in streaming requests:
+
+```diff
+--- api/server/src/main/java/com/ke/bella/openapi/endpoints/ChatController.java
++++ api/server/src/main/java/com/ke/bella/openapi/endpoints/ChatController.java
+@@ -110,7 +110,9 @@ public class ChatController {
+      */
+     private SseEmitter handleStreamCompletion(CompletionRequest request, String endpoint) {
+         // Streaming doesn't support fallbacks, so we use the original flow
+-        prepareRequestAndSafetyCheck(request, endpoint);
++        // Update: Now streaming will support fallbacks too
++        Object requestRiskData = prepareRequestAndSafetyCheck(request, endpoint);
++        SseEmitter sse = createStreamEmitter(request, endpoint, requestRiskData);
+         
+         EndpointProcessData processData = EndpointContext.getProcessData();
+         String url = processData.getForwardUrl();
+@@ -127,12 +129,7 @@ public class ChatController {
+         adaptor = decorateAdaptor(adaptor, property, processData);
+         EndpointContext.setEncodingType(property.getEncodingType());
+         
+-        SseEmitter sse = SseHelper.createSse(1000L * 60 * 5, processData.getRequestId());
+-        adaptor.streamCompletion(request, url, property, 
+-            StreamCallbackProvider.provide(sse, processData, EndpointContext.getApikey(), logger, safetyCheckService, property));
+-        
+         return sse;
+     }
+     
+@@ -158,6 +155,17 @@ public class ChatController {
+         return requestRiskData;
+     }
+     
++    /**
++     * Creates and returns a stream emitter for the given request
++     */
++    public SseEmitter createStreamEmitter(CompletionRequest request, String endpoint, Object requestRiskData) {
++        // This will be handled by the ModelFallbackHandler
++        return fallbackHandler.handleStreamCompletion(request, endpoint, requestRiskData);
++    }
++    
++    /**
++     * Executes a stream completion request with the given model
++     */
+     /**
+      * Execute a completion request with the given model
+      */
+@@ -173,5 +181,20 @@ public class ChatController {
+         
+         return adaptor.completion(request, url, property);
+     }
++    
++    /**
++     * Execute a stream completion request with the given model
++     */
++    public void executeStreamCompletion(CompletionRequest request, String endpoint, SseEmitter sse) {
++        EndpointProcessData processData = EndpointContext.getProcessData();
++        String protocol = processData.getProtocol();
++        String url = processData.getForwardUrl();
++        String channelInfo = processData.getChannel().getChannelInfo();
++        
++        CompletionAdaptor<?> adaptor = adaptorManager.getProtocolAdaptor(endpoint, protocol, CompletionAdaptor.class);
++        CompletionProperty property = (CompletionProperty) JacksonUtils.deserialize(channelInfo, adaptor.getPropertyClass());
++        adaptor = decorateAdaptor(adaptor, property, processData);
++        adaptor.streamCompletion(request, url, property, StreamCallbackProvider.provide(sse, processData, EndpointContext.getApikey(), logger, safetyCheckService, property));
++    }
+ }
+```
+
+Now let's modify the `ModelFallbackHandler` to handle streaming requests:
+
+```diff
+--- api/server/src/main/java/com/ke/bella/openapi/protocol/completion/ModelFallbackHandler.java
++++ api/server/src/main/java/com/ke/bella/openapi/protocol/completion/ModelFallbackHandler.java
+@@ -14,6 +14,7 @@ import com.ke.bella.openapi.safety.SafetyCheckRequest;
+ import com.ke.bella.openapi.tables.pojos.ChannelDB;
+ import com.ke.bella.openapi.utils.JacksonUtils;
+ import com.ke.bella.openapi.utils.SseHelper;
++import com.ke.bella.openapi.protocol.completion.callback.StreamCompletionCallback;
+ import lombok.extern.slf4j.Slf4j;
+ import org.apache.commons.collections4.CollectionUtils;
+ import org.apache.commons.lang3.StringUtils;
+@@ -21,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
+ import org.springframework.beans.factory.annotation.Value;
+ import org.springframework.stereotype.Component;
+ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
++import org.springframework.web.servlet.mvc.method.annotation.SseEmitter.SseEventBuilder;
+ 
+ import java.util.ArrayList;
+ import java.util.List;
+@@ -113,6 +115,62 @@ public class ModelFallbackHandler {
+                 attemptedModels, exceptions);
+         }
+     }
++
++    /**
++     * Handles stream completion with fallback models
++     */
++    public SseEmitter handleStreamCompletion(CompletionRequest request, String endpoint, Object requestRiskData) {
++        request.parseModelFallbacks();
++        
++        // Create SSE emitter with long timeout
++        SseEmitter sse = SseHelper.createSse(1000L * 60 * 5, EndpointContext.getProcessData().getRequestId());
++        
++        // If no fallback models, just execute normally
++        if (CollectionUtils.isEmpty(request.getFallbackModels())) {
++            try {
++                chatController.executeStreamCompletion(request, endpoint, sse);
++                return sse;
++            } catch (Exception e) {
++                log.error("Stream completion failed with no fallbacks: {}", e.getMessage());
++                sse.completeWithError(e);
++                return sse;
++            }
++        }
++        
++        // Get timeout from header or use default
++        int timeoutSeconds = getTimeoutFromHeader();
++        long startTime = System.currentTimeMillis();
++        long endTime = startTime + TimeUnit.SECONDS.toMillis(timeoutSeconds);
++        
++        // Try the primary model first
++        Exception primaryException;
++        List<String> attemptedModels = new ArrayList<>();
++        attemptedModels.add(request.getModel());
++        
++        try {
++            chatController.executeStreamCompletion(request, endpoint, sse);
++            return sse;
++        } catch (Exception e) {
++            log.warn("Primary stream model {} failed: {}", request.getModel(), e.getMessage());
++            primaryException = e;
++            
++            // Limit the number of fallback models to try
++            int modelsToTry = Math.min(request.getFallbackModels().size(), maxFallbackModels - 1);
++            List<Exception> exceptions = new ArrayList<>();
++            
++            // Try each fallback model
++            for (int i = 0; i < modelsToTry; i++) {
++                // Check if we've exceeded the timeout
++                if (System.currentTimeMillis() >= endTime) {
++                    SseHelper.sendEvent(sse, "error", new ChannelException.TimeoutException("Fallback models timeout after " + timeoutSeconds + " seconds"));
++                    sse.complete();
++                    return sse;
++                }
++                
++                String fallbackModel = request.getFallbackModels().get(i);
++                attemptedModels.add(fallbackModel);
++                
++                try {
++                    // Create a copy of the request with the fallback model
++                    CompletionRequest fallbackRequest = JacksonUtils.convert(request, CompletionRequest.class);
++                    fallbackRequest.setModel(fallbackModel);
++                    fallbackRequest.setFallbackModels(null);
++                    
++                    // Execute with fallback model
++                    chatController.executeStreamCompletion(fallbackRequest, endpoint, sse);
++                    log.info("Successfully streaming with fallback model: {}", fallbackModel);
++                    return sse;
++                } catch (Exception fallbackEx) {
++                    log.warn("Fallback stream model {} failed: {}", fallbackModel, fallbackEx.getMessage());
++                    exceptions.add(fallbackEx);
++                }
++            }
++            
++            // If all fallbacks failed, send error and complete
++            FallbackException fallbackException = new FallbackException("All models failed for streaming, including fallbacks", 
++                attemptedModels, exceptions);
++            SseHelper.sendEvent(sse, "error", fallbackException);
++            sse.complete();
++            return sse;
++        }
++    }
+     
+     private int getTimeoutFromHeader() {
+         String timeoutHeader = EndpointContext.getRequest().getHeader("X-BELLA-FALLBACK-TIMEOUT");
+```
+
+Now, let's create a custom `StreamCompletionResponse` class to handle error messages in the stream:
+
+```diff
+--- /dev/null
++++ api/server/src/main/java/com/ke/bella/openapi/protocol/completion/StreamCompletionResponse.java
+@@ -0,0 +1,109 @@
++package com.ke.bella.openapi.protocol.completion;
++
++import com.fasterxml.jackson.annotation.JsonInclude;
++import com.fasterxml.jackson.annotation.JsonProperty;
++import com.ke.bella.openapi.protocol.OpenapiResponse;
++import lombok.*;
++import org.apache.commons.collections4.CollectionUtils;
++import org.apache.commons.lang3.StringUtils;
++
++import java.io.Serializable;
++import java.util.List;
++
++@Data
++@Builder
++@NoArgsConstructor
++@AllArgsConstructor
++@JsonInclude(JsonInclude.Include.NON_NULL)
++public class StreamCompletionResponse implements Serializable {
++    private String id;
++    private String object;
++    private long created;
++    private String model;
++    private List<Choice> choices;
++    private OpenapiResponse.OpenapiError error;
++    private Object sensitives;
++    private Object requestRiskData;
++
++    @JsonProperty("system_fingerprint")
++    private String systemFingerprint;
++    
++    private CompletionResponse standardFormat;
++
++    /**
++     * Helper method to extract content from the first choice
++     */
++    public String content() {
++        if (CollectionUtils.isEmpty(choices) || choices.get(0).getDelta() == null) {
++            return null;
++        }
++        return choices.get(0).getDelta().getContent();
++    }
++
++    /**
++     * Helper method to extract reasoning from the first choice
++     */
++    public String reasoning() {
++        if (CollectionUtils.isEmpty(choices) || choices.get(0).getDelta() == null) {
++            return null;
++        }
++        return choices.get(0).getDelta().getReasoning();
++    }
++
++    @Data
++    @Builder
++    @NoArgsConstructor
++    @AllArgsConstructor
++    public static class Choice implements Serializable {
++        private Integer index;
++        private Delta delta;
++        private String finish_reason;
++
++        public String content() {
++            return delta != null && StringUtils.isNotEmpty(delta.getContent()) ? delta.getContent() : null;
++        }
++
++        public String reasoning() {
++            return delta != null && StringUtils.isNotEmpty(delta.getReasoning()) ? delta.getReasoning() : null;
++        }
++    }
++
++    @Data
++    @Builder
++    @NoArgsConstructor
++    @AllArgsConstructor
++    public static class Delta implements Serializable {
++        private String role;
++        private String content;
++        private String reasoning;
++        private ToolCalls tool_calls;
++
++        @Data
++        @Builder
++        @NoArgsConstructor
++        @AllArgsConstructor
++        public static class ToolCalls implements Serializable {
++            private String id;
++            private String type;
++            private Function function;
++
++            @Data
++            @Builder
++            @NoArgsConstructor
++            @AllArgsConstructor
++            public static class Function implements Serializable {
++                private String name;
++                private String arguments;
++            }
++        }
++    }
++}
+```
+
+Now let's create a utility class to help handle the stream callbacks:
+
+```diff
+--- /dev/null
++++ api/server/src/main/java/com/ke/bella/openapi/protocol/BellaStreamCallback.java
+@@ -0,0 +1,55 @@
++package com.ke.bella.openapi.protocol;
++
++import com.ke.bella.openapi.common.exception.ChannelException;
++import com.ke.bella.openapi.protocol.completion.StreamCompletionResponse;
++import com.ke.bella.openapi.utils.SseHelper;
++import lombok.extern.slf4j.Slf4j;
++import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
++
++/**
++ * A wrapper for SSE emitters that handles fallbacks and error cases
++ */
++@Slf4j
++public class BellaStreamCallback {
++    private final SseEmitter sse;
++    private boolean hasError = false;
++    private boolean isCompleted = false;
++
++    public BellaStreamCallback(SseEmitter sse) {
++        this.sse = sse;
++    }
++
++    /**
++     * Send a stream response event
++     */
++    public void sendEvent(StreamCompletionResponse response) {
++        if (isCompleted || hasError) {
++            return;
++        }
++        try {
++            SseHelper.sendEvent(sse, response);
++        } catch (Exception e) {
++            log.error("Error sending SSE event: {}", e.getMessage());
++            hasError = true;
++        }
++    }
++
++    /**
++     * Send an error response and complete the stream
++     */
++    public void sendError(Exception e) {
++        if (isCompleted || hasError) {
++            return;
++        }
++        hasError = true;
++        
++        OpenapiResponse.OpenapiError openapiError;
++        if (e instanceof ChannelException) {
++            openapiError = ((ChannelException) e).convertToOpenapiError();
++        } else {
++            openapiError = new OpenapiResponse.OpenapiError("internal_error", e.getMessage());
++        }
++        
++        StreamCompletionResponse response = StreamCompletionResponse.builder()
++                .error(openapiError)
++                .build();
++                
++        try {
++            SseHelper.sendEvent(sse, response);
++            sse.complete();
++        } catch (Exception ex) {
++            log.error("Error sending error SSE event: {}", ex.getMessage());
++        }
++    }
++
++    /**
++     * Complete the stream
++     */
++    public void complete() {
++        if (isCompleted || hasError) {
++            return;
++        }
++        isCompleted = true;
++        sse.complete();
++    }
++}
+```
+
+Now let's update our `ModelFallbackHandler` to use this new utility class:
+
+```diff
+--- api/server/src/main/java/com/ke/bella/openapi/protocol/completion/ModelFallbackHandler.java
++++ api/server/src/main/java/com/ke/bella/openapi/protocol/completion/ModelFallbackHandler.java
+@@ -14,6 +14,7 @@ import com.ke.bella.openapi.safety.SafetyCheckRequest;
+ import com.ke.bella.openapi.tables.pojos.ChannelDB;
+ import com.ke.bella.openapi.utils.JacksonUtils;
+ import com.ke.bella.openapi.utils.SseHelper;
++import com.ke.bella.openapi.protocol.BellaStreamCallback;
+ import com.ke.bella.openapi.protocol.completion.callback.StreamCompletionCallback;
+ import lombok.extern.slf4j.Slf4j;
+ import org.apache.commons.collections4.CollectionUtils;
+@@ -124,6 +125,7 @@ public class ModelFallbackHandler {
+         
+         // Create SSE emitter with long timeout
+         SseEmitter sse = SseHelper.createSse(1000L * 60 * 5, EndpointContext.getProcessData().getRequestId());
++        BellaStreamCallback streamCallback = new BellaStreamCallback(sse);
+         
+         // If no fallback models, just execute normally
+         if (CollectionUtils.isEmpty(request.getFallbackModels())) {
+@@ -131,8 +133,8 @@ public class ModelFallbackHandler {
+                 chatController.executeStreamCompletion(request, endpoint, sse);
+                 return sse;
+             } catch (Exception e) {
+-                log.error("Stream completion failed with no fallbacks: {}", e.getMessage());
+-                sse.completeWithError(e);
++                log.error("Stream completion failed with no fallbacks: {}", e.getMessage(), e);
++                streamCallback.sendError(e);
+                 return sse;
+             }
+         }
+@@ -161,8 +163,8 @@ public class ModelFallbackHandler {
+             for (int i = 0; i < modelsToTry; i++) {
+                 // Check if we've exceeded the timeout
+                 if (System.currentTimeMillis() >= endTime) {
+-                    SseHelper.sendEvent(sse, "error", new ChannelException.TimeoutException("Fallback models timeout after " + timeoutSeconds + " seconds"));
+-                    sse.complete();
++                    streamCallback.sendError(new ChannelException.TimeoutException(
++                        "Fallback models timeout after " + timeoutSeconds + " seconds"));
+                     return sse;
+                 }
+                 
+@@ -186,9 +188,7 @@ public class ModelFallbackHandler {
+             }
+             
+             // If all fallbacks failed, send error and complete
+-            FallbackException fallbackException = new FallbackException("All models failed for streaming, including fallbacks", 
+-                attemptedModels, exceptions);
+-            SseHelper.sendEvent(sse, "error", fallbackException);
++            streamCallback.sendError(new FallbackException("All models failed for streaming, including fallbacks", attemptedModels, exceptions));
+             sse.complete();
+             return sse;
+         }
+```
+
+Let's update the `BellaEventSourceListener` class to handle fallbacks:
+
+```diff
+--- /dev/null
++++ api/server/src/main/java/com/ke/bella/openapi/protocol/BellaEventSourceListener.java
+@@ -0,0 +1,84 @@
++package com.ke.bella.openapi.protocol;
++
++import com.ke.bella.openapi.common.exception.ChannelException;
++import com.ke.bella.openapi.protocol.completion.StreamCompletionResponse;
++import com.ke.bella.openapi.utils.DateTimeUtils;
++import com.ke.bella.openapi.utils.JacksonUtils;
++import lombok.extern.slf4j.Slf4j;
++import okhttp3.Response;
++import okhttp3.sse.EventSource;
++import okhttp3.sse.EventSourceListener;
++import org.apache.commons.lang3.StringUtils;
++import org.jetbrains.annotations.NotNull;
++import org.jetbrains.annotations.Nullable;
++
++/**
++ * Event source listener for handling SSE events with fallback support
++ */
++@Slf4j
++public class BellaEventSourceListener extends EventSourceListener {
++    private final Callbacks.StreamCompletionCallback callback;
++    private final String model;
++    private boolean hasStarted = false;
++
++    public BellaEventSourceListener(Callbacks.StreamCompletionCallback callback, String model) {
++        this.callback = callback;
++        this.model = model;
++    }
++
++    @Override
++    public void onOpen(@NotNull EventSource eventSource, @NotNull Response response) {
++        log.debug("SSE connection opened for model {}", model);
++        callback.onOpen();
++    }
++
++    @Override
++    public void onEvent(@NotNull EventSource eventSource, @Nullable String id, @Nullable String type, @NotNull String data) {
++        if (!hasStarted) {
++            hasStarted = true;
++            log.info("First event received from model {}", model);
++        }
++        
++        if ("[DONE]".equals(data)) {
++            callback.done();
++            callback.finish();
++            return;
++        }
++
++        try {
++            StreamCompletionResponse completionResponse = JacksonUtils.deserialize(data, StreamCompletionResponse.class);
++            if (completionResponse == null) {
++                log.warn("Failed to deserialize SSE event data: {}", data);
++                return;
++            }
++            
++            // Set model information if not present
++            if (StringUtils.isEmpty(completionResponse.getModel())) {
++                completionResponse.setModel(model);
++            }
++            
++            // Set created time if not present
++            if (completionResponse.getCreated() == 0) {
++                completionResponse.setCreated(DateTimeUtils.getCurrentSeconds());
++            }
++            
++            callback.callback(completionResponse);
++        } catch (Exception e) {
++            log.error("Error processing SSE event: {}", e.getMessage(), e);
++            callback.finish(new ChannelException.InternalException("Error processing SSE event: " + e.getMessage()));
++        }
++    }
++
++    @Override
++    public void onClosed(@NotNull EventSource eventSource) {
++        log.debug("SSE connection closed for model {}", model);
++        callback.finish();
++    }
++
++    @Override
++    public void onFailure(@NotNull EventSource eventSource, @Nullable Throwable t, @Nullable Response response) {
++        log.error("SSE connection failure for model {}: {}", model, t != null ? t.getMessage() : "Unknown error", t);
++        String errorMsg = t != null ? t.getMessage() : "Unknown SSE error";
++        int statusCode = response != null ? response.code() : 500;
++        callback.finish(new ChannelException.InternalException("SSE failure: " + errorMsg, statusCode));
++    }
++}
+```
+
+Let's also update the `ChatController` to properly handle streaming completion with fallbacks:
+
+```diff
+--- api/server/src/main/java/com/ke/bella/openapi/endpoints/ChatController.java
++++ api/server/src/main/java/com/ke/bella/openapi/endpoints/ChatController.java
+@@ -71,7 +71,7 @@ public class ChatController {
+         if(request.isStream()) {
+             return handleStreamCompletion(request, endpoint);
+         } else {
+-            // For non-streaming requests, use the fallback handler
++            // For both streaming and non-streaming requests, use the fallback handler
+             Object requestRiskData = prepareRequestAndSafetyCheck(request, endpoint);
+             CompletionResponse response = fallbackHandler.handleCompletion(request, endpoint, null, requestRiskData);
+             
+@@ -109,28 +109,11 @@ public class ChatController {
+-        // Streaming doesn't support fallbacks, so we use the original flow
+-        // Update: Now streaming will support fallbacks too
++        // For streaming requests, use the fallback handler
+-        SseEmitter sse = createStreamEmitter(request, endpoint, requestRiskData);
+-        
+-        EndpointProcessData processData = EndpointContext.getProcessData();
+-        String url = processData.getForwardUrl();
+-        
+-        // Get the adaptor and property
+-        String protocol = processData.getProtocol();
+-        CompletionAdaptor adaptor = adaptorManager.getProtocolAdaptor(endpoint, protocol, CompletionAdaptor.class);
+-        
+-        String channelInfo = EndpointContext.getProcessData().getChannel().getChannelInfo();
+-        CompletionProperty property = (CompletionProperty) JacksonUtils.deserialize(channelInfo, adaptor.getPropertyClass());
+-        
+-        if(processData.isMock()) {
+-            fillMockProperty(property);
+-        }
+-        
+-        adaptor = decorateAdaptor(adaptor, property, processData);
+-        EndpointContext.setEncodingType(property.getEncodingType());
+-        
+-        return sse;
++        return fallbackHandler.handleStreamCompletion(request, endpoint, requestRiskData);
+     }
+     
+     /**
+```
+
+Let's update the callback implementation to properly handle fallbacks:
+
+```diff
+--- api/server/src/main/java/com/ke/bella/openapi/protocol/completion/callback/StreamCompletionCallback.java
++++ api/server/src/main/java/com/ke/bella/openapi/protocol/completion/callback/StreamCompletionCallback.java
+@@ -10,6 +10,7 @@ import com.ke.bella.openapi.protocol.log.EndpointLogger;
+ import com.ke.bella.openapi.safety.ISafetyCheckService;
+ import com.ke.bella.openapi.safety.SafetyCheckRequest;
+ import com.ke.bella.openapi.utils.DateTimeUtils;
++import com.ke.bella.openapi.protocol.completion.StreamCompletionResponse;
+ import com.ke.bella.openapi.utils.PunctuationUtils;
+ import com.ke.bella.openapi.utils.SseHelper;
+ import lombok.Getter;
+@@ -59,7 +60,9 @@ public class StreamCompletionCallback implements Callbacks.StreamCompletionCallba
+     }
+ 
+     @Override
+-    public void callback(Object msg) {
++    public void callback(StreamCompletionResponse msg) {
++        msg.setCreated(DateTimeUtils.getCurrentSeconds());
++        if(requestRiskData != null) {
++            msg.setRequestRiskData(requestRiskData);
++            requestRiskData = null;
++        }
+         SseHelper.sendEvent(sse, msg);
+         updateBuffer(msg.getStandardFormat() == null ? msg : msg.getStandardFormat());
+         safetyCheck(false);
+```
+
+Now let's also update the `Callbacks` interface to use the new `StreamCompletionResponse` type:
+
+```diff
+--- api/server/src/main/java/com/ke/bella/openapi/protocol/Callbacks.java
++++ api/server/src/main/java/com/ke/bella/openapi/protocol/Callbacks.java
+@@ -1,6 +1,7 @@
+ package com.ke.bella.openapi.protocol;
+ 
+ import com.ke.bella.openapi.common.exception.ChannelException;
++import com.ke.bella.openapi.protocol.completion.StreamCompletionResponse;
+ 
+ public interface Callbacks {
+     interface BaseCallback {
+@@ -8,7 +9,7 @@ public interface Callbacks {
+ 
+     interface StreamCompletionCallback extends BaseCallback {
+         void onOpen();
+-        void callback(Object msg);
++        void callback(StreamCompletionResponse msg);
+         void done();
+         void finish();
+         void finish(ChannelException exception);
+```
+
+Finally, let's create a test to verify our implementation:
+
+```diff
+--- /dev/null
++++ api/server/src/test/java/com/ke/bella/openapi/protocol/completion/StreamFallbackTest.java
+@@ -0,0 +1,92 @@
++package com.ke.bella.openapi.protocol.completion;
++
++import com.ke.bella.openapi.common.exception.ChannelException;
++import com.ke.bella.openapi.endpoints.ChatController;
++import com.ke.bella.openapi.protocol.BellaStreamCallback;
++import org.junit.jupiter.api.BeforeEach;
++import org.junit.jupiter.api.Test;
++import org.mockito.InjectMocks;
++import org.mockito.Mock;
++import org.mockito.MockitoAnnotations;
++import org.springframework.mock.web.MockHttpServletRequest;
++import org.springframework.web.context.request.RequestContextHolder;
++import org.springframework.web.context.request.ServletRequestAttributes;
++import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
++
++import java.util.Arrays;
++
++import static org.junit.jupiter.api.Assertions.*;
++import static org.mockito.ArgumentMatchers.any;
++import static org.mockito.ArgumentMatchers.anyString;
++import static org.mockito.ArgumentMatchers.argThat;
++import static org.mockito.Mockito.*;
++
++class StreamFallbackTest {
++
++    @Mock
++    private ChatController chatController;
++
++    @InjectMocks
++    private ModelFallbackHandler fallbackHandler;
++
++    private MockHttpServletRequest request;
++
++    @BeforeEach
++    void setUp() {
++        MockitoAnnotations.openMocks(this);
++        
++        // Set up mock request
++        request = new MockHttpServletRequest();
++        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
++        
++        // Set default values for private fields using reflection
++        setPrivateField(fallbackHandler, "maxFallbackModels", 3);
++        setPrivateField(fallbackHandler, "defaultTimeoutSeconds", 30);
++    }
++
++    @Test
++    void testStreamingWithFallback() {
++        // Create a request with fallback models
++        CompletionRequest completionRequest = new CompletionRequest();
++        completionRequest.setModel("model-1");
++        completionRequest.setFallbackModels(Arrays.asList("model-2", "model-3"));
++        completionRequest.setStream(true);
++        
++        // Mock failure for first model, success for second
++        doThrow(new ChannelException.RateLimitException("Rate limited"))
++            .when(chatController).executeStreamCompletion(
++                argThat(req -> "model-1".equals(req.getModel())), 
++                anyString(), 
++                any(SseEmitter.class)
++            );
++            
++        // Second model should succeed
++        doNothing().when(chatController).executeStreamCompletion(
++            argThat(req -> "model-2".equals(req.getModel())), 
++            anyString(), 
++            any(SseEmitter.class)
++        );
++        
++        // Execute
++        SseEmitter emitter = fallbackHandler.handleStreamCompletion(completionRequest, "/v1/chat/completions", null);
++        
++        // Verify
++        assertNotNull(emitter);
++        verify(chatController, times(2)).executeStreamCompletion(any(), anyString(), any());
++    }
++    
++    // Helper method to set private fields for testing
++    private void setPrivateField(Object target, String fieldName, Object value) {
++        try {
++            java.lang.reflect.Field field = target.getClass().getDeclaredField(fieldName);
++            field.setAccess

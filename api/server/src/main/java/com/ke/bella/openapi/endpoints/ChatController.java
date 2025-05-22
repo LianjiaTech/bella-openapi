@@ -69,7 +69,7 @@ public class ChatController {
         if(request.isStream()) {
             return handleStreamCompletion(request, endpoint);
         } else {
-            // For non-streaming requests, use the fallback handler
+            // For both streaming and non-streaming requests, use the fallback handler
             Object requestRiskData = prepareRequestAndSafetyCheck(request, endpoint);
             CompletionResponse response = fallbackHandler.handleCompletion(request, endpoint, null, requestRiskData);
             
@@ -109,31 +109,9 @@ public class ChatController {
      * Handles streaming completion requests
      */
     private SseEmitter handleStreamCompletion(CompletionRequest request, String endpoint) {
-        // Streaming doesn't support fallbacks, so we use the original flow
-        prepareRequestAndSafetyCheck(request, endpoint);
-        
-        EndpointProcessData processData = EndpointContext.getProcessData();
-        String url = processData.getForwardUrl();
-        
-        // Get the adaptor and property
-        String protocol = processData.getProtocol();
-        CompletionAdaptor adaptor = adaptorManager.getProtocolAdaptor(endpoint, protocol, CompletionAdaptor.class);
-        
-        String channelInfo = EndpointContext.getProcessData().getChannel().getChannelInfo();
-        CompletionProperty property = (CompletionProperty) JacksonUtils.deserialize(channelInfo, adaptor.getPropertyClass());
-        
-        if(processData.isMock()) {
-            fillMockProperty(property);
-        }
-        
-        adaptor = decorateAdaptor(adaptor, property, processData);
-        EndpointContext.setEncodingType(property.getEncodingType());
-        
-        SseEmitter sse = SseHelper.createSse(1000L * 60 * 5, processData.getRequestId());
-        adaptor.streamCompletion(request, url, property, 
-            StreamCallbackProvider.provide(sse, processData, EndpointContext.getApikey(), logger, safetyCheckService, property));
-        
-        return sse;
+        // For streaming requests, use the fallback handler
+        Object requestRiskData = prepareRequestAndSafetyCheck(request, endpoint);
+        return fallbackHandler.handleStreamCompletion(request, endpoint, requestRiskData);
     }
     
     /**
@@ -161,6 +139,14 @@ public class ChatController {
     }
     
     /**
+     * Creates and returns a stream emitter for the given request
+     */
+    public SseEmitter createStreamEmitter(CompletionRequest request, String endpoint, Object requestRiskData) {
+        // This will be handled by the ModelFallbackHandler
+        return fallbackHandler.handleStreamCompletion(request, endpoint, requestRiskData);
+    }
+    
+    /**
      * Execute a completion request with the given model
      */
     public CompletionResponse executeCompletion(CompletionRequest request, String endpoint, CompletionAdaptor<?> baseAdaptor, Object requestRiskData) {
@@ -175,5 +161,20 @@ public class ChatController {
         adaptor = decorateAdaptor(adaptor, property, processData);
         
         return adaptor.completion(request, url, property);
+    }
+    
+    /**
+     * Execute a stream completion request with the given model
+     */
+    public void executeStreamCompletion(CompletionRequest request, String endpoint, SseEmitter sse) {
+        EndpointProcessData processData = EndpointContext.getProcessData();
+        String protocol = processData.getProtocol();
+        String url = processData.getForwardUrl();
+        String channelInfo = processData.getChannel().getChannelInfo();
+        
+        CompletionAdaptor<?> adaptor = adaptorManager.getProtocolAdaptor(endpoint, protocol, CompletionAdaptor.class);
+        CompletionProperty property = (CompletionProperty) JacksonUtils.deserialize(channelInfo, adaptor.getPropertyClass());
+        adaptor = decorateAdaptor(adaptor, property, processData);
+        adaptor.streamCompletion(request, url, property, StreamCallbackProvider.provide(sse, processData, EndpointContext.getApikey(), logger, safetyCheckService, property));
     }
 }

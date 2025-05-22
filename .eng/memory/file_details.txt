@@ -192,6 +192,7 @@ api/server/src/main/java/com/ke/bella/openapi/EndpointContext.java:定义了Endp
 api/server/src/main/java/com/ke/bella/openapi/TaskExecutor.java:定义TaskExecutor类，支持异步任务提交和执行，包含自定义线程工厂。用于任务调度和并发管理。
 api/server/src/main/java/com/ke/bella/openapi/annotations/BellaAPI.java:该文件定义了BellaAPI注解。
 api/server/src/main/java/com/ke/bella/openapi/annotations/EndpointAPI.java:定义EndpointAPI注解，供其他组件标识API终端点，主要用于反射或标记支持文档生成的接口。
+api/server/src/main/java/com/ke/bella/openapi/common/exception/FallbackException.java:这个文件定义了FallbackException类，继承自RuntimeException，用于在所有备用模型尝试失败时抛出异常。它包含两个字段：attemptedModels和exceptions，分别记录尝试过的模型和对应的异常信息。
 api/server/src/main/java/com/ke/bella/openapi/configuration/ApiDocConfig.java:ApiDocConfig.java用于配置OpenAPI文档，使用Swagger实现API接口文档自动生成。包含customOpenAPI和GroupedOpenApi的@Bean方法，设置API信息和安全性配置，定义不同的API组及其路径。
 api/server/src/main/java/com/ke/bella/openapi/configuration/ApolloConfig.java:这个文件配置了Apollo配置类，启用ApolloConfig用于Spring Boot项目中根据条件加载配置。
 api/server/src/main/java/com/ke/bella/openapi/configuration/BellaAutoConf.java:该文件定义了Spring配置类BellaAutoConf，配置了适配器管理、成本记录、日志处理等功能。使用@PreDestroy注解进行资源释放。
@@ -270,6 +271,7 @@ api/server/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionAdap
 api/server/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionLogHandler.java:处理Completion接口的日志记录，计算完成请求的时间和令牌使用。
 api/server/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionMetricsResolver.java:该文件实现了CompletionMetricsResolver类，处理Azure实际调用的延迟时间。主要功能包括利用正则表达式解析OpenapiResponse中的等待时间，并返回调整后的禁用时间。与EndpointProcessData和OpenapiResponse等类进行交互。
 api/server/src/main/java/com/ke/bella/openapi/protocol/completion/MockAdaptor.java:这个文件实现了MockAdaptor类，用于模拟协议的适配器。它提供了完成和流式完成的方法，使用线程池执行异步网络请求，与MockNetworkIO类交互来进行HTTP和SSE请求。
+api/server/src/main/java/com/ke/bella/openapi/protocol/completion/ModelFallbackHandler.java:这个文件实现了ModelFallbackHandler类，负责处理使用备用模型的完成请求。关键方法有handleCompletion，它尝试用主模型和备用模型处理请求，若全部失败则抛出FallbackException。它与ChatController、AdaptorManager、LimiterManager等多个组件交互。
 api/server/src/main/java/com/ke/bella/openapi/protocol/completion/OpenAIAdaptor.java:用于适配OpenAI协议完成请求的适配器类，实现了流式及非流式任务请求。
 api/server/src/main/java/com/ke/bella/openapi/protocol/completion/QueueAdaptor.java:jobQueue协议适配器，实现CompletionAdaptor接口，处理实时和流任务的请求。
 api/server/src/main/java/com/ke/bella/openapi/protocol/completion/ResponseHelper.java:这个文件定义了ResponseHelper类，提供了完成响应的数据处理和转换功能。
@@ -376,21 +378,13 @@ api/spi/src/main/java/com/ke/bella/openapi/server/BellaServerContextHolder.java:
 api/spi/src/main/java/com/ke/bella/openapi/server/BellaServerContextInitializer.java:初始化BellaServer上下文，获取IP、端口和应用名称，设置到上下文中。关键类包括InetUtils和BellaServerContext，与配置环境交互。
 api/spi/src/main/resources/META-INF/spring.factories:这个文件配置了Spring工厂加载机制，指定了ApplicationContextInitializer的实现类。
 authorize-admin.sh:用于管理员授权的脚本，通过API请求系统，使用用户ID或邮箱授予管理员权限。
-config-details.md:详细介绍了Bella OpenAPI配置，包括环境变量、数据库、缓存和OAuth配置的说明文档。
-contributor-guid.md:该文件为 Bella OpenAPI 项目的贡献者指南，提供了项目概述、开发流程、代码贡献、代码风格等详细说明。主要功能是帮助新贡献者快速了解项目并参与开发。文件详细介绍了如何提交 Issues 和 Pull Requests，与 GitHub 仓库的交互尤为重要。
 contributor-guide.md:Bella OpenAPI 贡献者指南，帮助新的贡献者快速上手项目开发。主要内容包括项目概述、开发流程、提交Issues、代码贡献和社区支持等，详细说明了如何配置环境和提交代码。与bella-issues-bot交互，自动处理Issues。
 contributor-guide_EN.md:Bella OpenAPI Contributor Guide，提供英文版的项目贡献指南。内容与中文版相同，包括项目概述、开发流程、提交Issues、代码贡献和社区支持等。与bella-issues-bot交互，自动处理Issues。
-doc/chat-completions.md:该文档提供了智能问答接口的使用说明，详细描述了请求和响应格式、支持的消息类型以及错误码等。此外，它还介绍了如何调用工具来扩展模型的功能。主要与OpenAI的Chat Completions API交互。
-doc/embeddings.md:文本向量接口文档，描述了创建文本嵌入的方法和API调用，支持语义搜索、文本分类等应用。详细介绍了请求和响应格式，及典型应用场景。
-doc/flash-asr.md:语音识别接口的文档，描述了接口的功能、请求和响应格式，包括示例和错误码说明，适用于开发者集成该语音识别服务。
-doc/realtime.md:实时语音对话接口文档，详细描述了接口功能、请求和响应参数以及接入指南。提供实时语音识别、大模型对话和语音合成功能，支持全双工通信，适用于智能语音助手等场景。
-doc/tts.md:语音合成接口文档，描述了如何根据文本生成语音，包括请求方法、参数、响应格式及示例。支持多种声音和音频格式，是其他开发者进行语音合成集成的指南。
 docker-compose.yml:定义了多个Docker服务的编排配置，包括API服务、Web服务、Nginx、MySQL和Redis服务。配置了环境变量、端口和依赖关系等。
 generate-system-apikey.sh:用于生成系统API key并插入数据库的脚本。通过检查Docker中的MySQL容器，生成API key、计算SHA值并插入数据库表，保存访问密钥到文件中。
 nginx/conf.d/default.conf:这个文件是Nginx的配置文件，定义了服务器的基本设置和路径转发规则。主要将/v1、/console、/openapi路径的请求转发到api服务，其他请求转发到web服务。文件通过代理设置与bella-openapi-api和bella-openapi-web服务进行交互。
 package-lock.json:记录了bella-openapi项目的所有依赖及其版本信息，确保项目在不同环境中的一致性。
 package.json:定义了项目的JavaScript依赖项，以npm包管理格式列出所有所需的库及其版本范围。
-start-details.md:提供Bella OpenAPI的启动与部署说明，涵盖项目概述、前提条件、启动服务、环境变量配置、服务管理和系统初始化等。
 start.sh:Shell脚本，用于通过Docker Compose启动和管理Bella OpenAPI服务，支持构建、推送镜像、配置OAuth等多种功能。
 stop.sh:这个shell脚本用于停止Bella OpenAPI服务，使用docker-compose停止api和web服务。
 web/.dockerignore:该.dockerignore文件用于在构建Docker镜像时排除特定文件和目录，例如日志、node_modules、.env文件等。

@@ -1,0 +1,1559 @@
+# 项目文件描述
+
+
+- api/server/src/main/java/com/ke/bella/openapi/protocol/completion/ModelFallbackHandler.java: 这个文件实现了ModelFallbackHandler类，负责处理使用备用模型的完成请求。关键方法有handleCompletion，它尝试用主模型和备用模型处理请求，若全部失败则抛出FallbackException。它与ChatController、AdaptorManager、LimiterManager等多个组件交互。
+
+- api/server/src/main/java/com/ke/bella/openapi/common/exception/FallbackException.java: 这个文件定义了FallbackException类，继承自RuntimeException，用于在所有备用模型尝试失败时抛出异常。它包含两个字段：attemptedModels和exceptions，分别记录尝试过的模型和对应的异常信息。
+
+- api/server/src/main/java/com/ke/bella/openapi/endpoints/ChatController.java: ChatController类定义了用于处理聊天完成请求的REST接口，包含请求路由、安全检查、协议适配及响应逻辑。通过Spring框架实现REST控制器功能。
+
+- api/server/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionAdaptor.java: 定义CompletionAdaptor接口，用于处理补全请求，支持普通和流式补全。关联CompletionProperty类，用于异步或同步数据补全。
+
+- api/server/src/main/java/com/ke/bella/openapi/protocol/completion/StreamCompletionCallback.java: 无描述
+
+- api/server/src/main/java/com/ke/bella/openapi/protocol/completion/callback/StreamCompletionCallback.java: 这个文件实现了流式完成过程的回调处理StreamCompletionCallback类，用于处理和发送流式消息，及安全检查，主要使用到ISafetyCheckService接口。
+
+- api/server/src/main/java/com/ke/bella/openapi/protocol/completion/StreamCompletionResponse.java: 无描述
+
+- api/server/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionRequest.java: 无描述
+
+- api/server/src/main/java/com/ke/bella/openapi/utils/SseHelper.java: 提供SSE连接管理的帮助类SseHelper，包含连接创建、事件发送及异常处理的方法，增强SSE通信的稳定性和可管理性。
+
+- api/server/src/main/java/com/ke/bella/openapi/protocol/AdaptorManager.java: 定义了AdaptorManager类，用于管理不同协议适配器的注册和获取操作。通过endpoint和protocol识别适配器，并提供相应的服务支持。
+
+- api/server/src/main/java/com/ke/bella/openapi/protocol/ChannelRouter.java: 负责渠道路由选择的逻辑，包括筛选和选择可用的渠道，主要类是ChannelRouter，与ChannelService和ModelService交互。
+
+- api/server/src/main/java/com/ke/bella/openapi/protocol/BellaEventSourceListener.java: 无描述
+
+- api/server/src/main/java/com/ke/bella/openapi/protocol/BellaStreamCallback.java: 无描述
+
+
+# 文件内容
+
+
+
+```
+File: api/server/src/main/java/com/ke/bella/openapi/protocol/completion/ModelFallbackHandler.java
+1 package com.ke.bella.openapi.protocol.completion;
+2 
+3 import com.ke.bella.openapi.endpoints.ChatController;
+4 import com.ke.bella.openapi.EndpointContext;
+5 import com.ke.bella.openapi.EndpointProcessData;
+6 import com.ke.bella.openapi.common.exception.ChannelException;
+7 import com.ke.bella.openapi.common.exception.FallbackException;
+8 import com.ke.bella.openapi.protocol.AdaptorManager;
+9 import com.ke.bella.openapi.protocol.ChannelRouter;
+10 import com.ke.bella.openapi.protocol.Callbacks;
+11 import com.ke.bella.openapi.protocol.limiter.LimiterManager;
+12 import com.ke.bella.openapi.safety.ISafetyCheckService;
+13 import com.ke.bella.openapi.safety.SafetyCheckRequest;
+14 import com.ke.bella.openapi.tables.pojos.ChannelDB;
+15 import com.ke.bella.openapi.utils.JacksonUtils;
+16 import lombok.extern.slf4j.Slf4j;
+17 import org.apache.commons.collections4.CollectionUtils;
+18 import org.apache.commons.lang3.StringUtils;
+19 import org.springframework.beans.factory.annotation.Autowired;
+20 import org.springframework.beans.factory.annotation.Value;
+21 import org.springframework.stereotype.Component;
+22 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+23 
+24 import java.util.ArrayList;
+25 import java.util.List;
+26 import java.util.concurrent.TimeUnit;
+27 
+28 @Component
+29 @Slf4j
+30 public class ModelFallbackHandler {
+31 
+32     @Autowired
+33     private ChannelRouter router;
+34     
+35     @Autowired
+36     private AdaptorManager adaptorManager;
+37     
+38     @Autowired
+39     private LimiterManager limiterManager;
+40     
+41     @Autowired
+42     private ISafetyCheckService.IChatSafetyCheckService safetyCheckService;
+43     
+44     @Value("${bella.openapi.fallback.max-models:3}")
+45     private int maxFallbackModels;
+46     
+47     @Value("${bella.openapi.fallback.default-timeout-seconds:30}")
+48     private int defaultTimeoutSeconds;
+49 
+50     @Autowired
+51     private ChatController chatController;
+52 
+53     /**
+54      * Handles the completion request with fallback models if specified
+55      */
+56     public CompletionResponse handleCompletion(CompletionRequest request, String endpoint, 
+57                                               CompletionAdaptor<?> baseAdaptor, Object requestRiskData) {
+58         request.parseModelFallbacks();
+59         
+60         // If no fallback models, just execute normally
+61         if (CollectionUtils.isEmpty(request.getFallbackModels())) {
+62             return executeCompletion(request, endpoint, baseAdaptor, requestRiskData);
+63         }
+64         
+65         // Get timeout from header or use default
+66         int timeoutSeconds = getTimeoutFromHeader();
+67         long startTime = System.currentTimeMillis();
+68         long endTime = startTime + TimeUnit.SECONDS.toMillis(timeoutSeconds);
+69         
+70         // Try the primary model first
+71         Exception primaryException;
+72         List<String> attemptedModels = new ArrayList<>();
+73         attemptedModels.add(request.getModel());
+74         
+75         try {
+76             return executeCompletion(request, endpoint, baseAdaptor, requestRiskData);
+77         } catch (Exception e) {
+78             log.warn("Primary model {} failed: {}", request.getModel(), e.getMessage());
+79             
+80             primaryException = e;
+81             // Limit the number of fallback models to try
+82             int modelsToTry = Math.min(request.getFallbackModels().size(), maxFallbackModels - 1);
+83             
+84             List<Exception> exceptions = new ArrayList<>();
+85             // Try each fallback model
+86             for (int i = 0; i < modelsToTry; i++) {
+87                 // Check if we've exceeded the timeout
+88                 if (System.currentTimeMillis() >= endTime) {
+89                     throw new ChannelException.TimeoutException("Fallback models timeout after " + timeoutSeconds + " seconds");
+90                 }
+91                 
+92                 String fallbackModel = request.getFallbackModels().get(i);
+93                 attemptedModels.add(fallbackModel);
+94                 
+95                 try {
+96                     // Create a copy of the request with the fallback model
+97                     CompletionRequest fallbackRequest = JacksonUtils.convert(request, CompletionRequest.class);
+98                     fallbackRequest.setModel(fallbackModel);
+99                     fallbackRequest.setFallbackModels(null);
+100                     
+101                     // Execute with fallback model
+102                     CompletionResponse response = executeCompletion(fallbackRequest, endpoint, baseAdaptor, requestRiskData);
+103                     log.info("Successfully completed request with fallback model: {}", fallbackModel);
+104                     return response;
+105                 } catch (Exception fallbackEx) {
+106                     log.warn("Fallback model {} failed: {}", fallbackModel, fallbackEx.getMessage());
+107                     exceptions.add(fallbackEx);
+108                 }
+109             }
+110             
+111             // If all fallbacks failed, throw a FallbackException
+112             throw new FallbackException("All models failed, including fallbacks", 
+113                 attemptedModels, exceptions);
+114         }
+115     }
+116     
+117     private int getTimeoutFromHeader() {
+118         String timeoutHeader = EndpointContext.getRequest().getHeader("X-BELLA-FALLBACK-TIMEOUT");
+119         if (StringUtils.isNotEmpty(timeoutHeader)) {
+120             try {
+121                 int timeout = Integer.parseInt(timeoutHeader);
+122                 return Math.max(1, Math.min(timeout, 180)); // Limit between 1-180 seconds
+123             } catch (NumberFormatException e) {
+124                 // Ignore parsing errors
+125             }
+126         }
+127         return defaultTimeoutSeconds;
+128     }
+129     
+130     private CompletionResponse executeCompletion(CompletionRequest request, String endpoint, 
+131                                               CompletionAdaptor<?> baseAdaptor, Object requestRiskData) {
+132         return chatController.executeCompletion(request, endpoint, baseAdaptor, requestRiskData);
+133     }
+134 }
+135
+```
+
+
+
+
+```
+File: api/server/src/main/java/com/ke/bella/openapi/common/exception/FallbackException.java
+1 package com.ke.bella.openapi.common.exception;
+2 
+3 import java.util.List;
+4 
+5 /**
+6  * Exception thrown when all fallback models have been tried but failed
+7  */
+8 public class FallbackException extends RuntimeException {
+9     private final List<String> attemptedModels;
+10     private final List<Exception> exceptions;
+11 
+12     public FallbackException(String message, List<String> attemptedModels, List<Exception> exceptions) {
+13         super(message);
+14         this.attemptedModels = attemptedModels;
+15         this.exceptions = exceptions;
+16     }
+17 
+18     @Override
+19     public String getMessage() {
+20         return super.getMessage() + ". Attempted models: " + String.join(", ", attemptedModels);
+21     }
+22 }
+23
+```
+
+
+
+
+```
+File: api/server/src/main/java/com/ke/bella/openapi/endpoints/ChatController.java
+1 package com.ke.bella.openapi.endpoints;
+2 
+3 import java.util.Map;
+4 
+5 import com.ke.bella.openapi.protocol.completion.CompletionAdaptorDelegator;
+6 import org.apache.commons.lang3.StringUtils;
+7 import org.springframework.beans.factory.annotation.Autowired;
+8 import org.springframework.web.bind.annotation.PostMapping;
+9 import org.springframework.web.bind.annotation.RequestBody;
+10 import org.springframework.web.bind.annotation.RequestMapping;
+11 import org.springframework.web.bind.annotation.RestController;
+12 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+13 
+14 import com.ke.bella.openapi.BellaContext;
+15 import com.ke.bella.openapi.EndpointContext;
+16 import com.ke.bella.openapi.EndpointProcessData;
+17 import com.ke.bella.openapi.annotations.EndpointAPI;
+18 import com.ke.bella.openapi.protocol.AdaptorManager;
+19 import com.ke.bella.openapi.protocol.ChannelRouter;
+20 import com.ke.bella.openapi.protocol.completion.CompletionAdaptor;
+21 import com.ke.bella.openapi.protocol.completion.CompletionProperty;
+22 import com.ke.bella.openapi.protocol.completion.CompletionRequest;
+23 import com.ke.bella.openapi.protocol.completion.CompletionResponse;
+24 import com.ke.bella.openapi.protocol.completion.QueueAdaptor;
+25 import com.ke.bella.openapi.protocol.completion.ToolCallSimulator;
+26 import com.ke.bella.openapi.protocol.completion.callback.StreamCallbackProvider;
+27 import com.ke.bella.openapi.protocol.completion.ModelFallbackHandler;
+28 import com.ke.bella.openapi.protocol.limiter.LimiterManager;
+29 import com.ke.bella.openapi.protocol.log.EndpointLogger;
+30 import com.ke.bella.openapi.safety.ISafetyCheckService;
+31 import com.ke.bella.openapi.safety.SafetyCheckRequest;
+32 import com.ke.bella.openapi.service.JobQueueService;
+33 import com.ke.bella.openapi.tables.pojos.ChannelDB;
+34 import com.ke.bella.openapi.utils.JacksonUtils;
+35 import com.ke.bella.openapi.utils.SseHelper;
+36 
+37 import io.swagger.v3.oas.annotations.tags.Tag;
+38 
+39 @EndpointAPI
+40 @RestController
+41 @RequestMapping("/v1/chat")
+42 @Tag(name = "chat")
+43 public class ChatController {
+44     @Autowired
+45     private ChannelRouter router;
+46     @Autowired
+47     private AdaptorManager adaptorManager;
+48     @Autowired
+49     private LimiterManager limiterManager;
+50     @Autowired
+51     private EndpointLogger logger;
+52     @Autowired
+53     private ISafetyCheckService.IChatSafetyCheckService safetyCheckService;
+54     @Autowired
+55     private JobQueueService jobQueueService;
+56     @Autowired
+57     private ModelFallbackHandler fallbackHandler;
+58     
+59     @SuppressWarnings({ "rawtypes", "unchecked" })
+60     @PostMapping("/completions")
+61     public Object completion(@RequestBody CompletionRequest request) {
+62         String endpoint = EndpointContext.getRequest().getRequestURI();
+63         String model = request.getModel();
+64         EndpointContext.setEndpointData(endpoint, model, request);
+65         
+66         // Parse fallback models if they exist in comma-separated format
+67         request.parseModelFallbacks();
+68         
+69         if(request.isStream()) {
+70             return handleStreamCompletion(request, endpoint);
+71         } else {
+72             // For non-streaming requests, use the fallback handler
+73             Object requestRiskData = prepareRequestAndSafetyCheck(request, endpoint);
+74             CompletionResponse response = fallbackHandler.handleCompletion(request, endpoint, null, requestRiskData);
+75             
+76             // Perform safety check on the response
+77             boolean isMock = EndpointContext.getProcessData().isMock();
+78             Object responseRiskData = safetyCheckService.safetyCheck(SafetyCheckRequest.Chat.convertFrom(response, EndpointContext.getProcessData(), EndpointContext.getApikey()), isMock);
+79             response.setSensitives(responseRiskData);
+80             return response;
+81         }
+82     }
+83 
+84     private void fillMockProperty(CompletionProperty property) {
+85         Map<String, String> requestInfo = BellaContext.getHeaders();
+86         String functionCallSimulate = requestInfo.get("X-BELLA-FUNCTION-SIMULATE");
+87         String mergeReasoningContent = requestInfo.get("X-BELLA-MERGE-REASONING");
+88         String splitReasoningFromContent = requestInfo.get("X-BELLA-SPLIT-REASONING");
+89         property.setFunctionCallSimulate("true".equals(functionCallSimulate) || property.isFunctionCallSimulate());
+90         property.setMergeReasoningContent("true".equals(mergeReasoningContent) || property.isMergeReasoningContent());
+91         property.setSplitReasoningFromContent("true".equals(splitReasoningFromContent) || property.isSplitReasoningFromContent());
+92     }
+93 
+94     private CompletionAdaptor<?> decorateAdaptor(CompletionAdaptor<?> adaptor, CompletionProperty property, EndpointProcessData processData) {
+95         if(StringUtils.isNotBlank(property.getQueueName())) {
+96             if(adaptor instanceof CompletionAdaptorDelegator) {
+97                 adaptor = new QueueAdaptor<>((CompletionAdaptorDelegator<?>)adaptor, jobQueueService, jobQueueService, processData);
+98             } else {
+99                 throw new IllegalStateException(adaptor.getClass().getSimpleName() + "不支持请求代理");
+100             }
+101         }
+102         if(property.isFunctionCallSimulate()) {
+103             adaptor = new ToolCallSimulator<>(adaptor, processData);
+104         }
+105         return adaptor;
+106     }
+107     
+108     /**
+109      * Handles streaming completion requests
+110      */
+111     private SseEmitter handleStreamCompletion(CompletionRequest request, String endpoint) {
+112         // Streaming doesn't support fallbacks, so we use the original flow
+113         prepareRequestAndSafetyCheck(request, endpoint);
+114         
+115         EndpointProcessData processData = EndpointContext.getProcessData();
+116         String url = processData.getForwardUrl();
+117         
+118         // Get the adaptor and property
+119         String protocol = processData.getProtocol();
+120         CompletionAdaptor adaptor = adaptorManager.getProtocolAdaptor(endpoint, protocol, CompletionAdaptor.class);
+121         
+122         String channelInfo = EndpointContext.getProcessData().getChannel().getChannelInfo();
+123         CompletionProperty property = (CompletionProperty) JacksonUtils.deserialize(channelInfo, adaptor.getPropertyClass());
+124         
+125         if(processData.isMock()) {
+126             fillMockProperty(property);
+127         }
+128         
+129         adaptor = decorateAdaptor(adaptor, property, processData);
+130         EndpointContext.setEncodingType(property.getEncodingType());
+131         
+132         SseEmitter sse = SseHelper.createSse(1000L * 60 * 5, processData.getRequestId());
+133         adaptor.streamCompletion(request, url, property, 
+134             StreamCallbackProvider.provide(sse, processData, EndpointContext.getApikey(), logger, safetyCheckService, property));
+135         
+136         return sse;
+137     }
+138     
+139     /**
+140      * Prepares the request by setting up channel, safety checks, etc.
+141      * Returns the request risk data.
+142      */
+143     private Object prepareRequestAndSafetyCheck(CompletionRequest request, String endpoint) {
+144         boolean isMock = EndpointContext.getProcessData().isMock();
+145         String model = request.getModel();
+146         
+147         ChannelDB channel = router.route(endpoint, model, EndpointContext.getApikey(), isMock);
+148         EndpointContext.setEndpointData(channel);
+149         
+150         if(!EndpointContext.getProcessData().isPrivate()) {
+151             limiterManager.incrementConcurrentCount(EndpointContext.getProcessData().getAkCode(), model);
+152         }
+153         
+154         Object requestRiskData = safetyCheckService.safetyCheck(
+155             SafetyCheckRequest.Chat.convertFrom(request, EndpointContext.getProcessData(), EndpointContext.getApikey()), 
+156             isMock
+157         );
+158         
+159         EndpointContext.getProcessData().setRequestRiskData(requestRiskData);
+160         return requestRiskData;
+161     }
+162     
+163     /**
+164      * Execute a completion request with the given model
+165      */
+166     public CompletionResponse executeCompletion(CompletionRequest request, String endpoint, CompletionAdaptor<?> baseAdaptor, Object requestRiskData) {
+167         EndpointProcessData processData = EndpointContext.getProcessData();
+168         String protocol = processData.getProtocol();
+169         String url = processData.getForwardUrl();
+170         String channelInfo = processData.getChannel().getChannelInfo();
+171         
+172         CompletionAdaptor<?> adaptor = baseAdaptor != null ? baseAdaptor : 
+173             adaptorManager.getProtocolAdaptor(endpoint, protocol, CompletionAdaptor.class);
+174         CompletionProperty property = (CompletionProperty) JacksonUtils.deserialize(channelInfo, adaptor.getPropertyClass());
+175         adaptor = decorateAdaptor(adaptor, property, processData);
+176         
+177         return adaptor.completion(request, url, property);
+178     }
+179 }
+180
+```
+
+
+
+
+```
+File: api/server/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionAdaptor.java
+1 package com.ke.bella.openapi.protocol.completion;
+2 
+3 import com.ke.bella.openapi.protocol.Callbacks;
+4 import com.ke.bella.openapi.protocol.IProtocolAdaptor;
+5 
+6 public interface CompletionAdaptor<T extends CompletionProperty> extends IProtocolAdaptor {
+7 
+8     CompletionResponse completion(CompletionRequest request, String url, T property);
+9 
+10     void streamCompletion(CompletionRequest request, String url, T property, Callbacks.StreamCompletionCallback callback);
+11 
+12     @Override
+13     default String endpoint() {
+14         return "/v1/chat/completions";
+15     }
+16 }
+17
+```
+
+
+
+
+
+
+```
+File: api/server/src/main/java/com/ke/bella/openapi/protocol/completion/callback/StreamCompletionCallback.java
+1 package com.ke.bella.openapi.protocol.completion.callback;
+2 
+3 import com.google.common.collect.Lists;
+4 import com.ke.bella.openapi.EndpointProcessData;
+5 import com.ke.bella.openapi.apikey.ApikeyInfo;
+6 import com.ke.bella.openapi.common.exception.ChannelException;
+7 import com.ke.bella.openapi.protocol.Callbacks;
+8 import com.ke.bella.openapi.protocol.OpenapiResponse;
+9 import com.ke.bella.openapi.protocol.completion.CompletionResponse;
+10 import com.ke.bella.openapi.protocol.completion.ResponseHelper;
+11 import com.ke.bella.openapi.protocol.completion.StreamCompletionResponse;
+12 import com.ke.bella.openapi.protocol.log.EndpointLogger;
+13 import com.ke.bella.openapi.safety.ISafetyCheckService;
+14 import com.ke.bella.openapi.safety.SafetyCheckRequest;
+15 import com.ke.bella.openapi.utils.DateTimeUtils;
+16 import com.ke.bella.openapi.utils.PunctuationUtils;
+17 import com.ke.bella.openapi.utils.SseHelper;
+18 import lombok.Getter;
+19 import lombok.extern.slf4j.Slf4j;
+20 import org.apache.commons.collections4.CollectionUtils;
+21 import org.apache.commons.lang3.StringUtils;
+22 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+23 
+24 import java.util.Collections;
+25 import java.util.HashMap;
+26 import java.util.Map;
+27 
+28 @Slf4j
+29 public class StreamCompletionCallback implements Callbacks.StreamCompletionCallback {
+30     @Getter
+31     private final SseEmitter sse;
+32     private final EndpointProcessData processData;
+33     private final ApikeyInfo apikeyInfo;
+34     private final EndpointLogger logger;
+35     private final ISafetyCheckService.IChatSafetyCheckService safetyService;
+36     private final CompletionResponse responseBuffer;
+37     private final Map<Integer, CompletionResponse.Choice> choiceBuffer;
+38     private boolean dirtyChoice;
+39     private Long firstPackageTime;
+40     private Object requestRiskData;
+41     private Integer safetyCheckIndex;
+42     private Integer thinkStage = 0; // 0: 推理未开始; 1: 推理开始; 2: 推理进行中；3:推理完成；-1:推理已结束
+43 
+44     public StreamCompletionCallback(SseEmitter sse, EndpointProcessData processData, ApikeyInfo apikeyInfo,
+45             EndpointLogger logger, ISafetyCheckService.IChatSafetyCheckService safetyService) {
+46         this.sse = sse;
+47         this.processData = processData;
+48         this.apikeyInfo = apikeyInfo;
+49         this.logger = logger;
+50         this.safetyService = safetyService;
+51         this.safetyCheckIndex = 0;
+52         this.responseBuffer = new CompletionResponse();
+53         responseBuffer.setCreated(DateTimeUtils.getCurrentSeconds());
+54         this.choiceBuffer = new HashMap<>();
+55         this.requestRiskData = processData.getRequestRiskData();
+56     }
+57 
+58     @Override
+59     public void onOpen() {
+60 
+61     }
+62 
+63     @Override
+64     public void callback(StreamCompletionResponse msg) {
+65         msg.setCreated(DateTimeUtils.getCurrentSeconds());
+66         if(requestRiskData != null) {
+67             msg.setRequestRiskData(requestRiskData);
+68             requestRiskData = null;
+69         }
+70         SseHelper.sendEvent(sse, msg);
+71         updateBuffer(msg.getStandardFormat() == null ? msg : msg.getStandardFormat());
+72         safetyCheck(false);
+73     }
+74 
+75     @Override
+76     public void done() {
+77         safetyCheck(true);
+78         SseHelper.sendEvent(sse, "[DONE]");
+79     }
+80 
+81     public void finish() {
+82         sse.complete();
+83         log();
+84     }
+85 
+86     @Override
+87     public void finish(ChannelException exception) {
+88         OpenapiResponse.OpenapiError openapiError = exception.convertToOpenapiError();
+89         StreamCompletionResponse response = StreamCompletionResponse.builder()
+90                 .created(DateTimeUtils.getCurrentSeconds())
+91                 .error(openapiError)
+92                 .build();
+93         try {
+94             callback(response);
+95         } finally {
+96             sse.completeWithError(exception);
+97             log();
+98         }
+99     }
+100 
+101     private void updateBuffer(StreamCompletionResponse streamResponse) {
+102         ResponseHelper.overwrite(responseBuffer, streamResponse);
+103         if(CollectionUtils.isEmpty(streamResponse.getChoices()) || streamResponse.getChoices().get(0).getDelta() == null) {
+104             return;
+105         }
+106         thinkStage = getThinkStage(streamResponse, thinkStage);
+107         if(thinkStage == 1 || thinkStage == 3) {
+108             safetyCheckIndex = 0;
+109         }
+110         if(firstPackageTime == null) {
+111             firstPackageTime = DateTimeUtils.getCurrentMills();
+112         }
+113         StreamCompletionResponse.Choice choice = streamResponse.getChoices().get(0);
+114         Integer choiceIndex = choice.getIndex();
+115         if(!choiceBuffer.containsKey(choiceIndex)) {
+116             choiceBuffer.put(choiceIndex, ResponseHelper.convert(choice));
+117         } else {
+118             ResponseHelper.combineMessage(choiceBuffer.get(choiceIndex).getMessage(), choice.getDelta());
+119             choiceBuffer.get(choiceIndex).setFinish_reason(choice.getFinish_reason());
+120         }
+121         if(isSafetyCheckChoice(choice)) {
+122             dirtyChoice = true;
+123         }
+124     }
+125 
+126     private Integer getThinkStage(StreamCompletionResponse msg, Integer currentStage) {
+127         if(currentStage == 0 && StringUtils.isNotEmpty(msg.reasoning())) {
+128             return 1;
+129         }
+130         if(currentStage == 1 && StringUtils.isNotEmpty(msg.reasoning())) {
+131             return 2;
+132         }
+133         if(currentStage == 2 && StringUtils.isNotEmpty(msg.content())) {
+134             return 3;
+135         }
+136         if(currentStage == 3 && StringUtils.isNotEmpty(msg.content())) {
+137             return -1;
+138         }
+139         return currentStage;
+140     }
+141 
+142     private boolean isSafetyCheckChoice(StreamCompletionResponse.Choice choice) {
+143         if(choice.getIndex() != 0) {
+144             return false;
+145         }
+146         return StringUtils.isNotBlank(choice.content()) || StringUtils.isNotBlank(choice.reasoning());
+147     }
+148 
+149     private void log() {
+150         CompletionResponse response = responseBuffer;
+151         long created = response.getCreated() <= 0 ? DateTimeUtils.getCurrentSeconds() : response.getCreated();
+152         processData.setDuration(created - processData.getRequestTime());
+153         processData.setFirstPackageTime(firstPackageTime == null ? DateTimeUtils.getCurrentMills() : firstPackageTime);
+154         response.setChoices(Lists.newArrayList(choiceBuffer.values()));
+155         processData.setResponse(response);
+156         logger.log(processData);
+157     }
+158 
+159     private void safetyCheck(boolean done) {
+160         if(!dirtyChoice) {
+161             return;
+162         }
+163         CompletionResponse.Choice choice = choiceBuffer.get(0);
+164         if(!done) {
+165             String content = thinkStage == 2 ? choice.reasoning() : choice.content();
+166             String delta = content.substring(safetyCheckIndex);
+167             if(!PunctuationUtils.endsWithPunctuation(delta)) {
+168                 return;
+169             }
+170             safetyCheckIndex = content.length();
+171         }
+172         responseBuffer.setChoices(Collections.singletonList(choice));
+173         Object result = safetyService.safetyCheck(SafetyCheckRequest.Chat.convertFrom(responseBuffer, processData, apikeyInfo), processData.isMock());
+174         if(result != null) {
+175             StreamCompletionResponse response = new StreamCompletionResponse();
+176             response.setSensitives(result);
+177             response.setCreated(DateTimeUtils.getCurrentSeconds());
+178             SseHelper.sendEvent(sse, response);
+179         }
+180         dirtyChoice = false;
+181     }
+182 }
+183
+```
+
+
+
+
+
+
+
+
+```
+File: api/server/src/main/java/com/ke/bella/openapi/utils/SseHelper.java
+1 package com.ke.bella.openapi.utils;
+2 
+3 import java.io.IOException;
+4 
+5 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+6 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter.SseEventBuilder;
+7 
+8 import lombok.extern.slf4j.Slf4j;
+9 
+10 @Slf4j
+11 public class SseHelper {
+12     public static SseEmitter createSse(long timeout, String reqId) {
+13         SseEmitter sse = new SseEmitter(timeout);
+14 
+15         sse.onCompletion(() -> LOGGER.info("[{}] 结束连接...................", reqId));
+16         sse.onTimeout(() -> LOGGER.info("[{}]连接超时...................", reqId));
+17         sse.onError(e -> LOGGER.info("[{}]连接异常,{}", reqId, e.toString()));
+18         LOGGER.info("[{}]创建sse连接成功！", reqId);
+19 
+20         return sse;
+21     }
+22 
+23     public static void send(SseEmitter sse, SseEventBuilder event) {
+24         try {
+25             sse.send(event);
+26         } catch (IOException e) {
+27             LOGGER.warn(e.getMessage(), e);
+28         }
+29     }
+30 
+31     public static void sendEvent(SseEmitter sse, String event, Object data) {
+32         send(sse, SseEmitter.event().name(event).id(event).data(data));
+33     }
+34 
+35     public static void sendEvent(SseEmitter sse, Object data) {
+36         send(sse, SseEmitter.event().data(data));
+37     }
+38 
+39 }
+40
+```
+
+
+
+
+```
+File: api/server/src/main/java/com/ke/bella/openapi/protocol/AdaptorManager.java
+1 package com.ke.bella.openapi.protocol;
+2 
+3 import com.google.common.collect.Maps;
+4 import com.google.common.collect.Sets;
+5 
+6 import java.util.HashMap;
+7 import java.util.Map;
+8 import java.util.Set;
+9 import java.util.concurrent.ConcurrentHashMap;
+10 
+11 public class AdaptorManager {
+12     private final Map<String, Map<String, IProtocolAdaptor>> adaptors = new ConcurrentHashMap<>();
+13 
+14     public Set<String> getProtocols(String endpoint) {
+15         if(!adaptors.containsKey(endpoint)) {
+16             return Sets.newHashSet();
+17         }
+18         return adaptors.get(endpoint).keySet();
+19     }
+20 
+21     public boolean support(String endpoint, String protocol) {
+22         return getProtocols(endpoint).contains(protocol);
+23     }
+24 
+25     public <T extends IProtocolAdaptor> T getProtocolAdaptor(String endpoint, String protocol, Class<T> clazz) {
+26         return clazz.cast(adaptors.get(endpoint).get(protocol));
+27     }
+28 
+29     public IProtocolAdaptor getProtocolAdaptor(String endpoint, String protocol) {
+30         return adaptors.get(endpoint).get(protocol);
+31     }
+32 
+33     public Map<String, IProtocolAdaptor> getProtocolAdaptors(String endpoint) {
+34         if(!adaptors.containsKey(endpoint)) {
+35             return Maps.newHashMap();
+36         }
+37         return adaptors.get(endpoint);
+38     }
+39 
+40     public synchronized void register(String endpoint, IProtocolAdaptor adaptor) {
+41         Map<String, IProtocolAdaptor> map = adaptors.computeIfAbsent(endpoint, k -> new HashMap<>());
+42         map.put(adaptor.getClass().getSimpleName(), adaptor);
+43     }
+44 }
+45
+```
+
+
+
+
+```
+File: api/server/src/main/java/com/ke/bella/openapi/protocol/ChannelRouter.java
+1 package com.ke.bella.openapi.protocol;
+2 
+3 import com.ke.bella.openapi.EndpointContext;
+4 import com.ke.bella.openapi.EndpointProcessData;
+5 import com.ke.bella.openapi.apikey.ApikeyInfo;
+6 import com.ke.bella.openapi.common.EntityConstants;
+7 import com.ke.bella.openapi.common.exception.BizParamCheckException;
+8 import com.ke.bella.openapi.common.exception.ChannelException;
+9 import com.ke.bella.openapi.protocol.limiter.LimiterManager;
+10 import com.ke.bella.openapi.protocol.metrics.MetricsManager;
+11 import com.ke.bella.openapi.service.ChannelService;
+12 import com.ke.bella.openapi.service.ModelService;
+13 import com.ke.bella.openapi.tables.pojos.ChannelDB;
+14 import org.apache.commons.collections4.CollectionUtils;
+15 import org.apache.commons.lang3.StringUtils;
+16 import org.springframework.beans.factory.annotation.Autowired;
+17 import org.springframework.beans.factory.annotation.Value;
+18 import org.springframework.stereotype.Component;
+19 import org.springframework.util.Assert;
+20 
+21 import java.util.ArrayList;
+22 import java.util.List;
+23 import java.util.Random;
+24 import java.util.Set;
+25 import java.util.stream.Collectors;
+26 
+27 import static com.ke.bella.openapi.common.EntityConstants.LOWEST_SAFETY_LEVEL;
+28 
+29 @Component
+30 public class ChannelRouter {
+31     private final Random random = new Random();
+32     @Autowired
+33     private ChannelService channelService;
+34     @Autowired
+35     private ModelService modelService;
+36     @Autowired
+37     private MetricsManager metricsManager;
+38     @Autowired
+39     private LimiterManager limiterManager;
+40     @Value("${bella.openapi.free.rpm:5}")
+41     private Integer freeRpm;
+42     @Value("${bella.openapi.free.concurrent:1}")
+43     private Integer freeConcurrent;
+44 
+45     public ChannelDB route(String endpoint, String model, ApikeyInfo apikeyInfo, boolean isMock) {
+46         if(StringUtils.isBlank(endpoint) && StringUtils.isBlank(model)) {
+47             throw new BizParamCheckException("没有可用渠道");
+48         }
+49         
+50         // If model contains commas, extract the first model
+51         if (model != null && model.contains(",")) {
+52             model = model.split(",")[0].trim();
+53         }
+54 
+55         List<ChannelDB> channels;
+56         String entityCode;
+57         if(model != null) {
+58             String terminal = modelService.fetchTerminalModelName(model);
+59             entityCode = terminal;
+60             channels = channelService.listActives(EntityConstants.MODEL, terminal);
+61         } else {
+62             entityCode = endpoint;
+63             channels = channelService.listActives(EntityConstants.ENDPOINT, endpoint);
+64         }
+65         if(CollectionUtils.isEmpty(channels)) {
+66             if(isMock) {
+67                 return mockChannel(null);
+68             } else {
+69                 throw new BizParamCheckException("没有可用渠道");
+70             }
+71         }
+72         if(!isMock) {
+73             channels = filter(channels, entityCode, apikeyInfo);
+74         }
+75         channels = pickMaxPriority(channels);
+76         ChannelDB channel = random(channels);
+77         return isMock ? mockChannel(channel) : channel;
+78     }
+79 
+80     /**
+81      * 1、筛选账户支持的数据流向（风控） 2、筛选可用的渠道
+82      *
+83      * @param channels
+84      *
+85      * @return
+86      */
+87     private List<ChannelDB> filter(List<ChannelDB> channels, String entityCode, ApikeyInfo apikeyInfo) {
+88         Byte safetyLevel = apikeyInfo.getSafetyLevel();
+89         String accountType = apikeyInfo.getOwnerType();
+90         String accountCode = apikeyInfo.getOwnerCode();
+91         List<ChannelDB> filtered = channels.stream()
+92                 .filter(channel -> !EntityConstants.PRIVATE.equals(channel.getVisibility()) ||
+93                         (accountType.equals(channel.getOwnerType()) && accountCode.equals(channel.getOwnerCode())))
+94                 .filter(channel -> getSafetyLevelLimit(channel.getDataDestination()) <= safetyLevel)
+95                 .collect(Collectors.toList());
+96         if(CollectionUtils.isEmpty(filtered)) {
+97             if(LOWEST_SAFETY_LEVEL.equals(safetyLevel)) {
+98                 filtered = channels.stream().filter(this::isTestUsed)
+99                         .collect(Collectors.toList());
+100             }
+101             if(CollectionUtils.isEmpty(filtered)) {
+102                 throw new ChannelException.AuthorizationException("未经安全合规审核，没有使用权限");
+103             }
+104             if(freeAkOverload(EndpointContext.getProcessData().getAkCode(), entityCode)) {
+105                 throw new ChannelException.RateLimitException("当前使用试用额度,每分钟最多请求" + freeRpm + "次, 且并行请求数不能高于" + freeConcurrent);
+106             }
+107         }
+108         Set<String> unavailableSet = metricsManager.getAllUnavailableChannels(
+109                 filtered.stream().map(ChannelDB::getChannelCode).collect(Collectors.toList()));
+110         filtered = filtered.stream()
+111                 .filter(channel -> channel.getDataDestination().equals(EntityConstants.PROTECTED) ||
+112                         channel.getDataDestination().equals(EntityConstants.INNER) ||
+113                         !unavailableSet.contains(channel.getChannelCode()))
+114                 .collect(Collectors.toList());
+115         if(CollectionUtils.isEmpty(filtered)) {
+116             throw new ChannelException.RateLimitException("渠道当前负载过高，请稍后重试");
+117         }
+118         return filtered;
+119     }
+120 
+121     private boolean isTestUsed(ChannelDB channel) {
+122         return 1 == channel.getTrialEnabled() && !EntityConstants.PRIVATE.equals(channel.getVisibility());
+123     }
+124 
+125     private boolean freeAkOverload(String akCode, String entityCode) {
+126         return limiterManager.getRequestCountPerMinute(akCode, entityCode) >= freeRpm
+127                 || limiterManager.getCurrentConcurrentCount(akCode, entityCode) >= freeConcurrent;
+128     }
+129 
+130     private Byte getSafetyLevelLimit(String dataDestination) {
+131         switch (dataDestination) {
+132         case EntityConstants.PROTECTED:
+133             return 10;
+134         case EntityConstants.INNER:
+135             return 20;
+136         case EntityConstants.MAINLAND:
+137             return 30;
+138         case EntityConstants.OVERSEAS:
+139             return 40;
+140         }
+141         return 40;
+142     }
+143 
+144     private List<ChannelDB> pickMaxPriority(List<ChannelDB> channels) {
+145         List<ChannelDB> highest = new ArrayList<>();
+146         String curVisibility = EntityConstants.PUBLIC;
+147         String curPriority = EntityConstants.LOW;
+148         for (ChannelDB channel : channels) {
+149             String priority = channel.getPriority();
+150             String visibility = StringUtils.isNotBlank(channel.getVisibility()) ? channel.getVisibility() : EntityConstants.PUBLIC;
+151             int compare = compare(priority, curPriority, visibility, curVisibility);
+152             if(compare < 0) {
+153                 continue;
+154             }
+155             if(compare > 0) {
+156                 highest.clear();
+157                 curPriority = priority;
+158                 curVisibility = visibility;
+159             }
+160             highest.add(channel);
+161         }
+162         return highest;
+163     }
+164 
+165     private int compare(String priority, String curPriority, String visibility, String curVisibility) {
+166         if(visibility.equals(curVisibility)) {
+167             if(priority.equals(curPriority)) {
+168                 return 0;
+169             }
+170             if(priority.equals(EntityConstants.LOW)) {
+171                 return -1;
+172             }
+173             if(priority.equals(EntityConstants.NORMAL)) {
+174                 if(curPriority.equals(EntityConstants.HIGH)) {
+175                     return -1;
+176                 }
+177             }
+178             return 1;
+179         } else {
+180             return visibility.equals(EntityConstants.PRIVATE) ? 1 : -1;
+181         }
+182     }
+183 
+184     private ChannelDB random(List<ChannelDB> list) {
+185         if(list.size() == 1) {
+186             return list.get(0);
+187         }
+188         int rand = random.nextInt(list.size());
+189         return list.get(rand);
+190     }
+191 
+192     private ChannelDB mockChannel(ChannelDB origin) {
+193         ChannelDB channel = new ChannelDB();
+194         channel.setChannelCode("ch-mock");
+195         channel.setProtocol("MockAdaptor");
+196         channel.setEntityType(EntityConstants.ENDPOINT);
+197         channel.setEntityCode("mock");
+198         channel.setPriceInfo("{}");
+199         channel.setChannelInfo(origin != null ? origin.getChannelInfo() : "{}");
+200         channel.setSupplier("system");
+201         channel.setUrl("");
+202         return channel;
+203     }
+204 
+205 }
+206
+```
+
+
+
+
+
+
+
+
+# 历史执行信息
+
+【round_1】
+requirement: 
+chat completion接口支持备选模型功能：
+
+- 请求中可以存在多个模型，使用逗号分隔
+- 支持的最大模型数，可配置
+- 用户可以在请求的header中设置一个最大超时时间
+- 在最大超时时间内，如果请求失败，则选择下一个模型进行重试
+agent_response: 
+I'll implement a fallback model system for the chat completion API, allowing multiple models to be specified and tried in sequence until one succeeds or the timeout is reached.
+
+Let's start by understanding the architecture and then implementing the changes:
+
+1. First, we'll modify the `CompletionRequest` class to support multiple models
+2. Create a new component to handle fallback logic
+3. Update the `ChatController` to use this new component
+4. Add configuration properties for maximum models and timeouts
+
+Let's begin with the implementation:
+
+```diff
+--- api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionRequest.java
++++ api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionRequest.java
+@@ -20,7 +20,10 @@ public class CompletionRequest implements UserRequest, Serializable {
+     /**
+      * ID of the model to use
+      */
+-    private String model;
++    private String model;
++    
++    @JsonInclude(Include.NON_NULL)
++    private List<String> fallbackModels;
+ 
+     /**
+      * A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse. Learn more.
+@@ -167,4 +170,27 @@ public class CompletionRequest implements UserRequest, Serializable {
+         private boolean include_usage = true;
+     }
+ }
++
++    /**
++     * Parses the model field and extracts primary and fallback models.
++     * If model contains comma-separated values, the first one becomes the primary model
++     * and the rest become fallback models.
++     */
++    public void parseModelFallbacks() {
++        if (model == null || !model.contains(",")) {
++            return;
++        }
++        
++        String[] models = model.split(",");
++        if (models.length > 1) {
++            // Set the first model as the primary model
++            this.model = models[0].trim();
++            
++            // Set the rest as fallback models
++            this.fallbackModels = new ArrayList<>();
++            for (int i = 1; i < models.length; i++) {
++                this.fallbackModels.add(models[i].trim());
++            }
++        }
++    }
+ 
+```
+
+Now, let's create a new component to handle the fallback logic:
+
+```diff
+--- /dev/null
++++ api/server/src/main/java/com/ke/bella/openapi/protocol/completion/ModelFallbackHandler.java
+@@ -0,0 +1,123 @@
++package com.ke.bella.openapi.protocol.completion;
++
++import com.ke.bella.openapi.EndpointContext;
++import com.ke.bella.openapi.EndpointProcessData;
++import com.ke.bella.openapi.common.exception.ChannelException;
++import com.ke.bella.openapi.protocol.AdaptorManager;
++import com.ke.bella.openapi.protocol.ChannelRouter;
++import com.ke.bella.openapi.protocol.Callbacks;
++import com.ke.bella.openapi.protocol.limiter.LimiterManager;
++import com.ke.bella.openapi.safety.ISafetyCheckService;
++import com.ke.bella.openapi.safety.SafetyCheckRequest;
++import com.ke.bella.openapi.tables.pojos.ChannelDB;
++import com.ke.bella.openapi.utils.JacksonUtils;
++import lombok.extern.slf4j.Slf4j;
++import org.apache.commons.collections4.CollectionUtils;
++import org.apache.commons.lang3.StringUtils;
++import org.springframework.beans.factory.annotation.Autowired;
++import org.springframework.beans.factory.annotation.Value;
++import org.springframework.stereotype.Component;
++import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
++
++import java.util.ArrayList;
++import java.util.List;
++import java.util.concurrent.TimeUnit;
++
++@Component
++@Slf4j
++public class ModelFallbackHandler {
++
++    @Autowired
++    private ChannelRouter router;
++    
++    @Autowired
++    private AdaptorManager adaptorManager;
++    
++    @Autowired
++    private LimiterManager limiterManager;
++    
++    @Autowired
++    private ISafetyCheckService.IChatSafetyCheckService safetyCheckService;
++    
++    @Value("${bella.openapi.fallback.max-models:3}")
++    private int maxFallbackModels;
++    
++    @Value("${bella.openapi.fallback.default-timeout-seconds:30}")
++    private int defaultTimeoutSeconds;
++
++    /**
++     * Handles the completion request with fallback models if specified
++     */
++    public CompletionResponse handleCompletion(CompletionRequest request, String endpoint, 
++                                              CompletionAdaptor<?> baseAdaptor, Object requestRiskData) {
++        request.parseModelFallbacks();
++        
++        // If no fallback models, just execute normally
++        if (CollectionUtils.isEmpty(request.getFallbackModels())) {
++            return executeCompletion(request, endpoint, baseAdaptor, requestRiskData);
++        }
++        
++        // Get timeout from header or use default
++        int timeoutSeconds = getTimeoutFromHeader();
++        long startTime = System.currentTimeMillis();
++        long endTime = startTime + TimeUnit.SECONDS.toMillis(timeoutSeconds);
++        
++        // Try the primary model first
++        List<String> attemptedModels = new ArrayList<>();
++        attemptedModels.add(request.getModel());
++        
++        try {
++            return executeCompletion(request, endpoint, baseAdaptor, requestRiskData);
++        } catch (Exception e) {
++            log.warn("Primary model {} failed: {}", request.getModel(), e.getMessage());
++            
++            // Limit the number of fallback models to try
++            int modelsToTry = Math.min(request.getFallbackModels().size(), maxFallbackModels - 1);
++            
++            // Try each fallback model
++            for (int i = 0; i < modelsToTry; i++) {
++                // Check if we've exceeded the timeout
++                if (System.currentTimeMillis() >= endTime) {
++                    throw new ChannelException.TimeoutException("Fallback models timeout after " + timeoutSeconds + " seconds");
++                }
++                
++                String fallbackModel = request.getFallbackModels().get(i);
++                attemptedModels.add(fallbackModel);
++                
++                try {
++                    // Create a copy of the request with the fallback model
++                    CompletionRequest fallbackRequest = JacksonUtils.convert(request, CompletionRequest.class);
++                    fallbackRequest.setModel(fallbackModel);
++                    fallbackRequest.setFallbackModels(null);
++                    
++                    // Execute with fallback model
++                    CompletionResponse response = executeCompletion(fallbackRequest, endpoint, baseAdaptor, requestRiskData);
++                    log.info("Successfully completed request with fallback model: {}", fallbackModel);
++                    return response;
++                } catch (Exception fallbackEx) {
++                    log.warn("Fallback model {} failed: {}", fallbackModel, fallbackEx.getMessage());
++                }
++            }
++            
++            // If all fallbacks failed, throw the original exception
++            throw e;
++        }
++    }
++    
++    private int getTimeoutFromHeader() {
++        String timeoutHeader = EndpointContext.getRequest().getHeader("X-BELLA-FALLBACK-TIMEOUT");
++        if (StringUtils.isNotEmpty(timeoutHeader)) {
++            try {
++                int timeout = Integer.parseInt(timeoutHeader);
++                return Math.max(1, Math.min(timeout, 180)); // Limit between 1-180 seconds
++            } catch (NumberFormatException e) {
++                // Ignore parsing errors
++            }
++        }
++        return defaultTimeoutSeconds;
++    }
++    
++    private CompletionResponse executeCompletion(CompletionRequest request, String endpoint, 
++                                              CompletionAdaptor<?> baseAdaptor, Object requestRiskData) {
++        // This will be implemented in the ChatController update
++        throw new UnsupportedOperationException("Not implemented yet");
++    }
++}
+```
+
+Now, let's update the application configuration to include our new fallback settings:
+
+```diff
+--- api/server/src/main/resources/application.yml
++++ api/server/src/main/resources/application.yml
+@@ -66,6 +66,10 @@ bella:
+     cookie-max-age: -1
+     cookie-domain: localhost
+     cookie-context-path: /
++  openapi:
++    fallback:
++      max-models: 3
++      default-timeout-seconds: 30
+ 
+ app:
+   id: bella-openapi
+```
+
+Now, let's update the `ChatController` to use our new `ModelFallbackHandler`:
+
+```diff
+--- api/server/src/main/java/com/ke/bella/openapi/endpoints/ChatController.java
++++ api/server/src/main/java/com/ke/bella/openapi/endpoints/ChatController.java
+@@ -23,6 +23,7 @@ import com.ke.bella.openapi.protocol.completion.CompletionResponse;
+ import com.ke.bella.openapi.protocol.completion.QueueAdaptor;
+ import com.ke.bella.openapi.protocol.completion.ToolCallSimulator;
+ import com.ke.bella.openapi.protocol.completion.callback.StreamCallbackProvider;
++import com.ke.bella.openapi.protocol.completion.ModelFallbackHandler;
+ import com.ke.bella.openapi.protocol.limiter.LimiterManager;
+ import com.ke.bella.openapi.protocol.log.EndpointLogger;
+ import com.ke.bella.openapi.safety.ISafetyCheckService;
+@@ -52,45 +53,32 @@ public class ChatController {
+     private ISafetyCheckService.IChatSafetyCheckService safetyCheckService;
+     @Autowired
+     private JobQueueService jobQueueService;
++    @Autowired
++    private ModelFallbackHandler fallbackHandler;
++    
+     @SuppressWarnings({ "rawtypes", "unchecked" })
+     @PostMapping("/completions")
+     public Object completion(@RequestBody CompletionRequest request) {
+         String endpoint = EndpointContext.getRequest().getRequestURI();
+         String model = request.getModel();
+         EndpointContext.setEndpointData(endpoint, model, request);
+-        boolean isMock = EndpointContext.getProcessData().isMock();
+-        ChannelDB channel = router.route(endpoint, model, EndpointContext.getApikey(), isMock);
+-        EndpointContext.setEndpointData(channel);
+-        if(!EndpointContext.getProcessData().isPrivate()) {
+-            limiterManager.incrementConcurrentCount(EndpointContext.getProcessData().getAkCode(), model);
+-        }
+-        Object requestRiskData = safetyCheckService.safetyCheck(SafetyCheckRequest.Chat.convertFrom(request,
+-                    EndpointContext.getProcessData(), EndpointContext.getApikey()), isMock);
+-        EndpointContext.getProcessData().setRequestRiskData(requestRiskData);
+-        EndpointProcessData processData = EndpointContext.getProcessData();
+-        String protocol = processData.getProtocol();
+-        String url = processData.getForwardUrl();
+-        String channelInfo = channel.getChannelInfo();
+-        CompletionAdaptor adaptor = adaptorManager.getProtocolAdaptor(endpoint, protocol, CompletionAdaptor.class);
+-        CompletionProperty property = (CompletionProperty) JacksonUtils.deserialize(channelInfo, adaptor.getPropertyClass());
+-        if(isMock) {
+-            fillMockProperty(property);
+-        }
+-        adaptor = decorateAdaptor(adaptor, property, processData);
+-
+-        EndpointContext.setEncodingType(property.getEncodingType());
++        
++        // Parse fallback models if they exist in comma-separated format
++        request.parseModelFallbacks();
++        
+         if(request.isStream()) {
+-            SseEmitter sse = SseHelper.createSse(1000L * 60 * 5, EndpointContext.getProcessData().getRequestId());
+-            adaptor.streamCompletion(request, url, property, StreamCallbackProvider.provide(sse, processData, EndpointContext.getApikey(), logger, safetyCheckService, property));
+-            return sse;
++            return handleStreamCompletion(request, endpoint);
++        } else {
++            // For non-streaming requests, use the fallback handler
++            Object requestRiskData = prepareRequestAndSafetyCheck(request, endpoint);
++            CompletionResponse response = fallbackHandler.handleCompletion(request, endpoint, null, requestRiskData);
++            
++            // Perform safety check on the response
++            boolean isMock = EndpointContext.getProcessData().isMock();
++            Object responseRiskData = safetyCheckService.safetyCheck(SafetyCheckRequest.Chat.convertFrom(response, EndpointContext.getProcessData(), EndpointContext.getApikey()), isMock);
++            response.setSensitives(responseRiskData);
++            return response;
+         }
+-
+-        CompletionResponse response = adaptor.completion(request, url, property);
+-        Object responseRiskData = safetyCheckService.safetyCheck(SafetyCheckRequest.Chat.convertFrom(response, EndpointContext.getProcessData(), EndpointContext.getApikey()), isMock);
+-        response.setSensitives(responseRiskData);
+-        response.setRequestRiskData(requestRiskData);
+-        return response;
+     }
+ 
+     private void fillMockProperty(CompletionProperty property) {
+@@ -114,5 +102,76 @@ public class ChatController {
+         }
+         return adaptor;
+     }
++    
++    /**
++     * Handles streaming completion requests
++     */
++    private SseEmitter handleStreamCompletion(CompletionRequest request, String endpoint) {
++        // Streaming doesn't support fallbacks, so we use the original flow
++        prepareRequestAndSafetyCheck(request, endpoint);
++        
++        EndpointProcessData processData = EndpointContext.getProcessData();
++        String url = processData.getForwardUrl();
++        
++        // Get the adaptor and property
++        String protocol = processData.getProtocol();
++        CompletionAdaptor adaptor = adaptorManager.getProtocolAdaptor(endpoint, protocol, CompletionAdaptor.class);
++        
++        String channelInfo = EndpointContext.getProcessData().getChannel().getChannelInfo();
++        CompletionProperty property = (CompletionProperty) JacksonUtils.deserialize(channelInfo, adaptor.getPropertyClass());
++        
++        if(processData.isMock()) {
++            fillMockProperty(property);
++        }
++        
++        adaptor = decorateAdaptor(adaptor, property, processData);
++        EndpointContext.setEncodingType(property.getEncodingType());
++        
++        SseEmitter sse = SseHelper.createSse(1000L * 60 * 5, processData.getRequestId());
++        adaptor.streamCompletion(request, url, property, 
++            StreamCallbackProvider.provide(sse, processData, EndpointContext.getApikey(), logger, safetyCheckService, property));
++        
++        return sse;
++    }
++    
++    /**
++     * Prepares the request by setting up channel, safety checks, etc.
++     * Returns the request risk data.
++     */
++    private Object prepareRequestAndSafetyCheck(CompletionRequest request, String endpoint) {
++        boolean isMock = EndpointContext.getProcessData().isMock();
++        String model = request.getModel();
++        
++        ChannelDB channel = router.route(endpoint, model, EndpointContext.getApikey(), isMock);
++        EndpointContext.setEndpointData(channel);
++        
++        if(!EndpointContext.getProcessData().isPrivate()) {
++            limiterManager.incrementConcurrentCount(EndpointContext.getProcessData().getAkCode(), model);
++        }
++        
++        Object requestRiskData = safetyCheckService.safetyCheck(
++            SafetyCheckRequest.Chat.convertFrom(request, EndpointContext.getProcessData(), EndpointContext.getApikey()), 
++            isMock
++        );
++        
++        EndpointContext.getProcessData().setRequestRiskData(requestRiskData);
++        return requestRiskData;
++    }
++    
++    /**
++     * Execute a completion request with the given model
++     */
++    public CompletionResponse executeCompletion(CompletionRequest request, String endpoint, CompletionAdaptor<?> baseAdaptor, Object requestRiskData) {
++        EndpointProcessData processData = EndpointContext.getProcessData();
++        String protocol = processData.getProtocol();
++        String url = processData.getForwardUrl();
++        String channelInfo = processData.getChannel().getChannelInfo();
++        
++        CompletionAdaptor<?> adaptor = baseAdaptor != null ? baseAdaptor : 
++            adaptorManager.getProtocolAdaptor(endpoint, protocol, CompletionAdaptor.class);
++        CompletionProperty property = (CompletionProperty) JacksonUtils.deserialize(channelInfo, adaptor.getPropertyClass());
++        adaptor = decorateAdaptor(adaptor, property, processData);
++        
++        return adaptor.completion(request, url, property);
++    }
+ }
+```
+
+Now, let's complete the implementation of the `ModelFallbackHandler` by connecting it to the `ChatController`:
+
+```diff
+--- api/server/src/main/java/com/ke/bella/openapi/protocol/completion/ModelFallbackHandler.java
++++ api/server/src/main/java/com/ke/bella/openapi/protocol/completion/ModelFallbackHandler.java
+@@ -1,5 +1,6 @@
+ package com.ke.bella.openapi.protocol.completion;
+ 
++import com.ke.bella.openapi.endpoints.ChatController;
+ import com.ke.bella.openapi.EndpointContext;
+ import com.ke.bella.openapi.EndpointProcessData;
+ import com.ke.bella.openapi.common.exception.ChannelException;
+@@ -44,6 +45,9 @@ public class ModelFallbackHandler {
+     @Value("${bella.openapi.fallback.default-timeout-seconds:30}")
+     private int defaultTimeoutSeconds;
+ 
++    @Autowired
++    private ChatController chatController;
++
+     /**
+      * Handles the completion request with fallback models if specified
+      */
+@@ -117,7 +121,6 @@ public class ModelFallbackHandler {
+     
+     private CompletionResponse executeCompletion(CompletionRequest request, String endpoint, 
+                                               CompletionAdaptor<?> baseAdaptor, Object requestRiskData) {
+-        // This will be implemented in the ChatController update
+-        throw new UnsupportedOperationException("Not implemented yet");
++        return chatController.executeCompletion(request, endpoint, baseAdaptor, requestRiskData);
+     }
+ }
+```
+
+To avoid circular dependency between `ChatController` and `ModelFallbackHandler`, we need to make the `executeCompletion` method in `ChatController` public:
+
+```diff
+--- api/server/src/main/java/com/ke/bella/openapi/endpoints/ChatController.java
++++ api/server/src/main/java/com/ke/bella/openapi/endpoints/ChatController.java
+@@ -160,7 +160,7 @@ public class ChatController {
+     /**
+      * Execute a completion request with the given model
+      */
+-    public CompletionResponse executeCompletion(CompletionRequest request, String endpoint, CompletionAdaptor<?> baseAdaptor, Object requestRiskData) {
++    public CompletionResponse executeCompletion(CompletionRequest request, String endpoint, CompletionAdaptor<?> baseAdaptor, Object requestRiskData) {
+         EndpointProcessData processData = EndpointContext.getProcessData();
+         String protocol = processData.getProtocol();
+         String url = processData.getForwardUrl();
+```
+
+Let's also add a custom exception class for fallback-related errors:
+
+```diff
+--- /dev/null
++++ api/server/src/main/java/com/ke/bella/openapi/common/exception/FallbackException.java
+@@ -0,0 +1,23 @@
++package com.ke.bella.openapi.common.exception;
++
++import java.util.List;
++
++/**
++ * Exception thrown when all fallback models have been tried but failed
++ */
++public class FallbackException extends RuntimeException {
++    private final List<String> attemptedModels;
++    private final List<Exception> exceptions;
++
++    public FallbackException(String message, List<String> attemptedModels, List<Exception> exceptions) {
++        super(message);
++        this.attemptedModels = attemptedModels;
++        this.exceptions = exceptions;
++    }
++
++    @Override
++    public String getMessage() {
++        return super.getMessage() + ". Attempted models: " + String.join(", ", attemptedModels);
++    }
++}
++```
+
+Now let's update the `ModelFallbackHandler` to use this exception:
+
+```diff
+--- api/server/src/main/java/com/ke/bella/openapi/protocol/completion/ModelFallbackHandler.java
++++ api/server/src/main/java/com/ke/bella/openapi/protocol/completion/ModelFallbackHandler.java
+@@ -4,6 +4,7 @@ import com.ke.bella.openapi.endpoints.ChatController;
+ import com.ke.bella.openapi.EndpointContext;
+ import com.ke.bella.openapi.EndpointProcessData;
+ import com.ke.bella.openapi.common.exception.ChannelException;
++import com.ke.bella.openapi.common.exception.FallbackException;
+ import com.ke.bella.openapi.protocol.AdaptorManager;
+ import com.ke.bella.openapi.protocol.ChannelRouter;
+ import com.ke.bella.openapi.protocol.Callbacks;
+@@ -69,6 +70,7 @@ public class ModelFallbackHandler {
+         long endTime = startTime + TimeUnit.SECONDS.toMillis(timeoutSeconds);
+         
+         // Try the primary model first
++        Exception primaryException;
+         List<String> attemptedModels = new ArrayList<>();
+         attemptedModels.add(request.getModel());
+         
+@@ -77,9 +79,11 @@ public class ModelFallbackHandler {
+         } catch (Exception e) {
+             log.warn("Primary model {} failed: {}", request.getModel(), e.getMessage());
+             
++            primaryException = e;
+             // Limit the number of fallback models to try
+             int modelsToTry = Math.min(request.getFallbackModels().size(), maxFallbackModels - 1);
+             
++            List<Exception> exceptions = new ArrayList<>();
+             // Try each fallback model
+             for (int i = 0; i < modelsToTry; i++) {
+                 // Check if we've exceeded the timeout
+@@ -100,11 +104,13 @@ public class ModelFallbackHandler {
+                     return response;
+                 } catch (Exception fallbackEx) {
+                     log.warn("Fallback model {} failed: {}", fallbackModel, fallbackEx.getMessage());
++                    exceptions.add(fallbackEx);
+                 }
+             }
+             
+-            // If all fallbacks failed, throw the original exception
+-            throw e;
++            // If all fallbacks failed, throw a FallbackException
++            throw new FallbackException("All models failed, including fallbacks", 
++                attemptedModels, exceptions);
+         }
+     }
+     
+```
+
+Let's update the `ChannelRouter` to handle the case where we have a fallback model in the request:
+
+```diff
+--- api/server/src/main/java/com/ke/bella/openapi/protocol/ChannelRouter.java
++++ api/server/src/main/java/com/ke/bella/openapi/protocol/ChannelRouter.java
+@@ -46,6 +46,11 @@ public class ChannelRouter {
+         if(StringUtils.isBlank(endpoint) && StringUtils.isBlank(model)) {
+             throw new BizParamCheckException("没有可用渠道");
+         }
++        
++        // If model contains commas, extract the first model
++        if (model != null && model.contains(",")) {
++            model = model.split(",")[0].trim();
++        }
++        
+         List<ChannelDB> channels;
+         String entityCode;
+         if(model != null) {
+```
+
+Finally, let's add some tests to ensure our implementation works correctly:
+
+```diff
+--- /dev/null
++++ api/server/src/test/java/com/ke/bella/openapi/protocol/completion/ModelFallbackHandlerTest.java
+@@ -0,0 +1,104 @@
++package com.ke.bella.openapi.protocol.completion;
++
++import com.ke.bella.openapi.common.exception.ChannelException;
++import com.ke.bella.openapi.common.exception.FallbackException;
++import com.ke.bella.openapi.endpoints.ChatController;
++import org.junit.jupiter.api.BeforeEach;
++import org.junit.jupiter.api.Test;
++import org.mockito.InjectMocks;
++import org.mockito.Mock;
++import org.mockito.MockitoAnnotations;
++import org.springframework.mock.web.MockHttpServletRequest;
++import org.springframework.web.context.request.RequestContextHolder;
++import org.springframework.web.context.request.ServletRequestAttributes;
++
++import java.util.Arrays;
++
++import static org.junit.jupiter.api.Assertions.*;
++import static org.mockito.ArgumentMatchers.any;
++import static org.mockito.ArgumentMatchers.anyString;
++import static org.mockito.Mockito.*;
++
++class ModelFallbackHandlerTest {
++
++    @Mock
++    private ChatController chatController;
++
++    @InjectMocks
++    private ModelFallbackHandler fallbackHandler;
++
++    private MockHttpServletRequest request;
++
++    @BeforeEach
++    void setUp() {
++        MockitoAnnotations.openMocks(this);
++        
++        // Set up mock request
++        request = new MockHttpServletRequest();
++        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
++        
++        // Set default values for private fields using reflection
++        setPrivateField(fallbackHandler, "maxFallbackModels", 3);
++        setPrivateField(fallbackHandler, "defaultTimeoutSeconds", 30);
++    }
++
++    @Test
++    void testNoFallbackModels() {
++        // Create a request with no fallback models
++        CompletionRequest completionRequest = new CompletionRequest();
++        completionRequest.setModel("gpt-4");
++        
++        // Mock successful completion
++        CompletionResponse expectedResponse = new CompletionResponse();
++        when(chatController.executeCompletion(any(), anyString(), any(), any())).thenReturn(expectedResponse);
++        
++        // Execute
++        CompletionResponse response = fallbackHandler.handleCompletion(completionRequest, "/v1/chat/completions", null, null);
++        
++        // Verify
++        assertEquals(expectedResponse, response);
++        verify(chatController, times(1)).executeCompletion(any(), anyString(), any(), any());
++    }
++
++    @Test
++    void testFallbackToSecondModel() {
++        // Create a request with fallback models
++        CompletionRequest completionRequest = new CompletionRequest();
++        completionRequest.setModel("model-1");
++        completionRequest.setFallbackModels(Arrays.asList("model-2", "model-3"));
++        
++        // Mock failure for first model, success for second
++        when(chatController.executeCompletion(argThat(req -> "model-1".equals(req.getModel())), anyString(), any(), any()))
++            .thenThrow(new ChannelException.RateLimitException("Rate limited"));
++            
++        CompletionResponse expectedResponse = new CompletionResponse();
++        when(chatController.executeCompletion(argThat(req -> "model-2".equals(req.getModel())), anyString(), any(), any()))
++            .thenReturn(expectedResponse);
++        
++        // Execute
++        CompletionResponse response = fallbackHandler.handleCompletion(completionRequest, "/v1/chat/completions", null, null);
++        
++        // Verify
++        assertEquals(expectedResponse, response);
++        verify(chatController, times(2)).executeCompletion(any(), anyString(), any(), any());
++    }
++
++    @Test
++    void testAllModelsFail() {
++        // Create a request with fallback models
++        CompletionRequest completionRequest = new CompletionRequest();
++        completionRequest.setModel("model-1");
++        completionRequest.setFallbackModels(Arrays.asList("model-2", "model-3"));
++        
++        // Mock failure for all models
++        when(chatController.executeCompletion(any(), anyString(), any(), any()))
++            .thenThrow
+
+
+
+# 用户需求
+
+流式请求，也要支持备用模型，流式输出过程中的失败暂不考虑。
