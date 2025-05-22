@@ -1,4 +1,4 @@
-README.md:这个文件是Bella OpenAPI项目的中文README文档，主要介绍了项目的核心功能、系统优势、快速启动步骤、常见问题及解决方案。文件详细描述了AI能力点、元数据管理、统一登录服务以及计费与限流等功能。与其他文件的交互主要通过提供的文档链接来实现，例如配置详情和启动部署详情。
+README.md:这个文件是Bella OpenAPI项目的README，介绍了项目的核心功能、系统优势和快速启动指南。文件详细描述了项目提供的AI能力、元数据管理、计费与限流等功能，并提供了相关文档链接，可帮助用户快速上手和部署服务。
 README_EN.md:这个文件是Bella OpenAPI项目的英文README文档，与中文版本内容基本相同，提供了项目的核心功能、系统优势、快速启动步骤、常见问题及解决方案的说明。它也详细描述了AI能力点、元数据管理等，并通过文档链接与其他文件进行交互。
 api/.editorconfig:项目的代码格式配置文件，规范化各类文件的缩进和编码格式。
 api/Dockerfile:这个文件是用于构建bella-openapi项目的Dockerfile，设置了运行环境和所需目录以及端口暴露。
@@ -378,6 +378,8 @@ api/spi/src/main/resources/META-INF/spring.factories:这个文件配置了Spring
 authorize-admin.sh:用于管理员授权的脚本，通过API请求系统，使用用户ID或邮箱授予管理员权限。
 config-details.md:详细介绍了Bella OpenAPI配置，包括环境变量、数据库、缓存和OAuth配置的说明文档。
 contributor-guid.md:该文件为 Bella OpenAPI 项目的贡献者指南，提供了项目概述、开发流程、代码贡献、代码风格等详细说明。主要功能是帮助新贡献者快速了解项目并参与开发。文件详细介绍了如何提交 Issues 和 Pull Requests，与 GitHub 仓库的交互尤为重要。
+contributor-guide.md:这是Bella OpenAPI项目的贡献者指南，详细说明了项目概述、开发流程、代码贡献、代码风格和测试方法。文件指导用户如何参与代码贡献并遵循项目的开发标准。
+contributor-guide_EN.md:Bella OpenAPI项目的英文贡献者指南，与中文版本内容一致，帮助英语使用者了解项目概述、开发流程、如何提交问题和贡献代码。文件也包含常见问题解答和社区支持信息。
 doc/chat-completions.md:该文档提供了智能问答接口的使用说明，详细描述了请求和响应格式、支持的消息类型以及错误码等。此外，它还介绍了如何调用工具来扩展模型的功能。主要与OpenAI的Chat Completions API交互。
 doc/embeddings.md:文本向量接口文档，描述了创建文本嵌入的方法和API调用，支持语义搜索、文本分类等应用。详细介绍了请求和响应格式，及典型应用场景。
 doc/flash-asr.md:语音识别接口的文档，描述了接口的功能、请求和响应格式，包括示例和错误码说明，适用于开发者集成该语音识别服务。
