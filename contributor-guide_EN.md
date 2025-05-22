@@ -90,7 +90,7 @@ We use GitHub Issues to track problems and feature requests. When submitting an 
 - For problem-related Issues: the bot will automatically answer
 - For feature requests: the bot will analyze requirements and may automatically implement code, then push to corresponding branches
 
-You can learn more about this automation tool in the [bella-issues-bot repository](https://github.com/szl97/bella-issues-bot).
+You can learn more about this automation tool in the [bella-issues-bot repository](https://github.com/bella-top/bella-issues-bot).
 
 ## Code Contributions
 

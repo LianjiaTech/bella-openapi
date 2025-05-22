@@ -90,7 +90,7 @@ Bella OpenAPI 是一个开源的 API 管理平台，专注于 API 设计、开�
 - 对于问题类 Issues：bot 会自动解答
 - 对于需求类 Issues：bot 会分析需求并可能自动实现代码，然后推送到对应的分支
 
-您可以在 [bella-issues-bot 仓库](https://github.com/szl97/bella-issues-bot) 了解更多关于这个自动化工具的信息。
+您可以在 [bella-issues-bot 仓库](https://github.com/bella-top/bella-issues-bot) 了解更多关于这个自动化工具的信息。
 
 ## 代码贡献
 
