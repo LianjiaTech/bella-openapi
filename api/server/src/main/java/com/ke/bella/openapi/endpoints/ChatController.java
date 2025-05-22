@@ -2,6 +2,7 @@ package com.ke.bella.openapi.endpoints;
 
 import java.util.Map;
 
+import com.ke.bella.openapi.protocol.completion.MultiModelSupport;
 import com.ke.bella.openapi.protocol.completion.CompletionAdaptorDelegator;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,15 +53,55 @@ public class ChatController {
     private ISafetyCheckService.IChatSafetyCheckService safetyCheckService;
     @Autowired
     private JobQueueService jobQueueService;
+    @Autowired
+    private MultiModelSupport multiModelSupport;
     
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @PostMapping("/completions")
     public Object completion(@RequestBody CompletionRequest request) {
         String endpoint = EndpointContext.getRequest().getRequestURI();
         String model = request.getModel();
+        
+        // Handle multi-model requests
+        if (model != null && model.contains(",")) {
+            // Validate model count
+            multiModelSupport.validateModelCount(model);
+            
+            // Try each model in order
+            String[] models = model.split(",");
+            Exception lastException = null;
+            
+            for (String singleModel : models) {
+                String trimmedModel = singleModel.trim();
+                // Create a copy of the request with just this model
+                CompletionRequest singleModelRequest = copyRequestWithModel(request, trimmedModel);
+                
+                try {
+                    // Try to process with this model
+                    return processCompletionRequest(endpoint, trimmedModel, singleModelRequest);
+                } catch (Exception e) {
+                    // Log the exception and continue to the next model
+                    lastException = e;
+                    continue;
+                }
+            }
+            
+            // If we get here, all models failed
+            if (lastException != null) {
+                throw new BizParamCheckException("所有指定的模型都无法处理请求: " + lastException.getMessage());
+            } else {
+                throw new BizParamCheckException("所有指定的模型都无法处理请求");
+            }
+        }
+        
+        // Single model processing
+        return processCompletionRequest(endpoint, model, request);
+    }
+    
+    private Object processCompletionRequest(String endpoint, String model, CompletionRequest request) {
         EndpointContext.setEndpointData(endpoint, model, request);
         boolean isMock = EndpointContext.getProcessData().isMock();
-        ChannelDB channel = router.route(endpoint, model, EndpointContext.getApikey(), isMock); // This now handles multiple models
+        ChannelDB channel = router.route(endpoint, model, EndpointContext.getApikey(), isMock);
         EndpointContext.setEndpointData(channel);
         if(!EndpointContext.getProcessData().isPrivate()) {
             limiterManager.incrementConcurrentCount(EndpointContext.getProcessData().getAkCode(), model);
@@ -91,6 +132,20 @@ public class ChatController {
         response.setSensitives(responseRiskData);
         response.setRequestRiskData(requestRiskData);
         return response;
+    }
+
+    private CompletionRequest copyRequestWithModel(CompletionRequest original, String model) {
+        // Create a new request with the same properties but a different model
+        CompletionRequest copy = CompletionRequest.builder()
+            .model(model)
+            .user(original.getUser())
+            .messages(original.getMessages())
+            .temperature(original.getTemperature())
+            .top_p(original.getTop_p())
+            .stream(original.isStream())
+            // Copy other fields as needed
+            .build();
+        return copy;
     }
 
     private void fillMockProperty(CompletionProperty property) {

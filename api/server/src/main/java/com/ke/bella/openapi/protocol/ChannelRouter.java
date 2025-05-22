@@ -42,57 +42,15 @@ public class ChannelRouter {
     private Integer freeRpm;
     @Value("${bella.openapi.free.concurrent:1}")
     private Integer freeConcurrent;
-    @Value("${bella.openapi.max-models-per-request:3}")
-    private Integer maxModelsPerRequest;
 
     public ChannelDB route(String endpoint, String model, ApikeyInfo apikeyInfo, boolean isMock) {
         if(StringUtils.isBlank(endpoint) && StringUtils.isBlank(model)) {
             throw new BizParamCheckException("没有可用渠道");
         }
-        
-        if (model != null && model.contains(",")) {
-            // Process multiple models
-            return routeMultipleModels(endpoint, model, apikeyInfo, isMock);
-        } else {
-            // Single model routing
-            return routeSingleModel(endpoint, model, apikeyInfo, isMock);
-        }
-    }
-    
-    /**
-     * Routes request with multiple models
-     */
-    private ChannelDB routeMultipleModels(String endpoint, String modelString, ApikeyInfo apikeyInfo, boolean isMock) {
-        String[] models = modelString.split(",");
-        
-        // Check if number of models exceeds the maximum allowed
-        if (models.length > maxModelsPerRequest) {
-            throw new BizParamCheckException("请求模型数量超过最大限制: " + maxModelsPerRequest);
-        }
-        
-        // For multiple models, we'll select the first available model's channel
-        for (String model : models) {
-            try {
-                ChannelDB channel = routeSingleModel(endpoint, model.trim(), apikeyInfo, isMock);
-                if (channel != null) {
-                    return channel;
-                }
-            } catch (Exception e) {
-                // Continue to next model if this one fails
-                continue;
-            }
-        }
-        
-        throw new BizParamCheckException("没有可用渠道，所有指定的模型都无法访问");
-    }
-    
-    /**
-     * Routes request with a single model
-     */
-    private ChannelDB routeSingleModel(String endpoint, String model, ApikeyInfo apikeyInfo, boolean isMock) {
+
         List<ChannelDB> channels;
         String entityCode;
-        if (model != null) {
+        if(model != null) {
             String terminal = modelService.fetchTerminalModelName(model);
             entityCode = terminal;
             channels = channelService.listActives(EntityConstants.MODEL, terminal);
@@ -100,7 +58,7 @@ public class ChannelRouter {
             entityCode = endpoint;
             channels = channelService.listActives(EntityConstants.ENDPOINT, endpoint);
         }
-        if (CollectionUtils.isEmpty(channels)) {
+        if(CollectionUtils.isEmpty(channels)) {
             if(isMock) {
                 return mockChannel(null);
             } else {
