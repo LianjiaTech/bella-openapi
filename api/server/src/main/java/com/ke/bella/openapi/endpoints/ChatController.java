@@ -1,23 +1,15 @@
 package com.ke.bella.openapi.endpoints;
 
-import java.util.Map;
-
-import com.ke.bella.openapi.protocol.completion.CompletionAdaptorDelegator;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-
 import com.ke.bella.openapi.BellaContext;
 import com.ke.bella.openapi.EndpointContext;
 import com.ke.bella.openapi.EndpointProcessData;
 import com.ke.bella.openapi.annotations.EndpointAPI;
+import com.ke.bella.openapi.common.exception.BizParamCheckException;
+import com.ke.bella.openapi.common.exception.ChannelException;
 import com.ke.bella.openapi.protocol.AdaptorManager;
 import com.ke.bella.openapi.protocol.ChannelRouter;
 import com.ke.bella.openapi.protocol.completion.CompletionAdaptor;
+import com.ke.bella.openapi.protocol.completion.CompletionAdaptorDelegator;
 import com.ke.bella.openapi.protocol.completion.CompletionProperty;
 import com.ke.bella.openapi.protocol.completion.CompletionRequest;
 import com.ke.bella.openapi.protocol.completion.CompletionResponse;
@@ -32,13 +24,25 @@ import com.ke.bella.openapi.service.JobQueueService;
 import com.ke.bella.openapi.tables.pojos.ChannelDB;
 import com.ke.bella.openapi.utils.JacksonUtils;
 import com.ke.bella.openapi.utils.SseHelper;
-
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.util.Map;
+import java.util.logging.Logger;
 
 @EndpointAPI
 @RestController
 @RequestMapping("/v1/chat")
 @Tag(name = "chat")
+@Slf4j
 public class ChatController {
     @Autowired
     private ChannelRouter router;
@@ -52,11 +56,56 @@ public class ChatController {
     private ISafetyCheckService.IChatSafetyCheckService safetyCheckService;
     @Autowired
     private JobQueueService jobQueueService;
+    @Value("${bella.openapi.max-models-per-request:3}")
+    private Integer maxModelsPerRequest;
+    
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @PostMapping("/completions")
     public Object completion(@RequestBody CompletionRequest request) {
         String endpoint = EndpointContext.getRequest().getRequestURI();
         String model = request.getModel();
+        
+        // Handle multi-model requests
+        if (model != null && model.contains(",")) {
+            
+            // Try each model in order
+            String[] models = model.split(",");
+            int maxNum = models.length;
+            // Validate model count
+            if (models.length > maxModelsPerRequest) {
+                LOGGER.warn("请求模型数量超过最大限制: " + maxModelsPerRequest);
+                maxNum = maxModelsPerRequest;
+            }
+            Exception lastException = null;
+            
+            for (int i = 0; i < maxNum; i++) {
+                String singleModel = models[i];
+                String trimmedModel = singleModel.trim();
+                // Create a copy of the request with just this model
+                request.setModel(trimmedModel);
+                
+                try {
+                    // Try to process with this model
+                    return processCompletionRequest(endpoint, trimmedModel, request);
+                } catch (Exception e) {
+                    // Log the exception and continue to the next model
+                    lastException = e;
+                }
+            }
+            
+            // If we get here, all models failed
+            if (lastException != null) {
+                throw ChannelException.fromException(lastException);
+            } else {
+                throw new BizParamCheckException("所有指定的模型都无法处理请求");
+            }
+        }
+        
+        // Single model processing
+        return processCompletionRequest(endpoint, model, request);
+    }
+    
+    private Object processCompletionRequest(String endpoint, String model, CompletionRequest request) {
         EndpointContext.setEndpointData(endpoint, model, request);
         boolean isMock = EndpointContext.getProcessData().isMock();
         ChannelDB channel = router.route(endpoint, model, EndpointContext.getApikey(), isMock);
