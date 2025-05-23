@@ -67,7 +67,7 @@ api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionModelFe
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionModelProperties.java:定义了CompletionModelProperties类，实现IModelProperties接口，用于描述完成模型的输入和输出上下文属性。
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionPriceInfo.java:实现CompletionPriceInfo类，提供完成操作的价格信息。
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionProperty.java:定义Completion配置属性类，实现协议属性接口，包含编码类型、队列名等配置。
-api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionRequest.java:这个文件定义了CompletionRequest类，主要用于构建开放API的请求。它实现了UserRequest接口，并包含多个字段如model、user、messages等，用于配置API请求的参数和行为。
+api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionRequest.java:这个文件定义了CompletionRequest类，表示完成请求的数据结构，包含模型ID、用户标识、消息列表等字段。
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionResponse.java:该文件定义了CompletionResponse类，包含OpenAPI响应的细节信息与Choice内部类。
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionSseListener.java:实现了CompletionSseListener类，用于处理SSE事件流中的完成消息，通过Callback接口进行回调。
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/Message.java:定义了Message类，用于描述协议消息的结构体，包含角色、内容、功能调用等信息。
@@ -221,7 +221,7 @@ api/server/src/main/java/com/ke/bella/openapi/db/repo/UniqueKeyRepo.java:定义G
 api/server/src/main/java/com/ke/bella/openapi/db/repo/UserRepo.java:实现用户数据的CRUD操作，包括用户信息验证和权限管理，涉及到Operator和Apikey信息的处理与存储。
 api/server/src/main/java/com/ke/bella/openapi/endpoints/ApikeyController.java:API密钥控制器，提供创建、查询和权限检查的API接口，通过ApikeyService与服务交互。
 api/server/src/main/java/com/ke/bella/openapi/endpoints/AudioController.java:AudioController.java实现了与音频处理相关的REST接口，包括实时语音识别、文本转语音和音频转录功能。主要使用的类和接口有ChannelRouter、AdaptorManager、LimiterManager等，通过这些接口来管理音频流和协议适配器，并处理与其他服务的交互。
-api/server/src/main/java/com/ke/bella/openapi/endpoints/ChatController.java:ChatController类定义了用于处理聊天完成请求的REST接口，包含请求路由、安全检查、协议适配及响应逻辑。通过Spring框架实现REST控制器功能。
+api/server/src/main/java/com/ke/bella/openapi/endpoints/ChatController.java:这个文件实现了聊天控制器，处理聊天相关的API请求。主要包含completion方法，用于处理请求，并与ChannelRouter、AdaptorManager等交互。
 api/server/src/main/java/com/ke/bella/openapi/endpoints/EmbeddingController.java:这个文件实现了EmbeddingController控制器，负责处理/v1/embeddings端点请求。它与路由、适配器和限流管理器交互。
 api/server/src/main/java/com/ke/bella/openapi/endpoints/LogController.java:提供日志记录的API接口，使用Spring框架，通过Post请求记录日志信息。依赖于EndpointLogger和ApikeyService，与ApikeyService进行apikey验证。
 api/server/src/main/java/com/ke/bella/openapi/endpoints/MetadataController.java:这个文件定义了REST API控制器MetadataController，负责处理元数据相关的HTTP请求，包括能力点、模型、渠道和类目等的CRUD操作。主要类/方法：listEndpointDetails、listModel、createPrivateChannel等。与服务层交互以实现具体功能。
@@ -240,7 +240,7 @@ api/server/src/main/java/com/ke/bella/openapi/intercept/OpenapiRequestFilter.jav
 api/server/src/main/java/com/ke/bella/openapi/intercept/RequestUserAdvice.java:实现请求用户权限的建议拦截器，根据请求头设置用户数据，通过EndpointContext进行上下文管理。
 api/server/src/main/java/com/ke/bella/openapi/intercept/TestEnvironmentInterceptor.java:定义了TestEnvironmentInterceptor类，一个Spring拦截器，用于在测试环境下进行API请求的前置处理，确保正确的权限验证和配置启用。
 api/server/src/main/java/com/ke/bella/openapi/protocol/AdaptorManager.java:定义了AdaptorManager类，用于管理不同协议适配器的注册和获取操作。通过endpoint和protocol识别适配器，并提供相应的服务支持。
-api/server/src/main/java/com/ke/bella/openapi/protocol/ChannelRouter.java:负责渠道路由选择的逻辑，包括筛选和选择可用的渠道，主要类是ChannelRouter，与ChannelService和ModelService交互。
+api/server/src/main/java/com/ke/bella/openapi/protocol/ChannelRouter.java:这个文件实现了ChannelRouter类，用于根据请求路由到适当的通道，涉及安全性检查和限流管理。
 api/server/src/main/java/com/ke/bella/openapi/protocol/IProtocolAdaptor.java:定义协议适配器接口IProtocolAdaptor，主要提供终端信息和授权请求生成方法，支持不同类型的授权请求构建。
 api/server/src/main/java/com/ke/bella/openapi/protocol/asr/AudioTranscriptionRequest.java:这个文件定义了AudioTranscriptionRequest类，包括请求音频转录所需的各种参数和设置。
 api/server/src/main/java/com/ke/bella/openapi/protocol/asr/AudioTranscriptionResponse.java:这个文件定义了语音转录的响应类AudioTranscriptionResponse及其内部类，处理转录任务的结果数据。
@@ -333,7 +333,7 @@ api/server/src/main/java/com/ke/bella/openapi/utils/PunctuationUtils.java:提供
 api/server/src/main/java/com/ke/bella/openapi/utils/SseHelper.java:提供SSE连接管理的帮助类SseHelper，包含连接创建、事件发送及异常处理的方法，增强SSE通信的稳定性和可管理性。
 api/server/src/main/java/com/ke/bella/openapi/utils/TokenCounter.java:提供字符串和图像token计数的工具类，通过不同编码模型计算文本token数量及图像分辨率调整后的token数。与图像处理和文本编码相关工具交互。
 api/server/src/main/resources/application-docker.yml:Docker环境的Spring Boot配置文件，定义了MySQL和Redis的连接配置、OAuth认证设置、日志级别等信息。
-api/server/src/main/resources/application.yml:该文件是Spring Boot应用程序的配置文件，设置了服务器、数据源、缓存、Swagger等配置，负责应用程序的初始参数。
+api/server/src/main/resources/application.yml:这个文件是Spring Boot项目的配置文件，配置了服务器、数据库、Redis和Jetcache等信息。
 api/server/src/main/resources/bootstrap.yml:服务启动配置文件，配置服务端口、Dubbo端口等，帮助服务在启动时加载初始配置。
 api/server/src/main/resources/logback-spring.xml:配置Logback日志框架，包括日志文件的大小、历史、路径设置及不同环境下的日志策略。
 api/server/src/main/resources/lua/limiter/concurrent.lua:Lua脚本实现了Redis中并发请求的统计和管理，防止请求死锁，通过设置关键键的自动过期时间来维护请求计数。
