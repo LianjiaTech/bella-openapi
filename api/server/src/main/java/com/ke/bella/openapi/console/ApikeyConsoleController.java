@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
@@ -110,7 +111,7 @@ public class ApikeyConsoleController {
     @GetMapping("/balance/{akCode}")
     public Map<String, Object> getApiKeyBalance(@PathVariable String akCode) {
         String currentMonth = DateTimeUtils.getCurrentMonth();
-        BigDecimal monthCost = apikeyService.loadCost(akCode, currentMonth);
+        BigDecimal monthCost = apikeyService.loadCost(akCode, currentMonth).divide(BigDecimal.valueOf(100), RoundingMode.UP);
         ApikeyInfo apiKeyInfo = apikeyService.queryByCode(akCode, true);
         Map<String, Object> result = new HashMap<>();
         result.put("akCode", akCode);
