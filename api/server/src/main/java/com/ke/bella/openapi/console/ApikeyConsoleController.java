@@ -21,6 +21,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
+import java.math.BigDecimal;
+import com.ke.bella.openapi.utils.DateTimeUtils;
 
 @BellaAPI
 @RestController
@@ -101,6 +105,20 @@ public class ApikeyConsoleController {
     @GetMapping("/cost/{akCode}")
     public List<ApikeyMonthCostDB> listApiKeyBillings(@PathVariable String akCode) {
         return apikeyService.queryBillingsByAkCode(akCode);
+    }
+
+    @GetMapping("/balance/{akCode}")
+    public Map<String, Object> getApiKeyBalance(@PathVariable String akCode) {
+        String currentMonth = DateTimeUtils.getCurrentMonth();
+        BigDecimal monthCost = apikeyService.loadCost(akCode, currentMonth);
+        ApikeyInfo apiKeyInfo = apikeyService.queryByCode(akCode, true);
+        Map<String, Object> result = new HashMap<>();
+        result.put("akCode", akCode);
+        result.put("month", currentMonth);
+        result.put("cost", monthCost);
+        result.put("quota", apiKeyInfo != null ? apiKeyInfo.getMonthQuota() : BigDecimal.ZERO);
+        result.put("balance", apiKeyInfo != null ? apiKeyInfo.getMonthQuota().subtract(monthCost) : BigDecimal.ZERO);
+        return result;
     }
 
     @GetMapping("/fetchByCode")

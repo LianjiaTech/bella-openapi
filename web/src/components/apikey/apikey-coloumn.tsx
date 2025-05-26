@@ -8,9 +8,10 @@ import {CertifyDialog, DeleteDialog, QuotaDialog, RenameDialog, ResetDialog} fro
 import {HoverContext} from "@/components/ui/data-table";
 import {Badge} from "@/components/ui/badge"
 import {Button} from "@/components/ui/button"
-import {Copy} from 'lucide-react'
+import {Copy, Wallet} from 'lucide-react'
 import {useToast} from "@/hooks/use-toast";
 import {safety_apply_url} from "@/config";
+import {ApiKeyBalanceDialog, ApiKeyBalanceIndicator} from "./apikey-balance";
 
 interface EditableCellProps {
     content: ReactNode;
@@ -63,14 +64,17 @@ const RemarkCell = ({ value }: { value: string }) => {
     )
 }
 
-const ActionCell = ({code, refresh, showApikey}: { code: string, refresh: () => void, showApikey: (apikey : string) => void }) => {
+const ActionCell = ({code, refresh, showApikey}: { code: string, refresh: () => void, showApikey: (apikey: string) => void }) => {
     const { toast } = useToast();
+    const [showBalance, setShowBalance] = useState(false);
+    
     const copyToClipboard = () => {
         navigator.clipboard.writeText(code).then(() => {
             toast({ title: "复制成功", description: "API Key编码复制成功。" })
         });
     };
 
+    
     return (
         <div className="flex flex-wrap justify-end gap-2">
             <Button onClick={copyToClipboard} variant="ghost" size="icon" className="p-0 focus:ring-0">
@@ -90,6 +94,25 @@ const ActionCell = ({code, refresh, showApikey}: { code: string, refresh: () => 
             </Button>
             <DeleteDialog code={code} refresh={refresh}/>
             <ResetDialog code={code} showApikey={showApikey}/>
+            <Button 
+                onClick={() => setShowBalance(true)} 
+                variant="ghost" 
+                size="icon" 
+                className="p-0 focus:ring-0"
+            >
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <div>
+                                <Wallet className="h-4 w-4" />
+                                <span className="sr-only">查看余额</span>
+                            </div>
+                        </TooltipTrigger>
+                        <TooltipContent>查看余额</TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+            </Button>
+            <ApiKeyBalanceDialog code={code} isOpen={showBalance} onClose={() => setShowBalance(false)} />
         </div>
     )
 }
@@ -205,6 +228,12 @@ export const ApikeyColumns = (refresh: () => void, showApikey: (apikey : string)
                 />
             );
         }
+    },
+    {
+        accessorKey: "code",
+        header: "余额状态",
+        cell: ({row}) => 
+                <ApiKeyBalanceIndicator code={row.original.code} />
     },
     {
         accessorKey: "remark",

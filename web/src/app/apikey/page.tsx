@@ -1,17 +1,16 @@
 'use client'
 
-import React, { useEffect, useState } from "react"
-import { DataTable } from "@/components/ui/data-table"
-import { getApikeyInfos, applyApikey } from "@/lib/api/apikey"
-import { ApikeyColumns } from "@/components/apikey/apikey-coloumn"
-import { ApikeyInfo } from "@/lib/types/openapi"
-import { ClientHeader } from "@/components/user/client-header"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Search, Plus, ChevronLeft, ChevronRight, Copy, Check } from "lucide-react"
-import { useUser } from "@/lib/context/user-context"
-import { useToast } from "@/hooks/use-toast"
-import {ToastAction} from "@/components/ui/toast"
+import React, {useEffect, useState} from "react"
+import {DataTable} from "@/components/ui/data-table"
+import {applyApikey, getApikeyInfos} from "@/lib/api/apikey"
+import {ApikeyColumns} from "@/components/apikey/apikey-coloumn"
+import {ApikeyInfo} from "@/lib/types/openapi"
+import {ClientHeader} from "@/components/user/client-header"
+import {Button} from "@/components/ui/button"
+import {Input} from "@/components/ui/input"
+import {Check, ChevronLeft, ChevronRight, Copy, Plus, Search} from "lucide-react"
+import {useUser} from "@/lib/context/user-context"
+import {useToast} from "@/hooks/use-toast"
 import {
     Dialog,
     DialogContent,
@@ -30,8 +29,8 @@ const ApikeyPage: React.FC = () => {
     const [newApiKey, setNewApiKey] = useState<string | null>(null)
     const [showDialog, setShowDialog] = useState<boolean>(false)
     const [copied, setCopied] = useState<boolean>(false)
-    const { userInfo } = useUser()
-    const { toast } = useToast()
+    const {userInfo} = useUser()
+    const {toast} = useToast()
 
     const refresh = async () => {
         setIsLoading(true)
@@ -53,7 +52,7 @@ const ApikeyPage: React.FC = () => {
         }
     }
 
-    const showApikey = async (apikey : string)  => {
+    const showApikey = async (apikey: string) => {
         await refresh()
         setNewApiKey(apikey)
         setShowDialog(true)
@@ -141,7 +140,8 @@ const ApikeyPage: React.FC = () => {
                 <div className="p-6">
                     <div className="mb-4 flex justify-between items-center">
                         <form onSubmit={handleSearchSubmit} className="relative">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                            <Search
+                                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4"/>
                             <Input
                                 type="text"
                                 placeholder="搜索 API Key 名称"
@@ -151,14 +151,15 @@ const ApikeyPage: React.FC = () => {
                             />
                         </form>
                         <Button onClick={handleCreateApiKey} className="bg-gray-700 hover:bg-gray-900 text-white">
-                            <Plus className="h-4 w-4 mr-2" />
+                            <Plus className="h-4 w-4 mr-2"/>
                             创建 API Key
                         </Button>
                     </div>
 
                     {isLoading ? (
                         <div className="flex justify-center items-center h-64">
-                            <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
+                            <div
+                                className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
                         </div>
                     ) : data ? (
                         <DataTable columns={columns} data={data}/>
@@ -202,7 +203,8 @@ const ApikeyPage: React.FC = () => {
                         <DialogTitle className="text-center text-xl font-semibold">API Key 创建成功</DialogTitle>
                         <DialogDescription className="text-center pt-2">
                             <div className="space-y-4 mt-2">
-                                <div className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-md border border-blue-100 dark:border-blue-800">
+                                <div
+                                    className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-md border border-blue-100 dark:border-blue-800">
                                     <p className="text-sm font-medium text-blue-800 dark:text-blue-300">
                                         请保存您的API Key，它只会显示一次。关闭此窗口后将无法再次查看完整的API Key。
                                     </p>
@@ -211,22 +213,30 @@ const ApikeyPage: React.FC = () => {
                         </DialogDescription>
                     </DialogHeader>
                     <div className="flex flex-col items-center mt-6">
-                        <div className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4 shadow-sm">
-                            <div className="bg-white dark:bg-gray-800 p-4 rounded-md font-mono text-sm break-all border border-gray-100 dark:border-gray-700 shadow-inner">
+                        <div
+                            className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4 shadow-sm">
+                            <div
+                                className="bg-white dark:bg-gray-800 p-4 rounded-md font-mono text-sm break-all border border-gray-100 dark:border-gray-700 shadow-inner">
                                 {newApiKey}
                             </div>
                         </div>
                         <div className="flex items-center mt-4 text-amber-600 dark:text-amber-500">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9z" clipRule="evenodd" />
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20"
+                                 fill="currentColor">
+                                <path fillRule="evenodd"
+                                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9z"
+                                      clipRule="evenodd"/>
                             </svg>
                             <p className="text-sm">
                                 请妥善保管您的API Key，不要与他人分享。
                             </p>
                         </div>
-                        <div className="bg-amber-50 dark:bg-amber-900/30 p-3 rounded-md border border-amber-100 dark:border-amber-800">
+                        <div
+                            className="bg-amber-50 dark:bg-amber-900/30 p-3 rounded-md border border-amber-100 dark:border-amber-800">
                             <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
-                                此API Key 仅用于openapi的接口请求鉴权。后续申请额度等操作，需要填写的并非此apikey，而是<span className="font-bold underline">ak code</span>（即apikey的id，不是用于身份验证的密钥），获取方式为：点击每一行操作栏中的复制按钮。
+                                此API Key
+                                仅用于openapi的接口请求鉴权。后续申请额度等操作，需要填写的并非此apikey，而是<span
+                                className="font-bold underline">ak code</span>（即apikey的id，不是用于身份验证的密钥），获取方式为：点击每一行操作栏中的复制按钮。
                             </p>
                         </div>
                     </div>
@@ -237,12 +247,14 @@ const ApikeyPage: React.FC = () => {
                             onClick={handleCopyApiKey}
                             className="w-full relative overflow-hidden group"
                         >
-                            <span className={`absolute inset-0 flex items-center justify-center transition-opacity duration-300 ${copied ? 'opacity-100' : 'opacity-0'}`}>
-                                <Check className="h-4 w-4 mr-2" />
+                            <span
+                                className={`absolute inset-0 flex items-center justify-center transition-opacity duration-300 ${copied ? 'opacity-100' : 'opacity-0'}`}>
+                                <Check className="h-4 w-4 mr-2"/>
                                 已复制
                             </span>
-                            <span className={`flex items-center justify-center transition-opacity duration-300 ${copied ? 'opacity-0' : 'opacity-100'}`}>
-                                <Copy className="h-4 w-4 mr-2" />
+                            <span
+                                className={`flex items-center justify-center transition-opacity duration-300 ${copied ? 'opacity-0' : 'opacity-100'}`}>
+                                <Copy className="h-4 w-4 mr-2"/>
                                 复制API Key
                             </span>
                         </Button>
