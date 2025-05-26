@@ -66,6 +66,8 @@ bella:
     cookie-max-age: -1
     cookie-domain: localhost
     cookie-context-path: /
+  openapi:
+    max-models-per-request: 3
 
 app:
   id: bella-openapi

@@ -1,5 +1,6 @@
 import { ApikeyInfo, Page} from "@/lib/types/openapi";
 import { openapi } from '@/lib/api/openapi';
+import { ApiKeyBalance } from "@/lib/types/openapi";
 
 export async function getApikeyInfos(page: number, ownerCode: number | null, search: string | null): Promise<Page<ApikeyInfo> | null> {
     try {
@@ -42,4 +43,14 @@ export async function updateQuota(code: string, monthQuota: number): Promise<boo
 export async function rename(code: string, name: string): Promise<boolean> {
     const response = await openapi.post<boolean>('/console/apikey/rename', { code, name });
     return response.data ?? false;
+}
+
+export async function getApiKeyBalance(code: string): Promise<ApiKeyBalance | null> {
+    try {
+        const response = await openapi.get<ApiKeyBalance>(`/console/apikey/balance/${code}`);
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching apikey balance:', error);
+        return null;
+    }
 }

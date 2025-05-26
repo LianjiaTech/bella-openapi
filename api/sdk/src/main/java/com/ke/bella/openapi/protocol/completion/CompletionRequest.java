@@ -18,7 +18,7 @@ import java.util.Map;
 public class CompletionRequest implements UserRequest, Serializable {
     private static final long serialVersionUID = 1L;
     /**
-     * ID of the model to use
+     * ID of the model to use. Can be a comma-separated list of models.
      */
     private String model;
 
@@ -48,7 +48,7 @@ public class CompletionRequest implements UserRequest, Serializable {
     /**
      * Deprecated in favor of tool_choice. Controls how the model responds to function calls. "none" means the model does not call a function, and
      * responds to the end-user. "auto" means the model can pick between an end-user or calling a function. Specifying a particular function via
-     * {"name":\ "my_function"} forces the model to call that function. "none" is the default when no functions are present. "auto" is the default if
+     * {"name":"my_function"} forces the model to call that function. "none" is the default when no functions are present. "auto" is the default if
      * functions are present.
      */
     @Nullable
@@ -166,5 +166,3 @@ public class CompletionRequest implements UserRequest, Serializable {
         private boolean include_usage = true;
     }
 }
-
-

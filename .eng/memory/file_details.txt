@@ -1,5 +1,5 @@
-README.md:这个文件是Bella OpenAPI项目的中文README文档，主要介绍了项目的核心功能、系统优势、快速启动步骤、常见问题及解决方案。文件详细描述了AI能力点、元数据管理、统一登录服务以及计费与限流等功能。与其他文件的交互主要通过提供的文档链接来实现，例如配置详情和启动部署详情。
-README_EN.md:这个文件是Bella OpenAPI项目的英文README文档，与中文版本内容基本相同，提供了项目的核心功能、系统优势、快速启动步骤、常见问题及解决方案的说明。它也详细描述了AI能力点、元数据管理等，并通过文档链接与其他文件进行交互。
+README.md:Bella OpenAPI的中文介绍文档，内容与README_EN.md相似，提供对AI能力、系统优势、快速启动和常见问题的详细说明，适合中文用户使用。
+README_EN.md:Bella OpenAPI的英文介绍文档，描述其作为API网关的主要功能，包括AI能力、元数据管理、统一登录服务、计费与限流等。文档详细列出系统的优势和部署方法，提供了使用Docker Compose快速启动的指导。
 api/.editorconfig:项目的代码格式配置文件，规范化各类文件的缩进和编码格式。
 api/Dockerfile:这个文件是用于构建bella-openapi项目的Dockerfile，设置了运行环境和所需目录以及端口暴露。
 api/build.sh:此脚本用于编译API服务，包含Maven构建流程及相关配置。
@@ -67,7 +67,7 @@ api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionModelFe
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionModelProperties.java:定义了CompletionModelProperties类，实现IModelProperties接口，用于描述完成模型的输入和输出上下文属性。
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionPriceInfo.java:实现CompletionPriceInfo类，提供完成操作的价格信息。
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionProperty.java:定义Completion配置属性类，实现协议属性接口，包含编码类型、队列名等配置。
-api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionRequest.java:这个文件定义了CompletionRequest类，主要用于构建开放API的请求。它实现了UserRequest接口，并包含多个字段如model、user、messages等，用于配置API请求的参数和行为。
+api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionRequest.java:这个文件定义了CompletionRequest类，表示完成请求的数据结构，包含模型ID、用户标识、消息列表等字段。
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionResponse.java:该文件定义了CompletionResponse类，包含OpenAPI响应的细节信息与Choice内部类。
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionSseListener.java:实现了CompletionSseListener类，用于处理SSE事件流中的完成消息，通过Callback接口进行回调。
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/Message.java:定义了Message类，用于描述协议消息的结构体，包含角色、内容、功能调用等信息。
@@ -197,7 +197,7 @@ api/server/src/main/java/com/ke/bella/openapi/configuration/ApolloConfig.java:�
 api/server/src/main/java/com/ke/bella/openapi/configuration/BellaAutoConf.java:该文件定义了Spring配置类BellaAutoConf，配置了适配器管理、成本记录、日志处理等功能。使用@PreDestroy注解进行资源释放。
 api/server/src/main/java/com/ke/bella/openapi/configuration/SafetyConfig.java:配置安全相关的默认服务Bean，如聊天安全检查服务和安全审计服务，确保在未定义的情况下提供默认实现。
 api/server/src/main/java/com/ke/bella/openapi/configuration/WebConfig.java:WebConfig.java定义了Spring的Web配置，包括内容协商策略和拦截器注册。它添加了授权、并发启动、月度配额等拦截器，确保请求的安全和正确性。
-api/server/src/main/java/com/ke/bella/openapi/console/ApikeyConsoleController.java:该文件定义了ApikeyConsoleController类，提供API Key管理的RESTful接口。
+api/server/src/main/java/com/ke/bella/openapi/console/ApikeyConsoleController.java:这个文件是API Key管理的控制器，提供了API Key的申请、重置、重命名、绑定服务、更新角色、更新额度、认证、激活、失效等操作的接口，使用了ApikeyService进行具体操作。
 api/server/src/main/java/com/ke/bella/openapi/console/MetadataConsoleController.java:此文件定义了MetadataConsoleController类，负责管理元数据，包括端点、模式、频道和类目等的增删改查操作。主要通过RESTful API接口与前端通信，调用各个Service类进行业务处理。
 api/server/src/main/java/com/ke/bella/openapi/console/MetadataValidator.java:该文件实现了MetadataValidator类，负责验证元数据的完整性和格式，包括Endpoint及Model等多个元素的检验。使用了Spring的Assert进行各种验证。
 api/server/src/main/java/com/ke/bella/openapi/console/ScriptConsoleController.java:脚本控制台管理器，提供Lua脚本重载和模型列表刷新功能，与脚本和模型服务互动。
@@ -221,7 +221,7 @@ api/server/src/main/java/com/ke/bella/openapi/db/repo/UniqueKeyRepo.java:定义G
 api/server/src/main/java/com/ke/bella/openapi/db/repo/UserRepo.java:实现用户数据的CRUD操作，包括用户信息验证和权限管理，涉及到Operator和Apikey信息的处理与存储。
 api/server/src/main/java/com/ke/bella/openapi/endpoints/ApikeyController.java:API密钥控制器，提供创建、查询和权限检查的API接口，通过ApikeyService与服务交互。
 api/server/src/main/java/com/ke/bella/openapi/endpoints/AudioController.java:AudioController.java实现了与音频处理相关的REST接口，包括实时语音识别、文本转语音和音频转录功能。主要使用的类和接口有ChannelRouter、AdaptorManager、LimiterManager等，通过这些接口来管理音频流和协议适配器，并处理与其他服务的交互。
-api/server/src/main/java/com/ke/bella/openapi/endpoints/ChatController.java:ChatController类定义了用于处理聊天完成请求的REST接口，包含请求路由、安全检查、协议适配及响应逻辑。通过Spring框架实现REST控制器功能。
+api/server/src/main/java/com/ke/bella/openapi/endpoints/ChatController.java:这个文件实现了聊天控制器，处理聊天相关的API请求。主要包含completion方法，用于处理请求，并与ChannelRouter、AdaptorManager等交互。
 api/server/src/main/java/com/ke/bella/openapi/endpoints/EmbeddingController.java:这个文件实现了EmbeddingController控制器，负责处理/v1/embeddings端点请求。它与路由、适配器和限流管理器交互。
 api/server/src/main/java/com/ke/bella/openapi/endpoints/LogController.java:提供日志记录的API接口，使用Spring框架，通过Post请求记录日志信息。依赖于EndpointLogger和ApikeyService，与ApikeyService进行apikey验证。
 api/server/src/main/java/com/ke/bella/openapi/endpoints/MetadataController.java:这个文件定义了REST API控制器MetadataController，负责处理元数据相关的HTTP请求，包括能力点、模型、渠道和类目等的CRUD操作。主要类/方法：listEndpointDetails、listModel、createPrivateChannel等。与服务层交互以实现具体功能。
@@ -240,7 +240,7 @@ api/server/src/main/java/com/ke/bella/openapi/intercept/OpenapiRequestFilter.jav
 api/server/src/main/java/com/ke/bella/openapi/intercept/RequestUserAdvice.java:实现请求用户权限的建议拦截器，根据请求头设置用户数据，通过EndpointContext进行上下文管理。
 api/server/src/main/java/com/ke/bella/openapi/intercept/TestEnvironmentInterceptor.java:定义了TestEnvironmentInterceptor类，一个Spring拦截器，用于在测试环境下进行API请求的前置处理，确保正确的权限验证和配置启用。
 api/server/src/main/java/com/ke/bella/openapi/protocol/AdaptorManager.java:定义了AdaptorManager类，用于管理不同协议适配器的注册和获取操作。通过endpoint和protocol识别适配器，并提供相应的服务支持。
-api/server/src/main/java/com/ke/bella/openapi/protocol/ChannelRouter.java:负责渠道路由选择的逻辑，包括筛选和选择可用的渠道，主要类是ChannelRouter，与ChannelService和ModelService交互。
+api/server/src/main/java/com/ke/bella/openapi/protocol/ChannelRouter.java:这个文件实现了ChannelRouter类，用于根据请求路由到适当的通道，涉及安全性检查和限流管理。
 api/server/src/main/java/com/ke/bella/openapi/protocol/IProtocolAdaptor.java:定义协议适配器接口IProtocolAdaptor，主要提供终端信息和授权请求生成方法，支持不同类型的授权请求构建。
 api/server/src/main/java/com/ke/bella/openapi/protocol/asr/AudioTranscriptionRequest.java:这个文件定义了AudioTranscriptionRequest类，包括请求音频转录所需的各种参数和设置。
 api/server/src/main/java/com/ke/bella/openapi/protocol/asr/AudioTranscriptionResponse.java:这个文件定义了语音转录的响应类AudioTranscriptionResponse及其内部类，处理转录任务的结果数据。
@@ -333,7 +333,7 @@ api/server/src/main/java/com/ke/bella/openapi/utils/PunctuationUtils.java:提供
 api/server/src/main/java/com/ke/bella/openapi/utils/SseHelper.java:提供SSE连接管理的帮助类SseHelper，包含连接创建、事件发送及异常处理的方法，增强SSE通信的稳定性和可管理性。
 api/server/src/main/java/com/ke/bella/openapi/utils/TokenCounter.java:提供字符串和图像token计数的工具类，通过不同编码模型计算文本token数量及图像分辨率调整后的token数。与图像处理和文本编码相关工具交互。
 api/server/src/main/resources/application-docker.yml:Docker环境的Spring Boot配置文件，定义了MySQL和Redis的连接配置、OAuth认证设置、日志级别等信息。
-api/server/src/main/resources/application.yml:该文件是Spring Boot应用程序的配置文件，设置了服务器、数据源、缓存、Swagger等配置，负责应用程序的初始参数。
+api/server/src/main/resources/application.yml:这个文件是Spring Boot项目的配置文件，配置了服务器、数据库、Redis和Jetcache等信息。
 api/server/src/main/resources/bootstrap.yml:服务启动配置文件，配置服务端口、Dubbo端口等，帮助服务在启动时加载初始配置。
 api/server/src/main/resources/logback-spring.xml:配置Logback日志框架，包括日志文件的大小、历史、路径设置及不同环境下的日志策略。
 api/server/src/main/resources/lua/limiter/concurrent.lua:Lua脚本实现了Redis中并发请求的统计和管理，防止请求死锁，通过设置关键键的自动过期时间来维护请求计数。
@@ -377,6 +377,9 @@ api/spi/src/main/java/com/ke/bella/openapi/server/BellaServerContextInitializer.
 api/spi/src/main/resources/META-INF/spring.factories:这个文件配置了Spring工厂加载机制，指定了ApplicationContextInitializer的实现类。
 authorize-admin.sh:用于管理员授权的脚本，通过API请求系统，使用用户ID或邮箱授予管理员权限。
 config-details.md:详细介绍了Bella OpenAPI配置，包括环境变量、数据库、缓存和OAuth配置的说明文档。
+contributor-guid.md:该文件为 Bella OpenAPI 项目的贡献者指南，提供了项目概述、开发流程、代码贡献、代码风格等详细说明。主要功能是帮助新贡献者快速了解项目并参与开发。文件详细介绍了如何提交 Issues 和 Pull Requests，与 GitHub 仓库的交互尤为重要。
+contributor-guide.md:Bella OpenAPI 贡献者指南，帮助新的贡献者快速上手项目开发。主要内容包括项目概述、开发流程、提交Issues、代码贡献和社区支持等，详细说明了如何配置环境和提交代码。与bella-issues-bot交互，自动处理Issues。
+contributor-guide_EN.md:Bella OpenAPI Contributor Guide，提供英文版的项目贡献指南。内容与中文版相同，包括项目概述、开发流程、提交Issues、代码贡献和社区支持等。与bella-issues-bot交互，自动处理Issues。
 doc/chat-completions.md:该文档提供了智能问答接口的使用说明，详细描述了请求和响应格式、支持的消息类型以及错误码等。此外，它还介绍了如何调用工具来扩展模型的功能。主要与OpenAI的Chat Completions API交互。
 doc/embeddings.md:文本向量接口文档，描述了创建文本嵌入的方法和API调用，支持语义搜索、文本分类等应用。详细介绍了请求和响应格式，及典型应用场景。
 doc/flash-asr.md:语音识别接口的文档，描述了接口的功能、请求和响应格式，包括示例和错误码说明，适用于开发者集成该语音识别服务。
@@ -406,7 +409,7 @@ web/src/app/api/logs/route.ts:定义了日志查询API的POST路由，处理日�
 web/src/app/api/logs/trace/route.ts:此文件定义了一个用于处理GET请求的路由，负责从配置和请求参数中获取日志跟踪信息并调用相应工作流。与配置文件、调用库集成，如callWorkflow。
 web/src/app/api/logs/trace/service/route.ts:该文件定义了获取服务配置的API路由。使用callWorkflow函数与外部服务交互，获取日志服务配置列表，并通过Next.js的API路由返回。
 web/src/app/api/metrics/route.ts:实现Next.js API路由处理程序，用于获取并处理监控指标数据，与callWorkflow函数交互。
-web/src/app/apikey/page.tsx:这个文件是 React 组件，用于管理用户的 API key。主要功能包括显示 API key 列表、创建新的 API key，以及在对话框中展示创建成功的 API key。主要交互包括与 API key 信息获取和创建函数的调用。
+web/src/app/apikey/page.tsx:这个文件实现了API Key管理页面的React组件，提供了创建、搜索、分页显示API Key的功能，与API进行交互以获取和更新API Key数据，使用了多个UI组件来构建界面。
 web/src/app/globals.css:这个文件包含全局样式设置，使用 Tailwind CSS 进行基础、组件和工具类的定义，并处理不同主题下的背景和前景色。
 web/src/app/layout.tsx:这个文件定义了前端项目的布局组件RootLayout，使用了多种字体和主题提供器，同时包含用户状态管理。
 web/src/app/login/page.tsx:定义了登录页面组件，使用React实现。支持OAuth和密钥两种登录方式，通过Next.js的useRouter进行页面跳转。
@@ -429,7 +432,8 @@ web/src/app/playground/v1/audio/realtime/page.tsx:实时音频对话界面，实
 web/src/app/playground/v1/audio/speech/page.tsx:实现了语音合成的播放界面，主要包含播放、停止、文本清除、声音选择等功能，通过API与后端交互以获取语音数据。
 web/src/app/playground/v1/chat/completions/page.tsx:React组件实现的聊天对话页面，使用了ChatCompletionsProcessor进行交互处理。负责发送和接收对话消息，管理输入状态及用户界面。
 web/src/app/playground/v1/embeddings/page.tsx:该文件实现了EmbeddingsPlayground组件，用于展示文本向量化的用户界面，包含输入文本、获取向量等交互功能。
-web/src/components/apikey/apikey-coloumn.tsx:这个文件实现了API Key展示组件，提供多种列功能，包括编辑、删除、重置和复制API Key。使用React和相关UI组件实现交互界面，与用户交互的元素较多。
+web/src/components/apikey/apikey-balance.tsx:这个文件定义了API Key余额显示和对话框组件，用于展示API Key的当前余额状态，提供了显示余额详情的对话框功能，与API交互以获取余额信息。
+web/src/components/apikey/apikey-coloumn.tsx:这个文件定义了API Key表格列的组件，包括可编辑单元格、备注单元格和操作单元格等，使用了多个对话框组件与用户交互，如重命名、重置等。它与API交互以更新显示信息。
 web/src/components/apikey/apikey-dialog.tsx:API密钥操作对话框组件，支持删除、重置、认证及重命名操作，通过与后台API交互实现。
 web/src/components/logs/sidebar.tsx:实现客户端的日志查询侧边栏组件，使用了Next.js的Link组件，主要用于导航日志查询相关页面，与前端界面交互。
 web/src/components/meta/channel-form.tsx:前端组件，用于渲染和管理渠道的表单，可以切换试用状态和启用状态，使用React实现，便于用户在UI中更新渠道信息。
@@ -499,14 +503,14 @@ web/src/components/user/user-nav.tsx:这个文件实现了UserNav组件，用于
 web/src/config.ts:config.ts中定义了与环境变量相关的API地址配置，用于应用的HTTP请求目标。
 web/src/hooks/use-toast.ts:定义通知弹窗（toast）的状态管理和操作，允许创建、更新、消除通知，并提供自定义样式。
 web/src/lib/ant-path-matcher.ts:ant-path-matcher.ts实现了路径匹配功能，模仿Spring的AntPathMatcher。包含静态方法match和doMatch，用于路径与模式的比较操作。是一个路径匹配实用工具。
-web/src/lib/api/apikey.ts:定义了一系列关于API密钥的异步操作函数，如获取、申请、删除、重置和更新API密钥等。这些函数通过openapi与后端API进行交互。
+web/src/lib/api/apikey.ts:这个文件提供了与API Key相关的API请求函数，包括获取API Key信息、申请、删除、重置、更新认证和配额、重命名等操作。它通过封装的openapi对象与后端进行数据交互。
 web/src/lib/api/meta.ts:这个文件定义了与元数据相关的API调用方法，包含获取分类、端点详情、模型详情等功能。
 web/src/lib/api/openapi.ts:创建Axios实例用于OpenAPI请求管理，处理响应拦截器，以支持与后端API的交互。
 web/src/lib/api/userInfo.ts:提供与用户信息获取和权限检查相关的函数，使用`openapi`发送请求获取用户信息。
 web/src/lib/api/workflow.ts:该文件定义了一个调用工作流的函数callWorkflow，用于通过HTTP请求调用外部工作流API，处理响应并返回调用结果。包含接口定义WorkflowResponse。
 web/src/lib/context/user-context.tsx:user-context.tsx定义了用户信息的React上下文，用于在应用中提供和管理用户登录状态。包含用户信息的状态管理和登出功能，适用于跨组件状态共享。
 web/src/lib/types/common.ts:定义了typescript接口NestedObject，用于描述嵌套的对象结构，提供灵活的数据类型定义。
-web/src/lib/types/openapi.ts:定义与OpenAPI交互的各类接口，包括分页、用户信息、API密钥信息等，描述数据结构和类型约定。
+web/src/lib/types/openapi.ts:这个文件定义了与OpenAPI相关的数据类型接口，包括API Key信息、用户信息、分页信息等，为其他模块提供类型支持。
 web/src/lib/utils.ts:utils.ts提供了一个简洁函数cn，用于结合类名字符串。主要依赖clsx和tailwind-merge两个库，将多个类名合并为一个字符串。简单实用的工具函数。
 web/tailwind.config.ts:Tailwind CSS的配置文件，包含自定义主题的颜色、边框半径等设置。支持dark mode和引入的自定义插件。
 web/tsconfig.json:TypeScript项目的配置文件，定义编译选项如模块解析、路径别名等。与Next.js插件集成。
