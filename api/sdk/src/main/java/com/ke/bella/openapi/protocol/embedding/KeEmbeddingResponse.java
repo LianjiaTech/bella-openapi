@@ -8,5 +8,5 @@ import java.util.List;
 public class KeEmbeddingResponse {
     private int code;
     private String msg;
-    private List<List<Double>> embed_res;
+    private List<Object> embed_res;
 }

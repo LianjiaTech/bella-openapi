@@ -24,7 +24,7 @@ public class EmbeddingResponse extends OpenapiResponse {
 	@Data
 	public static class EmbeddingData {
 		private String object;
-		private List<Double> embedding;
+		private Object embedding;
 		private int index;
 	}
 
