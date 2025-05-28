@@ -301,7 +301,7 @@ api/server/src/main/java/com/ke/bella/openapi/protocol/metrics/MetricsQueryResul
 api/server/src/main/java/com/ke/bella/openapi/protocol/metrics/MetricsResolver.java:定义MetricsResolver接口，包含度量数据的处理方法。用于解析与EndpointProcessData相关的度量信息。
 api/server/src/main/java/com/ke/bella/openapi/protocol/queue/QueueRequest.java:定义用于队列请求的协议类QueueTaskPutReq和QueueTaskGetResultReq，包含任务放入和获取结果的请求结构。
 api/server/src/main/java/com/ke/bella/openapi/protocol/queue/QueueResponse.java:该文件定义了QueueResponse中用于队列任务的响应类，包含任务放入、结果获取及详请响应的数据结构。
-api/server/src/main/java/com/ke/bella/openapi/protocol/realtime/KeAdaptor.java:KeAdaptor类实现了实时转录和音频处理功能，通过WebSocket与其他组件进行交互，包括实时消息的发送和接收。
+api/server/src/main/java/com/ke/bella/openapi/protocol/realtime/KeAdaptor.java:KeAdaptor类实现了RealTimeAdaptor接口，负责实时音频转录的WebSocket连接管理。主要功能包括启动和停止转录、发送音频数据以及关闭连接。与BellaWebSocketListener和RealtimeProperty等类交互，使用HttpUtils和JacksonUtils进行网络请求和数据序列化。
 api/server/src/main/java/com/ke/bella/openapi/protocol/realtime/KeRealtimeCallback.java:这个文件实现了实时回调的处理逻辑，主要通过WebSocket接收消息并进行处理。包含的关键类是KeRealtimeCallback，负责管理任务的开始和结束，并记录性能指标。主要与WebSocket进行交互，处理实时语音转录事件。
 api/server/src/main/java/com/ke/bella/openapi/protocol/realtime/RealTimeAdaptor.java:RealTimeAdaptor接口定义了实时音频转录的适配器，包含startTranscription、sendAudioData等方法，与WebSocket进行交互。
 api/server/src/main/java/com/ke/bella/openapi/protocol/realtime/RealTimeHandler.java:此Java类负责处理实时语音WebSocket连接。主要功能包括接收和发送文本/二进制消息、处理和管理实时转录任务。关键类和函数包括afterConnectionEstablished(), handleTextMessage(), handleBinaryMessage(), handleStartTranscription()和handleStopTranscription()。与WebSocket API和ASR（Automatic Speech Recognition）服务进行交互。
