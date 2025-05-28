@@ -1,28 +1,29 @@
 package com.ke.bella.openapi.protocol.realtime;
 
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.stereotype.Component;
-
 import com.ke.bella.openapi.EndpointProcessData;
 import com.ke.bella.openapi.protocol.BellaWebSocketListener;
 import com.ke.bella.openapi.protocol.Callbacks;
-import com.ke.bella.openapi.protocol.asr.AsrProperty;
 import com.ke.bella.openapi.protocol.log.EndpointLogger;
 import com.ke.bella.openapi.utils.HttpUtils;
 import com.ke.bella.openapi.utils.JacksonUtils;
-
 import okhttp3.Request;
 import okhttp3.WebSocket;
 import okio.ByteString;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.stereotype.Component;
 
 @Component("KeRealtime")
 public class KeAdaptor implements RealTimeAdaptor<RealtimeProperty> {
 
     @Override
     public WebSocket startTranscription(String url, RealtimeProperty property, RealTimeMessage request, Callbacks.WebSocketCallback callback) {
+        String apikey = request.getApikey();
+        if(property.getAuth() != null && StringUtils.isNotEmpty(property.getAuth().getApiKey())) {
+            apikey = property.getAuth().getApiKey();
+        }
         Request.Builder builder = new Request.Builder()
                 .url(url)
-                .header("Authorization", request.getApikey());
+                .header("Authorization", apikey);
         WebSocket webSocket = HttpUtils.websocketRequest(builder.build(), new BellaWebSocketListener(callback));
         if(request.getPayload() != null) {
             if(property.getTtsOption() != null) {

@@ -169,28 +169,28 @@ We sincerely thank all developers who have contributed to the Bella OpenAPI proj
     </td>
     <td align="center">
       <a href="https://github.com/nil4u">
-        <img src="https://github.com/nil4u.png" width="100px;" alt="nil4u"/>
+        <img src="https://github.com/nil4u.png" width="100px;" height="100px" alt="nil4u"/>
         <br />
         <sub><b>nil</b></sub>
       </a>
     </td>
     <td align="center">
       <a href="https://github.com/Jiakaic">
-        <img src="https://github.com/Jiakaic.png" width="100px;" alt="Jiakaic"/>
+        <img src="https://github.com/Jiakaic.png" width="100px;" height="100px" alt="Jiakaic"/>
         <br />
         <sub><b>Jiakaic</b></sub>
       </a>
     </td>
     <td align="center">
       <a href="https://github.com/chlsmile">
-        <img src="https://github.com/chlsmile.png" width="100px;" alt="chlsmile"/>
+        <img src="https://github.com/chlsmile.png" width="100px;" height="100px" alt="chlsmile"/>
         <br />
         <sub><b>chlsmile</b></sub>
       </a>
     </td>
      <td align="center">
       <a href="https://github.com/shenenqing">
-        <img src="https://github.com/shenenqing.png" width="100px;" alt="shenenqing"/>
+        <img src="https://github.com/shenenqing.png" width="100px;" height="100px" alt="shenenqing"/>
         <br />
         <sub><b>shenenqing</b></sub>
       </a>
@@ -199,7 +199,7 @@ We sincerely thank all developers who have contributed to the Bella OpenAPI proj
   <tr>
     <td align="center">
       <a href="https://github.com/Rheasilvia">
-        <img src="https://github.com/Rheasilvia.png" width="100px;" alt="Rheasilvia"/>
+        <img src="https://github.com/Rheasilvia.png" width="100px;" height="100px" alt="Rheasilvia"/>
         <br />
         <sub><b>Mengjie Chen</b></sub>
       </a>

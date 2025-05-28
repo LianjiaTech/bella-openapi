@@ -301,7 +301,7 @@ api/server/src/main/java/com/ke/bella/openapi/protocol/metrics/MetricsQueryResul
 api/server/src/main/java/com/ke/bella/openapi/protocol/metrics/MetricsResolver.java:定义MetricsResolver接口，包含度量数据的处理方法。用于解析与EndpointProcessData相关的度量信息。
 api/server/src/main/java/com/ke/bella/openapi/protocol/queue/QueueRequest.java:定义用于队列请求的协议类QueueTaskPutReq和QueueTaskGetResultReq，包含任务放入和获取结果的请求结构。
 api/server/src/main/java/com/ke/bella/openapi/protocol/queue/QueueResponse.java:该文件定义了QueueResponse中用于队列任务的响应类，包含任务放入、结果获取及详请响应的数据结构。
-api/server/src/main/java/com/ke/bella/openapi/protocol/realtime/KeAdaptor.java:KeAdaptor类实现了实时转录和音频处理功能，通过WebSocket与其他组件进行交互，包括实时消息的发送和接收。
+api/server/src/main/java/com/ke/bella/openapi/protocol/realtime/KeAdaptor.java:KeAdaptor类实现了RealTimeAdaptor接口，负责实时音频转录的WebSocket连接管理。主要功能包括启动和停止转录、发送音频数据以及关闭连接。与BellaWebSocketListener和RealtimeProperty等类交互，使用HttpUtils和JacksonUtils进行网络请求和数据序列化。
 api/server/src/main/java/com/ke/bella/openapi/protocol/realtime/KeRealtimeCallback.java:这个文件实现了实时回调的处理逻辑，主要通过WebSocket接收消息并进行处理。包含的关键类是KeRealtimeCallback，负责管理任务的开始和结束，并记录性能指标。主要与WebSocket进行交互，处理实时语音转录事件。
 api/server/src/main/java/com/ke/bella/openapi/protocol/realtime/RealTimeAdaptor.java:RealTimeAdaptor接口定义了实时音频转录的适配器，包含startTranscription、sendAudioData等方法，与WebSocket进行交互。
 api/server/src/main/java/com/ke/bella/openapi/protocol/realtime/RealTimeHandler.java:此Java类负责处理实时语音WebSocket连接。主要功能包括接收和发送文本/二进制消息、处理和管理实时转录任务。关键类和函数包括afterConnectionEstablished(), handleTextMessage(), handleBinaryMessage(), handleStartTranscription()和handleStopTranscription()。与WebSocket API和ASR（Automatic Speech Recognition）服务进行交互。
@@ -378,8 +378,8 @@ api/spi/src/main/resources/META-INF/spring.factories:这个文件配置了Spring
 authorize-admin.sh:用于管理员授权的脚本，通过API请求系统，使用用户ID或邮箱授予管理员权限。
 config-details.md:详细介绍了Bella OpenAPI配置，包括环境变量、数据库、缓存和OAuth配置的说明文档。
 contributor-guid.md:该文件为 Bella OpenAPI 项目的贡献者指南，提供了项目概述、开发流程、代码贡献、代码风格等详细说明。主要功能是帮助新贡献者快速了解项目并参与开发。文件详细介绍了如何提交 Issues 和 Pull Requests，与 GitHub 仓库的交互尤为重要。
-contributor-guide.md:Bella OpenAPI 贡献者指南，帮助新的贡献者快速上手项目开发。主要内容包括项目概述、开发流程、提交Issues、代码贡献和社区支持等，详细说明了如何配置环境和提交代码。与bella-issues-bot交互，自动处理Issues。
-contributor-guide_EN.md:Bella OpenAPI Contributor Guide，提供英文版的项目贡献指南。内容与中文版相同，包括项目概述、开发流程、提交Issues、代码贡献和社区支持等。与bella-issues-bot交互，自动处理Issues。
+contributor-guide.md:Bella OpenAPI 贡献者指南，帮助开发者参与项目。包含项目概述、开发流程、提交Issues和代码贡献的详细步骤，强调代码风格和测试要求，指导新贡献者如何开始。与智能bot交互以处理Issues。
+contributor-guide_EN.md:Bella OpenAPI Contributor Guide，提供英文版贡献指南，帮助开发者参与项目。内容包括项目概述、开发流程、提交Issues和代码贡献的步骤，强调代码风格和测试，指导新贡献者如何开始。与智能bot交互以处理Issues。
 doc/chat-completions.md:该文档提供了智能问答接口的使用说明，详细描述了请求和响应格式、支持的消息类型以及错误码等。此外，它还介绍了如何调用工具来扩展模型的功能。主要与OpenAI的Chat Completions API交互。
 doc/embeddings.md:文本向量接口文档，描述了创建文本嵌入的方法和API调用，支持语义搜索、文本分类等应用。详细介绍了请求和响应格式，及典型应用场景。
 doc/flash-asr.md:语音识别接口的文档，描述了接口的功能、请求和响应格式，包括示例和错误码说明，适用于开发者集成该语音识别服务。
