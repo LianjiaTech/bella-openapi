@@ -76,8 +76,8 @@ api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/StreamCompletionR
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/embedding/EmbeddingPriceInfo.java:定义了嵌入价格信息类EmbeddingPriceInfo，实现了IPriceInfo接口，提供了描述价格信息映射的方法，主要用于嵌入模型的价格计算。
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/embedding/EmbeddingProperty.java:定义了EmbeddingProperty类，使用Lombok注解生成常用方法，包含encodingType字段。该类用于定义嵌入相关的属性。
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/embedding/EmbeddingRequest.java:定义用于嵌入请求的类，支持可选的编码格式和维度设置。核心类是EmbeddingRequest。
-api/sdk/src/main/java/com/ke/bella/openapi/protocol/embedding/EmbeddingResponse.java:这个文件定义了EmbeddingResponse类，代表嵌入响应数据，包括对象类型、嵌入数据和模型信息。
-api/sdk/src/main/java/com/ke/bella/openapi/protocol/embedding/KeEmbeddingResponse.java:这个文件定义了嵌入响应类 `KeEmbeddingResponse`，用于处理嵌入操作的响应结果，包含响应码、消息和嵌入结果数据。
+api/sdk/src/main/java/com/ke/bella/openapi/protocol/embedding/EmbeddingResponse.java:这个文件定义了一个名为 EmbeddingResponse 的 Java 类，用于表示嵌入响应。主要功能是封装嵌入数据和使用的令牌信息。包含关键类 EmbeddingData 和 TokenUsage。继承自 OpenapiResponse 类，可能与 OpenAPI 接口交互。
+api/sdk/src/main/java/com/ke/bella/openapi/protocol/embedding/KeEmbeddingResponse.java:这个文件定义了一个简单的 Java 类 KeEmbeddingResponse，用于表示嵌入响应的代码和消息，以及嵌入结果列表。主要用于封装响应结果。
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/embedding/OpenAIProperty.java:这个文件定义了OpenAIProperty类，用于描述OpenAI模型的属性，包括授权信息、部署名称和批处理大小等。
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/files/File.java:File类定义了文件对象的属性，包括id、filename、url等，多与API交互。
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/files/FileUrl.java:这个文件定义了FileUrl类，包含一个属性用于存储文件的URL地址。
