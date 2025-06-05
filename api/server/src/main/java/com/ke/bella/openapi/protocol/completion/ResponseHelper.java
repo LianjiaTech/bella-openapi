@@ -30,6 +30,27 @@ public class ResponseHelper {
         rsp.setContent(content);
     }
 
+    /**
+     * 通用的splitReasoningFromContent方法，支持所有继承自CompletionProperty的属性类
+     */
+    public static void splitReasoningFromContent(CompletionResponse rsp, CompletionProperty property) {
+        if(!property.isSplitReasoningFromContent()) {
+            return;
+        }
+        String content = rsp.content();
+        if(StringUtils.isEmpty(content) || !content.startsWith(START_THINK)) {
+            return;
+        }
+        String[] parts = content.split(END_THINK);
+        if(parts.length != 2) {
+            return;
+        }
+        String reasonContent = parts[0].replace(START_THINK, "");
+        content = parts[1];
+        rsp.setReasoning(reasonContent);
+        rsp.setContent(content);
+    }
+
     public static CompletionResponse overwrite(CompletionResponse response, StreamCompletionResponse streamCompletionResponse) {
         response.setError(streamCompletionResponse.getError());
         response.setCreated(streamCompletionResponse.getCreated());

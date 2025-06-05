@@ -15,11 +15,14 @@ public interface IProtocolAdaptor {
         if(property == null) {
             return builder;
         }
-        switch (property.type) {
+        switch (property.getType()) {
         case BASIC:
             return builder.header("Authorization", property.getApiKey());
         case CUSTOM:
             return builder.header(property.getHeader(), property.getApiKey());
+        case GOOGLE_JSON:
+            // GOOGLE_JSON类型的鉴权由具体的适配器实现处理，这里提供默认的Bearer方式
+            return builder.header("Authorization", "Bearer " + property.getApiKey());
         default:
             return builder.header("Authorization", "Bearer " + property.getApiKey());
         }

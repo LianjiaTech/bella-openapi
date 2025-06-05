@@ -96,6 +96,7 @@ public class EntityConstants {
         ALI("AliAdaptor"),
         AWS("AwsAdaptor"),
         HUOSHAN("HuoShanAdaptor"),
+        GEMINI("GeminiAdaptor"),
         ;
         private final String code;
     }
@@ -107,8 +108,9 @@ public class EntityConstants {
         ALI("阿里百炼", "阿里百炼"),
         HUO_SHAN("火山方舟", "火山方舟"),
         AWS("Bedrock", "Bedrock"),
-        AZURE("Azure", "Azure")
-        ;
+        AZURE("Azure", "Azure"),
+        GOOGLE("Google", "Google");
+
         private final String code;
         private final String name;
     }
