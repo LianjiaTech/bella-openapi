@@ -2,43 +2,36 @@ package com.ke.bella.openapi.protocol.completion;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.auth.oauth2.GoogleCredentials;
+import com.google.genai.Client;
+import com.google.genai.ResponseStream;
+import com.google.genai.types.GenerateContentConfig;
+import com.google.genai.types.GenerateContentResponse;
 import com.ke.bella.openapi.protocol.AuthorizationProperty;
 import com.ke.bella.openapi.protocol.OpenapiResponse;
+import com.ke.bella.openapi.protocol.Callbacks.StreamCompletionCallback;
+import com.ke.bella.openapi.utils.DateTimeUtils;
+import com.google.common.collect.Lists;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import com.ke.bella.openapi.protocol.Callbacks.StreamCompletionCallback;
-import com.ke.bella.openapi.utils.DateTimeUtils;
-import com.google.cloud.vertexai.VertexAI;
-import com.google.cloud.vertexai.api.GenerateContentResponse;
-import com.google.cloud.vertexai.generativeai.GenerativeModel;
-import com.google.cloud.vertexai.generativeai.ChatSession;
-import com.google.cloud.vertexai.generativeai.ResponseHandler;
-
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.Map;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.OutputStreamWriter;
-
-import com.google.common.collect.Lists;
 
 /**
- * Google Gemini适配器 - 基于VertexAI SDK
+ * Google Gemini适配器
  */
 @Component("GeminiCompletion")
 public class GeminiAdaptor implements CompletionAdaptorDelegator<GeminiProperty> {
 
     private static final Logger logger = LoggerFactory.getLogger(GeminiAdaptor.class);
     private static final ObjectMapper objectMapper = new ObjectMapper();
-    private static final ConcurrentHashMap<String, CacheItem<VertexAI>> clientCache = new ConcurrentHashMap<>();
-    private static final ConcurrentHashMap<String, CacheItem<ChatSession>> sessionCache = new ConcurrentHashMap<>();
-    private static final long CLIENT_TTL = 3600000L; // 1小时
-    private static final long SESSION_TTL = 1800000L; // 30分钟
+    private static final ConcurrentHashMap<String, Client> clientCache = new ConcurrentHashMap<>();
 
     @Override
     public CompletionResponse completion(CompletionRequest request, String url, GeminiProperty property,
@@ -54,268 +47,167 @@ public class GeminiAdaptor implements CompletionAdaptorDelegator<GeminiProperty>
 
     @Override
     public CompletionResponse completion(CompletionRequest request, String url, GeminiProperty property) {
-        validateProperty(property);
         try {
-            VertexAI client = getClient(property);
-            GenerativeModel model = new GenerativeModel(property.getDeployName(), client);
-            ChatSession session = getSession(generateKey(request, property), model);
-
+            Client client = getClient(property);
             String userMessage = extractUserMessage(request);
-            GenerateContentResponse response = session.sendMessage(userMessage);
+            GenerateContentConfig config = buildConfig(request);
+            GenerateContentResponse response = client.models.generateContent(property.getDeployName(), userMessage, config);
 
-            CompletionResponse result = convertResponse(response, request.getModel());
+            CompletionResponse result = buildCompletionResponse(response, request.getModel());
             ResponseHelper.splitReasoningFromContent(result, property);
-            result.setCreated(DateTimeUtils.getCurrentSeconds());
             return result;
         } catch (Exception e) {
             logger.error("Gemini调用失败", e);
-            return createErrorResponse("Gemini调用失败: " + e.getMessage());
+            return buildErrorResponse(e.getMessage());
         }
     }
 
     @Override
-    public void streamCompletion(CompletionRequest request, String url, GeminiProperty property,
-            StreamCompletionCallback callback) {
-        validateProperty(property);
+    public void streamCompletion(CompletionRequest request, String url, GeminiProperty property, StreamCompletionCallback callback) {
         try {
-            VertexAI client = getClient(property);
-            GenerativeModel model = new GenerativeModel(property.getDeployName(), client);
+            Client client = getClient(property);
             String userMessage = extractUserMessage(request);
+            GenerateContentConfig config = buildConfig(request);
 
-            model.generateContentStream(userMessage).forEach(response -> {
-                StreamCompletionResponse streamResp = convertStreamResponse(response, request.getModel());
-                if(streamResp != null)
-                    callback.callback(streamResp);
-            });
+            try (ResponseStream<GenerateContentResponse> responseStream =
+                    client.models.generateContentStream(property.getDeployName(), userMessage, config)) {
 
-            callback.callback(createFinishResponse(request.getModel()));
+                for (GenerateContentResponse response : responseStream) {
+                    String content = response.text();
+                    if (StringUtils.isNotBlank(content)) {
+                        callback.callback(buildStreamResponse(content, request.getModel()));
+                    }
+                }
+                callback.callback(buildFinishResponse(request.getModel()));
+            }
             callback.finish();
         } catch (Exception e) {
             logger.error("Gemini流式调用失败", e);
-            callback.callback(StreamCompletionResponse.builder()
-                    .error(createError("Gemini流式调用失败: " + e.getMessage()))
-                    .build());
+            callback.callback(StreamCompletionResponse.builder().error(buildError(e.getMessage())).build());
             callback.finish();
         }
     }
 
     /**
-     * 验证配置
+     * 获取客户端（带缓存）
+     */
+    private Client getClient(GeminiProperty property) throws IOException {
+        validateProperty(property);
+        String cacheKey = getCacheKey(property);
+
+        return clientCache.computeIfAbsent(cacheKey, k -> {
+            try {
+                String jsonCreds = property.getAuth().getJsonCredentials();
+                GoogleCredentials credentials = GoogleCredentials.fromStream(
+                    new ByteArrayInputStream(jsonCreds.getBytes(StandardCharsets.UTF_8)))
+                    .createScoped(Arrays.asList("https://www.googleapis.com/auth/cloud-platform"));
+
+                return Client.builder()
+                    .vertexAI(true)
+                    .project(extractProjectId(jsonCreds))
+                    .location(StringUtils.defaultIfBlank(property.getLocation(), "us-central1"))
+                    .credentials(credentials)
+                    .build();
+            } catch (Exception e) {
+                throw new RuntimeException("创建Gemini客户端失败: " + e.getMessage(), e);
+            }
+        });
+    }
+
+    /**
+     * 验证配置并提取用户消息
      */
     private void validateProperty(GeminiProperty property) {
-        if(property.getAuth() == null || property.getAuth().getType() != AuthorizationProperty.AuthType.GOOGLE_JSON) {
-            throw new IllegalArgumentException("需要GOOGLE_JSON认证类型");
-        }
-        if(StringUtils.isBlank(property.getAuth().getJsonCredentials())) {
-            throw new IllegalArgumentException("JSON凭据不能为空");
-        }
-        if(StringUtils.isBlank(property.getDeployName())) {
-            throw new IllegalArgumentException("模型名称不能为空");
-        }
-
-        try {
-            JsonNode json = objectMapper.readTree(property.getAuth().getJsonCredentials());
-            if(!json.has("project_id") || !json.has("private_key")) {
-                throw new IllegalArgumentException("无效的JSON凭据格式");
-            }
-        } catch (IOException e) {
-            throw new IllegalArgumentException("JSON凭据解析失败: " + e.getMessage());
+        if (property.getAuth() == null || property.getAuth().getType() != AuthorizationProperty.AuthType.GOOGLE_JSON
+            || StringUtils.isBlank(property.getAuth().getJsonCredentials())
+            || StringUtils.isBlank(property.getDeployName())) {
+            throw new IllegalArgumentException("配置无效：需要GOOGLE_JSON认证类型、JSON凭据和模型名称");
         }
     }
 
-    /**
-     * 获取VertexAI客户端(带缓存)
-     */
-    private VertexAI getClient(GeminiProperty property) throws IOException {
-        String jsonCreds = property.getAuth().getJsonCredentials();
+    private String getCacheKey(GeminiProperty property) {
+        return property.getLocation() + ":" + property.getAuth().getJsonCredentials().hashCode();
+    }
+
+    private String extractProjectId(String jsonCreds) throws IOException {
         JsonNode json = objectMapper.readTree(jsonCreds);
-        String projectId = json.get("project_id").asText();
-        String location = StringUtils.defaultIfBlank(property.getLocation(), "us-central1");
-        String key = projectId + ":" + location + ":" + jsonCreds.hashCode();
-
-        CacheItem<VertexAI> cached = clientCache.get(key);
-        if(cached != null && !cached.isExpired()) {
-            return cached.getValue();
+        if (json.has("project_id")) {
+            return json.get("project_id").asText();
         }
-
-        try {
-            VertexAI client = createClient(projectId, location, jsonCreds);
-            clientCache.put(key, new CacheItem<>(client, CLIENT_TTL));
-            return client;
-        } catch (Exception e) {
-            throw new IOException("创建VertexAI客户端失败: " + e.getMessage(), e);
-        }
-    }
-
-    /**
-     * 创建VertexAI客户端
-     */
-    private VertexAI createClient(String projectId, String location, String jsonCreds) throws Exception {
-        File tempFile = null;
-        try {
-            // 创建临时凭据文件
-            tempFile = new File(System.getProperty("user.home"),
-                    "gcp-" + System.currentTimeMillis() + ".json");
-            tempFile.deleteOnExit();
-
-            try (OutputStreamWriter writer = new OutputStreamWriter(
-                    new FileOutputStream(tempFile), StandardCharsets.UTF_8)) {
-                writer.write(jsonCreds);
-            }
-
-            // 设置环境变量
-            setEnvVar("GOOGLE_APPLICATION_CREDENTIALS", tempFile.getAbsolutePath());
-            System.setProperty("GOOGLE_APPLICATION_CREDENTIALS", tempFile.getAbsolutePath());
-
-            return new VertexAI(projectId, location);
-        } finally {
-            System.clearProperty("GOOGLE_APPLICATION_CREDENTIALS");
-            if(tempFile != null) {
-                scheduleFileCleanup(tempFile);
+        if (json.has("client_email")) {
+            String[] parts = json.get("client_email").asText().split("@");
+            if (parts.length > 1) {
+                return parts[1].split("\\.")[0];
             }
         }
+        throw new IllegalArgumentException("无法从JSON凭据中提取project_id");
     }
 
-    /**
-     * 设置环境变量
-     */
-    @SuppressWarnings("unchecked")
-    private void setEnvVar(String key, String value) {
-        try {
-            Class<?> processEnvClass = Class.forName("java.lang.ProcessEnvironment");
-            java.lang.reflect.Field envField = processEnvClass.getDeclaredField("theEnvironment");
-            envField.setAccessible(true);
-            Map<String, String> env = (Map<String, String>) envField.get(null);
-            env.put(key, value);
-
-            java.lang.reflect.Field ciEnvField = processEnvClass.getDeclaredField("theCaseInsensitiveEnvironment");
-            ciEnvField.setAccessible(true);
-            Map<String, String> ciEnv = (Map<String, String>) ciEnvField.get(null);
-            ciEnv.put(key, value);
-        } catch (Exception e) {
-            // 回退到System.getenv()修改
-            try {
-                Map<String, String> env = System.getenv();
-                java.lang.reflect.Field field = env.getClass().getDeclaredField("m");
-                field.setAccessible(true);
-                Map<String, String> map = (Map<String, String>) field.get(env);
-                map.put(key, value);
-            } catch (Exception ignored) {
-                // 最后的回退 - 只设置系统属性
-            }
-        }
-    }
-
-    /**
-     * 异步清理临时文件
-     */
-    private void scheduleFileCleanup(File file) {
-        new Thread(() -> {
-            try {
-                Thread.sleep(5000);
-                if(file.exists())
-                    file.delete();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-        }).start();
-    }
-
-    /**
-     * 获取ChatSession(带缓存)
-     */
-    private ChatSession getSession(String key, GenerativeModel model) {
-        CacheItem<ChatSession> cached = sessionCache.get(key);
-        if(cached != null && !cached.isExpired()) {
-            return cached.getValue();
-        }
-
-        ChatSession session = new ChatSession(model);
-        sessionCache.put(key, new CacheItem<>(session, SESSION_TTL));
-        return session;
-    }
-
-    /**
-     * 生成缓存键
-     */
-    private String generateKey(CompletionRequest request, GeminiProperty property) {
-        return String.valueOf((request.toString() + property.getDeployName()).hashCode());
-    }
-
-    /**
-     * 提取用户消息
-     */
     private String extractUserMessage(CompletionRequest request) {
-        if(request.getMessages() == null || request.getMessages().isEmpty()) {
+        if (request.getMessages() == null || request.getMessages().isEmpty()) {
             throw new IllegalArgumentException("消息列表为空");
         }
-
-        for (int i = request.getMessages().size() - 1; i >= 0; i--) {
-            Message msg = request.getMessages().get(i);
-            if("user".equals(msg.getRole()) && msg.getContent() != null) {
-                return msg.getContent().toString();
-            }
-        }
-        throw new IllegalArgumentException("未找到用户消息");
+        return request.getMessages().stream()
+            .filter(msg -> "user".equals(msg.getRole()) && msg.getContent() != null)
+            .reduce((first, second) -> second)
+            .map(msg -> msg.getContent().toString())
+            .orElseThrow(() -> new IllegalArgumentException("未找到用户消息"));
     }
 
-    /**
-     * 转换响应格式
-     */
-    private CompletionResponse convertResponse(GenerateContentResponse response, String model) {
-        String content = ResponseHandler.getText(response);
+    private GenerateContentConfig buildConfig(CompletionRequest request) {
+        GenerateContentConfig.Builder builder = GenerateContentConfig.builder();
+        if (request.getMax_tokens() != null && request.getMax_tokens() > 0) {
+            builder.maxOutputTokens(request.getMax_tokens());
+        }
+        if (request.getN() != null && request.getN() > 0) {
+            builder.candidateCount(request.getN());
+        }
+        if (request.getTemperature() != null) {
+            builder.temperature(request.getTemperature().floatValue());
+        }
+        if (request.getTop_p() != null) {
+            builder.topP(request.getTop_p().floatValue());
+        }
+        return builder.build();
+    }
 
-        CompletionResponse.Choice choice = new CompletionResponse.Choice();
-        choice.setIndex(0);
-        choice.setFinish_reason("stop");
+    private CompletionResponse buildCompletionResponse(GenerateContentResponse response, String model) {
+        String content = response.text();
+        long timestamp = DateTimeUtils.getCurrentSeconds();
 
         Message message = new Message();
         message.setRole("assistant");
         message.setContent(content);
+
+        CompletionResponse.Choice choice = new CompletionResponse.Choice();
+        choice.setIndex(0);
+        choice.setFinish_reason("stop");
         choice.setMessage(message);
 
         CompletionResponse result = new CompletionResponse();
         result.setModel(model);
-        result.setCreated(DateTimeUtils.getCurrentSeconds());
+        result.setCreated(timestamp);
         result.setChoices(Lists.newArrayList(choice));
-
-        // Token统计
-        int tokens = Math.max(1, content.length() / 4);
-        CompletionResponse.TokenUsage usage = new CompletionResponse.TokenUsage();
-        usage.setCompletion_tokens(tokens);
-        usage.setTotal_tokens(tokens);
-        result.setUsage(usage);
-
+        result.setUsage(buildTokenUsage(content));
         return result;
     }
 
-    /**
-     * 转换流式响应
-     */
-    private StreamCompletionResponse convertStreamResponse(GenerateContentResponse response, String model) {
-        String content = ResponseHandler.getText(response);
-        if(StringUtils.isBlank(content))
-            return null;
+    private StreamCompletionResponse buildStreamResponse(String content, String model) {
+        Message delta = new Message();
+        delta.setContent(content);
 
         StreamCompletionResponse.Choice choice = new StreamCompletionResponse.Choice();
         choice.setIndex(0);
-
-        Message delta = new Message();
-        delta.setContent(content);
         choice.setDelta(delta);
 
         StreamCompletionResponse result = new StreamCompletionResponse();
         result.setModel(model);
         result.setCreated(DateTimeUtils.getCurrentSeconds());
         result.setChoices(Lists.newArrayList(choice));
-
         return result;
     }
 
-    /**
-     * 创建结束响应
-     */
-    private StreamCompletionResponse createFinishResponse(String model) {
+    private StreamCompletionResponse buildFinishResponse(String model) {
         StreamCompletionResponse.Choice choice = new StreamCompletionResponse.Choice();
         choice.setIndex(0);
         choice.setFinish_reason("stop");
@@ -325,57 +217,38 @@ public class GeminiAdaptor implements CompletionAdaptorDelegator<GeminiProperty>
         result.setModel(model);
         result.setCreated(DateTimeUtils.getCurrentSeconds());
         result.setChoices(Lists.newArrayList(choice));
-
         return result;
     }
 
-    /**
-     * 创建错误对象
-     */
-    private OpenapiResponse.OpenapiError createError(String message) {
+    private CompletionResponse.TokenUsage buildTokenUsage(String content) {
+        int tokens = Math.max(1, content.length() / 4);
+        CompletionResponse.TokenUsage usage = new CompletionResponse.TokenUsage();
+        usage.setCompletion_tokens(tokens);
+        usage.setTotal_tokens(tokens);
+        return usage;
+    }
+
+    private OpenapiResponse.OpenapiError buildError(String message) {
         OpenapiResponse.OpenapiError error = new OpenapiResponse.OpenapiError();
-        error.setMessage(message);
+        error.setMessage("Gemini调用失败: " + message);
         error.setType("gemini_error");
         return error;
     }
 
-    /**
-     * 创建错误响应
-     */
-    private CompletionResponse createErrorResponse(String message) {
+    private CompletionResponse buildErrorResponse(String message) {
         CompletionResponse response = new CompletionResponse();
-        response.setError(createError(message));
+        response.setError(buildError(message));
         return response;
     }
 
     @Override
     public String getDescription() {
-        return "Google Gemini协议 (VertexAI SDK)";
+        return "Google Gemini协议";
     }
 
     @Override
     public Class<GeminiProperty> getPropertyClass() {
         return GeminiProperty.class;
     }
-
-    /**
-     * 通用缓存项
-     */
-    private static class CacheItem<T> {
-        private final T value;
-        private final long expiry;
-
-        CacheItem(T value, long ttl) {
-            this.value = value;
-            this.expiry = System.currentTimeMillis() + ttl;
-        }
-
-        T getValue() {
-            return value;
-        }
-
-        boolean isExpired() {
-            return System.currentTimeMillis() > expiry;
-        }
-    }
 }
+
