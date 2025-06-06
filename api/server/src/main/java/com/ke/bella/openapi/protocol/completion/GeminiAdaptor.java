@@ -32,6 +32,7 @@ public class GeminiAdaptor implements CompletionAdaptorDelegator<GeminiProperty>
     private static final Logger logger = LoggerFactory.getLogger(GeminiAdaptor.class);
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final ConcurrentHashMap<String, Client> clientCache = new ConcurrentHashMap<>();
+    private static final java.util.regex.Pattern TOKEN_PATTERN = java.util.regex.Pattern.compile("(\\w+)=Optional\\[(\\d+)\\]");
 
     @Override
     public CompletionResponse completion(CompletionRequest request, String url, GeminiProperty property,
@@ -99,15 +100,15 @@ public class GeminiAdaptor implements CompletionAdaptorDelegator<GeminiProperty>
             try {
                 String jsonCreds = property.getAuth().getJsonCredentials();
                 GoogleCredentials credentials = GoogleCredentials.fromStream(
-                    new ByteArrayInputStream(jsonCreds.getBytes(StandardCharsets.UTF_8)))
-                    .createScoped(Arrays.asList("https://www.googleapis.com/auth/cloud-platform"));
+					new ByteArrayInputStream(jsonCreds.getBytes(StandardCharsets.UTF_8)))
+                        .createScoped(Arrays.asList("https://www.googleapis.com/auth/cloud-platform"));
 
                 return Client.builder()
-                    .vertexAI(true)
-                    .project(extractProjectId(jsonCreds))
-                    .location(StringUtils.defaultIfBlank(property.getLocation(), "us-central1"))
-                    .credentials(credentials)
-                    .build();
+                        .vertexAI(true)
+                        .project(extractProjectId(jsonCreds))
+                        .location(StringUtils.defaultIfBlank(property.getLocation(), "us-central1"))
+                        .credentials(credentials)
+                        .build();
             } catch (Exception e) {
                 throw new RuntimeException("创建Gemini客户端失败: " + e.getMessage(), e);
             }
@@ -118,9 +119,9 @@ public class GeminiAdaptor implements CompletionAdaptorDelegator<GeminiProperty>
      * 验证配置并提取用户消息
      */
     private void validateProperty(GeminiProperty property) {
-        if (property.getAuth() == null || property.getAuth().getType() != AuthorizationProperty.AuthType.GOOGLE_JSON
-            || StringUtils.isBlank(property.getAuth().getJsonCredentials())
-            || StringUtils.isBlank(property.getDeployName())) {
+        if(property.getAuth() == null || property.getAuth().getType() != AuthorizationProperty.AuthType.GOOGLE_JSON
+                || StringUtils.isBlank(property.getAuth().getJsonCredentials())
+                || StringUtils.isBlank(property.getDeployName())) {
             throw new IllegalArgumentException("配置无效：需要GOOGLE_JSON认证类型、JSON凭据和模型名称");
         }
     }
@@ -131,12 +132,12 @@ public class GeminiAdaptor implements CompletionAdaptorDelegator<GeminiProperty>
 
     private String extractProjectId(String jsonCreds) throws IOException {
         JsonNode json = objectMapper.readTree(jsonCreds);
-        if (json.has("project_id")) {
+        if(json.has("project_id")) {
             return json.get("project_id").asText();
         }
-        if (json.has("client_email")) {
+        if(json.has("client_email")) {
             String[] parts = json.get("client_email").asText().split("@");
-            if (parts.length > 1) {
+            if(parts.length > 1) {
                 return parts[1].split("\\.")[0];
             }
         }
@@ -144,28 +145,28 @@ public class GeminiAdaptor implements CompletionAdaptorDelegator<GeminiProperty>
     }
 
     private String extractUserMessage(CompletionRequest request) {
-        if (request.getMessages() == null || request.getMessages().isEmpty()) {
+        if(request.getMessages() == null || request.getMessages().isEmpty()) {
             throw new IllegalArgumentException("消息列表为空");
         }
         return request.getMessages().stream()
-            .filter(msg -> "user".equals(msg.getRole()) && msg.getContent() != null)
-            .reduce((first, second) -> second)
-            .map(msg -> msg.getContent().toString())
-            .orElseThrow(() -> new IllegalArgumentException("未找到用户消息"));
+                .filter(msg -> "user".equals(msg.getRole()) && msg.getContent() != null)
+                .reduce((first, second) -> second)
+                .map(msg -> msg.getContent().toString())
+                .orElseThrow(() -> new IllegalArgumentException("未找到用户消息"));
     }
 
     private GenerateContentConfig buildConfig(CompletionRequest request) {
         GenerateContentConfig.Builder builder = GenerateContentConfig.builder();
-        if (request.getMax_tokens() != null && request.getMax_tokens() > 0) {
+        if(request.getMax_tokens() != null && request.getMax_tokens() > 0) {
             builder.maxOutputTokens(request.getMax_tokens());
         }
-        if (request.getN() != null && request.getN() > 0) {
+        if(request.getN() != null && request.getN() > 0) {
             builder.candidateCount(request.getN());
         }
-        if (request.getTemperature() != null) {
+        if(request.getTemperature() != null) {
             builder.temperature(request.getTemperature().floatValue());
         }
-        if (request.getTop_p() != null) {
+        if(request.getTop_p() != null) {
             builder.topP(request.getTop_p().floatValue());
         }
         return builder.build();
@@ -188,7 +189,7 @@ public class GeminiAdaptor implements CompletionAdaptorDelegator<GeminiProperty>
         result.setModel(model);
         result.setCreated(timestamp);
         result.setChoices(Lists.newArrayList(choice));
-        result.setUsage(buildTokenUsage(content));
+        result.setUsage(buildTokenUsage(response));
         return result;
     }
 
@@ -220,12 +221,70 @@ public class GeminiAdaptor implements CompletionAdaptorDelegator<GeminiProperty>
         return result;
     }
 
-    private CompletionResponse.TokenUsage buildTokenUsage(String content) {
-        int tokens = Math.max(1, content.length() / 4);
+    private CompletionResponse.TokenUsage buildTokenUsage(GenerateContentResponse response) {
+        if(!response.usageMetadata().isPresent()) {
+            throw new IllegalStateException("Gemini响应缺少usageMetadata信息");
+        }
+
+                String usageStr = response.usageMetadata().get().toString();
+        
+        // 解析各个token字段
+        int basePromptTokens = safeIntValue(extractTokenValue(usageStr, GeminiCompletionResponse.UsageField.PROMPT_TOKEN_COUNT));
+        int cachedTokens = safeIntValue(extractTokenValue(usageStr, GeminiCompletionResponse.UsageField.CACHED_CONTENT_TOKEN_COUNT));
+        int toolPromptTokens = safeIntValue(extractTokenValue(usageStr, GeminiCompletionResponse.UsageField.TOOL_USE_PROMPT_TOKEN_COUNT));
+        int candidatesTokens = safeIntValue(extractTokenValue(usageStr, GeminiCompletionResponse.UsageField.CANDIDATES_TOKEN_COUNT));
+        int thoughtsTokens = safeIntValue(extractTokenValue(usageStr, GeminiCompletionResponse.UsageField.THOUGHTS_TOKEN_COUNT));
+        Integer apiTotalTokens = extractTokenValue(usageStr, GeminiCompletionResponse.UsageField.TOTAL_TOKEN_COUNT);
+        
+        // 计算输入token：基础prompt + 缓存内容 + 工具prompt
+        int promptTokens = basePromptTokens + cachedTokens + toolPromptTokens;
+        
+        // 计算输出token：生成内容 + 思考过程
+        int completionTokens = candidatesTokens + thoughtsTokens;
+        
+        // 计算总token：优先使用API返回值，否则计算输入+输出
+        int totalTokens = apiTotalTokens != null ? apiTotalTokens : (promptTokens + completionTokens);
+        
+        // 数据一致性检查：如果API返回的总数小于计算的输入+输出，则使用计算值
+        if (apiTotalTokens != null && apiTotalTokens < (promptTokens + completionTokens)) {
+            logger.warn("Gemini API返回的totalTokenCount({})小于计算的输入+输出({}+{}={}), 使用计算值", 
+                       apiTotalTokens, promptTokens, completionTokens, promptTokens + completionTokens);
+            totalTokens = promptTokens + completionTokens;
+        }
+        
+        logger.debug("Gemini token分解: prompt={}(base:{}, cached:{}, tool:{}), completion={}(candidates:{}, thoughts:{}), total={}", 
+                    promptTokens, basePromptTokens, cachedTokens, toolPromptTokens,
+                    completionTokens, candidatesTokens, thoughtsTokens, totalTokens);
+
         CompletionResponse.TokenUsage usage = new CompletionResponse.TokenUsage();
-        usage.setCompletion_tokens(tokens);
-        usage.setTotal_tokens(tokens);
+        usage.setPrompt_tokens(promptTokens);
+        usage.setCompletion_tokens(completionTokens);
+        usage.setTotal_tokens(totalTokens);
+
         return usage;
+    }
+
+    private int safeIntValue(Integer value) {
+        return value != null && value >= 0 ? value : 0;
+    }
+
+    private Integer extractTokenValue(String usageStr, GeminiCompletionResponse.UsageField field) {
+        if(StringUtils.isBlank(usageStr) || field == null) {
+            return null;
+        }
+
+        String fieldName = field.getFieldName();
+        java.util.regex.Matcher matcher = TOKEN_PATTERN.matcher(usageStr);
+        while (matcher.find()) {
+            if(fieldName.equals(matcher.group(1))) {
+                try {
+                    return Integer.parseInt(matcher.group(2));
+                } catch (NumberFormatException e) {
+                    return null;
+                }
+            }
+        }
+        return null;
     }
 
     private OpenapiResponse.OpenapiError buildError(String message) {
@@ -251,4 +310,3 @@ public class GeminiAdaptor implements CompletionAdaptorDelegator<GeminiProperty>
         return GeminiProperty.class;
     }
 }
-

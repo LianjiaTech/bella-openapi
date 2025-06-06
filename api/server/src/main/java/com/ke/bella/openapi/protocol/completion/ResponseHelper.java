@@ -12,24 +12,6 @@ public class ResponseHelper {
     public static final String START_THINK = "<think>";
     public static final String END_THINK = "</think>";
 
-    public static void splitReasoningFromContent(CompletionResponse rsp, OpenAIProperty property) {
-        if(!property.isSplitReasoningFromContent()) {
-            return;
-        }
-        String content = rsp.content();
-        if(StringUtils.isEmpty(content) || !content.startsWith(START_THINK)) {
-            return;
-        }
-        String[] parts = content.split(END_THINK);
-        if(parts.length != 2) {
-            return;
-        }
-        String reasonContent = parts[0].replace(START_THINK, "");
-        content = parts[1];
-        rsp.setReasoning(reasonContent);
-        rsp.setContent(content);
-    }
-
     /**
      * 通用的splitReasoningFromContent方法，支持所有继承自CompletionProperty的属性类
      */
