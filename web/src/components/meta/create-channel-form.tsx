@@ -239,29 +239,17 @@ export function CreateChannelForm({
                                 placeholder="输入渠道供应商"
                             />
                         </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="url">转发url</Label>
-                            {selectedProtocol !== 'GeminiAdaptor' && (
+                        {selectedProtocol !== 'GeminiAdaptor' && (
+                            <div className="space-y-2">
+                                <Label htmlFor="url">转发url</Label>
                                 <Textarea
                                     id="url"
                                     value={channel.url}
                                     onChange={(e) => handleChange('url', e.target.value)}
                                     placeholder="输入转发url"
                                 />
-                            )}
-                            {selectedProtocol === 'GeminiAdaptor' && (
-                                <div className="flex items-center space-x-2">
-                                    <Textarea
-                                        id="url"
-                                        value={channel.url}
-                                        onChange={(e) => handleChange('url', e.target.value)}
-                                        placeholder="输入转发url"
-                                        className="flex-grow"
-                                    />
-                                    <span className="text-sm text-gray-600">可选</span>
-                                </div>
-                            )}
-                        </div>
+                            </div>
+                        )}
                         {channelInfoSchema && (
                             <div className="space-y-2">
                                 <Label htmlFor="channelInfo">渠道信息</Label>
