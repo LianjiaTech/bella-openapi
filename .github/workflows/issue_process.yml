@@ -12,7 +12,7 @@ jobs:
     permissions:
       contents: write
       issues: write
-    if: ${{ github.event_name == 'issues' || !startsWith(github.event.comment.body, 'bella-issues-bot已处理：') }}
+    if: ${{ (github.event_name == 'issues' && !endsWith(github.event.issue.title, '[skip-bot]')) || (github.event_name == 'issue_comment' && !startsWith(github.event.comment.body, 'bella-issues-bot已处理：') && !endsWith(github.event.issue.title, '[skip-bot]')) }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
