@@ -17,7 +17,7 @@ public class AuthorizationProperty implements IProtocolProperty {
     @Override
     public Map<String, String> description() {
         return ImmutableSortedMap.of("type", "鉴权方式", "header", "自定义的认证头",
-                "apiKey", "apiKey(IAM验签时同ak)", "secret", "sk", "jsonCredentials", "Google服务账户JSON密钥内容");
+                "apiKey", "apiKey(IAM验签时同ak)", "secret", "sk", "vertexAICredentials", "Google Vertex AI服务账户JSON密钥内容");
     }
 
     @Getter
@@ -34,5 +34,5 @@ public class AuthorizationProperty implements IProtocolProperty {
     String header;
     String apiKey;
     String secret;
-    String jsonCredentials; // Google服务账户JSON密钥内容
+    String vertexAICredentials; // Google Vertex AI服务账户JSON密钥内容
 }

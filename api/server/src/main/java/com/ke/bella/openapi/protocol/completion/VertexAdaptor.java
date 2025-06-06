@@ -7,6 +7,7 @@ import com.google.genai.Client;
 import com.google.genai.ResponseStream;
 import com.google.genai.types.GenerateContentConfig;
 import com.google.genai.types.GenerateContentResponse;
+import com.google.genai.types.GenerateContentResponseUsageMetadata;
 import com.ke.bella.openapi.protocol.AuthorizationProperty;
 import com.ke.bella.openapi.protocol.OpenapiResponse;
 import com.ke.bella.openapi.protocol.Callbacks.StreamCompletionCallback;
@@ -21,6 +22,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -32,7 +34,7 @@ public class VertexAdaptor implements CompletionAdaptorDelegator<VertexProperty>
     private static final Logger logger = LoggerFactory.getLogger(VertexAdaptor.class);
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final ConcurrentHashMap<String, Client> clientCache = new ConcurrentHashMap<>();
-    private static final java.util.regex.Pattern TOKEN_PATTERN = java.util.regex.Pattern.compile("(\\w+)=Optional\\[(\\d+)\\]");
+
 
     @Override
     public CompletionResponse completion(CompletionRequest request, String url, VertexProperty property,
@@ -90,15 +92,15 @@ public class VertexAdaptor implements CompletionAdaptorDelegator<VertexProperty>
     }
 
     /**
-     * 获取客户端（带缓存）
+     * 获取缓存的Vertex AI客户端
      */
-    private Client getClient(VertexProperty property) throws IOException {
+    private Client getClient(VertexProperty property) {
         validateProperty(property);
         String cacheKey = getCacheKey(property);
 
         return clientCache.computeIfAbsent(cacheKey, k -> {
             try {
-                String jsonCreds = property.getAuth().getJsonCredentials();
+                String jsonCreds = property.getAuth().getVertexAICredentials();
                 GoogleCredentials credentials = GoogleCredentials.fromStream(
                         new ByteArrayInputStream(jsonCreds.getBytes(StandardCharsets.UTF_8)))
                         .createScoped(Arrays.asList("https://www.googleapis.com/auth/cloud-platform"));
@@ -116,18 +118,18 @@ public class VertexAdaptor implements CompletionAdaptorDelegator<VertexProperty>
     }
 
     /**
-     * 验证配置并提取用户消息
+     * 验证Vertex AI属性配置
      */
     private void validateProperty(VertexProperty property) {
         if(property.getAuth() == null || property.getAuth().getType() != AuthorizationProperty.AuthType.GOOGLE_JSON
-                || StringUtils.isBlank(property.getAuth().getJsonCredentials())
+                || StringUtils.isBlank(property.getAuth().getVertexAICredentials())
                 || StringUtils.isBlank(property.getDeployName())) {
-            throw new IllegalArgumentException("配置无效：需要GOOGLE_JSON认证类型、JSON凭据和模型名称");
+            throw new IllegalArgumentException("配置无效：需要GOOGLE_JSON认证类型、Vertex AI凭据和模型名称");
         }
     }
 
     private String getCacheKey(VertexProperty property) {
-        return property.getLocation() + ":" + property.getAuth().getJsonCredentials().hashCode();
+        return property.getLocation() + ":" + property.getAuth().getVertexAICredentials().hashCode();
     }
 
     private String extractProjectId(String jsonCreds) throws IOException {
@@ -226,26 +228,19 @@ public class VertexAdaptor implements CompletionAdaptorDelegator<VertexProperty>
             throw new IllegalStateException("Vertex AI响应缺少usageMetadata信息");
         }
 
-        String usageStr = response.usageMetadata().get().toString();
+        GenerateContentResponseUsageMetadata usageMetadata = response.usageMetadata().get();
 
-        // 解析各个token字段
-        int basePromptTokens = safeIntValue(extractTokenValue(usageStr, VertexCompletionResponse.UsageField.PROMPT_TOKEN_COUNT));
-        int cachedTokens = safeIntValue(extractTokenValue(usageStr, VertexCompletionResponse.UsageField.CACHED_CONTENT_TOKEN_COUNT));
-        int toolPromptTokens = safeIntValue(extractTokenValue(usageStr, VertexCompletionResponse.UsageField.TOOL_USE_PROMPT_TOKEN_COUNT));
-        int candidatesTokens = safeIntValue(extractTokenValue(usageStr, VertexCompletionResponse.UsageField.CANDIDATES_TOKEN_COUNT));
-        int thoughtsTokens = safeIntValue(extractTokenValue(usageStr, VertexCompletionResponse.UsageField.THOUGHTS_TOKEN_COUNT));
-        Integer apiTotalTokens = extractTokenValue(usageStr, VertexCompletionResponse.UsageField.TOTAL_TOKEN_COUNT);
+        int basePromptTokens = safeOptionalIntValue(usageMetadata.promptTokenCount());
+        int cachedTokens = safeOptionalIntValue(usageMetadata.cachedContentTokenCount());
+        int toolPromptTokens = safeOptionalIntValue(usageMetadata.toolUsePromptTokenCount());
+        int candidatesTokens = safeOptionalIntValue(usageMetadata.candidatesTokenCount());
+        int thoughtsTokens = safeOptionalIntValue(usageMetadata.thoughtsTokenCount());
+        Integer apiTotalTokens = usageMetadata.totalTokenCount().orElse(null);
 
-        // 计算输入token：基础prompt + 缓存内容 + 工具prompt
         int promptTokens = basePromptTokens + cachedTokens + toolPromptTokens;
-
-        // 计算输出token：生成内容 + 思考过程
         int completionTokens = candidatesTokens + thoughtsTokens;
-
-        // 计算总token：优先使用API返回值，否则计算输入+输出
         int totalTokens = apiTotalTokens != null ? apiTotalTokens : (promptTokens + completionTokens);
 
-        // 数据一致性检查：如果API返回的总数小于计算的输入+输出，则使用计算值
         if(apiTotalTokens != null && apiTotalTokens < (promptTokens + completionTokens)) {
             logger.warn("Vertex AI API返回的totalTokenCount({})小于计算的输入+输出({}+{}={}), 使用计算值",
                     apiTotalTokens, promptTokens, completionTokens, promptTokens + completionTokens);
@@ -264,28 +259,11 @@ public class VertexAdaptor implements CompletionAdaptorDelegator<VertexProperty>
         return usage;
     }
 
-    private int safeIntValue(Integer value) {
-        return value != null && value >= 0 ? value : 0;
+    private int safeOptionalIntValue(Optional<Integer> optionalValue) {
+        return optionalValue.orElse(0);
     }
 
-    private Integer extractTokenValue(String usageStr, VertexCompletionResponse.UsageField field) {
-        if(StringUtils.isBlank(usageStr) || field == null) {
-            return null;
-        }
 
-        String fieldName = field.getFieldName();
-        java.util.regex.Matcher matcher = TOKEN_PATTERN.matcher(usageStr);
-        while (matcher.find()) {
-            if(fieldName.equals(matcher.group(1))) {
-                try {
-                    return Integer.parseInt(matcher.group(2));
-                } catch (NumberFormatException e) {
-                    return null;
-                }
-            }
-        }
-        return null;
-    }
 
     private OpenapiResponse.OpenapiError buildError(String message) {
         OpenapiResponse.OpenapiError error = new OpenapiResponse.OpenapiError();
