@@ -24,30 +24,30 @@ import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Google Gemini适配器
+ * Google Vertex AI适配器
  */
-@Component("GeminiCompletion")
-public class GeminiAdaptor implements CompletionAdaptorDelegator<GeminiProperty> {
+@Component("VertexCompletion")
+public class VertexAdaptor implements CompletionAdaptorDelegator<VertexProperty> {
 
-    private static final Logger logger = LoggerFactory.getLogger(GeminiAdaptor.class);
+    private static final Logger logger = LoggerFactory.getLogger(VertexAdaptor.class);
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final ConcurrentHashMap<String, Client> clientCache = new ConcurrentHashMap<>();
     private static final java.util.regex.Pattern TOKEN_PATTERN = java.util.regex.Pattern.compile("(\\w+)=Optional\\[(\\d+)\\]");
 
     @Override
-    public CompletionResponse completion(CompletionRequest request, String url, GeminiProperty property,
+    public CompletionResponse completion(CompletionRequest request, String url, VertexProperty property,
             com.ke.bella.openapi.protocol.Callbacks.HttpDelegator delegator) {
         return completion(request, url, property);
     }
 
     @Override
-    public void streamCompletion(CompletionRequest request, String url, GeminiProperty property,
+    public void streamCompletion(CompletionRequest request, String url, VertexProperty property,
             StreamCompletionCallback callback, com.ke.bella.openapi.protocol.Callbacks.StreamDelegator delegator) {
         streamCompletion(request, url, property, callback);
     }
 
     @Override
-    public CompletionResponse completion(CompletionRequest request, String url, GeminiProperty property) {
+    public CompletionResponse completion(CompletionRequest request, String url, VertexProperty property) {
         try {
             Client client = getClient(property);
             String userMessage = extractUserMessage(request);
@@ -58,24 +58,24 @@ public class GeminiAdaptor implements CompletionAdaptorDelegator<GeminiProperty>
             ResponseHelper.splitReasoningFromContent(result, property);
             return result;
         } catch (Exception e) {
-            logger.error("Gemini调用失败", e);
-            return buildErrorResponse(e.getMessage());
+            logger.error("Vertex AI调用失败", e);
+            throw new RuntimeException("Vertex AI调用失败: " + e.getMessage(), e);
         }
     }
 
     @Override
-    public void streamCompletion(CompletionRequest request, String url, GeminiProperty property, StreamCompletionCallback callback) {
+    public void streamCompletion(CompletionRequest request, String url, VertexProperty property, StreamCompletionCallback callback) {
         try {
             Client client = getClient(property);
             String userMessage = extractUserMessage(request);
             GenerateContentConfig config = buildConfig(request);
 
-            try (ResponseStream<GenerateContentResponse> responseStream =
-                    client.models.generateContentStream(property.getDeployName(), userMessage, config)) {
+            try (ResponseStream<GenerateContentResponse> responseStream = client.models.generateContentStream(property.getDeployName(), userMessage,
+                    config)) {
 
                 for (GenerateContentResponse response : responseStream) {
                     String content = response.text();
-                    if (StringUtils.isNotBlank(content)) {
+                    if(StringUtils.isNotBlank(content)) {
                         callback.callback(buildStreamResponse(content, request.getModel()));
                     }
                 }
@@ -83,7 +83,7 @@ public class GeminiAdaptor implements CompletionAdaptorDelegator<GeminiProperty>
             }
             callback.finish();
         } catch (Exception e) {
-            logger.error("Gemini流式调用失败", e);
+            logger.error("Vertex AI流式调用失败", e);
             callback.callback(StreamCompletionResponse.builder().error(buildError(e.getMessage())).build());
             callback.finish();
         }
@@ -92,7 +92,7 @@ public class GeminiAdaptor implements CompletionAdaptorDelegator<GeminiProperty>
     /**
      * 获取客户端（带缓存）
      */
-    private Client getClient(GeminiProperty property) throws IOException {
+    private Client getClient(VertexProperty property) throws IOException {
         validateProperty(property);
         String cacheKey = getCacheKey(property);
 
@@ -100,7 +100,7 @@ public class GeminiAdaptor implements CompletionAdaptorDelegator<GeminiProperty>
             try {
                 String jsonCreds = property.getAuth().getJsonCredentials();
                 GoogleCredentials credentials = GoogleCredentials.fromStream(
-					new ByteArrayInputStream(jsonCreds.getBytes(StandardCharsets.UTF_8)))
+                        new ByteArrayInputStream(jsonCreds.getBytes(StandardCharsets.UTF_8)))
                         .createScoped(Arrays.asList("https://www.googleapis.com/auth/cloud-platform"));
 
                 return Client.builder()
@@ -110,7 +110,7 @@ public class GeminiAdaptor implements CompletionAdaptorDelegator<GeminiProperty>
                         .credentials(credentials)
                         .build();
             } catch (Exception e) {
-                throw new RuntimeException("创建Gemini客户端失败: " + e.getMessage(), e);
+                throw new RuntimeException("创建Vertex AI客户端失败: " + e.getMessage(), e);
             }
         });
     }
@@ -118,7 +118,7 @@ public class GeminiAdaptor implements CompletionAdaptorDelegator<GeminiProperty>
     /**
      * 验证配置并提取用户消息
      */
-    private void validateProperty(GeminiProperty property) {
+    private void validateProperty(VertexProperty property) {
         if(property.getAuth() == null || property.getAuth().getType() != AuthorizationProperty.AuthType.GOOGLE_JSON
                 || StringUtils.isBlank(property.getAuth().getJsonCredentials())
                 || StringUtils.isBlank(property.getDeployName())) {
@@ -126,7 +126,7 @@ public class GeminiAdaptor implements CompletionAdaptorDelegator<GeminiProperty>
         }
     }
 
-    private String getCacheKey(GeminiProperty property) {
+    private String getCacheKey(VertexProperty property) {
         return property.getLocation() + ":" + property.getAuth().getJsonCredentials().hashCode();
     }
 
@@ -223,38 +223,38 @@ public class GeminiAdaptor implements CompletionAdaptorDelegator<GeminiProperty>
 
     private CompletionResponse.TokenUsage buildTokenUsage(GenerateContentResponse response) {
         if(!response.usageMetadata().isPresent()) {
-            throw new IllegalStateException("Gemini响应缺少usageMetadata信息");
+            throw new IllegalStateException("Vertex AI响应缺少usageMetadata信息");
         }
 
-                String usageStr = response.usageMetadata().get().toString();
-        
+        String usageStr = response.usageMetadata().get().toString();
+
         // 解析各个token字段
-        int basePromptTokens = safeIntValue(extractTokenValue(usageStr, GeminiCompletionResponse.UsageField.PROMPT_TOKEN_COUNT));
-        int cachedTokens = safeIntValue(extractTokenValue(usageStr, GeminiCompletionResponse.UsageField.CACHED_CONTENT_TOKEN_COUNT));
-        int toolPromptTokens = safeIntValue(extractTokenValue(usageStr, GeminiCompletionResponse.UsageField.TOOL_USE_PROMPT_TOKEN_COUNT));
-        int candidatesTokens = safeIntValue(extractTokenValue(usageStr, GeminiCompletionResponse.UsageField.CANDIDATES_TOKEN_COUNT));
-        int thoughtsTokens = safeIntValue(extractTokenValue(usageStr, GeminiCompletionResponse.UsageField.THOUGHTS_TOKEN_COUNT));
-        Integer apiTotalTokens = extractTokenValue(usageStr, GeminiCompletionResponse.UsageField.TOTAL_TOKEN_COUNT);
-        
+        int basePromptTokens = safeIntValue(extractTokenValue(usageStr, VertexCompletionResponse.UsageField.PROMPT_TOKEN_COUNT));
+        int cachedTokens = safeIntValue(extractTokenValue(usageStr, VertexCompletionResponse.UsageField.CACHED_CONTENT_TOKEN_COUNT));
+        int toolPromptTokens = safeIntValue(extractTokenValue(usageStr, VertexCompletionResponse.UsageField.TOOL_USE_PROMPT_TOKEN_COUNT));
+        int candidatesTokens = safeIntValue(extractTokenValue(usageStr, VertexCompletionResponse.UsageField.CANDIDATES_TOKEN_COUNT));
+        int thoughtsTokens = safeIntValue(extractTokenValue(usageStr, VertexCompletionResponse.UsageField.THOUGHTS_TOKEN_COUNT));
+        Integer apiTotalTokens = extractTokenValue(usageStr, VertexCompletionResponse.UsageField.TOTAL_TOKEN_COUNT);
+
         // 计算输入token：基础prompt + 缓存内容 + 工具prompt
         int promptTokens = basePromptTokens + cachedTokens + toolPromptTokens;
-        
+
         // 计算输出token：生成内容 + 思考过程
         int completionTokens = candidatesTokens + thoughtsTokens;
-        
+
         // 计算总token：优先使用API返回值，否则计算输入+输出
         int totalTokens = apiTotalTokens != null ? apiTotalTokens : (promptTokens + completionTokens);
-        
+
         // 数据一致性检查：如果API返回的总数小于计算的输入+输出，则使用计算值
-        if (apiTotalTokens != null && apiTotalTokens < (promptTokens + completionTokens)) {
-            logger.warn("Gemini API返回的totalTokenCount({})小于计算的输入+输出({}+{}={}), 使用计算值", 
-                       apiTotalTokens, promptTokens, completionTokens, promptTokens + completionTokens);
+        if(apiTotalTokens != null && apiTotalTokens < (promptTokens + completionTokens)) {
+            logger.warn("Vertex AI API返回的totalTokenCount({})小于计算的输入+输出({}+{}={}), 使用计算值",
+                    apiTotalTokens, promptTokens, completionTokens, promptTokens + completionTokens);
             totalTokens = promptTokens + completionTokens;
         }
-        
-        logger.debug("Gemini token分解: prompt={}(base:{}, cached:{}, tool:{}), completion={}(candidates:{}, thoughts:{}), total={}", 
-                    promptTokens, basePromptTokens, cachedTokens, toolPromptTokens,
-                    completionTokens, candidatesTokens, thoughtsTokens, totalTokens);
+
+        logger.debug("Vertex AI token分解: prompt={}(base:{}, cached:{}, tool:{}), completion={}(candidates:{}, thoughts:{}), total={}",
+                promptTokens, basePromptTokens, cachedTokens, toolPromptTokens,
+                completionTokens, candidatesTokens, thoughtsTokens, totalTokens);
 
         CompletionResponse.TokenUsage usage = new CompletionResponse.TokenUsage();
         usage.setPrompt_tokens(promptTokens);
@@ -268,7 +268,7 @@ public class GeminiAdaptor implements CompletionAdaptorDelegator<GeminiProperty>
         return value != null && value >= 0 ? value : 0;
     }
 
-    private Integer extractTokenValue(String usageStr, GeminiCompletionResponse.UsageField field) {
+    private Integer extractTokenValue(String usageStr, VertexCompletionResponse.UsageField field) {
         if(StringUtils.isBlank(usageStr) || field == null) {
             return null;
         }
@@ -289,24 +289,18 @@ public class GeminiAdaptor implements CompletionAdaptorDelegator<GeminiProperty>
 
     private OpenapiResponse.OpenapiError buildError(String message) {
         OpenapiResponse.OpenapiError error = new OpenapiResponse.OpenapiError();
-        error.setMessage("Gemini调用失败: " + message);
-        error.setType("gemini_error");
+        error.setMessage("Vertex AI调用失败: " + message);
+        error.setType("vertex_error");
         return error;
-    }
-
-    private CompletionResponse buildErrorResponse(String message) {
-        CompletionResponse response = new CompletionResponse();
-        response.setError(buildError(message));
-        return response;
     }
 
     @Override
     public String getDescription() {
-        return "Google Gemini协议";
+        return "Google Vertex AI协议";
     }
 
     @Override
-    public Class<GeminiProperty> getPropertyClass() {
-        return GeminiProperty.class;
+    public Class<VertexProperty> getPropertyClass() {
+        return VertexProperty.class;
     }
 }

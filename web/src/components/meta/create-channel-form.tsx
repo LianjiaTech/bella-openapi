@@ -239,7 +239,7 @@ export function CreateChannelForm({
                                 placeholder="输入渠道供应商"
                             />
                         </div>
-                        {selectedProtocol !== 'GeminiAdaptor' && (
+                        {selectedProtocol !== 'VertexAdaptor' && (
                             <div className="space-y-2">
                                 <Label htmlFor="url">转发url</Label>
                                 <Textarea

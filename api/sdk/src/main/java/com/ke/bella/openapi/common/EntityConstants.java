@@ -96,7 +96,7 @@ public class EntityConstants {
         ALI("AliAdaptor"),
         AWS("AwsAdaptor"),
         HUOSHAN("HuoShanAdaptor"),
-        GEMINI("GeminiAdaptor"),
+        VERTEX("VertexAdaptor"),
         ;
         private final String code;
     }

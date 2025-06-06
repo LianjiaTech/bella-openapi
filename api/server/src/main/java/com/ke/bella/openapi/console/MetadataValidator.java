@@ -144,8 +144,8 @@ public class MetadataValidator {
         Assert.hasText(op.getProtocol(), "请求协议不可为空");
         Assert.hasText(op.getSupplier(), "供应商不可为空");
         
-        // 对于Google Gemini协议，url可以为空（因为它使用Vertex AI SDK，不需要自定义URL）
-        if (!Protocol.GEMINI.getCode().equals(op.getProtocol())) {
+                    // 对于Google Vertex AI协议，url可以为空（因为它使用Vertex AI SDK，不需要自定义URL）
+            if (!Protocol.VERTEX.getCode().equals(op.getProtocol())) {
             Assert.hasText(op.getUrl(), "url不可为空");
         }
         
