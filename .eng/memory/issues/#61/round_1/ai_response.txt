@@ -1,0 +1,742 @@
+我来帮你实现子API Key管理功能。首先分析需求，然后实现相关的前端页面和后端逻辑。
+
+## 核心类和函数设计
+
+### 前端组件
+- `SubApikeyPage`: 子API Key管理页面主组件
+- `CreateSubApikeyDialog`: 创建子API Key对话框
+- `SubApikeyColumns`: 子API Key数据表格列定义
+
+### 后端修改
+- 修改 `ApikeyController.createApikey` 方法验证逻辑
+- 更新相关API接口
+
+让我开始实现代码：
+
+```diff
+--- web/src/app/apikey/[akCode]/page.tsx
++++ web/src/app/apikey/[akCode]/page.tsx
+@@ -0,0 +1,210 @@
++'use client'
++
++import React, {useEffect, useState} from "react"
++import {useParams, useRouter} from "next/navigation"
++import {DataTable} from "@/components/ui/data-table"
++import {getApikeyInfos, getApikeyByCode} from "@/lib/api/apikey"
++import {SubApikeyColumns} from "@/components/apikey/sub-apikey-column"
++import {ApikeyInfo} from "@/lib/types/openapi"
++import {ClientHeader} from "@/components/user/client-header"
++import {Button} from "@/components/ui/button"
++import {Input} from "@/components/ui/input"
++import {ArrowLeft, ChevronLeft, ChevronRight, Plus, Search} from "lucide-react"
++import {useUser} from "@/lib/context/user-context"
++import {useToast} from "@/hooks/use-toast"
++import {CreateSubApikeyDialog} from "@/components/apikey/create-sub-apikey-dialog"
++
++const SubApikeyPage: React.FC = () => {
++    const params = useParams()
++    const router = useRouter()
++    const akCode = params.akCode as string
++    const [page, setPage] = useState<number>(1)
++    const [data, setData] = useState<ApikeyInfo[] | null>(null)
++    const [totalPages, setTotalPages] = useState<number>(1)
++    const [isLoading, setIsLoading] = useState<boolean>(true)
++    const [searchTerm, setSearchTerm] = useState<string>("")
++    const [parentApikey, setParentApikey] = useState<ApikeyInfo | null>(null)
++    const [showCreateDialog, setShowCreateDialog] = useState<boolean>(false)
++    const {userInfo} = useUser()
++    const {toast} = useToast()
++
++    const refresh = async () => {
++        setIsLoading(true)
++        if (userInfo) {
++            try {
++                // 获取子API Key列表
++                const res = await getApikeyInfos(page, userInfo?.userId || null, searchTerm || null, akCode)
++                setData(res?.data || null)
++                if (res) {
++                    setTotalPages(Math.ceil(res.total / 10))
++                } else {
++                    setTotalPages(1)
++                }
++            } catch (error) {
++                console.error('Failed to fetch sub API keys:', error)
++                setData(null)
++            } finally {
++                setIsLoading(false)
++            }
++        }
++    }
++
++    const loadParentApikey = async () => {
++        try {
++            const parent = await getApikeyByCode(akCode)
++            setParentApikey(parent)
++        } catch (error) {
++            console.error('Failed to fetch parent API key:', error)
++            toast({
++                title: "错误",
++                description: "无法获取父API Key信息",
++                variant: "destructive",
++            })
++        }
++    }
++
++    useEffect(() => {
++        loadParentApikey()
++        refresh()
++    }, [page, userInfo, akCode])
++
++    const handlePageChange = (newPage: number) => {
++        setPage(newPage)
++    }
++
++    const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
++        setSearchTerm(event.target.value)
++    }
++
++    const handleSearchSubmit = (event: React.FormEvent<HTMLFormElement>) => {
++        event.preventDefault()
++        setPage(1)
++        refresh()
++    }
++
++    const handleCreateSuccess = () => {
++        setShowCreateDialog(false)
++        refresh()
++    }
++
++    const handleBack = () => {
++        router.push('/apikey')
++    }
++
++    const columns = SubApikeyColumns(refresh)
++
++    return (
++        <div className="min-h-screen bg-gray-50">
++            <ClientHeader title={`子API Key管理 - ${parentApikey?.name || akCode}`}/>
++            <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
++                <div className="p-6">
++                    <div className="mb-4 flex items-center justify-between">
++                        <div className="flex items-center space-x-4">
++                            <Button
++                                onClick={handleBack}
++                                variant="outline"
++                                size="sm"
++                                className="text-gray-600 hover:bg-gray-50 border-gray-200"
++                            >
++                                <ArrowLeft className="h-4 w-4 mr-2"/>
++                                返回
++                            </Button>
++                            <form onSubmit={handleSearchSubmit} className="relative">
++                                <Search
++                                    className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4"/>
++                                <Input
++                                    type="text"
++                                    placeholder="搜索子API Key名称"
++                                    value={searchTerm}
++                                    onChange={handleSearch}
++                                    className="pl-10 w-64"
++                                />
++                            </form>
++                        </div>
++                        <Button 
++                            onClick={() => setShowCreateDialog(true)} 
++                            className="bg-gray-700 hover:bg-gray-900 text-white"
++                            disabled={!parentApikey}
++                        >
++                            <Plus className="h-4 w-4 mr-2"/>
++                            创建子API Key
++                        </Button>
++                    </div>
++
++                    {parentApikey && (
++                        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
++                            <h3 className="font-semibold text-blue-900 mb-2">父API Key信息</h3>
++                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
++                                <div>
++                                    <span className="text-blue-700 font-medium">名称：</span>
++                                    <span className="text-blue-800">{parentApikey.name}</span>
++                                </div>
++                                <div>
++                                    <span className="text-blue-700 font-medium">安全等级：</span>
++                                    <span className="text-blue-800">{parentApikey.safetyLevel}</span>
++                                </div>
++                                <div>
++                                    <span className="text-blue-700 font-medium">月配额：</span>
++                                    <span className="text-blue-800">¥{parentApikey.monthQuota}</span>
++                                </div>
++                                <div>
++                                    <span className="text-blue-700 font-medium">AK：</span>
++                                    <span className="text-blue-800 font-mono">{parentApikey.akDisplay}</span>
++                                </div>
++                            </div>
++                        </div>
++                    )}
++
++                    {isLoading ? (
++                        <div className="flex justify-center items-center h-64">
++                            <div
++                                className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
++                        </div>
++                    ) : data ? (
++                        <DataTable columns={columns} data={data}/>
++                    ) : (
++                        <p className="text-center text-gray-500">暂无子API Key。</p>
++                    )}
++                    
++                    <div className="mt-6 flex items-center justify-between">
++                        <div className="flex items-center space-x-2">
++                            <Button
++                                onClick={() => handlePageChange(page - 1)}
++                                disabled={page === 1 || isLoading}
++                                variant="outline"
++                                size="sm"
++                                className="text-gray-600 hover:bg-gray-50 border-gray-200"
++                            >
++                                <ChevronLeft className="h-4 w-4 mr-2"/>
++                                上一页
++                            </Button>
++                            <Button
++                                onClick={() => handlePageChange(page + 1)}
++                                disabled={page === totalPages || isLoading}
++                                variant="outline"
++                                size="sm"
++                                className="text-gray-600 hover:bg-gray-50 border-gray-200"
++                            >
++                                下一页
++                                <ChevronRight className="h-4 w-4 ml-2"/>
++                            </Button>
++                        </div>
++                        <span className="text-sm text-gray-600">
++                            第 {page} 页，共 {totalPages} 页
++                        </span>
++                    </div>
++                </div>
++            </div>
++
++            {parentApikey && (
++                <CreateSubApikeyDialog
++                    isOpen={showCreateDialog}
++                    onClose={() => setShowCreateDialog(false)}
++                    onSuccess={handleCreateSuccess}
++                    parentApikey={parentApikey}
++                />
++            )}
++        </div>
++    )
++}
++
++export default SubApikeyPage
+```
+
+```diff
+--- web/src/components/apikey/sub-apikey-column.tsx
++++ web/src/components/apikey/sub-apikey-column.tsx
+@@ -0,0 +1,125 @@
++'use client'
++
++import React from "react"
++import {ColumnDef} from "@tanstack/react-table"
++import {ApikeyInfo} from "@/lib/types/openapi"
++import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip"
++import {Badge} from "@/components/ui/badge"
++import {Button} from "@/components/ui/button"
++import {Copy} from 'lucide-react'
++import {useToast} from "@/hooks/use-toast"
++
++const RemarkCell = ({ value }: { value: string }) => {
++    const remark = value || '/'
++    return (
++        <TooltipProvider>
++            <Tooltip>
++                <TooltipTrigger asChild>
++                    <div className="truncate max-w-xs cursor-help">{remark}</div>
++                </TooltipTrigger>
++                <TooltipContent side="bottom" className="w-64 break-words">
++                    <p>{remark}</p>
++                </TooltipContent>
++            </Tooltip>
++        </TooltipProvider>
++    )
++}
++
++const ActionCell = ({code}: { code: string }) => {
++    const { toast } = useToast();
++    
++    const copyToClipboard = () => {
++        navigator.clipboard.writeText(code).then(() => {
++            toast({ title: "复制成功", description: "子API Key编码复制成功。" })
++        });
++    };
++
++    return (
++        <div className="flex justify-end">
++            <Button onClick={copyToClipboard} variant="ghost" size="icon" className="p-0 focus:ring-0">
++                <TooltipProvider>
++                    <Tooltip>
++                        <TooltipTrigger asChild>
++                            <div>
++                                <Copy className="h-4 w-4" />
++                                <span className="sr-only">复制子ak code</span>
++                            </div>
++                        </TooltipTrigger>
++                        <TooltipContent>
++                            <p>复制子ak code</p>
++                        </TooltipContent>
++                    </Tooltip>
++                </TooltipProvider>
++            </Button>
++        </div>
++    )
++}
++
++function getSafetyLevel(level: number): string {
++    switch (level) {
++        case 10:
++            return "极低";
++        case 20:
++            return "低";
++        case 30:
++            return "中";
++        case 40:
++            return "高";
++        default:
++            return "N/A";
++    }
++}
++
++export const SubApikeyColumns = (refresh: () => void): ColumnDef<ApikeyInfo>[] => [
++    {
++        accessorKey: "akDisplay",
++        header: "子AK",
++        cell: ({row}) =>
++            (<div className="font-mono text-sm">
++                {row.original.akDisplay}
++            </div>)
++    },
++    {
++        accessorKey: "name",
++        header: "名称",
++        cell: ({row}) => (
++            <div className="font-medium">{row.original.name}</div>
++        ),
++    },
++    {
++        accessorKey: "outEntityCode",
++        header: "关联标识",
++        cell: ({row}) => <div className="font-mono text-sm">{row.original.outEntityCode || '/'}</div>,
++    },
++    {
++        accessorKey: "safetyLevel",
++        header: "安全等级",
++        cell: ({row}) => {
++            const level = row.original.safetyLevel as number;
++            let color = "bg-green-100 text-green-800";
++            if (level <= 20) {
++                color = "bg-yellow-100 text-yellow-800";
++            }
++            if (level <= 10) {
++                color = "bg-red-100 text-red-800";
++            }
++
++            return <Badge className={`${color} capitalize`}>{getSafetyLevel(level)}</Badge>;
++        },
++    },
++    {
++        accessorKey: "monthQuota",
++        header: "每月额度",
++        cell: ({row}) => {
++            const formatted = new Intl.NumberFormat("zh-CN", {
++                style: "currency",
++                currency: "CNY",
++            }).format(row.original.monthQuota);
++            return formatted;
++        }
++    },
++    {
++        accessorKey: "remark",
++        header: "备注",
++        cell: ({row}) => <RemarkCell value={row.original.remark}/>,
++    },
++    {
++        id: "actions",
++        header: "",
++        cell: ({row}) => (
++            <ActionCell code={row.original.code}/>
++        ),
++    },
++]
+```
+
+```diff
+--- web/src/components/apikey/create-sub-apikey-dialog.tsx
++++ web/src/components/apikey/create-sub-apikey-dialog.tsx
+@@ -0,0 +1,224 @@
++'use client'
++
++import React, {useState} from "react"
++import {ApikeyInfo} from "@/lib/types/openapi"
++import {createSubApikey} from "@/lib/api/apikey"
++import {useToast} from "@/hooks/use-toast"
++import {
++    Dialog,
++    DialogContent,
++    DialogDescription,
++    DialogFooter,
++    DialogHeader,
++    DialogTitle,
++} from "@/components/ui/dialog"
++import {Button} from "@/components/ui/button"
++import {Input} from "@/components/ui/input"
++import {Label} from "@/components/ui/label"
++import {Textarea} from "@/components/ui/textarea"
++import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select"
++
++interface CreateSubApikeyDialogProps {
++    isOpen: boolean
++    onClose: () => void
++    onSuccess: () => void
++    parentApikey: ApikeyInfo
++}
++
++interface FormData {
++    name: string
++    outEntityCode: string
++    safetyLevel: number
++    monthQuota: number
++    remark: string
++}
++
++const safetyLevelOptions = [
++    { value: 10, label: "极低" },
++    { value: 20, label: "低" },
++    { value: 30, label: "中" },
++    { value: 40, label: "高" },
++]
++
++export const CreateSubApikeyDialog: React.FC<CreateSubApikeyDialogProps> = ({
++    isOpen,
++    onClose,
++    onSuccess,
++    parentApikey
++}) => {
++    const [formData, setFormData] = useState<FormData>({
++        name: '',
++        outEntityCode: '',
++        safetyLevel: 10,
++        monthQuota: 50,
++        remark: ''
++    })
++    const [isLoading, setIsLoading] = useState(false)
++    const {toast} = useToast()
++
++    const handleInputChange = (field: keyof FormData, value: string | number) => {
++        setFormData(prev => ({
++            ...prev,
++            [field]: value
++        }))
++    }
++
++    const handleSubmit = async () => {
++        // 验证必填字段
++        if (!formData.name.trim()) {
++            toast({
++                title: "错误",
++                description: "请填写子API Key名称",
++                variant: "destructive",
++            })
++            return
++        }
++
++        if (!formData.outEntityCode.trim()) {
++            toast({
++                title: "错误",
++                description: "请填写关联标识",
++                variant: "destructive",
++            })
++            return
++        }
++
++        // 验证安全等级不超过父AK
++        if (formData.safetyLevel > parentApikey.safetyLevel) {
++            toast({
++                title: "错误",
++                description: "安全等级不能超过父API Key的安全等级",
++                variant: "destructive",
++            })
++            return
++        }
++
++        // 验证月配额不超过父AK
++        if (formData.monthQuota > parentApikey.monthQuota) {
++            toast({
++                title: "错误",
++                description: "月配额不能超过父API Key的月配额",
++                variant: "destructive",
++            })
++            return
++        }
++
++        setIsLoading(true)
++        try {
++            const result = await createSubApikey({
++                parentCode: parentApikey.code,
++                name: formData.name.trim(),
++                outEntityCode: formData.outEntityCode.trim(),
++                safetyLevel: formData.safetyLevel,
++                monthQuota: formData.monthQuota,
++                remark: formData.remark.trim(),
++                roleCode: 'low' // 固定为low
++            })
++
++            if (result) {
++                toast({
++                    title: "成功",
++                    description: "子API Key创建成功",
++                })
++                onSuccess()
++                // 重置表单
++                setFormData({
++                    name: '',
++                    outEntityCode: '',
++                    safetyLevel: 10,
++                    monthQuota: 50,
++                    remark: ''
++                })
++            }
++        } catch (error) {
++            console.error('Failed to create sub API key:', error)
++            toast({
++                title: "错误",
++                description: "创建子API Key失败",
++                variant: "destructive",
++            })
++        } finally {
++            setIsLoading(false)
++        }
++    }
++
++    const handleClose = () => {
++        if (!isLoading) {
++            onClose()
++        }
++    }
++
++    // 获取可选的安全等级选项（不超过父AK的等级）
++    const availableSafetyLevels = safetyLevelOptions.filter(
++        option => option.value <= parentApikey.safetyLevel
++    )
++
++    return (
++        <Dialog open={isOpen} onOpenChange={handleClose}>
++            <DialogContent className="sm:max-w-md bg-white dark:bg-gray-800 border-0">
++                <DialogHeader>
++                    <DialogTitle>创建子API Key</DialogTitle>
++                    <DialogDescription>
++                        为父API Key "{parentApikey.name}" 创建子API Key
++                    </DialogDescription>
++                </DialogHeader>
++                
++                <div className="space-y-4">
++                    <div>
++                        <Label htmlFor="name">名称 *</Label>
++                        <Input
++                            id="name"
++                            value={formData.name}
++                            onChange={(e) => handleInputChange('name', e.target.value)}
++                            placeholder="请输入子API Key名称"
++                            disabled={isLoading}
++                        />
++                    </div>
++                    
++                    <div>
++                        <Label htmlFor="outEntityCode">关联标识 *</Label>
++                        <Input
++                            id="outEntityCode"
++                            value={formData.outEntityCode}
++                            onChange={(e) => handleInputChange('outEntityCode', e.target.value)}
++                            placeholder="请输入关联标识"
++                            disabled={isLoading}
++                        />
++                    </div>
++                    
++                    <div>
++                        <Label htmlFor="safetyLevel">安全等级</Label>
++                        <Select
++                            value={formData.safetyLevel.toString()}
++                            onValueChange={(value) => handleInputChange('safetyLevel', parseInt(value))}
++                            disabled={isLoading}
++                        >
++                            <SelectTrigger>
++                                <SelectValue />
++                            </SelectTrigger>
++                            <SelectContent>
++                                {availableSafetyLevels.map((option) => (
++                                    <SelectItem key={option.value} value={option.value.toString()}>
++                                        {option.label}
++                                    </SelectItem>
++                                ))}
++                            </SelectContent>
++                        </Select>
++                    </div>
++                    
++                    <div>
++                        <Label htmlFor="monthQuota">月配额 (最大: ¥{parentApikey.monthQuota})</Label>
++                        <Input
++                            id="monthQuota"
++                            type="number"
++                            min="1"
++                            max={parentApikey.monthQuota}
++                            value={formData.monthQuota}
++                            onChange={(e) => handleInputChange('monthQuota', parseFloat(e.target.value) || 0)}
++                            disabled={isLoading}
++                        />
++                    </div>
++                    
++                    <div>
++                        <Label htmlFor="remark">备注</Label>
++                        <Textarea
++                            id="remark"
++                            value={formData.remark}
++                            onChange={(e) => handleInputChange('remark', e.target.value)}
++                            placeholder="请输入备注信息"
++                            disabled={isLoading}
++                        />
++                    </div>
++                </div>
++                
++                <DialogFooter>
++                    <Button variant="outline" onClick={handleClose} disabled={isLoading}>
++                        取消
++                    </Button>
++                    <Button onClick={handleSubmit} disabled={isLoading}>
++                        {isLoading ? "创建中..." : "创建"}
++                    </Button>
++                </DialogFooter>
++            </DialogContent>
++        </Dialog>
++    )
++}
+```
+
+```diff
+--- web/src/components/apikey/apikey-coloumn.tsx
++++ web/src/components/apikey/apikey-coloumn.tsx
+@@ -1,6 +1,7 @@
+ 'use client'
+ 
+ import React, {ReactNode, useEffect, useRef, useState} from "react"
++import {useRouter} from "next/navigation"
+ import {ColumnDef} from "@tanstack/react-table"
+ import {ApikeyInfo} from "@/lib/types/openapi"
+ import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip"
+@@ -8,11 +9,12 @@ import {CertifyDialog, DeleteDialog, QuotaDialog, RenameDialog, ResetDialog} fr
+ import {HoverContext} from "@/components/ui/data-table";
+ import {Badge} from "@/components/ui/badge"
+ import {Button} from "@/components/ui/button"
+-import {Copy, Wallet} from 'lucide-react'
++import {Copy, Wallet, Users} from 'lucide-react'
+ import {useToast} from "@/hooks/use-toast";
+ import {safety_apply_url} from "@/config";
+ import {ApiKeyBalanceDialog, ApiKeyBalanceIndicator} from "./apikey-balance";
+ 
++
+ interface EditableCellProps {
+     content: ReactNode;
+     dialogComponent: (isOpen: boolean, onClose: () => void) => React.ReactElement;
+@@ -66,8 +68,10 @@ const RemarkCell = ({ value }: { value: string }) => {
+ }
+ 
+ const ActionCell = ({code, refresh, showApikey}: { code: string, refresh: () => void, showApikey: (apikey: string) => void }) => {
++    const router = useRouter()
+     const { toast } = useToast();
+     const [showBalance, setShowBalance] = useState(false);
++    
+     
+     const copyToClipboard = () => {
+         navigator.clipboard.writeText(code).then(() => {
+@@ -75,6 +79,10 @@ const ActionCell = ({code, refresh, showApikey}: { code: string, refresh: () =>
+         });
+     };
+ 
++    const handleSubApikeyManagement = () => {
++        router.push(`/apikey/${code}`)
++    }
++
+     
+     return (
+         <div className="flex flex-wrap justify-end gap-2">
+@@ -93,6 +101,19 @@ const ActionCell = ({code, refresh, showApikey}: { code: string, refresh: () =>
+                 </TooltipProvider>
+             </Button>
+             <DeleteDialog code={code} refresh={refresh}/>
++            <Button 
++                onClick={handleSubApikeyManagement} 
++                variant="ghost" 
++                size="icon" 
++                className="p-0 focus:ring-0"
++            >
++                <TooltipProvider>
++                    <Tooltip>
++                        <TooltipTrigger asChild>
++                            <div>
++                                <Users className="h-4 w-4" />
++                                <span className="sr-only">子AK管理</span>
++                            </div>
++                        </TooltipTrigger>
++                        <TooltipContent>子AK管理</TooltipContent>
++                    </Tooltip>
++                </TooltipProvider>
++            </Button>
+             <ResetDialog code={code} showApikey={showApikey}/>
+             <Button 
+                 onClick={() => setShowBalance(true)} 
+                 variant="ghost" 
+                 size="icon" 
+                 className="p-0 focus:ring-0"
+             >
+                 <TooltipProvider>
+                     <Tooltip>
+                         <TooltipTrigger asChild>
+                             <div>
+                                 <Wallet className="h-4 w-4" />
+                                 <span className="sr-only">查看余额</span>
+                             </div>
+                         </TooltipTrigger>
+                         <TooltipContent>查看余额</TooltipContent>
+                     </Tooltip>
+                 </TooltipProvider>
+             </Button>
+             <ApiKeyBalanceDialog code={code} isOpen={showBalance} onClose={() => setShowBalance(false)} />
+         </div>
+     )
+ }
+```
+
+```diff
+--- web/src/lib/api/apikey.ts
++++ web/src/lib/api/apikey.ts
+@@ -2,11 +2,12 @@ import { ApikeyInfo, Page} from "@/lib/types/openapi";
+ import { openapi } from '@/lib/api/openapi';
+ import { ApiKeyBalance } from "@/lib/types/openapi";
+ 
+-export async function getApikeyInfos(page: number, ownerCode: number | null, search: string | null): Promise<Page<ApikeyInfo> | null> {
++export async function getApikeyInfos(page: number, ownerCode: number | null, search: string | null, parentCode?: string): Promise<Page<ApikeyInfo> | null> {
+     try {
+         const response = await openapi.get<Page<ApikeyInfo>>(`/console/apikey/page`, {
+-            params: { status: 'active', ownerType:'person', ownerCode: ownerCode, searchParam: search, page }
++            params: { status: 'active', ownerType:'person', ownerCode: ownerCode, searchParam: search, page, parentCode: parentCode, includeChild: !!parentCode }
+         });
+         return response.data;
+     } catch (error) {
+         console.error('Error fetching api:', error);
+         throw error;
+     }
+ }
+ 
++export async function getApikeyByCode(code: string): Promise<ApikeyInfo | null> {
++    try {
++        const response = await openapi.get<ApikeyInfo>(`/console/apikey/fetchByCode`, {
++            params: { code, onlyActive: true }
++        });

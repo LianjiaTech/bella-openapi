@@ -1,6 +1,7 @@
 'use client'
 
 import React, {ReactNode, useEffect, useRef, useState} from "react"
+import {useRouter} from "next/navigation"
 import {ColumnDef} from "@tanstack/react-table"
 import {ApikeyInfo} from "@/lib/types/openapi"
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip"
@@ -8,7 +9,7 @@ import {CertifyDialog, DeleteDialog, QuotaDialog, RenameDialog, ResetDialog} fro
 import {HoverContext} from "@/components/ui/data-table";
 import {Badge} from "@/components/ui/badge"
 import {Button} from "@/components/ui/button"
-import {Copy, Wallet} from 'lucide-react'
+import {Copy, Wallet, Users} from 'lucide-react'
 import {useToast} from "@/hooks/use-toast";
 import {safety_apply_url} from "@/config";
 import {ApiKeyBalanceDialog, ApiKeyBalanceIndicator} from "./apikey-balance";
@@ -65,8 +66,10 @@ const RemarkCell = ({ value }: { value: string }) => {
 }
 
 const ActionCell = ({code, refresh, showApikey}: { code: string, refresh: () => void, showApikey: (apikey: string) => void }) => {
+    const router = useRouter()
     const { toast } = useToast();
     const [showBalance, setShowBalance] = useState(false);
+    
     
     const copyToClipboard = () => {
         navigator.clipboard.writeText(code).then(() => {
@@ -74,6 +77,10 @@ const ActionCell = ({code, refresh, showApikey}: { code: string, refresh: () => 
         });
     };
 
+    const handleSubApikeyManagement = () => {
+        router.push(`/apikey/${code}`)
+    }
+    
     
     return (
         <div className="flex flex-wrap justify-end gap-2">
@@ -93,6 +100,24 @@ const ActionCell = ({code, refresh, showApikey}: { code: string, refresh: () => 
                 </TooltipProvider>
             </Button>
             <DeleteDialog code={code} refresh={refresh}/>
+            <Button 
+                onClick={handleSubApikeyManagement} 
+                variant="ghost" 
+                size="icon" 
+                className="p-0 focus:ring-0"
+            >
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <div>
+                                <Users className="h-4 w-4" />
+                                <span className="sr-only">子AK管理</span>
+                            </div>
+                        </TooltipTrigger>
+                        <TooltipContent>子AK管理</TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+            </Button>
             <ResetDialog code={code} showApikey={showApikey}/>
             <Button 
                 onClick={() => setShowBalance(true)} 
