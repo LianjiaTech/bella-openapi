@@ -25,6 +25,7 @@ import static com.ke.bella.openapi.common.EntityConstants.MODEL;
 import static com.ke.bella.openapi.common.EntityConstants.ModelJsonKey;
 import static com.ke.bella.openapi.common.EntityConstants.OWNER_TYPES;
 import static com.ke.bella.openapi.common.EntityConstants.PRIVATE;
+import static com.ke.bella.openapi.common.EntityConstants.Protocol;
 import static com.ke.bella.openapi.common.EntityConstants.PUBLIC;
 import static com.ke.bella.openapi.common.EntityConstants.SystemBasicCategory;
 import static com.ke.bella.openapi.common.EntityConstants.SystemBasicEndpoint;
@@ -142,7 +143,12 @@ public class MetadataValidator {
                 "实体类型只能是endpoint或model");
         Assert.hasText(op.getProtocol(), "请求协议不可为空");
         Assert.hasText(op.getSupplier(), "供应商不可为空");
-        Assert.hasText(op.getUrl(), "url不可为空");
+        
+        // 对于Google Gemini协议，url可以为空（因为它使用Vertex AI SDK，不需要自定义URL）
+        if (!Protocol.GEMINI.getCode().equals(op.getProtocol())) {
+            Assert.hasText(op.getUrl(), "url不可为空");
+        }
+        
         Assert.isTrue(DATA_DESTINATIONS.contains(op.getDataDestination()),
                 "通道的数据流向只能是：" + String.join("或", DATA_DESTINATIONS));
         Assert.isTrue(CHANNEL_PRIORITY.contains(op.getPriority()),

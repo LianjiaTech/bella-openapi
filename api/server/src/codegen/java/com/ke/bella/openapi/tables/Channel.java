@@ -128,7 +128,7 @@ public class Channel extends TableImpl<ChannelRecord> {
     /**
      * The column <code>channel.channel_info</code>. 渠道信息
      */
-    public final TableField<ChannelRecord, String> CHANNEL_INFO = createField(DSL.name("channel_info"), SQLDataType.VARCHAR(512).nullable(false).defaultValue(DSL.inline("{}", SQLDataType.VARCHAR)), this, "渠道信息");
+    public final TableField<ChannelRecord, String> CHANNEL_INFO = createField(DSL.name("channel_info"), SQLDataType.VARCHAR(4096).nullable(false).defaultValue(DSL.inline("{}", SQLDataType.VARCHAR)), this, "渠道信息");
 
     /**
      * The column <code>channel.price_info</code>. 单价
