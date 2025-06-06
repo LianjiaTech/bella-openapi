@@ -29,11 +29,24 @@ public class ApikeyController {
     @PostMapping("/create")
     public String createApikey(@RequestBody ApikeyCreateOp op) {
         ApikeyInfo cur = EndpointContext.getApikey();
-        Assert.isTrue(StringUtils.isEmpty(cur.getParentCode()), "当前AK无创建子AK权限");
         Assert.notNull(op.getMonthQuota(), "配额应不可为null");
         Assert.notNull(op.getSafetyLevel(), "安全等级不可为空");
         Assert.isTrue(StringUtils.isNotEmpty(op.getRoleCode()) || CollectionUtils.isNotEmpty(op.getPaths()), "权限不可为空");
-        op.setParentCode(cur.getCode());
+        
+        // 如果请求中没有parentCode，则使用当前AK作为父AK
+        if (StringUtils.isEmpty(op.getParentCode())) {
+            Assert.isTrue(StringUtils.isEmpty(cur.getParentCode()), "当前AK无创建子AK权限");
+            op.setParentCode(cur.getCode());
+        } else {
+            // 如果请求中有parentCode，验证当前AK和parentCode属于同一个人
+            Assert.isTrue(cur.getOwnerType().equals("person") || cur.getOwnerType().equals("console"), "只有个人或控制台AK可以创建子AK");
+            ApikeyInfo parentApikey = as.queryByCode(op.getParentCode(), true);
+            Assert.notNull(parentApikey, "父AK不存在或已停用");
+            Assert.isTrue(cur.getOwnerType().equals(parentApikey.getOwnerType()) && 
+                         cur.getOwnerCode().equals(parentApikey.getOwnerCode()), 
+                         "当前AK和父AK必须属于同一个人");
+        }
+        
         return as.createByParentCode(op);
     }
 

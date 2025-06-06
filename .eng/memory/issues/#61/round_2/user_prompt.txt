@@ -1,0 +1,2900 @@
+# 项目文件描述
+
+
+- api/server/src/main/java/com/ke/bella/openapi/service/ApikeyService.java: API key管理服务。提供API key的创建、更新、验证和权限检查等功能，使用缓存和数据库进行存储和校验。
+
+- api/server/src/main/java/com/ke/bella/openapi/db/repo/ApikeyRepo.java: 此文件定义了ApikeyRepo类，用于操作API Key数据库记录，支持查询、更新等基本操作。通过JOOQ构建动态查询条件，并与Apikey相关的数据库表进行交互。
+
+- api/server/src/main/java/com/ke/bella/openapi/console/ApikeyConsoleController.java: 这个文件实现了API Key管理的控制器，提供了一系列接口用于申请、重置、重命名API Key，以及更新角色、配额等操作。关键类包括ApikeyConsoleController和ApikeyService，负责处理API Key相关的业务逻辑，与数据库交互以获取和更新API Key信息。
+
+- api/server/src/main/java/com/ke/bella/openapi/endpoints/ApikeyController.java: API密钥控制器，提供创建、查询和权限检查的API接口，通过ApikeyService与服务交互。
+
+- api/sdk/src/main/java/com/ke/bella/openapi/apikey/ApikeyInfo.java: 包含ApikeyInfo类，管理API密钥的信息和权限。支持序列化与反序列化，并提供权限检查功能。使用Lombok简化代码。
+
+- api/server/src/codegen/java/com/ke/bella/openapi/tables/pojos/ApikeyDB.java: 这个文件是由jOOQ生成的，用于表示API密钥信息的数据类。
+
+- api/server/src/codegen/java/com/ke/bella/openapi/tables/Apikey.java: 该文件是由jOOQ生成的代表数据库表apikey的类，它定义了各种ak相关的字段，并通过类ApikeyRecord交互。
+
+- api/server/src/codegen/java/com/ke/bella/openapi/tables/records/ApikeyRecord.java: 由jOOQ生成，定义了ApikeyRecord类，表示API密钥的数据库记录结构。包含密钥的加密信息、所有者信息及状态等。
+
+- api/server/src/main/java/com/ke/bella/openapi/db/repo/ApikeyRoleRepo.java: 定了ApikeyRoleRepo类，继承自UniqueKeyRepo，提供API密钥角色的数据库操作，使用jOOQ库进行数据库操作。
+
+- api/sdk/src/main/java/com/ke/bella/openapi/apikey/ApikeyOps.java: 定义用于操作API密钥的操作类，包括ApplyOp、NameOp、QuotaOp等，用于分配或修改API密钥属性。
+
+
+# 文件内容
+
+
+
+```
+File: api/server/src/main/java/com/ke/bella/openapi/service/ApikeyService.java
+1 package com.ke.bella.openapi.service;
+2 
+3 import com.alicp.jetcache.CacheManager;
+4 import com.alicp.jetcache.anno.CachePenetrationProtect;
+5 import com.alicp.jetcache.anno.CacheType;
+6 import com.alicp.jetcache.anno.CacheUpdate;
+7 import com.alicp.jetcache.anno.Cached;
+8 import com.alicp.jetcache.template.QuickConfig;
+9 import com.google.common.collect.Sets;
+10 import com.ke.bella.openapi.BellaContext;
+11 import com.ke.bella.openapi.EndpointContext;
+12 import com.ke.bella.openapi.Operator;
+13 import com.ke.bella.openapi.PermissionCondition;
+14 import com.ke.bella.openapi.apikey.ApikeyCreateOp;
+15 import com.ke.bella.openapi.apikey.ApikeyInfo;
+16 import com.ke.bella.openapi.apikey.ApikeyOps;
+17 import com.ke.bella.openapi.common.exception.ChannelException;
+18 import com.ke.bella.openapi.db.repo.ApikeyCostRepo;
+19 import com.ke.bella.openapi.db.repo.ApikeyRepo;
+20 import com.ke.bella.openapi.db.repo.ApikeyRoleRepo;
+21 import com.ke.bella.openapi.db.repo.Page;
+22 import com.ke.bella.openapi.safety.ISafetyAuditService;
+23 import com.ke.bella.openapi.tables.pojos.ApikeyDB;
+24 import com.ke.bella.openapi.tables.pojos.ApikeyMonthCostDB;
+25 import com.ke.bella.openapi.tables.pojos.ApikeyRoleDB;
+26 import com.ke.bella.openapi.utils.EncryptUtils;
+27 import com.ke.bella.openapi.utils.JacksonUtils;
+28 import com.ke.bella.openapi.utils.MatchUtils;
+29 import org.apache.commons.collections4.CollectionUtils;
+30 import org.apache.commons.lang3.StringUtils;
+31 import org.springframework.beans.factory.annotation.Autowired;
+32 import org.springframework.beans.factory.annotation.Value;
+33 import org.springframework.context.ApplicationContext;
+34 import org.springframework.stereotype.Component;
+35 import org.springframework.transaction.annotation.Transactional;
+36 import org.springframework.util.Assert;
+37 
+38 import javax.annotation.PostConstruct;
+39 import java.math.BigDecimal;
+40 import java.time.Duration;
+41 import java.util.HashSet;
+42 import java.util.List;
+43 import java.util.Set;
+44 import java.util.UUID;
+45 
+46 import static com.ke.bella.openapi.common.EntityConstants.ACTIVE;
+47 import static com.ke.bella.openapi.common.EntityConstants.CONSOLE;
+48 import static com.ke.bella.openapi.common.EntityConstants.INACTIVE;
+49 import static com.ke.bella.openapi.common.EntityConstants.ORG;
+50 import static com.ke.bella.openapi.common.EntityConstants.PERSON;
+51 import static com.ke.bella.openapi.common.EntityConstants.SYSTEM;
+52 
+53 @Component
+54 public class ApikeyService {
+55     @Autowired
+56     private ApikeyRepo apikeyRepo;
+57 
+58     @Autowired
+59     private ApikeyRoleRepo apikeyRoleRepo;
+60 
+61     @Autowired
+62     private ApikeyCostRepo apikeyCostRepo;
+63 
+64     @Value("${apikey.basic.monthQuota:200}")
+65     private int basicMonthQuota;
+66 
+67     @Value("${apikey.basic.roleCode:low}")
+68     private String basicRoleCode;
+69 
+70     @Value("${apikey.basic.safetyLevel:40}")
+71     private byte basicSafetyLevel;
+72 
+73     @Value("#{'${apikey.basic.childRoleCodes:low,high}'.split (',')}")
+74     private List<String> childRoleCodes;
+75     @Value("${cache.use:true}")
+76     private boolean useCache;
+77     @Autowired
+78     private CacheManager cacheManager;
+79     @Autowired
+80     private ApplicationContext applicationContext;
+81     @Autowired
+82     private ISafetyAuditService safetyAuditService;
+83     private static final String apikeyCacheKey = "apikey:sha:";
+84 
+85     @PostConstruct
+86     public void postConstruct() {
+87         QuickConfig quickConfig = QuickConfig.newBuilder(apikeyCacheKey)
+88                 .cacheNullValue(true)
+89                 .cacheType(CacheType.LOCAL)
+90                 .expire(Duration.ofSeconds(30))
+91                 .localExpire(Duration.ofSeconds(30))
+92                 .localLimit(500)
+93                 .penetrationProtect(true)
+94                 .penetrationProtectTimeout(Duration.ofSeconds(10))
+95                 .build();
+96         cacheManager.getOrCreateCache(quickConfig);
+97     }
+98 
+99     @Transactional
+100     public String apply(ApikeyOps.ApplyOp op) {
+101         String ak = UUID.randomUUID().toString();
+102         String sha = EncryptUtils.sha256(ak);
+103         String display = EncryptUtils.desensitize(ak);
+104         if(StringUtils.isNotEmpty(op.getRoleCode())) {
+105             Assert.isTrue(childRoleCodes.contains(op.getRoleCode()), "role code不可使用");
+106         }
+107         ApikeyDB db = new ApikeyDB();
+108         db.setAkSha(sha);
+109         db.setAkDisplay(display);
+110         db.setOwnerType(op.getOwnerType());
+111         db.setOwnerCode(op.getOwnerCode());
+112         db.setOwnerName(op.getOwnerName());
+113         db.setRoleCode(StringUtils.isEmpty(op.getRoleCode()) ? basicRoleCode : op.getRoleCode());
+114         db.setSafetyLevel(basicSafetyLevel);
+115         db.setMonthQuota(op.getMonthQuota() == null ? BigDecimal.valueOf(basicMonthQuota) : op.getMonthQuota());
+116         db.setName(op.getName());
+117         db.setRemark(op.getRemark());
+118         apikeyRepo.insert(db);
+119         return ak;
+120     }
+121 
+122     @Transactional
+123     public String createByParentCode(ApikeyCreateOp op) {
+124         ApikeyInfo apikey = EndpointContext.getApikey();
+125         if(!apikey.getCode().equals(op.getParentCode())) {
+126             throw new ChannelException.AuthorizationException("没有操作权限");
+127         }
+128         if(StringUtils.isNotEmpty(op.getRoleCode())) {
+129             apikeyRoleRepo.checkExist(op.getRoleCode(), true);
+130         }
+131         Assert.isTrue(op.getMonthQuota() == null || op.getMonthQuota().doubleValue() <= apikey.getMonthQuota().doubleValue(), "配额超出ak的最大配额");
+132         Assert.isTrue(op.getSafetyLevel() <= apikey.getSafetyLevel(), "安全等级超出ak的最高等级");
+133         String ak = UUID.randomUUID().toString();
+134         String sha = EncryptUtils.sha256(ak);
+135         String display = EncryptUtils.desensitize(ak);
+136         ApikeyDB db = new ApikeyDB();
+137         db.setAkSha(sha);
+138         db.setAkDisplay(display);
+139         db.setParentCode(op.getParentCode());
+140         db.setOutEntityCode(op.getOutEntityCode());
+141         db.setOwnerType(apikey.getOwnerType());
+142         db.setOwnerCode(apikey.getOwnerCode());
+143         db.setOwnerName(apikey.getOwnerName());
+144         db.setRoleCode(op.getRoleCode());
+145         db.setMonthQuota(op.getMonthQuota());
+146         db.setSafetyLevel(op.getSafetyLevel());
+147         db.setName(op.getName());
+148         db.setRemark(op.getRemark());
+149         db = apikeyRepo.insert(db);
+150         if(CollectionUtils.isNotEmpty(op.getPaths())) {
+151            boolean match = op.getPaths().stream().allMatch(url -> apikey.getRolePath().getIncluded().stream().anyMatch(pattern -> MatchUtils.matchUrl(pattern, url))
+152                     && apikey.getRolePath().getExcluded().stream().noneMatch(pattern -> MatchUtils.matchUrl(pattern, url)));
+153             Assert.isTrue(match, "超出ak的权限范围");
+154             updateRole(ApikeyOps.RoleOp.builder().code(db.getCode()).paths(op.getPaths()).build());
+155         }
+156         return ak;
+157     }
+158 
+159     @Transactional
+160     public String reset(ApikeyOps.CodeOp op) {
+161         apikeyRepo.checkExist(op.getCode(), true);
+162         checkPermission(op.getCode());
+163         String ak = UUID.randomUUID().toString();
+164         String sha = EncryptUtils.sha256(ak);
+165         String display = EncryptUtils.desensitize(ak);
+166         ApikeyDB db = new ApikeyDB();
+167         db.setAkSha(sha);
+168         db.setAkDisplay(display);
+169         apikeyRepo.update(db, op.getCode());
+170         return ak;
+171     }
+172 
+173     @Transactional
+174     public void rename(ApikeyOps.NameOp op) {
+175         apikeyRepo.update(op, op.getCode());
+176     }
+177 
+178     @Transactional
+179     public void bindService(ApikeyOps.ServiceOp op) {
+180         apikeyRepo.update(op, op.getCode());
+181     }
+182 
+183     @Transactional
+184     public void updateRole(ApikeyOps.RoleOp op) {
+185         apikeyRepo.checkExist(op.getCode(), true);
+186         checkPermission(op.getCode());
+187         if(StringUtils.isNotEmpty(op.getRoleCode())) {
+188             apikeyRoleRepo.checkExist(op.getRoleCode(), true);
+189         } else {
+190             ApikeyRoleDB roleDB = new ApikeyRoleDB();
+191             ApikeyInfo.RolePath rolePath = new ApikeyInfo.RolePath();
+192             rolePath.setIncluded(op.getPaths());
+193             roleDB.setPath(JacksonUtils.serialize(rolePath));
+194             roleDB = apikeyRoleRepo.insert(roleDB);
+195             op.setRoleCode(roleDB.getRoleCode());
+196         }
+197         apikeyRepo.update(op, op.getCode());
+198     }
+199 
+200     @Transactional
+201     public void certify(ApikeyOps.CertifyOp op) {
+202         apikeyRepo.checkExist(op.getCode(), true);
+203         checkPermission(op.getCode());
+204         Byte level = safetyAuditService.fetchLevelByCertifyCode(op.getCertifyCode());
+205         ApikeyDB db = new ApikeyDB();
+206         db.setCertifyCode(op.getCertifyCode());
+207         db.setSafetyLevel(level);
+208         apikeyRepo.update(db, op.getCode());
+209     }
+210 
+211     @Transactional
+212     public void updateQuota(ApikeyOps.QuotaOp op) {
+213         apikeyRepo.checkExist(op.getCode(), true);
+214         checkPermission(op.getCode());
+215         apikeyRepo.update(op, op.getCode());
+216     }
+217 
+218     @Transactional
+219     public void changeStatus(ApikeyOps.CodeOp op, boolean active) {
+220         apikeyRepo.checkExist(op.getCode(), true);
+221         checkPermission(op.getCode());
+222         String status = active ? ACTIVE : INACTIVE;
+223         apikeyRepo.updateStatus(op.getCode(), status);
+224     }
+225 
+226     public ApikeyInfo verifyAuth(String auth) {
+227         String ak;
+228         if(auth.startsWith("Bearer ")) {
+229             ak = auth.substring(7);
+230         } else {
+231             ak = auth;
+232         }
+233         String sha = EncryptUtils.sha256(ak);
+234         ApikeyInfo info = queryBySha(sha, true);
+235         if(info == null) {
+236             String display = EncryptUtils.desensitizeByLength(auth);
+237             String displayAk = EncryptUtils.desensitize(ak);
+238             throw new ChannelException.AuthorizationException("api key不存在，请求的header为：" + display + ", apikey为：" + displayAk);
+239         }
+240         if(StringUtils.isNotEmpty(info.getParentCode())) {
+241             ApikeyInfo parent = queryByCode(info.getParentCode(), true);
+242             if(parent == null) {
+243                 String display = EncryptUtils.desensitizeByLength(auth);
+244                 String displayAk = EncryptUtils.desensitize(ak);
+245                 throw new ChannelException.AuthorizationException("api key不存在，请求的header为：" + display + ", apikey为：" + displayAk);
+246             }
+247             info.setParentInfo(parent);
+248         }
+249         info.setApikey(ak);
+250         return info;
+251     }
+252 
+253     public ApikeyInfo queryBySha(String sha, boolean onlyActive) {
+254         ApikeyInfo apikeyInfo;
+255         if(useCache && onlyActive) {
+256             apikeyInfo = applicationContext.getBean(ApikeyService.class).queryWithCache(sha);
+257         } else {
+258             apikeyInfo = apikeyRepo.queryBySha(sha);
+259         }
+260         if(apikeyInfo != null) {
+261             if(apikeyInfo.getOwnerType().equals(PERSON)) {
+262                 apikeyInfo.setUserId(Long.parseLong(apikeyInfo.getOwnerCode()));
+263             } else {
+264                 apikeyInfo.setUserId(0L);
+265             }
+266         }
+267         return apikeyInfo;
+268     }
+269 
+270     public ApikeyInfo queryByCode(String code, boolean onlyActive) {
+271         ApikeyInfo apikeyInfo = apikeyRepo.queryByCode(code);
+272         if(apikeyInfo == null ||(onlyActive && apikeyInfo.getStatus().equals(INACTIVE))) {
+273             return null;
+274         }
+275         return apikeyInfo;
+276     }
+277 
+278     @Transactional
+279     @CacheUpdate(name = "apikey:cost:month:", key = "#akCode + ':' + #month", value = "#result")
+280     public BigDecimal recordCost(String akCode, String month, BigDecimal cost) {
+281         BigDecimal amount = apikeyCostRepo.queryCost(akCode, month);
+282         if(amount == null) {
+283             apikeyCostRepo.insert(akCode, month);
+284         }
+285         apikeyCostRepo.increment(akCode, month, cost);
+286         return apikeyCostRepo.queryCost(akCode, month);
+287     }
+288 
+289     @Cached(name = "apikey:cost:month:", key = "#akCode + ':' + #month", expire = 31 * 24 * 3600,
+290             condition = "T(com.ke.bella.openapi.utils.DateTimeUtils).isCurrentMonth(#month)")
+291     @CachePenetrationProtect(timeout = 5)
+292     public BigDecimal loadCost(String akCode, String month) {
+293         BigDecimal amount = apikeyCostRepo.queryCost(akCode, month);
+294         return amount == null ? BigDecimal.ZERO : amount;
+295     }
+296 
+297     public List<ApikeyMonthCostDB> queryBillingsByAkCode(String akCode) {
+298         return apikeyCostRepo.queryByAkCode(akCode);
+299     }
+300 
+301     private void checkPermission(String code) {
+302         ApikeyDB db = apikeyRepo.queryByUniqueKey(code);
+303         ApikeyInfo apikeyInfo = EndpointContext.getApikeyIgnoreNull();
+304         if(apikeyInfo == null) {
+305             Operator op = BellaContext.getOperator();
+306             Assert.isTrue((db.getOwnerType().equals(PERSON) || db.getOwnerType().equals(CONSOLE)) && db.getOwnerCode().equals(op.getUserId().toString()),
+307                     "没有操作权限");
+308             return;
+309         }
+310         if(apikeyInfo.getOwnerType().equals(SYSTEM)) {
+311             return;
+312         }
+313         //todo: 获取所有 org
+314         Set<String> orgCodes = new HashSet<>();
+315         if(db.getOwnerType().equals(SYSTEM)) {
+316             throw new ChannelException.AuthorizationException("没有操作权限");
+317         }
+318         if(db.getOwnerType().equals(ORG)) {
+319             validateOrgPermission(apikeyInfo, Sets.newHashSet(db.getOwnerCode()), orgCodes);
+320         } else {
+321             validateUserPermission(apikeyInfo, db.getOwnerCode());
+322         }
+323     }
+324 
+325     public Page<ApikeyDB> pageApikey(ApikeyOps.ApikeyCondition condition) {
+326         fillPermissionCode(condition, false);
+327         return apikeyRepo.pageAccessKeys(condition);
+328     }
+329 
+330     public void fillPermissionCode(PermissionCondition condition, boolean apikeyFirst) {
+331         ApikeyInfo apikeyInfo = EndpointContext.getApikeyIgnoreNull();
+332         Operator op = BellaContext.getOperatorIgnoreNull();
+333         if(apikeyInfo == null || (!apikeyFirst && op != null)) {
+334             if (op == null || CollectionUtils.isNotEmpty(condition.getOrgCodes())) {
+335                 throw new ChannelException.AuthorizationException("没有操作权限");
+336             }
+337             if (StringUtils.isNotEmpty(condition.getPersonalCode())) {
+338                 Assert.isTrue(op.getUserId().toString().equals(condition.getPersonalCode()), "没有操作权限");
+339             } else {
+340                 condition.setPersonalCode(op.getUserId().toString());
+341             }
+342             return;
+343         }
+344         // TODO: 获取所有组织代码并填充到 orgCodes
+345         Set<String> orgCodes = new HashSet<>();
+346 
+347         if (StringUtils.isEmpty(condition.getPersonalCode())) {
+348             if(apikeyInfo.getOwnerType().equals(PERSON)) {
+349                 condition.setPersonalCode(apikeyInfo.getOwnerCode());
+350             }
+351         } else {
+352             validateUserPermission(apikeyInfo, condition.getPersonalCode());
+353         }
+354 
+355         if (CollectionUtils.isEmpty(condition.getOrgCodes())) {
+356             condition.setOrgCodes(orgCodes);
+357         } else {
+358             validateOrgPermission(apikeyInfo, condition.getOrgCodes(), orgCodes);
+359         }
+360     }
+361 
+362     private void validateUserPermission(ApikeyInfo apikeyInfo, String personalCode) {
+363         if(apikeyInfo.getOwnerType().equals(SYSTEM) || ((apikeyInfo.getOwnerType().equals(PERSON) || apikeyInfo.getOwnerType().equals(CONSOLE)) && personalCode.equals(apikeyInfo.getOwnerCode()))) {
+364             return;
+365         }
+366         throw new ChannelException.AuthorizationException("没有操作权限");
+367     }
+368 
+369     private void validateOrgPermission(ApikeyInfo apikeyInfo, Set<String> conditionOrgCodes, Set<String> orgCodes) {
+370         if(apikeyInfo.getOwnerType().equals(SYSTEM) || CollectionUtils.isEmpty(conditionOrgCodes) || orgCodes.containsAll(conditionOrgCodes)) {
+371             return;
+372         }
+373         throw new ChannelException.AuthorizationException("没有操作权限");
+374     }
+375 
+376     @Cached(name = apikeyCacheKey, key = "#sha")
+377     public ApikeyInfo queryWithCache(String sha) {
+378         ApikeyInfo apikeyInfo = apikeyRepo.queryBySha(sha);
+379         if(apikeyInfo == null || (apikeyInfo.getStatus().equals(INACTIVE))) {
+380             return null;
+381         }
+382         return apikeyInfo;
+383     }
+384 }
+385
+```
+
+
+
+
+```
+File: api/server/src/main/java/com/ke/bella/openapi/db/repo/ApikeyRepo.java
+1 package com.ke.bella.openapi.db.repo;
+2 
+3 import com.ke.bella.openapi.apikey.ApikeyInfo;
+4 import com.ke.bella.openapi.apikey.ApikeyOps;
+5 import com.ke.bella.openapi.common.EntityConstants;
+6 import com.ke.bella.openapi.tables.pojos.ApikeyDB;
+7 import com.ke.bella.openapi.tables.records.ApikeyRecord;
+8 import org.apache.commons.lang3.StringUtils;
+9 import org.jooq.SelectSeekStep1;
+10 import org.jooq.TableField;
+11 import org.jooq.impl.DSL;
+12 import org.jooq.impl.TableImpl;
+13 import org.springframework.stereotype.Component;
+14 
+15 import java.util.List;
+16 
+17 import static com.ke.bella.openapi.Tables.APIKEY;
+18 import static com.ke.bella.openapi.Tables.APIKEY_ROLE;
+19 
+20 @Component
+21 public class ApikeyRepo extends StatusRepo<ApikeyDB, ApikeyRecord, String> implements AutogenCodeRepo<ApikeyRecord> {
+22 
+23     public ApikeyInfo queryBySha(String sha) {
+24         return db.select(APIKEY.fields())
+25                 .select(APIKEY_ROLE.PATH).from(APIKEY)
+26                 .leftJoin(APIKEY_ROLE).on(APIKEY.ROLE_CODE.eq(APIKEY_ROLE.ROLE_CODE))
+27                 .where(APIKEY.AK_SHA.eq(sha))
+28                 .fetchOneInto(ApikeyInfo.class);
+29     }
+30 
+31     public ApikeyInfo queryByCode(String code) {
+32         return db.select(APIKEY.fields())
+33                 .select(APIKEY_ROLE.PATH).from(APIKEY)
+34                 .leftJoin(APIKEY_ROLE).on(APIKEY.ROLE_CODE.eq(APIKEY_ROLE.ROLE_CODE))
+35                 .where(APIKEY.CODE.eq(code))
+36                 .fetchOneInto(ApikeyInfo.class);
+37     }
+38 
+39     public void updateRoleBySha(String sha, String roleCode) {
+40         db.update(APIKEY)
+41                 .set(APIKEY.ROLE_CODE, roleCode)
+42                 .where(APIKEY.AK_SHA.eq(sha))
+43                 .execute();
+44     }
+45 
+46     public List<ApikeyDB> listAccessKeys(ApikeyOps.ApikeyCondition op) {
+47         return constructSql(op).fetchInto(ApikeyDB.class);
+48     }
+49 
+50     public Page<ApikeyDB> pageAccessKeys(ApikeyOps.ApikeyCondition op) {
+51         return queryPage(db, constructSql(op), op.getPage(), op.getSize(), ApikeyDB.class);
+52     }
+53 
+54     private SelectSeekStep1<ApikeyRecord, Long> constructSql(ApikeyOps.ApikeyCondition op) {
+55         return db.selectFrom(APIKEY)
+56                 .where(StringUtils.isEmpty(op.getOwnerType()) ? DSL.noCondition() : APIKEY.OWNER_TYPE.eq(op.getOwnerType()))
+57                 .and(StringUtils.isEmpty(op.getOwnerCode()) ? DSL.noCondition() : APIKEY.OWNER_CODE.eq(op.getOwnerCode()))
+58                 .and(StringUtils.isEmpty(op.getParentCode()) ? DSL.noCondition() : APIKEY.PARENT_CODE.eq(op.getParentCode()))
+59                 .and(StringUtils.isEmpty(op.getName()) ? DSL.noCondition() : APIKEY.NAME.eq(op.getName()))
+60                 .and(StringUtils.isEmpty(op.getParentCode()) ? DSL.noCondition() : APIKEY.PARENT_CODE.eq(op.getParentCode()))
+61                 .and(StringUtils.isEmpty(op.getServiceId()) ? DSL.noCondition() : APIKEY.SERVICE_ID.eq(op.getServiceId()))
+62                 .and(StringUtils.isEmpty(op.getOutEntityCode()) ? DSL.noCondition() : APIKEY.OUT_ENTITY_CODE.eq(op.getOutEntityCode()))
+63                 .and(StringUtils.isEmpty(op.getSearchParam()) ? DSL.noCondition() : APIKEY.NAME.like(op.getSearchParam() + "%")
+64                         .or(APIKEY.SERVICE_ID.like(op.getSearchParam() + "%")))
+65                 .and(op.isIncludeChild() ? DSL.noCondition() : APIKEY.PARENT_CODE.eq(StringUtils.EMPTY))
+66                 .and(StringUtils.isEmpty(op.getStatus()) ? DSL.noCondition() : APIKEY.STATUS.eq(op.getStatus()))
+67                 .and(StringUtils.isEmpty(op.getPersonalCode()) ? DSL.noCondition() :
+68                                 APIKEY.OWNER_TYPE.eq(EntityConstants.PERSON).and(APIKEY.OWNER_CODE.eq(op.getPersonalCode())))
+69                 .orderBy(APIKEY.ID.desc());
+70     }
+71 
+72     @Override
+73     public TableField<ApikeyRecord, String> autoCode() {
+74         return APIKEY.CODE;
+75     }
+76 
+77     @Override
+78     public String prefix() {
+79         return "ak-";
+80     }
+81 
+82     @Override
+83     protected TableField<ApikeyRecord, String> statusFiled() {
+84         return APIKEY.STATUS;
+85     }
+86 
+87     @Override
+88     protected TableImpl<ApikeyRecord> table() {
+89         return APIKEY;
+90     }
+91 
+92     @Override
+93     protected TableField<ApikeyRecord, String> uniqueKey() {
+94         return APIKEY.CODE;
+95     }
+96 }
+97
+```
+
+
+
+
+```
+File: api/server/src/main/java/com/ke/bella/openapi/console/ApikeyConsoleController.java
+1 package com.ke.bella.openapi.console;
+2 
+3 import com.ke.bella.openapi.annotations.BellaAPI;
+4 import com.ke.bella.openapi.apikey.ApikeyInfo;
+5 import com.ke.bella.openapi.apikey.ApikeyOps;
+6 import com.ke.bella.openapi.db.repo.Page;
+7 import com.ke.bella.openapi.service.ApikeyService;
+8 import com.ke.bella.openapi.tables.pojos.ApikeyDB;
+9 import com.ke.bella.openapi.tables.pojos.ApikeyMonthCostDB;
+10 import io.swagger.v3.oas.annotations.tags.Tag;
+11 import org.apache.commons.collections4.CollectionUtils;
+12 import org.apache.commons.lang3.StringUtils;
+13 import org.springframework.beans.factory.annotation.Autowired;
+14 import org.springframework.util.Assert;
+15 import org.springframework.web.bind.annotation.GetMapping;
+16 import org.springframework.web.bind.annotation.PathVariable;
+17 import org.springframework.web.bind.annotation.PostMapping;
+18 import org.springframework.web.bind.annotation.RequestBody;
+19 import org.springframework.web.bind.annotation.RequestMapping;
+20 import org.springframework.web.bind.annotation.RequestParam;
+21 import org.springframework.web.bind.annotation.RestController;
+22 
+23 import java.math.RoundingMode;
+24 import java.util.List;
+25 import java.util.Map;
+26 import java.util.HashMap;
+27 import java.math.BigDecimal;
+28 import com.ke.bella.openapi.utils.DateTimeUtils;
+29 
+30 @BellaAPI
+31 @RestController
+32 @RequestMapping("/console/apikey")
+33 @Tag(name = "API Key管理")
+34 public class ApikeyConsoleController {
+35     @Autowired
+36     private ApikeyService apikeyService;
+37     @PostMapping("/apply")
+38     public String apply(@RequestBody ApikeyOps.ApplyOp op) {
+39         Assert.isTrue(op.getMonthQuota() == null || op.getMonthQuota().doubleValue() > 0, "配额应大于0");
+40         return apikeyService.apply(op);
+41     }
+42 
+43     @PostMapping("/reset")
+44     public String reset(@RequestBody ApikeyOps.CodeOp op) {
+45         Assert.hasText(op.getCode(), "code不可为空");
+46         return apikeyService.reset(op);
+47     }
+48 
+49     @PostMapping("/rename")
+50     public Boolean rename(@RequestBody ApikeyOps.NameOp op) {
+51         Assert.hasText(op.getCode(), "code不可为空");
+52         Assert.notNull(op.getName(), "name不可为null");
+53         apikeyService.rename(op);
+54         return true;
+55     }
+56 
+57     @PostMapping("/bindService")
+58     public Boolean bindService(@RequestBody ApikeyOps.ServiceOp op) {
+59         Assert.hasText(op.getCode(), "code不可为空");
+60         Assert.notNull(op.getServiceId(), "name不可为null");
+61         apikeyService.bindService(op);
+62         return true;
+63     }
+64 
+65     @PostMapping("/role/update")
+66     public Boolean updateRole(@RequestBody ApikeyOps.RoleOp op) {
+67         Assert.hasText(op.getCode(), "code不可为空");
+68         Assert.isTrue(StringUtils.isNotEmpty(op.getRoleCode())
+69                         || CollectionUtils.isNotEmpty(op.getPaths()), "权限不可为空");
+70         apikeyService.updateRole(op);
+71         return true;
+72     }
+73 
+74     @PostMapping("/quota/update")
+75     public Boolean updateQuota(@RequestBody ApikeyOps.QuotaOp op) {
+76         Assert.hasText(op.getCode(), "code不可为空");
+77         Assert.notNull(op.getMonthQuota(), "配额不可为空");
+78         Assert.isTrue(op.getMonthQuota().doubleValue() > 0, "配额应大于0");
+79         apikeyService.updateQuota(op);
+80         return true;
+81     }
+82 
+83     @PostMapping("/certify")
+84     public Boolean certify(@RequestBody ApikeyOps.CertifyOp op) {
+85         Assert.hasText(op.getCode(), "code不可为空");
+86         Assert.notNull(op.getCertifyCode(), "认证码不可为空");
+87         apikeyService.certify(op);
+88         return true;
+89     }
+90 
+91     @PostMapping("/activate")
+92     public Boolean activate(@RequestBody ApikeyOps.CodeOp op) {
+93         Assert.hasText(op.getCode(), "code不可为空");
+94         apikeyService.changeStatus(op, true);
+95         return true;
+96     }
+97 
+98     @PostMapping("/inactivate")
+99     public Boolean inactivate(@RequestBody ApikeyOps.CodeOp op) {
+100         Assert.hasText(op.getCode(), "code不可为空");
+101         apikeyService.changeStatus(op, false);
+102         return true;
+103     }
+104 
+105 
+106     @GetMapping("/cost/{akCode}")
+107     public List<ApikeyMonthCostDB> listApiKeyBillings(@PathVariable String akCode) {
+108         return apikeyService.queryBillingsByAkCode(akCode);
+109     }
+110 
+111     @GetMapping("/balance/{akCode}")
+112     public Map<String, Object> getApiKeyBalance(@PathVariable String akCode) {
+113         String currentMonth = DateTimeUtils.getCurrentMonth();
+114         BigDecimal monthCost = apikeyService.loadCost(akCode, currentMonth).divide(BigDecimal.valueOf(100), RoundingMode.UP);
+115         ApikeyInfo apiKeyInfo = apikeyService.queryByCode(akCode, true);
+116         Map<String, Object> result = new HashMap<>();
+117         result.put("akCode", akCode);
+118         result.put("month", currentMonth);
+119         result.put("cost", monthCost);
+120         result.put("quota", apiKeyInfo != null ? apiKeyInfo.getMonthQuota() : BigDecimal.ZERO);
+121         result.put("balance", apiKeyInfo != null ? apiKeyInfo.getMonthQuota().subtract(monthCost) : BigDecimal.ZERO);
+122         return result;
+123     }
+124 
+125     @GetMapping("/fetchByCode")
+126     public ApikeyInfo fetchByCode(@RequestParam("code") String code, @RequestParam(value = "onlyActive", required = false) boolean onlyActive) {
+127         return apikeyService.queryByCode(code, onlyActive);
+128     }
+129 
+130     @GetMapping("/fetchBySha")
+131     public ApikeyInfo fetchBySha(@RequestParam("sha") String sha, @RequestParam(value = "onlyActive", required = false) boolean onlyActive) {
+132         return apikeyService.queryBySha(sha, onlyActive);
+133     }
+134 
+135     @GetMapping("/page")
+136     public Page<ApikeyDB> pageApikey(ApikeyOps.ApikeyCondition condition) {
+137         return apikeyService.pageApikey(condition);
+138     }
+139 }
+140
+```
+
+
+
+
+```
+File: api/server/src/main/java/com/ke/bella/openapi/endpoints/ApikeyController.java
+1 package com.ke.bella.openapi.endpoints;
+2 
+3 import com.ke.bella.openapi.EndpointContext;
+4 import com.ke.bella.openapi.annotations.BellaAPI;
+5 import com.ke.bella.openapi.apikey.ApikeyCreateOp;
+6 import com.ke.bella.openapi.apikey.ApikeyInfo;
+7 import com.ke.bella.openapi.service.ApikeyService;
+8 import io.swagger.v3.oas.annotations.tags.Tag;
+9 import org.apache.commons.collections4.CollectionUtils;
+10 import org.apache.commons.lang3.StringUtils;
+11 import org.springframework.beans.factory.annotation.Autowired;
+12 import org.springframework.util.Assert;
+13 import org.springframework.web.bind.annotation.GetMapping;
+14 import org.springframework.web.bind.annotation.PostMapping;
+15 import org.springframework.web.bind.annotation.RequestBody;
+16 import org.springframework.web.bind.annotation.RequestMapping;
+17 import org.springframework.web.bind.annotation.RequestParam;
+18 import org.springframework.web.bind.annotation.RestController;
+19 
+20 @BellaAPI
+21 @RestController
+22 @RequestMapping("/v1/apikey")
+23 @Tag(name = "信息查询")
+24 public class ApikeyController {
+25 
+26     @Autowired
+27     private ApikeyService as;
+28 
+29     @PostMapping("/create")
+30     public String createApikey(@RequestBody ApikeyCreateOp op) {
+31         ApikeyInfo cur = EndpointContext.getApikey();
+32         Assert.isTrue(StringUtils.isEmpty(cur.getParentCode()), "当前AK无创建子AK权限");
+33         Assert.notNull(op.getMonthQuota(), "配额应不可为null");
+34         Assert.notNull(op.getSafetyLevel(), "安全等级不可为空");
+35         Assert.isTrue(StringUtils.isNotEmpty(op.getRoleCode()) || CollectionUtils.isNotEmpty(op.getPaths()), "权限不可为空");
+36         op.setParentCode(cur.getCode());
+37         return as.createByParentCode(op);
+38     }
+39 
+40     @GetMapping("/whoami")
+41     public ApikeyInfo whoami() {
+42         return EndpointContext.getApikey();
+43     }
+44 
+45     @GetMapping("/permission/check")
+46     public Boolean permissionCheck(@RequestParam String url) {
+47         return EndpointContext.getApikey().hasPermission(url);
+48     }
+49 }
+50
+```
+
+
+
+
+```
+File: api/sdk/src/main/java/com/ke/bella/openapi/apikey/ApikeyInfo.java
+1 package com.ke.bella.openapi.apikey;
+2 
+3 import com.fasterxml.jackson.annotation.JsonIgnore;
+4 import com.ke.bella.openapi.utils.JacksonUtils;
+5 import com.ke.bella.openapi.utils.MatchUtils;
+6 import lombok.AllArgsConstructor;
+7 import lombok.Builder;
+8 import lombok.Data;
+9 import lombok.NoArgsConstructor;
+10 
+11 import java.io.Serializable;
+12 import java.math.BigDecimal;
+13 import java.util.ArrayList;
+14 import java.util.List;
+15 
+16 @Data
+17 @Builder
+18 @NoArgsConstructor
+19 @AllArgsConstructor
+20 public class ApikeyInfo implements Serializable {
+21     private static final long serialVersionUID = 1L;
+22     private String apikey;
+23     private String code;
+24     private String serviceId;
+25     private String akSha;
+26     private String akDisplay;
+27     private String name;
+28     private String outEntityCode;
+29     private String parentCode;
+30     private String ownerType;
+31     private String ownerCode;
+32     private String ownerName;
+33     private String roleCode;
+34     @JsonIgnore
+35     private String path;
+36     private String safetySceneCode;
+37     private Byte safetyLevel;
+38     private BigDecimal monthQuota;
+39     private RolePath rolePath;
+40     private String status;
+41     private String remark;
+42     private Long userId;
+43     private ApikeyInfo parentInfo;
+44 
+45     public RolePath getRolePath() {
+46         if(rolePath != null) {
+47             return rolePath;
+48         }
+49         if(path == null) {
+50             return new RolePath();
+51         }
+52         rolePath = JacksonUtils.deserialize(path, RolePath.class);
+53         return rolePath;
+54     }
+55 
+56     public boolean hasPermission(String url) {
+57        return getRolePath().getIncluded().stream().anyMatch(pattern -> MatchUtils.matchUrl(pattern, url))
+58                 && getRolePath().getExcluded().stream().noneMatch(pattern -> MatchUtils.matchUrl(pattern, url));
+59     }
+60 
+61     @Data
+62     public static class RolePath implements Serializable {
+63         private static final long serialVersionUID = 1L;
+64         private List<String> included = new ArrayList<>();
+65         private List<String> excluded = new ArrayList<>();
+66     }
+67 }
+68
+```
+
+
+
+
+```
+File: api/server/src/codegen/java/com/ke/bella/openapi/tables/pojos/ApikeyDB.java
+1 /*
+2  * This file is generated by jOOQ.
+3  */
+4 package com.ke.bella.openapi.tables.pojos;
+5 
+6 
+7 import com.ke.bella.openapi.db.repo.Operator;
+8 
+9 import java.io.Serializable;
+10 import java.math.BigDecimal;
+11 import java.time.LocalDateTime;
+12 
+13 
+14 /**
+15  * ak
+16  */
+17 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
+18 public class ApikeyDB implements Operator, Serializable {
+19 
+20     private static final long serialVersionUID = 1L;
+21 
+22     private Long          id;
+23     private String        code;
+24     private String        akSha;
+25     private String        akDisplay;
+26     private String        name;
+27     private String        parentCode;
+28     private String        outEntityCode;
+29     private String        serviceId;
+30     private String        ownerType;
+31     private String        ownerCode;
+32     private String        ownerName;
+33     private String        roleCode;
+34     private String        certifyCode;
+35     private String        safetySceneCode;
+36     private Byte          safetyLevel;
+37     private BigDecimal    monthQuota;
+38     private String        status;
+39     private String        remark;
+40     private Long          cuid;
+41     private String        cuName;
+42     private Long          muid;
+43     private String        muName;
+44     private LocalDateTime ctime;
+45     private LocalDateTime mtime;
+46 
+47     public ApikeyDB() {}
+48 
+49     public ApikeyDB(ApikeyDB value) {
+50         this.id = value.id;
+51         this.code = value.code;
+52         this.akSha = value.akSha;
+53         this.akDisplay = value.akDisplay;
+54         this.name = value.name;
+55         this.parentCode = value.parentCode;
+56         this.outEntityCode = value.outEntityCode;
+57         this.serviceId = value.serviceId;
+58         this.ownerType = value.ownerType;
+59         this.ownerCode = value.ownerCode;
+60         this.ownerName = value.ownerName;
+61         this.roleCode = value.roleCode;
+62         this.certifyCode = value.certifyCode;
+63         this.safetySceneCode = value.safetySceneCode;
+64         this.safetyLevel = value.safetyLevel;
+65         this.monthQuota = value.monthQuota;
+66         this.status = value.status;
+67         this.remark = value.remark;
+68         this.cuid = value.cuid;
+69         this.cuName = value.cuName;
+70         this.muid = value.muid;
+71         this.muName = value.muName;
+72         this.ctime = value.ctime;
+73         this.mtime = value.mtime;
+74     }
+75 
+76     public ApikeyDB(
+77         Long          id,
+78         String        code,
+79         String        akSha,
+80         String        akDisplay,
+81         String        name,
+82         String        parentCode,
+83         String        outEntityCode,
+84         String        serviceId,
+85         String        ownerType,
+86         String        ownerCode,
+87         String        ownerName,
+88         String        roleCode,
+89         String        certifyCode,
+90         String        safetySceneCode,
+91         Byte          safetyLevel,
+92         BigDecimal    monthQuota,
+93         String        status,
+94         String        remark,
+95         Long          cuid,
+96         String        cuName,
+97         Long          muid,
+98         String        muName,
+99         LocalDateTime ctime,
+100         LocalDateTime mtime
+101     ) {
+102         this.id = id;
+103         this.code = code;
+104         this.akSha = akSha;
+105         this.akDisplay = akDisplay;
+106         this.name = name;
+107         this.parentCode = parentCode;
+108         this.outEntityCode = outEntityCode;
+109         this.serviceId = serviceId;
+110         this.ownerType = ownerType;
+111         this.ownerCode = ownerCode;
+112         this.ownerName = ownerName;
+113         this.roleCode = roleCode;
+114         this.certifyCode = certifyCode;
+115         this.safetySceneCode = safetySceneCode;
+116         this.safetyLevel = safetyLevel;
+117         this.monthQuota = monthQuota;
+118         this.status = status;
+119         this.remark = remark;
+120         this.cuid = cuid;
+121         this.cuName = cuName;
+122         this.muid = muid;
+123         this.muName = muName;
+124         this.ctime = ctime;
+125         this.mtime = mtime;
+126     }
+127 
+128     /**
+129      * Getter for <code>apikey.id</code>. 主键ID
+130      */
+131     public Long getId() {
+132         return this.id;
+133     }
+134 
+135     /**
+136      * Setter for <code>apikey.id</code>. 主键ID
+137      */
+138     public void setId(Long id) {
+139         this.id = id;
+140     }
+141 
+142     /**
+143      * Getter for <code>apikey.code</code>. ak编码
+144      */
+145     public String getCode() {
+146         return this.code;
+147     }
+148 
+149     /**
+150      * Setter for <code>apikey.code</code>. ak编码
+151      */
+152     public void setCode(String code) {
+153         this.code = code;
+154     }
+155 
+156     /**
+157      * Getter for <code>apikey.ak_sha</code>. 加密ak
+158      */
+159     public String getAkSha() {
+160         return this.akSha;
+161     }
+162 
+163     /**
+164      * Setter for <code>apikey.ak_sha</code>. 加密ak
+165      */
+166     public void setAkSha(String akSha) {
+167         this.akSha = akSha;
+168     }
+169 
+170     /**
+171      * Getter for <code>apikey.ak_display</code>. 脱敏ak
+172      */
+173     public String getAkDisplay() {
+174         return this.akDisplay;
+175     }
+176 
+177     /**
+178      * Setter for <code>apikey.ak_display</code>. 脱敏ak
+179      */
+180     public void setAkDisplay(String akDisplay) {
+181         this.akDisplay = akDisplay;
+182     }
+183 
+184     /**
+185      * Getter for <code>apikey.name</code>. 名字
+186      */
+187     public String getName() {
+188         return this.name;
+189     }
+190 
+191     /**
+192      * Setter for <code>apikey.name</code>. 名字
+193      */
+194     public void setName(String name) {
+195         this.name = name;
+196     }
+197 
+198     /**
+199      * Getter for <code>apikey.parent_code</code>. 父ak
+200      */
+201     public String getParentCode() {
+202         return this.parentCode;
+203     }
+204 
+205     /**
+206      * Setter for <code>apikey.parent_code</code>. 父ak
+207      */
+208     public void setParentCode(String parentCode) {
+209         this.parentCode = parentCode;
+210     }
+211 
+212     /**
+213      * Getter for <code>apikey.out_entity_code</code>. 授权实体code
+214      */
+215     public String getOutEntityCode() {
+216         return this.outEntityCode;
+217     }
+218 
+219     /**
+220      * Setter for <code>apikey.out_entity_code</code>. 授权实体code
+221      */
+222     public void setOutEntityCode(String outEntityCode) {
+223         this.outEntityCode = outEntityCode;
+224     }
+225 
+226     /**
+227      * Getter for <code>apikey.service_id</code>. 服务id
+228      */
+229     public String getServiceId() {
+230         return this.serviceId;
+231     }
+232 
+233     /**
+234      * Setter for <code>apikey.service_id</code>. 服务id
+235      */
+236     public void setServiceId(String serviceId) {
+237         this.serviceId = serviceId;
+238     }
+239 
+240     /**
+241      * Getter for <code>apikey.owner_type</code>. 所有者类型（系统/组织/个人）
+242      */
+243     public String getOwnerType() {
+244         return this.ownerType;
+245     }
+246 
+247     /**
+248      * Setter for <code>apikey.owner_type</code>. 所有者类型（系统/组织/个人）
+249      */
+250     public void setOwnerType(String ownerType) {
+251         this.ownerType = ownerType;
+252     }
+253 
+254     /**
+255      * Getter for <code>apikey.owner_code</code>. 所有者系统号
+256      */
+257     public String getOwnerCode() {
+258         return this.ownerCode;
+259     }
+260 
+261     /**
+262      * Setter for <code>apikey.owner_code</code>. 所有者系统号
+263      */
+264     public void setOwnerCode(String ownerCode) {
+265         this.ownerCode = ownerCode;
+266     }
+267 
+268     /**
+269      * Getter for <code>apikey.owner_name</code>. 所有者名称
+270      */
+271     public String getOwnerName() {
+272         return this.ownerName;
+273     }
+274 
+275     /**
+276      * Setter for <code>apikey.owner_name</code>. 所有者名称
+277      */
+278     public void setOwnerName(String ownerName) {
+279         this.ownerName = ownerName;
+280     }
+281 
+282     /**
+283      * Getter for <code>apikey.role_code</code>. 角色编码
+284      */
+285     public String getRoleCode() {
+286         return this.roleCode;
+287     }
+288 
+289     /**
+290      * Setter for <code>apikey.role_code</code>. 角色编码
+291      */
+292     public void setRoleCode(String roleCode) {
+293         this.roleCode = roleCode;
+294     }
+295 
+296     /**
+297      * Getter for <code>apikey.certify_code</code>. 安全认证码
+298      */
+299     public String getCertifyCode() {
+300         return this.certifyCode;
+301     }
+302 
+303     /**
+304      * Setter for <code>apikey.certify_code</code>. 安全认证码
+305      */
+306     public void setCertifyCode(String certifyCode) {
+307         this.certifyCode = certifyCode;
+308     }
+309 
+310     /**
+311      * Getter for <code>apikey.safety_scene_code</code>. 安全认证场景code
+312      */
+313     public String getSafetySceneCode() {
+314         return this.safetySceneCode;
+315     }
+316 
+317     /**
+318      * Setter for <code>apikey.safety_scene_code</code>. 安全认证场景code
+319      */
+320     public void setSafetySceneCode(String safetySceneCode) {
+321         this.safetySceneCode = safetySceneCode;
+322     }
+323 
+324     /**
+325      * Getter for <code>apikey.safety_level</code>. 安全等级
+326      */
+327     public Byte getSafetyLevel() {
+328         return this.safetyLevel;
+329     }
+330 
+331     /**
+332      * Setter for <code>apikey.safety_level</code>. 安全等级
+333      */
+334     public void setSafetyLevel(Byte safetyLevel) {
+335         this.safetyLevel = safetyLevel;
+336     }
+337 
+338     /**
+339      * Getter for <code>apikey.month_quota</code>. 每月额度
+340      */
+341     public BigDecimal getMonthQuota() {
+342         return this.monthQuota;
+343     }
+344 
+345     /**
+346      * Setter for <code>apikey.month_quota</code>. 每月额度
+347      */
+348     public void setMonthQuota(BigDecimal monthQuota) {
+349         this.monthQuota = monthQuota;
+350     }
+351 
+352     /**
+353      * Getter for <code>apikey.status</code>. 状态(active/inactive)
+354      */
+355     public String getStatus() {
+356         return this.status;
+357     }
+358 
+359     /**
+360      * Setter for <code>apikey.status</code>. 状态(active/inactive)
+361      */
+362     public void setStatus(String status) {
+363         this.status = status;
+364     }
+365 
+366     /**
+367      * Getter for <code>apikey.remark</code>. 备注
+368      */
+369     public String getRemark() {
+370         return this.remark;
+371     }
+372 
+373     /**
+374      * Setter for <code>apikey.remark</code>. 备注
+375      */
+376     public void setRemark(String remark) {
+377         this.remark = remark;
+378     }
+379 
+380     /**
+381      * Getter for <code>apikey.cuid</code>. 创建人id
+382      */
+383     public Long getCuid() {
+384         return this.cuid;
+385     }
+386 
+387     /**
+388      * Setter for <code>apikey.cuid</code>. 创建人id
+389      */
+390     public void setCuid(Long cuid) {
+391         this.cuid = cuid;
+392     }
+393 
+394     /**
+395      * Getter for <code>apikey.cu_name</code>. 创建人姓名
+396      */
+397     public String getCuName() {
+398         return this.cuName;
+399     }
+400 
+401     /**
+402      * Setter for <code>apikey.cu_name</code>. 创建人姓名
+403      */
+404     public void setCuName(String cuName) {
+405         this.cuName = cuName;
+406     }
+407 
+408     /**
+409      * Getter for <code>apikey.muid</code>. 编辑人id
+410      */
+411     public Long getMuid() {
+412         return this.muid;
+413     }
+414 
+415     /**
+416      * Setter for <code>apikey.muid</code>. 编辑人id
+417      */
+418     public void setMuid(Long muid) {
+419         this.muid = muid;
+420     }
+421 
+422     /**
+423      * Getter for <code>apikey.mu_name</code>. 编辑人姓名
+424      */
+425     public String getMuName() {
+426         return this.muName;
+427     }
+428 
+429     /**
+430      * Setter for <code>apikey.mu_name</code>. 编辑人姓名
+431      */
+432     public void setMuName(String muName) {
+433         this.muName = muName;
+434     }
+435 
+436     /**
+437      * Getter for <code>apikey.ctime</code>.
+438      */
+439     public LocalDateTime getCtime() {
+440         return this.ctime;
+441     }
+442 
+443     /**
+444      * Setter for <code>apikey.ctime</code>.
+445      */
+446     public void setCtime(LocalDateTime ctime) {
+447         this.ctime = ctime;
+448     }
+449 
+450     /**
+451      * Getter for <code>apikey.mtime</code>.
+452      */
+453     public LocalDateTime getMtime() {
+454         return this.mtime;
+455     }
+456 
+457     /**
+458      * Setter for <code>apikey.mtime</code>.
+459      */
+460     public void setMtime(LocalDateTime mtime) {
+461         this.mtime = mtime;
+462     }
+463 
+464     @Override
+465     public String toString() {
+466         StringBuilder sb = new StringBuilder("ApikeyDB (");
+467 
+468         sb.append(id);
+469         sb.append(", ").append(code);
+470         sb.append(", ").append(akSha);
+471         sb.append(", ").append(akDisplay);
+472         sb.append(", ").append(name);
+473         sb.append(", ").append(parentCode);
+474         sb.append(", ").append(outEntityCode);
+475         sb.append(", ").append(serviceId);
+476         sb.append(", ").append(ownerType);
+477         sb.append(", ").append(ownerCode);
+478         sb.append(", ").append(ownerName);
+479         sb.append(", ").append(roleCode);
+480         sb.append(", ").append(certifyCode);
+481         sb.append(", ").append(safetySceneCode);
+482         sb.append(", ").append(safetyLevel);
+483         sb.append(", ").append(monthQuota);
+484         sb.append(", ").append(status);
+485         sb.append(", ").append(remark);
+486         sb.append(", ").append(cuid);
+487         sb.append(", ").append(cuName);
+488         sb.append(", ").append(muid);
+489         sb.append(", ").append(muName);
+490         sb.append(", ").append(ctime);
+491         sb.append(", ").append(mtime);
+492 
+493         sb.append(")");
+494         return sb.toString();
+495     }
+496 }
+497
+```
+
+
+
+
+```
+File: api/server/src/codegen/java/com/ke/bella/openapi/tables/Apikey.java
+1 /*
+2  * This file is generated by jOOQ.
+3  */
+4 package com.ke.bella.openapi.tables;
+5 
+6 
+7 import com.ke.bella.openapi.DefaultSchema;
+8 import com.ke.bella.openapi.Indexes;
+9 import com.ke.bella.openapi.Keys;
+10 import com.ke.bella.openapi.tables.records.ApikeyRecord;
+11 
+12 import java.math.BigDecimal;
+13 import java.time.LocalDateTime;
+14 import java.util.Arrays;
+15 import java.util.List;
+16 
+17 import org.jooq.Field;
+18 import org.jooq.ForeignKey;
+19 import org.jooq.Identity;
+20 import org.jooq.Index;
+21 import org.jooq.Name;
+22 import org.jooq.Record;
+23 import org.jooq.Schema;
+24 import org.jooq.Table;
+25 import org.jooq.TableField;
+26 import org.jooq.TableOptions;
+27 import org.jooq.UniqueKey;
+28 import org.jooq.impl.DSL;
+29 import org.jooq.impl.SQLDataType;
+30 import org.jooq.impl.TableImpl;
+31 
+32 
+33 /**
+34  * ak
+35  */
+36 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
+37 public class Apikey extends TableImpl<ApikeyRecord> {
+38 
+39     private static final long serialVersionUID = 1L;
+40 
+41     /**
+42      * The reference instance of <code>apikey</code>
+43      */
+44     public static final Apikey APIKEY = new Apikey();
+45 
+46     /**
+47      * The class holding records for this type
+48      */
+49     @Override
+50     public Class<ApikeyRecord> getRecordType() {
+51         return ApikeyRecord.class;
+52     }
+53 
+54     /**
+55      * The column <code>apikey.id</code>. 主键ID
+56      */
+57     public final TableField<ApikeyRecord, Long> ID = createField(DSL.name("id"), SQLDataType.BIGINT.nullable(false).identity(true), this, "主键ID");
+58 
+59     /**
+60      * The column <code>apikey.code</code>. ak编码
+61      */
+62     public final TableField<ApikeyRecord, String> CODE = createField(DSL.name("code"), SQLDataType.VARCHAR(64).nullable(false).defaultValue(DSL.inline("", SQLDataType.VARCHAR)), this, "ak编码");
+63 
+64     /**
+65      * The column <code>apikey.ak_sha</code>. 加密ak
+66      */
+67     public final TableField<ApikeyRecord, String> AK_SHA = createField(DSL.name("ak_sha"), SQLDataType.VARCHAR(64).nullable(false).defaultValue(DSL.inline("", SQLDataType.VARCHAR)), this, "加密ak");
+68 
+69     /**
+70      * The column <code>apikey.ak_display</code>. 脱敏ak
+71      */
+72     public final TableField<ApikeyRecord, String> AK_DISPLAY = createField(DSL.name("ak_display"), SQLDataType.VARCHAR(64).nullable(false).defaultValue(DSL.inline("", SQLDataType.VARCHAR)), this, "脱敏ak");
+73 
+74     /**
+75      * The column <code>apikey.name</code>. 名字
+76      */
+77     public final TableField<ApikeyRecord, String> NAME = createField(DSL.name("name"), SQLDataType.VARCHAR(64).nullable(false).defaultValue(DSL.inline("", SQLDataType.VARCHAR)), this, "名字");
+78 
+79     /**
+80      * The column <code>apikey.parent_code</code>. 父ak
+81      */
+82     public final TableField<ApikeyRecord, String> PARENT_CODE = createField(DSL.name("parent_code"), SQLDataType.VARCHAR(64).nullable(false).defaultValue(DSL.inline("", SQLDataType.VARCHAR)), this, "父ak");
+83 
+84     /**
+85      * The column <code>apikey.out_entity_code</code>. 授权实体code
+86      */
+87     public final TableField<ApikeyRecord, String> OUT_ENTITY_CODE = createField(DSL.name("out_entity_code"), SQLDataType.VARCHAR(64).nullable(false).defaultValue(DSL.inline("", SQLDataType.VARCHAR)), this, "授权实体code");
+88 
+89     /**
+90      * The column <code>apikey.service_id</code>. 服务id
+91      */
+92     public final TableField<ApikeyRecord, String> SERVICE_ID = createField(DSL.name("service_id"), SQLDataType.VARCHAR(64).nullable(false).defaultValue(DSL.inline("", SQLDataType.VARCHAR)), this, "服务id");
+93 
+94     /**
+95      * The column <code>apikey.owner_type</code>. 所有者类型（系统/组织/个人）
+96      */
+97     public final TableField<ApikeyRecord, String> OWNER_TYPE = createField(DSL.name("owner_type"), SQLDataType.VARCHAR(16).nullable(false).defaultValue(DSL.inline("", SQLDataType.VARCHAR)), this, "所有者类型（系统/组织/个人）");
+98 
+99     /**
+100      * The column <code>apikey.owner_code</code>. 所有者系统号
+101      */
+102     public final TableField<ApikeyRecord, String> OWNER_CODE = createField(DSL.name("owner_code"), SQLDataType.VARCHAR(64).nullable(false).defaultValue(DSL.inline("", SQLDataType.VARCHAR)), this, "所有者系统号");
+103 
+104     /**
+105      * The column <code>apikey.owner_name</code>. 所有者名称
+106      */
+107     public final TableField<ApikeyRecord, String> OWNER_NAME = createField(DSL.name("owner_name"), SQLDataType.VARCHAR(16).nullable(false).defaultValue(DSL.inline("", SQLDataType.VARCHAR)), this, "所有者名称");
+108 
+109     /**
+110      * The column <code>apikey.role_code</code>. 角色编码
+111      */
+112     public final TableField<ApikeyRecord, String> ROLE_CODE = createField(DSL.name("role_code"), SQLDataType.VARCHAR(64).nullable(false).defaultValue(DSL.inline("", SQLDataType.VARCHAR)), this, "角色编码");
+113 
+114     /**
+115      * The column <code>apikey.certify_code</code>. 安全认证码
+116      */
+117     public final TableField<ApikeyRecord, String> CERTIFY_CODE = createField(DSL.name("certify_code"), SQLDataType.VARCHAR(128).nullable(false).defaultValue(DSL.inline("", SQLDataType.VARCHAR)), this, "安全认证码");
+118 
+119     /**
+120      * The column <code>apikey.safety_scene_code</code>. 安全认证场景code
+121      */
+122     public final TableField<ApikeyRecord, String> SAFETY_SCENE_CODE = createField(DSL.name("safety_scene_code"), SQLDataType.VARCHAR(128).nullable(false).defaultValue(DSL.inline("", SQLDataType.VARCHAR)), this, "安全认证场景code");
+123 
+124     /**
+125      * The column <code>apikey.safety_level</code>. 安全等级
+126      */
+127     public final TableField<ApikeyRecord, Byte> SAFETY_LEVEL = createField(DSL.name("safety_level"), SQLDataType.TINYINT.nullable(false).defaultValue(DSL.inline("0", SQLDataType.TINYINT)), this, "安全等级");
+128 
+129     /**
+130      * The column <code>apikey.month_quota</code>. 每月额度
+131      */
+132     public final TableField<ApikeyRecord, BigDecimal> MONTH_QUOTA = createField(DSL.name("month_quota"), SQLDataType.DECIMAL(10, 2).nullable(false).defaultValue(DSL.inline("0.00", SQLDataType.DECIMAL)), this, "每月额度");
+133 
+134     /**
+135      * The column <code>apikey.status</code>. 状态(active/inactive)
+136      */
+137     public final TableField<ApikeyRecord, String> STATUS = createField(DSL.name("status"), SQLDataType.VARCHAR(64).nullable(false).defaultValue(DSL.inline("active", SQLDataType.VARCHAR)), this, "状态(active/inactive)");
+138 
+139     /**
+140      * The column <code>apikey.remark</code>. 备注
+141      */
+142     public final TableField<ApikeyRecord, String> REMARK = createField(DSL.name("remark"), SQLDataType.VARCHAR(1024).nullable(false).defaultValue(DSL.inline("", SQLDataType.VARCHAR)), this, "备注");
+143 
+144     /**
+145      * The column <code>apikey.cuid</code>. 创建人id
+146      */
+147     public final TableField<ApikeyRecord, Long> CUID = createField(DSL.name("cuid"), SQLDataType.BIGINT.nullable(false).defaultValue(DSL.inline("0", SQLDataType.BIGINT)), this, "创建人id");
+148 
+149     /**
+150      * The column <code>apikey.cu_name</code>. 创建人姓名
+151      */
+152     public final TableField<ApikeyRecord, String> CU_NAME = createField(DSL.name("cu_name"), SQLDataType.VARCHAR(16).nullable(false).defaultValue(DSL.inline("", SQLDataType.VARCHAR)), this, "创建人姓名");
+153 
+154     /**
+155      * The column <code>apikey.muid</code>. 编辑人id
+156      */
+157     public final TableField<ApikeyRecord, Long> MUID = createField(DSL.name("muid"), SQLDataType.BIGINT.nullable(false).defaultValue(DSL.inline("0", SQLDataType.BIGINT)), this, "编辑人id");
+158 
+159     /**
+160      * The column <code>apikey.mu_name</code>. 编辑人姓名
+161      */
+162     public final TableField<ApikeyRecord, String> MU_NAME = createField(DSL.name("mu_name"), SQLDataType.VARCHAR(16).nullable(false).defaultValue(DSL.inline("", SQLDataType.VARCHAR)), this, "编辑人姓名");
+163 
+164     /**
+165      * The column <code>apikey.ctime</code>.
+166      */
+167     public final TableField<ApikeyRecord, LocalDateTime> CTIME = createField(DSL.name("ctime"), SQLDataType.LOCALDATETIME(0).nullable(false).defaultValue(DSL.field("CURRENT_TIMESTAMP", SQLDataType.LOCALDATETIME)), this, "");
+168 
+169     /**
+170      * The column <code>apikey.mtime</code>.
+171      */
+172     public final TableField<ApikeyRecord, LocalDateTime> MTIME = createField(DSL.name("mtime"), SQLDataType.LOCALDATETIME(0).nullable(false).defaultValue(DSL.field("CURRENT_TIMESTAMP", SQLDataType.LOCALDATETIME)), this, "");
+173 
+174     private Apikey(Name alias, Table<ApikeyRecord> aliased) {
+175         this(alias, aliased, null);
+176     }
+177 
+178     private Apikey(Name alias, Table<ApikeyRecord> aliased, Field<?>[] parameters) {
+179         super(alias, null, aliased, parameters, DSL.comment("ak"), TableOptions.table());
+180     }
+181 
+182     /**
+183      * Create an aliased <code>apikey</code> table reference
+184      */
+185     public Apikey(String alias) {
+186         this(DSL.name(alias), APIKEY);
+187     }
+188 
+189     /**
+190      * Create an aliased <code>apikey</code> table reference
+191      */
+192     public Apikey(Name alias) {
+193         this(alias, APIKEY);
+194     }
+195 
+196     /**
+197      * Create a <code>apikey</code> table reference
+198      */
+199     public Apikey() {
+200         this(DSL.name("apikey"), null);
+201     }
+202 
+203     public <O extends Record> Apikey(Table<O> child, ForeignKey<O, ApikeyRecord> key) {
+204         super(child, key, APIKEY);
+205     }
+206 
+207     @Override
+208     public Schema getSchema() {
+209         return DefaultSchema.DEFAULT_SCHEMA;
+210     }
+211 
+212     @Override
+213     public List<Index> getIndexes() {
+214         return Arrays.<Index>asList(Indexes.APIKEY_IDX_OWNER_TYPE_CODE, Indexes.APIKEY_IDX_PARENT_OUT_ENTITY_CODE);
+215     }
+216 
+217     @Override
+218     public Identity<ApikeyRecord, Long> getIdentity() {
+219         return (Identity<ApikeyRecord, Long>) super.getIdentity();
+220     }
+221 
+222     @Override
+223     public UniqueKey<ApikeyRecord> getPrimaryKey() {
+224         return Keys.KEY_APIKEY_PRIMARY;
+225     }
+226 
+227     @Override
+228     public List<UniqueKey<ApikeyRecord>> getKeys() {
+229         return Arrays.<UniqueKey<ApikeyRecord>>asList(Keys.KEY_APIKEY_PRIMARY, Keys.KEY_APIKEY_UNIQ_IDX_CODE, Keys.KEY_APIKEY_UNIQ_IDX_AK_SHA);
+230     }
+231 
+232     @Override
+233     public Apikey as(String alias) {
+234         return new Apikey(DSL.name(alias), this);
+235     }
+236 
+237     @Override
+238     public Apikey as(Name alias) {
+239         return new Apikey(alias, this);
+240     }
+241 
+242     /**
+243      * Rename this table
+244      */
+245     @Override
+246     public Apikey rename(String name) {
+247         return new Apikey(DSL.name(name), null);
+248     }
+249 
+250     /**
+251      * Rename this table
+252      */
+253     @Override
+254     public Apikey rename(Name name) {
+255         return new Apikey(name, null);
+256     }
+257 }
+258
+```
+
+
+
+
+```
+File: api/server/src/codegen/java/com/ke/bella/openapi/tables/records/ApikeyRecord.java
+1 /*
+2  * This file is generated by jOOQ.
+3  */
+4 package com.ke.bella.openapi.tables.records;
+5 
+6 
+7 import com.ke.bella.openapi.db.repo.Operator;
+8 import com.ke.bella.openapi.tables.Apikey;
+9 
+10 import java.math.BigDecimal;
+11 import java.time.LocalDateTime;
+12 
+13 import org.jooq.Record1;
+14 import org.jooq.impl.UpdatableRecordImpl;
+15 
+16 
+17 /**
+18  * ak
+19  */
+20 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
+21 public class ApikeyRecord extends UpdatableRecordImpl<ApikeyRecord> implements Operator {
+22 
+23     private static final long serialVersionUID = 1L;
+24 
+25     /**
+26      * Setter for <code>apikey.id</code>. 主键ID
+27      */
+28     public void setId(Long value) {
+29         set(0, value);
+30     }
+31 
+32     /**
+33      * Getter for <code>apikey.id</code>. 主键ID
+34      */
+35     public Long getId() {
+36         return (Long) get(0);
+37     }
+38 
+39     /**
+40      * Setter for <code>apikey.code</code>. ak编码
+41      */
+42     public void setCode(String value) {
+43         set(1, value);
+44     }
+45 
+46     /**
+47      * Getter for <code>apikey.code</code>. ak编码
+48      */
+49     public String getCode() {
+50         return (String) get(1);
+51     }
+52 
+53     /**
+54      * Setter for <code>apikey.ak_sha</code>. 加密ak
+55      */
+56     public void setAkSha(String value) {
+57         set(2, value);
+58     }
+59 
+60     /**
+61      * Getter for <code>apikey.ak_sha</code>. 加密ak
+62      */
+63     public String getAkSha() {
+64         return (String) get(2);
+65     }
+66 
+67     /**
+68      * Setter for <code>apikey.ak_display</code>. 脱敏ak
+69      */
+70     public void setAkDisplay(String value) {
+71         set(3, value);
+72     }
+73 
+74     /**
+75      * Getter for <code>apikey.ak_display</code>. 脱敏ak
+76      */
+77     public String getAkDisplay() {
+78         return (String) get(3);
+79     }
+80 
+81     /**
+82      * Setter for <code>apikey.name</code>. 名字
+83      */
+84     public void setName(String value) {
+85         set(4, value);
+86     }
+87 
+88     /**
+89      * Getter for <code>apikey.name</code>. 名字
+90      */
+91     public String getName() {
+92         return (String) get(4);
+93     }
+94 
+95     /**
+96      * Setter for <code>apikey.parent_code</code>. 父ak
+97      */
+98     public void setParentCode(String value) {
+99         set(5, value);
+100     }
+101 
+102     /**
+103      * Getter for <code>apikey.parent_code</code>. 父ak
+104      */
+105     public String getParentCode() {
+106         return (String) get(5);
+107     }
+108 
+109     /**
+110      * Setter for <code>apikey.out_entity_code</code>. 授权实体code
+111      */
+112     public void setOutEntityCode(String value) {
+113         set(6, value);
+114     }
+115 
+116     /**
+117      * Getter for <code>apikey.out_entity_code</code>. 授权实体code
+118      */
+119     public String getOutEntityCode() {
+120         return (String) get(6);
+121     }
+122 
+123     /**
+124      * Setter for <code>apikey.service_id</code>. 服务id
+125      */
+126     public void setServiceId(String value) {
+127         set(7, value);
+128     }
+129 
+130     /**
+131      * Getter for <code>apikey.service_id</code>. 服务id
+132      */
+133     public String getServiceId() {
+134         return (String) get(7);
+135     }
+136 
+137     /**
+138      * Setter for <code>apikey.owner_type</code>. 所有者类型（系统/组织/个人）
+139      */
+140     public void setOwnerType(String value) {
+141         set(8, value);
+142     }
+143 
+144     /**
+145      * Getter for <code>apikey.owner_type</code>. 所有者类型（系统/组织/个人）
+146      */
+147     public String getOwnerType() {
+148         return (String) get(8);
+149     }
+150 
+151     /**
+152      * Setter for <code>apikey.owner_code</code>. 所有者系统号
+153      */
+154     public void setOwnerCode(String value) {
+155         set(9, value);
+156     }
+157 
+158     /**
+159      * Getter for <code>apikey.owner_code</code>. 所有者系统号
+160      */
+161     public String getOwnerCode() {
+162         return (String) get(9);
+163     }
+164 
+165     /**
+166      * Setter for <code>apikey.owner_name</code>. 所有者名称
+167      */
+168     public void setOwnerName(String value) {
+169         set(10, value);
+170     }
+171 
+172     /**
+173      * Getter for <code>apikey.owner_name</code>. 所有者名称
+174      */
+175     public String getOwnerName() {
+176         return (String) get(10);
+177     }
+178 
+179     /**
+180      * Setter for <code>apikey.role_code</code>. 角色编码
+181      */
+182     public void setRoleCode(String value) {
+183         set(11, value);
+184     }
+185 
+186     /**
+187      * Getter for <code>apikey.role_code</code>. 角色编码
+188      */
+189     public String getRoleCode() {
+190         return (String) get(11);
+191     }
+192 
+193     /**
+194      * Setter for <code>apikey.certify_code</code>. 安全认证码
+195      */
+196     public void setCertifyCode(String value) {
+197         set(12, value);
+198     }
+199 
+200     /**
+201      * Getter for <code>apikey.certify_code</code>. 安全认证码
+202      */
+203     public String getCertifyCode() {
+204         return (String) get(12);
+205     }
+206 
+207     /**
+208      * Setter for <code>apikey.safety_scene_code</code>. 安全认证场景code
+209      */
+210     public void setSafetySceneCode(String value) {
+211         set(13, value);
+212     }
+213 
+214     /**
+215      * Getter for <code>apikey.safety_scene_code</code>. 安全认证场景code
+216      */
+217     public String getSafetySceneCode() {
+218         return (String) get(13);
+219     }
+220 
+221     /**
+222      * Setter for <code>apikey.safety_level</code>. 安全等级
+223      */
+224     public void setSafetyLevel(Byte value) {
+225         set(14, value);
+226     }
+227 
+228     /**
+229      * Getter for <code>apikey.safety_level</code>. 安全等级
+230      */
+231     public Byte getSafetyLevel() {
+232         return (Byte) get(14);
+233     }
+234 
+235     /**
+236      * Setter for <code>apikey.month_quota</code>. 每月额度
+237      */
+238     public void setMonthQuota(BigDecimal value) {
+239         set(15, value);
+240     }
+241 
+242     /**
+243      * Getter for <code>apikey.month_quota</code>. 每月额度
+244      */
+245     public BigDecimal getMonthQuota() {
+246         return (BigDecimal) get(15);
+247     }
+248 
+249     /**
+250      * Setter for <code>apikey.status</code>. 状态(active/inactive)
+251      */
+252     public void setStatus(String value) {
+253         set(16, value);
+254     }
+255 
+256     /**
+257      * Getter for <code>apikey.status</code>. 状态(active/inactive)
+258      */
+259     public String getStatus() {
+260         return (String) get(16);
+261     }
+262 
+263     /**
+264      * Setter for <code>apikey.remark</code>. 备注
+265      */
+266     public void setRemark(String value) {
+267         set(17, value);
+268     }
+269 
+270     /**
+271      * Getter for <code>apikey.remark</code>. 备注
+272      */
+273     public String getRemark() {
+274         return (String) get(17);
+275     }
+276 
+277     /**
+278      * Setter for <code>apikey.cuid</code>. 创建人id
+279      */
+280     public void setCuid(Long value) {
+281         set(18, value);
+282     }
+283 
+284     /**
+285      * Getter for <code>apikey.cuid</code>. 创建人id
+286      */
+287     public Long getCuid() {
+288         return (Long) get(18);
+289     }
+290 
+291     /**
+292      * Setter for <code>apikey.cu_name</code>. 创建人姓名
+293      */
+294     public void setCuName(String value) {
+295         set(19, value);
+296     }
+297 
+298     /**
+299      * Getter for <code>apikey.cu_name</code>. 创建人姓名
+300      */
+301     public String getCuName() {
+302         return (String) get(19);
+303     }
+304 
+305     /**
+306      * Setter for <code>apikey.muid</code>. 编辑人id
+307      */
+308     public void setMuid(Long value) {
+309         set(20, value);
+310     }
+311 
+312     /**
+313      * Getter for <code>apikey.muid</code>. 编辑人id
+314      */
+315     public Long getMuid() {
+316         return (Long) get(20);
+317     }
+318 
+319     /**
+320      * Setter for <code>apikey.mu_name</code>. 编辑人姓名
+321      */
+322     public void setMuName(String value) {
+323         set(21, value);
+324     }
+325 
+326     /**
+327      * Getter for <code>apikey.mu_name</code>. 编辑人姓名
+328      */
+329     public String getMuName() {
+330         return (String) get(21);
+331     }
+332 
+333     /**
+334      * Setter for <code>apikey.ctime</code>.
+335      */
+336     public void setCtime(LocalDateTime value) {
+337         set(22, value);
+338     }
+339 
+340     /**
+341      * Getter for <code>apikey.ctime</code>.
+342      */
+343     public LocalDateTime getCtime() {
+344         return (LocalDateTime) get(22);
+345     }
+346 
+347     /**
+348      * Setter for <code>apikey.mtime</code>.
+349      */
+350     public void setMtime(LocalDateTime value) {
+351         set(23, value);
+352     }
+353 
+354     /**
+355      * Getter for <code>apikey.mtime</code>.
+356      */
+357     public LocalDateTime getMtime() {
+358         return (LocalDateTime) get(23);
+359     }
+360 
+361     // -------------------------------------------------------------------------
+362     // Primary key information
+363     // -------------------------------------------------------------------------
+364 
+365     @Override
+366     public Record1<Long> key() {
+367         return (Record1) super.key();
+368     }
+369 
+370     // -------------------------------------------------------------------------
+371     // Constructors
+372     // -------------------------------------------------------------------------
+373 
+374     /**
+375      * Create a detached ApikeyRecord
+376      */
+377     public ApikeyRecord() {
+378         super(Apikey.APIKEY);
+379     }
+380 
+381     /**
+382      * Create a detached, initialised ApikeyRecord
+383      */
+384     public ApikeyRecord(Long id, String code, String akSha, String akDisplay, String name, String parentCode, String outEntityCode, String serviceId, String ownerType, String ownerCode, String ownerName, String roleCode, String certifyCode, String safetySceneCode, Byte safetyLevel, BigDecimal monthQuota, String status, String remark, Long cuid, String cuName, Long muid, String muName, LocalDateTime ctime, LocalDateTime mtime) {
+385         super(Apikey.APIKEY);
+386 
+387         setId(id);
+388         setCode(code);
+389         setAkSha(akSha);
+390         setAkDisplay(akDisplay);
+391         setName(name);
+392         setParentCode(parentCode);
+393         setOutEntityCode(outEntityCode);
+394         setServiceId(serviceId);
+395         setOwnerType(ownerType);
+396         setOwnerCode(ownerCode);
+397         setOwnerName(ownerName);
+398         setRoleCode(roleCode);
+399         setCertifyCode(certifyCode);
+400         setSafetySceneCode(safetySceneCode);
+401         setSafetyLevel(safetyLevel);
+402         setMonthQuota(monthQuota);
+403         setStatus(status);
+404         setRemark(remark);
+405         setCuid(cuid);
+406         setCuName(cuName);
+407         setMuid(muid);
+408         setMuName(muName);
+409         setCtime(ctime);
+410         setMtime(mtime);
+411     }
+412 }
+413
+```
+
+
+
+
+```
+File: api/server/src/main/java/com/ke/bella/openapi/db/repo/ApikeyRoleRepo.java
+1 package com.ke.bella.openapi.db.repo;
+2 
+3 import com.ke.bella.openapi.tables.pojos.ApikeyRoleDB;
+4 import com.ke.bella.openapi.tables.records.ApikeyRoleRecord;
+5 import org.jooq.TableField;
+6 import org.jooq.impl.TableImpl;
+7 import org.springframework.stereotype.Component;
+8 
+9 import static com.ke.bella.openapi.Tables.APIKEY_ROLE;
+10 
+11 @Component
+12 public class ApikeyRoleRepo extends UniqueKeyRepo<ApikeyRoleDB, ApikeyRoleRecord, String> implements AutogenCodeRepo<ApikeyRoleRecord> {
+13 
+14     @Override
+15     public TableField<ApikeyRoleRecord, String> autoCode() {
+16         return APIKEY_ROLE.ROLE_CODE;
+17     }
+18 
+19     @Override
+20     public String prefix() {
+21         return "role-";
+22     }
+23 
+24     @Override
+25     protected TableImpl<ApikeyRoleRecord> table() {
+26         return APIKEY_ROLE;
+27     }
+28 
+29     @Override
+30     protected TableField<ApikeyRoleRecord, String> uniqueKey() {
+31         return APIKEY_ROLE.ROLE_CODE;
+32     }
+33 }
+34
+```
+
+
+
+
+```
+File: api/sdk/src/main/java/com/ke/bella/openapi/apikey/ApikeyOps.java
+1 package com.ke.bella.openapi.apikey;
+2 
+3 import com.ke.bella.openapi.Operator;
+4 import com.ke.bella.openapi.PageCondition;
+5 import com.ke.bella.openapi.PermissionCondition;
+6 import lombok.AllArgsConstructor;
+7 import lombok.Data;
+8 import lombok.NoArgsConstructor;
+9 import lombok.experimental.SuperBuilder;
+10 
+11 import java.math.BigDecimal;
+12 import java.util.List;
+13 
+14 public class ApikeyOps {
+15     @Data
+16     @SuperBuilder
+17     @AllArgsConstructor
+18     @NoArgsConstructor
+19     public static class ApplyOp extends Operator {
+20         private String name;
+21         private String ownerType;
+22         private String ownerCode;
+23         private String ownerName;
+24         private String roleCode;
+25         private BigDecimal monthQuota;
+26         private String remark;
+27     }
+28 
+29     @Data
+30     @SuperBuilder
+31     @AllArgsConstructor
+32     @NoArgsConstructor
+33     public static class NameOp extends Operator {
+34         private String code;
+35         private String name;
+36     }
+37 
+38     @Data
+39     @SuperBuilder
+40     @AllArgsConstructor
+41     @NoArgsConstructor
+42     public static class ServiceOp extends Operator {
+43         private String code;
+44         private String serviceId;
+45     }
+46 
+47     @Data
+48     @SuperBuilder
+49     @NoArgsConstructor
+50     @AllArgsConstructor
+51     public static class RoleOp extends Operator {
+52         private String code;
+53         private String roleCode;
+54         private List<String> paths;
+55     }
+56 
+57     @Data
+58     @SuperBuilder
+59     @AllArgsConstructor
+60     @NoArgsConstructor
+61     public static class CertifyOp extends Operator {
+62         private String code;
+63         private String certifyCode;
+64     }
+65 
+66     @Data
+67     @SuperBuilder
+68     @AllArgsConstructor
+69     @NoArgsConstructor
+70     public static class QuotaOp extends Operator {
+71         private String code;
+72         private BigDecimal monthQuota;
+73     }
+74 
+75     @Data
+76     @SuperBuilder
+77     @AllArgsConstructor
+78     @NoArgsConstructor
+79     public static class CodeOp extends Operator {
+80         private String code;
+81     }
+82 
+83     @Data
+84     public class ApikeyCondition extends PermissionCondition {
+85         private String ownerType;
+86         private String ownerCode;
+87         private String parentCode;
+88         private String name;
+89         private String serviceId;
+90         private String searchParam; // name / serviceId的模糊搜索
+91         private String outEntityCode;
+92         private boolean includeChild;
+93         private String status;
+94     }
+95 }
+96
+```
+
+
+
+
+# 历史执行信息
+
+【round_1】
+requirement: 
+- 实现子ak管理的功能的页面，/apikey/{ak-code}
+- 可以在/apikey页面中点击apikey的加一列 子ak管理，可以点击跳转到该apikey的子ak管理的页面，显示所有子ak。可以创建、查看子ak，以及修改部分信息
+- 创建子ak时，调用/v1/apikey/create 接口填入所需信息包括：
+    * safetyLevel（安全等级），选择极低、低、中、高，最高不能超过当前ak的安全等级，
+    * outEntityCode（唯一标识），与用户系统进行关联的code
+    * monthQuota(月配额)，不能超过当前ak的月配额
+    * remark(备注)
+    * name
+    * parentCode不需要用户填写，自动填入当前选择ak的code
+    * roleCode统一为low，不需要用户填写
+- 后端的/v1/apikey/create接口，当接收到parentCode时，不进行改写，但是需要验证鉴权ak和parentcode属于同一个人，即验证ownerType和owenerCode
+agent_response: 
+我来帮你实现子API Key管理功能。首先分析需求，然后实现相关的前端页面和后端逻辑。
+
+## 核心类和函数设计
+
+### 前端组件
+- `SubApikeyPage`: 子API Key管理页面主组件
+- `CreateSubApikeyDialog`: 创建子API Key对话框
+- `SubApikeyColumns`: 子API Key数据表格列定义
+
+### 后端修改
+- 修改 `ApikeyController.createApikey` 方法验证逻辑
+- 更新相关API接口
+
+让我开始实现代码：
+
+```diff
+--- web/src/app/apikey/[akCode]/page.tsx
++++ web/src/app/apikey/[akCode]/page.tsx
+@@ -0,0 +1,210 @@
++'use client'
++
++import React, {useEffect, useState} from "react"
++import {useParams, useRouter} from "next/navigation"
++import {DataTable} from "@/components/ui/data-table"
++import {getApikeyInfos, getApikeyByCode} from "@/lib/api/apikey"
++import {SubApikeyColumns} from "@/components/apikey/sub-apikey-column"
++import {ApikeyInfo} from "@/lib/types/openapi"
++import {ClientHeader} from "@/components/user/client-header"
++import {Button} from "@/components/ui/button"
++import {Input} from "@/components/ui/input"
++import {ArrowLeft, ChevronLeft, ChevronRight, Plus, Search} from "lucide-react"
++import {useUser} from "@/lib/context/user-context"
++import {useToast} from "@/hooks/use-toast"
++import {CreateSubApikeyDialog} from "@/components/apikey/create-sub-apikey-dialog"
++
++const SubApikeyPage: React.FC = () => {
++    const params = useParams()
++    const router = useRouter()
++    const akCode = params.akCode as string
++    const [page, setPage] = useState<number>(1)
++    const [data, setData] = useState<ApikeyInfo[] | null>(null)
++    const [totalPages, setTotalPages] = useState<number>(1)
++    const [isLoading, setIsLoading] = useState<boolean>(true)
++    const [searchTerm, setSearchTerm] = useState<string>("")
++    const [parentApikey, setParentApikey] = useState<ApikeyInfo | null>(null)
++    const [showCreateDialog, setShowCreateDialog] = useState<boolean>(false)
++    const {userInfo} = useUser()
++    const {toast} = useToast()
++
++    const refresh = async () => {
++        setIsLoading(true)
++        if (userInfo) {
++            try {
++                // 获取子API Key列表
++                const res = await getApikeyInfos(page, userInfo?.userId || null, searchTerm || null, akCode)
++                setData(res?.data || null)
++                if (res) {
++                    setTotalPages(Math.ceil(res.total / 10))
++                } else {
++                    setTotalPages(1)
++                }
++            } catch (error) {
++                console.error('Failed to fetch sub API keys:', error)
++                setData(null)
++            } finally {
++                setIsLoading(false)
++            }
++        }
++    }
++
++    const loadParentApikey = async () => {
++        try {
++            const parent = await getApikeyByCode(akCode)
++            setParentApikey(parent)
++        } catch (error) {
++            console.error('Failed to fetch parent API key:', error)
++            toast({
++                title: "错误",
++                description: "无法获取父API Key信息",
++                variant: "destructive",
++            })
++        }
++    }
++
++    useEffect(() => {
++        loadParentApikey()
++        refresh()
++    }, [page, userInfo, akCode])
++
++    const handlePageChange = (newPage: number) => {
++        setPage(newPage)
++    }
++
++    const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
++        setSearchTerm(event.target.value)
++    }
++
++    const handleSearchSubmit = (event: React.FormEvent<HTMLFormElement>) => {
++        event.preventDefault()
++        setPage(1)
++        refresh()
++    }
++
++    const handleCreateSuccess = () => {
++        setShowCreateDialog(false)
++        refresh()
++    }
++
++    const handleBack = () => {
++        router.push('/apikey')
++    }
++
++    const columns = SubApikeyColumns(refresh)
++
++    return (
++        <div className="min-h-screen bg-gray-50">
++            <ClientHeader title={`子API Key管理 - ${parentApikey?.name || akCode}`}/>
++            <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
++                <div className="p-6">
++                    <div className="mb-4 flex items-center justify-between">
++                        <div className="flex items-center space-x-4">
++                            <Button
++                                onClick={handleBack}
++                                variant="outline"
++                                size="sm"
++                                className="text-gray-600 hover:bg-gray-50 border-gray-200"
++                            >
++                                <ArrowLeft className="h-4 w-4 mr-2"/>
++                                返回
++                            </Button>
++                            <form onSubmit={handleSearchSubmit} className="relative">
++                                <Search
++                                    className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4"/>
++                                <Input
++                                    type="text"
++                                    placeholder="搜索子API Key名称"
++                                    value={searchTerm}
++                                    onChange={handleSearch}
++                                    className="pl-10 w-64"
++                                />
++                            </form>
++                        </div>
++                        <Button 
++                            onClick={() => setShowCreateDialog(true)} 
++                            className="bg-gray-700 hover:bg-gray-900 text-white"
++                            disabled={!parentApikey}
++                        >
++                            <Plus className="h-4 w-4 mr-2"/>
++                            创建子API Key
++                        </Button>
++                    </div>
++
++                    {parentApikey && (
++                        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
++                            <h3 className="font-semibold text-blue-900 mb-2">父API Key信息</h3>
++                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
++                                <div>
++                                    <span className="text-blue-700 font-medium">名称：</span>
++                                    <span className="text-blue-800">{parentApikey.name}</span>
++                                </div>
++                                <div>
++                                    <span className="text-blue-700 font-medium">安全等级：</span>
++                                    <span className="text-blue-800">{parentApikey.safetyLevel}</span>
++                                </div>
++                                <div>
++                                    <span className="text-blue-700 font-medium">月配额：</span>
++                                    <span className="text-blue-800">¥{parentApikey.monthQuota}</span>
++                                </div>
++                                <div>
++                                    <span className="text-blue-700 font-medium">AK：</span>
++                                    <span className="text-blue-800 font-mono">{parentApikey.akDisplay}</span>
++                                </div>
++                            </div>
++                        </div>
++                    )}
++
++                    {isLoading ? (
++                        <div className="flex justify-center items-center h-64">
++                            <div
++                                className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
++                        </div>
++                    ) : data ? (
++                        <DataTable columns={columns} data={data}/>
++                    ) : (
++                        <p className="text-center text-gray-500">暂无子API Key。</p>
++                    )}
++                    
++                    <div className="mt-6 flex items-center justify-between">
++                        <div className="flex items-center space-x-2">
++                            <Button
++                                onClick={() => handlePageChange(page - 1)}
++                                disabled={page === 1 || isLoading}
++                                variant="outline"
++                                size="sm"
++                                className="text-gray-600 hover:bg-gray-50 border-gray-200"
++                            >
++                                <ChevronLeft className="h-4 w-4 mr-2"/>
++                                上一页
++                            </Button>
++                            <Button
++                                onClick={() => handlePageChange(page + 1)}
++                                disabled={page === totalPages || isLoading}
++                                variant="outline"
++                                size="sm"
++                                className="text-gray-600 hover:bg-gray-50 border-gray-200"
++                            >
++                                下一页
++                                <ChevronRight className="h-4 w-4 ml-2"/>
++                            </Button>
++                        </div>
++                        <span className="text-sm text-gray-600">
++                            第 {page} 页，共 {totalPages} 页
++                        </span>
++                    </div>
++                </div>
++            </div>
++
++            {parentApikey && (
++                <CreateSubApikeyDialog
++                    isOpen={showCreateDialog}
++                    onClose={() => setShowCreateDialog(false)}
++                    onSuccess={handleCreateSuccess}
++                    parentApikey={parentApikey}
++                />
++            )}
++        </div>
++    )
++}
++
++export default SubApikeyPage
+```
+
+```diff
+--- web/src/components/apikey/sub-apikey-column.tsx
++++ web/src/components/apikey/sub-apikey-column.tsx
+@@ -0,0 +1,125 @@
++'use client'
++
++import React from "react"
++import {ColumnDef} from "@tanstack/react-table"
++import {ApikeyInfo} from "@/lib/types/openapi"
++import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip"
++import {Badge} from "@/components/ui/badge"
++import {Button} from "@/components/ui/button"
++import {Copy} from 'lucide-react'
++import {useToast} from "@/hooks/use-toast"
++
++const RemarkCell = ({ value }: { value: string }) => {
++    const remark = value || '/'
++    return (
++        <TooltipProvider>
++            <Tooltip>
++                <TooltipTrigger asChild>
++                    <div className="truncate max-w-xs cursor-help">{remark}</div>
++                </TooltipTrigger>
++                <TooltipContent side="bottom" className="w-64 break-words">
++                    <p>{remark}</p>
++                </TooltipContent>
++            </Tooltip>
++        </TooltipProvider>
++    )
++}
++
++const ActionCell = ({code}: { code: string }) => {
++    const { toast } = useToast();
++    
++    const copyToClipboard = () => {
++        navigator.clipboard.writeText(code).then(() => {
++            toast({ title: "复制成功", description: "子API Key编码复制成功。" })
++        });
++    };
++
++    return (
++        <div className="flex justify-end">
++            <Button onClick={copyToClipboard} variant="ghost" size="icon" className="p-0 focus:ring-0">
++                <TooltipProvider>
++                    <Tooltip>
++                        <TooltipTrigger asChild>
++                            <div>
++                                <Copy className="h-4 w-4" />
++                                <span className="sr-only">复制子ak code</span>
++                            </div>
++                        </TooltipTrigger>
++                        <TooltipContent>
++                            <p>复制子ak code</p>
++                        </TooltipContent>
++                    </Tooltip>
++                </TooltipProvider>
++            </Button>
++        </div>
++    )
++}
++
++function getSafetyLevel(level: number): string {
++    switch (level) {
++        case 10:
++            return "极低";
++        case 20:
++            return "低";
++        case 30:
++            return "中";
++        case 40:
++            return "高";
++        default:
++            return "N/A";
++    }
++}
++
++export const SubApikeyColumns = (refresh: () => void): ColumnDef<ApikeyInfo>[] => [
++    {
++        accessorKey: "akDisplay",
++        header: "子AK",
++        cell: ({row}) =>
++            (<div className="font-mono text-sm">
++                {row.original.akDisplay}
++            </div>)
++    },
++    {
++        accessorKey: "name",
++        header: "名称",
++        cell: ({row}) => (
++            <div className="font-medium">{row.original.name}</div>
++        ),
++    },
++    {
++        accessorKey: "outEntityCode",
++        header: "关联标识",
++        cell: ({row}) => <div className="font-mono text-sm">{row.original.outEntityCode || '/'}</div>,
++    },
++    {
++        accessorKey: "safetyLevel",
++        header: "安全等级",
++        cell: ({row}) => {
++            const level = row.original.safetyLevel as number;
++            let color = "bg-green-100 text-green-800";
++            if (level <= 20) {
++                color = "bg-yellow-100 text-yellow-800";
++            }
++            if (level <= 10) {
++                color = "bg-red-100 text-red-800";
++            }
++
++            return <Badge className={`${color} capitalize`}>{getSafetyLevel(level)}</Badge>;
++        },
++    },
++    {
++        accessorKey: "monthQuota",
++        header: "每月额度",
++        cell: ({row}) => {
++            const formatted = new Intl.NumberFormat("zh-CN", {
++                style: "currency",
++                currency: "CNY",
++            }).format(row.original.monthQuota);
++            return formatted;
++        }
++    },
++    {
++        accessorKey: "remark",
++        header: "备注",
++        cell: ({row}) => <RemarkCell value={row.original.remark}/>,
++    },
++    {
++        id: "actions",
++        header: "",
++        cell: ({row}) => (
++            <ActionCell code={row.original.code}/>
++        ),
++    },
++]
+```
+
+```diff
+--- web/src/components/apikey/create-sub-apikey-dialog.tsx
++++ web/src/components/apikey/create-sub-apikey-dialog.tsx
+@@ -0,0 +1,224 @@
++'use client'
++
++import React, {useState} from "react"
++import {ApikeyInfo} from "@/lib/types/openapi"
++import {createSubApikey} from "@/lib/api/apikey"
++import {useToast} from "@/hooks/use-toast"
++import {
++    Dialog,
++    DialogContent,
++    DialogDescription,
++    DialogFooter,
++    DialogHeader,
++    DialogTitle,
++} from "@/components/ui/dialog"
++import {Button} from "@/components/ui/button"
++import {Input} from "@/components/ui/input"
++import {Label} from "@/components/ui/label"
++import {Textarea} from "@/components/ui/textarea"
++import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select"
++
++interface CreateSubApikeyDialogProps {
++    isOpen: boolean
++    onClose: () => void
++    onSuccess: () => void
++    parentApikey: ApikeyInfo
++}
++
++interface FormData {
++    name: string
++    outEntityCode: string
++    safetyLevel: number
++    monthQuota: number
++    remark: string
++}
++
++const safetyLevelOptions = [
++    { value: 10, label: "极低" },
++    { value: 20, label: "低" },
++    { value: 30, label: "中" },
++    { value: 40, label: "高" },
++]
++
++export const CreateSubApikeyDialog: React.FC<CreateSubApikeyDialogProps> = ({
++    isOpen,
++    onClose,
++    onSuccess,
++    parentApikey
++}) => {
++    const [formData, setFormData] = useState<FormData>({
++        name: '',
++        outEntityCode: '',
++        safetyLevel: 10,
++        monthQuota: 50,
++        remark: ''
++    })
++    const [isLoading, setIsLoading] = useState(false)
++    const {toast} = useToast()
++
++    const handleInputChange = (field: keyof FormData, value: string | number) => {
++        setFormData(prev => ({
++            ...prev,
++            [field]: value
++        }))
++    }
++
++    const handleSubmit = async () => {
++        // 验证必填字段
++        if (!formData.name.trim()) {
++            toast({
++                title: "错误",
++                description: "请填写子API Key名称",
++                variant: "destructive",
++            })
++            return
++        }
++
++        if (!formData.outEntityCode.trim()) {
++            toast({
++                title: "错误",
++                description: "请填写关联标识",
++                variant: "destructive",
++            })
++            return
++        }
++
++        // 验证安全等级不超过父AK
++        if (formData.safetyLevel > parentApikey.safetyLevel) {
++            toast({
++                title: "错误",
++                description: "安全等级不能超过父API Key的安全等级",
++                variant: "destructive",
++            })
++            return
++        }
++
++        // 验证月配额不超过父AK
++        if (formData.monthQuota > parentApikey.monthQuota) {
++            toast({
++                title: "错误",
++                description: "月配额不能超过父API Key的月配额",
++                variant: "destructive",
++            })
++            return
++        }
++
++        setIsLoading(true)
++        try {
++            const result = await createSubApikey({
++                parentCode: parentApikey.code,
++                name: formData.name.trim(),
++                outEntityCode: formData.outEntityCode.trim(),
++                safetyLevel: formData.safetyLevel,
++                monthQuota: formData.monthQuota,
++                remark: formData.remark.trim(),
++                roleCode: 'low' // 固定为low
++            })
++
++            if (result) {
++                toast({
++                    title: "成功",
++                    description: "子API Key创建成功",
++                })
++                onSuccess()
++                // 重置表单
++                setFormData({
++                    name: '',
++                    outEntityCode: '',
++                    safetyLevel: 10,
++                    monthQuota: 50,
++                    remark: ''
++                })
++            }
++        } catch (error) {
++            console.error('Failed to create sub API key:', error)
++            toast({
++                title: "错误",
++                description: "创建子API Key失败",
++                variant: "destructive",
++            })
++        } finally {
++            setIsLoading(false)
++        }
++    }
++
++    const handleClose = () => {
++        if (!isLoading) {
++            onClose()
++        }
++    }
++
++    // 获取可选的安全等级选项（不超过父AK的等级）
++    const availableSafetyLevels = safetyLevelOptions.filter(
++        option => option.value <= parentApikey.safetyLevel
++    )
++
++    return (
++        <Dialog open={isOpen} onOpenChange={handleClose}>
++            <DialogContent className="sm:max-w-md bg-white dark:bg-gray-800 border-0">
++                <DialogHeader>
++                    <DialogTitle>创建子API Key</DialogTitle>
++                    <DialogDescription>
++                        为父API Key "{parentApikey.name}" 创建子API Key
++                    </DialogDescription>
++                </DialogHeader>
++                
++                <div className="space-y-4">
++                    <div>
++                        <Label htmlFor="name">名称 *</Label>
++                        <Input
++                            id="name"
++                            value={formData.name}
++                            onChange={(e) => handleInputChange('name', e.target.value)}
++                            placeholder="请输入子API Key名称"
++                            disabled={isLoading}
++                        />
++                    </div>
++                    
++                    <div>
++                        <Label htmlFor="outEntityCode">关联标识 *</Label>
++                        <Input
++                            id="outEntityCode"
++                            value={formData.outEntityCode}
++                            onChange={(e) => handleInputChange('outEntityCode', e.target.value)}
++                            placeholder="请输入关联标识"
++                            disabled={isLoading}
++                        />
++                    </div>
++                    
++                    <div>
++                        <Label htmlFor="safetyLevel">安全等级</Label>
++                        <Select
++                            value={formData.safetyLevel.toString()}
++                            onValueChange={(value) => handleInputChange('safetyLevel', parseInt(value))}
++                            disabled={isLoading}
++                        >
++                            <SelectTrigger>
++                                <SelectValue />
++                            </SelectTrigger>
++                            <SelectContent>
++                                {availableSafetyLevels.map((option) => (
++                                    <SelectItem key={option.value} value={option.value.toString()}>
++                                        {option.label}
++                                    </SelectItem>
++                                ))}
++                            </SelectContent>
++                        </Select>
++                    </div>
++                    
++                    <div>
++                        <Label htmlFor="monthQuota">月配额 (最大: ¥{parentApikey.monthQuota})</Label>
++                        <Input
++                            id="monthQuota"
++                            type="number"
++                            min="1"
++                            max={parentApikey.monthQuota}
++                            value={formData.monthQuota}
++                            onChange={(e) => handleInputChange('monthQuota', parseFloat(e.target.value) || 0)}
++                            disabled={isLoading}
++                        />
++                    </div>
++                    
++                    <div>
++                        <Label htmlFor="remark">备注</Label>
++                        <Textarea
++                            id="remark"
++                            value={formData.remark}
++                            onChange={(e) => handleInputChange('remark', e.target.value)}
++                            placeholder="请输入备注信息"
++                            disabled={isLoading}
++                        />
++                    </div>
++                </div>
++                
++                <DialogFooter>
++                    <Button variant="outline" onClick={handleClose} disabled={isLoading}>
++                        取消
++                    </Button>
++                    <Button onClick={handleSubmit} disabled={isLoading}>
++                        {isLoading ? "创建中..." : "创建"}
++                    </Button>
++                </DialogFooter>
++            </DialogContent>
++        </Dialog>
++    )
++}
+```
+
+```diff
+--- web/src/components/apikey/apikey-coloumn.tsx
++++ web/src/components/apikey/apikey-coloumn.tsx
+@@ -1,6 +1,7 @@
+ 'use client'
+ 
+ import React, {ReactNode, useEffect, useRef, useState} from "react"
++import {useRouter} from "next/navigation"
+ import {ColumnDef} from "@tanstack/react-table"
+ import {ApikeyInfo} from "@/lib/types/openapi"
+ import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip"
+@@ -8,11 +9,12 @@ import {CertifyDialog, DeleteDialog, QuotaDialog, RenameDialog, ResetDialog} fr
+ import {HoverContext} from "@/components/ui/data-table";
+ import {Badge} from "@/components/ui/badge"
+ import {Button} from "@/components/ui/button"
+-import {Copy, Wallet} from 'lucide-react'
++import {Copy, Wallet, Users} from 'lucide-react'
+ import {useToast} from "@/hooks/use-toast";
+ import {safety_apply_url} from "@/config";
+ import {ApiKeyBalanceDialog, ApiKeyBalanceIndicator} from "./apikey-balance";
+ 
++
+ interface EditableCellProps {
+     content: ReactNode;
+     dialogComponent: (isOpen: boolean, onClose: () => void) => React.ReactElement;
+@@ -66,8 +68,10 @@ const RemarkCell = ({ value }: { value: string }) => {
+ }
+ 
+ const ActionCell = ({code, refresh, showApikey}: { code: string, refresh: () => void, showApikey: (apikey: string) => void }) => {
++    const router = useRouter()
+     const { toast } = useToast();
+     const [showBalance, setShowBalance] = useState(false);
++    
+     
+     const copyToClipboard = () => {
+         navigator.clipboard.writeText(code).then(() => {
+@@ -75,6 +79,10 @@ const ActionCell = ({code, refresh, showApikey}: { code: string, refresh: () =>
+         });
+     };
+ 
++    const handleSubApikeyManagement = () => {
++        router.push(`/apikey/${code}`)
++    }
++
+     
+     return (
+         <div className="flex flex-wrap justify-end gap-2">
+@@ -93,6 +101,19 @@ const ActionCell = ({code, refresh, showApikey}: { code: string, refresh: () =>
+                 </TooltipProvider>
+             </Button>
+             <DeleteDialog code={code} refresh={refresh}/>
++            <Button 
++                onClick={handleSubApikeyManagement} 
++                variant="ghost" 
++                size="icon" 
++                className="p-0 focus:ring-0"
++            >
++                <TooltipProvider>
++                    <Tooltip>
++                        <TooltipTrigger asChild>
++                            <div>
++                                <Users className="h-4 w-4" />
++                                <span className="sr-only">子AK管理</span>
++                            </div>
++                        </TooltipTrigger>
++                        <TooltipContent>子AK管理</TooltipContent>
++                    </Tooltip>
++                </TooltipProvider>
++            </Button>
+             <ResetDialog code={code} showApikey={showApikey}/>
+             <Button 
+                 onClick={() => setShowBalance(true)} 
+                 variant="ghost" 
+                 size="icon" 
+                 className="p-0 focus:ring-0"
+             >
+                 <TooltipProvider>
+                     <Tooltip>
+                         <TooltipTrigger asChild>
+                             <div>
+                                 <Wallet className="h-4 w-4" />
+                                 <span className="sr-only">查看余额</span>
+                             </div>
+                         </TooltipTrigger>
+                         <TooltipContent>查看余额</TooltipContent>
+                     </Tooltip>
+                 </TooltipProvider>
+             </Button>
+             <ApiKeyBalanceDialog code={code} isOpen={showBalance} onClose={() => setShowBalance(false)} />
+         </div>
+     )
+ }
+```
+
+```diff
+--- web/src/lib/api/apikey.ts
++++ web/src/lib/api/apikey.ts
+@@ -2,11 +2,12 @@ import { ApikeyInfo, Page} from "@/lib/types/openapi";
+ import { openapi } from '@/lib/api/openapi';
+ import { ApiKeyBalance } from "@/lib/types/openapi";
+ 
+-export async function getApikeyInfos(page: number, ownerCode: number | null, search: string | null): Promise<Page<ApikeyInfo> | null> {
++export async function getApikeyInfos(page: number, ownerCode: number | null, search: string | null, parentCode?: string): Promise<Page<ApikeyInfo> | null> {
+     try {
+         const response = await openapi.get<Page<ApikeyInfo>>(`/console/apikey/page`, {
+-            params: { status: 'active', ownerType:'person', ownerCode: ownerCode, searchParam: search, page }
++            params: { status: 'active', ownerType:'person', ownerCode: ownerCode, searchParam: search, page, parentCode: parentCode, includeChild: !!parentCode }
+         });
+         return response.data;
+     } catch (error) {
+         console.error('Error fetching api:', error);
+         throw error;
+     }
+ }
+ 
++export async function getApikeyByCode(code: string): Promise<ApikeyInfo | null> {
++    try {
++        const response = await openapi.get<ApikeyInfo>(`/console/apikey/fetchByCode`, {
++            params: { code, onlyActive: true }
++        });
+
+
+
+# 用户需求
+
+输出过长，getApikeyByCode的实现被截断了，实现完整。以及getApikeyInfos的修改也没生效。
