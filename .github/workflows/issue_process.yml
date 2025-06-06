@@ -35,6 +35,8 @@ jobs:
           if [[ "${{ github.event_name }}" == "issues" ]]; then
             echo "issue_id=${{ github.event.issue.number }}" >> $GITHUB_OUTPUT
             echo "requirement<<EOF" >> $GITHUB_OUTPUT
+            echo "title：${{ github.event.issue.title }}" >> $GITHUB_OUTPUT
+            echo "" >> $GITHUB_OUTPUT
             echo "${{ github.event.issue.body }}" >> $GITHUB_OUTPUT
             echo "EOF" >> $GITHUB_OUTPUT
           else
