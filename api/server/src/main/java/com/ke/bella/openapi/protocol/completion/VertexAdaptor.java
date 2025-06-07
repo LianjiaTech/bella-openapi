@@ -10,8 +10,10 @@ import com.google.genai.types.GenerateContentResponse;
 import com.google.genai.types.GenerateContentResponseUsageMetadata;
 import com.ke.bella.openapi.protocol.AuthorizationProperty;
 import com.ke.bella.openapi.protocol.OpenapiResponse;
+import com.ke.bella.openapi.protocol.Callbacks;
 import com.ke.bella.openapi.protocol.Callbacks.StreamCompletionCallback;
 import com.ke.bella.openapi.utils.DateTimeUtils;
+import com.ke.bella.openapi.utils.JacksonUtils;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -24,6 +26,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Google Vertex AI适配器
@@ -35,6 +38,14 @@ public class VertexAdaptor implements CompletionAdaptorDelegator<VertexProperty>
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final ConcurrentHashMap<String, Client> clientCache = new ConcurrentHashMap<>();
 
+    // 严格复用 OpenAI 的设计模式
+    public final Callbacks.SseEventConverter<StreamCompletionResponse> sseConverter = new Callbacks.DefaultSseConverter();
+
+    Callbacks.ChannelErrorCallback<CompletionResponse> errorCallback = (errorResponse, res) -> {
+        if(errorResponse.getError() != null) {
+            errorResponse.getError().setHttpCode(res.code());
+        }
+    };
 
     @Override
     public CompletionResponse completion(CompletionRequest request, String url, VertexProperty property,
@@ -44,8 +55,13 @@ public class VertexAdaptor implements CompletionAdaptorDelegator<VertexProperty>
 
     @Override
     public void streamCompletion(CompletionRequest request, String url, VertexProperty property,
-            StreamCompletionCallback callback, com.ke.bella.openapi.protocol.Callbacks.StreamDelegator delegator) {
-        streamCompletion(request, url, property, callback);
+            StreamCompletionCallback callback, Callbacks.StreamDelegator delegator) {
+        CompletionSseListener listener = new CompletionSseListener(callback, sseConverter);
+        if(delegator == null) {
+            processVertexStream(request, property, listener);
+        } else {
+            delegator.request(request, listener);
+        }
     }
 
     @Override
@@ -67,28 +83,44 @@ public class VertexAdaptor implements CompletionAdaptorDelegator<VertexProperty>
 
     @Override
     public void streamCompletion(CompletionRequest request, String url, VertexProperty property, StreamCompletionCallback callback) {
-        try {
-            Client client = getClient(property);
-            String userMessage = extractUserMessage(request);
-            GenerateContentConfig config = buildConfig(request);
+        streamCompletion(request, url, property, callback, null);
+    }
 
-            try (ResponseStream<GenerateContentResponse> responseStream = client.models.generateContentStream(property.getDeployName(), userMessage,
-                    config)) {
+    /**
+     * 处理Vertex流式响应并转换为SSE格式
+     */
+    private void processVertexStream(CompletionRequest request, VertexProperty property, CompletionSseListener listener) {
+        CompletableFuture.runAsync(() -> {
+            listener.setConnectionInitFuture(new CompletableFuture<>());
+            listener.onOpen(null, null);
+            
+            try (ResponseStream<GenerateContentResponse> responseStream = getClient(property).models
+                    .generateContentStream(property.getDeployName(), extractUserMessage(request), buildConfig(request))) {
 
                 for (GenerateContentResponse response : responseStream) {
                     String content = response.text();
-                    if(StringUtils.isNotBlank(content)) {
-                        callback.callback(buildStreamResponse(content, request.getModel()));
+                    if (StringUtils.isNotBlank(content)) {
+                        Message delta = new Message();
+                        delta.setContent(content);
+                        sendEvent(listener, createStreamResponse(request.getModel(), delta, null));
                     }
                 }
-                callback.callback(buildFinishResponse(request.getModel()));
+                
+                sendEvent(listener, createStreamResponse(request.getModel(), new Message(), "stop"));
+                sendEvent(listener, "[DONE]");
+                
+            } catch (Exception e) {
+                logger.error("Vertex AI流式处理异常", e);
+                sendEvent(listener, StreamCompletionResponse.builder().error(buildError(e.getMessage())).build());
+            } finally {
+                listener.onClosed(null);
             }
-            callback.finish();
-        } catch (Exception e) {
-            logger.error("Vertex AI流式调用失败", e);
-            callback.callback(StreamCompletionResponse.builder().error(buildError(e.getMessage())).build());
-            callback.finish();
-        }
+        });
+    }
+
+    private void sendEvent(CompletionSseListener listener, Object data) {
+        String eventData = data instanceof String ? (String) data : JacksonUtils.serialize(data);
+        listener.onEvent(null, null, null, eventData);
     }
 
     /**
@@ -117,13 +149,11 @@ public class VertexAdaptor implements CompletionAdaptorDelegator<VertexProperty>
         });
     }
 
-    /**
-     * 验证Vertex AI属性配置
-     */
     private void validateProperty(VertexProperty property) {
-        if(property.getAuth() == null || property.getAuth().getType() != AuthorizationProperty.AuthType.GOOGLE_JSON
-                || StringUtils.isBlank(property.getAuth().getVertexAICredentials())
-                || StringUtils.isBlank(property.getDeployName())) {
+        if (property.getAuth() == null 
+            || property.getAuth().getType() != AuthorizationProperty.AuthType.GOOGLE_JSON
+            || StringUtils.isBlank(property.getAuth().getVertexAICredentials())
+            || StringUtils.isBlank(property.getDeployName())) {
             throw new IllegalArgumentException("配置无效：需要GOOGLE_JSON认证类型、Vertex AI凭据和模型名称");
         }
     }
@@ -159,18 +189,21 @@ public class VertexAdaptor implements CompletionAdaptorDelegator<VertexProperty>
 
     private GenerateContentConfig buildConfig(CompletionRequest request) {
         GenerateContentConfig.Builder builder = GenerateContentConfig.builder();
-        if(request.getMax_tokens() != null && request.getMax_tokens() > 0) {
-            builder.maxOutputTokens(request.getMax_tokens());
-        }
-        if(request.getN() != null && request.getN() > 0) {
-            builder.candidateCount(request.getN());
-        }
-        if(request.getTemperature() != null) {
-            builder.temperature(request.getTemperature().floatValue());
-        }
-        if(request.getTop_p() != null) {
-            builder.topP(request.getTop_p().floatValue());
-        }
+        
+        Optional.ofNullable(request.getMax_tokens())
+            .filter(tokens -> tokens > 0)
+            .ifPresent(builder::maxOutputTokens);
+            
+        Optional.ofNullable(request.getN())
+            .filter(n -> n > 0)
+            .ifPresent(builder::candidateCount);
+            
+        Optional.ofNullable(request.getTemperature())
+            .ifPresent(temp -> builder.temperature(temp.floatValue()));
+            
+        Optional.ofNullable(request.getTop_p())
+            .ifPresent(topP -> builder.topP(topP.floatValue()));
+            
         return builder.build();
     }
 
@@ -195,32 +228,20 @@ public class VertexAdaptor implements CompletionAdaptorDelegator<VertexProperty>
         return result;
     }
 
-    private StreamCompletionResponse buildStreamResponse(String content, String model) {
-        Message delta = new Message();
-        delta.setContent(content);
 
-        StreamCompletionResponse.Choice choice = new StreamCompletionResponse.Choice();
-        choice.setIndex(0);
-        choice.setDelta(delta);
 
-        StreamCompletionResponse result = new StreamCompletionResponse();
-        result.setModel(model);
-        result.setCreated(DateTimeUtils.getCurrentSeconds());
-        result.setChoices(Lists.newArrayList(choice));
-        return result;
-    }
+    private StreamCompletionResponse createStreamResponse(String model, Message delta, String finishReason) {
+        StreamCompletionResponse.Choice choice = StreamCompletionResponse.Choice.builder()
+                .index(0)
+                .delta(delta)
+                .finish_reason(finishReason)
+                .build();
 
-    private StreamCompletionResponse buildFinishResponse(String model) {
-        StreamCompletionResponse.Choice choice = new StreamCompletionResponse.Choice();
-        choice.setIndex(0);
-        choice.setFinish_reason("stop");
-        choice.setDelta(new Message());
-
-        StreamCompletionResponse result = new StreamCompletionResponse();
-        result.setModel(model);
-        result.setCreated(DateTimeUtils.getCurrentSeconds());
-        result.setChoices(Lists.newArrayList(choice));
-        return result;
+        return StreamCompletionResponse.builder()
+                .model(model)
+                .created(DateTimeUtils.getCurrentSeconds())
+                .choices(Lists.newArrayList(choice))
+                .build();
     }
 
     private CompletionResponse.TokenUsage buildTokenUsage(GenerateContentResponse response) {
@@ -262,8 +283,6 @@ public class VertexAdaptor implements CompletionAdaptorDelegator<VertexProperty>
     private int safeOptionalIntValue(Optional<Integer> optionalValue) {
         return optionalValue.orElse(0);
     }
-
-
 
     private OpenapiResponse.OpenapiError buildError(String message) {
         OpenapiResponse.OpenapiError error = new OpenapiResponse.OpenapiError();
