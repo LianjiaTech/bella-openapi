@@ -127,7 +127,6 @@ public class VertexAdaptor implements CompletionAdaptorDelegator<VertexProperty>
      * 获取缓存的Vertex AI客户端
      */
     private Client getClient(VertexProperty property) {
-        validateProperty(property);
         String cacheKey = getCacheKey(property);
 
         return clientCache.computeIfAbsent(cacheKey, k -> {
@@ -149,14 +148,7 @@ public class VertexAdaptor implements CompletionAdaptorDelegator<VertexProperty>
         });
     }
 
-    private void validateProperty(VertexProperty property) {
-        if (property.getAuth() == null 
-            || property.getAuth().getType() != AuthorizationProperty.AuthType.GOOGLE_JSON
-            || StringUtils.isBlank(property.getAuth().getVertexAICredentials())
-            || StringUtils.isBlank(property.getDeployName())) {
-            throw new IllegalArgumentException("配置无效：需要GOOGLE_JSON认证类型、Vertex AI凭据和模型名称");
-        }
-    }
+
 
     private String getCacheKey(VertexProperty property) {
         return property.getLocation() + ":" + property.getAuth().getVertexAICredentials().hashCode();
@@ -289,6 +281,21 @@ public class VertexAdaptor implements CompletionAdaptorDelegator<VertexProperty>
         error.setMessage("Vertex AI调用失败: " + message);
         error.setType("vertex_error");
         return error;
+    }
+
+    @Override
+    public void validateChannelInfo(String channelInfo) {
+        try {
+            VertexProperty property = JacksonUtils.deserialize(channelInfo, VertexProperty.class);
+            if (property.getAuth() == null 
+                || property.getAuth().getType() != AuthorizationProperty.AuthType.GOOGLE_JSON
+                || StringUtils.isBlank(property.getAuth().getVertexAICredentials())
+                || StringUtils.isBlank(property.getDeployName())) {
+                throw new IllegalArgumentException("配置无效：需要GOOGLE_JSON认证类型、Vertex AI凭据和模型名称");
+            }
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Vertex AI渠道配置验证失败: " + e.getMessage(), e);
+        }
     }
 
     @Override
