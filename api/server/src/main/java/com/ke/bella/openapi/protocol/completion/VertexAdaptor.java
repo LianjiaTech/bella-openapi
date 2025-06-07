@@ -8,7 +8,6 @@ import com.google.genai.ResponseStream;
 import com.google.genai.types.GenerateContentConfig;
 import com.google.genai.types.GenerateContentResponse;
 import com.google.genai.types.GenerateContentResponseUsageMetadata;
-import com.ke.bella.openapi.protocol.AuthorizationProperty;
 import com.ke.bella.openapi.protocol.OpenapiResponse;
 import com.ke.bella.openapi.protocol.Callbacks;
 import com.ke.bella.openapi.protocol.Callbacks.StreamCompletionCallback;
@@ -131,7 +130,7 @@ public class VertexAdaptor implements CompletionAdaptorDelegator<VertexProperty>
 
         return clientCache.computeIfAbsent(cacheKey, k -> {
             try {
-                String jsonCreds = property.getAuth().getVertexAICredentials();
+                String jsonCreds = property.getVertexAICredentials();
                 GoogleCredentials credentials = GoogleCredentials.fromStream(
                         new ByteArrayInputStream(jsonCreds.getBytes(StandardCharsets.UTF_8)))
                         .createScoped(Arrays.asList("https://www.googleapis.com/auth/cloud-platform"));
@@ -151,7 +150,7 @@ public class VertexAdaptor implements CompletionAdaptorDelegator<VertexProperty>
 
 
     private String getCacheKey(VertexProperty property) {
-        return property.getLocation() + ":" + property.getAuth().getVertexAICredentials().hashCode();
+        return property.getLocation() + ":" + property.getVertexAICredentials().hashCode();
     }
 
     private String extractProjectId(String jsonCreds) throws IOException {
@@ -287,11 +286,8 @@ public class VertexAdaptor implements CompletionAdaptorDelegator<VertexProperty>
     public void validateChannelInfo(String channelInfo) {
         try {
             VertexProperty property = JacksonUtils.deserialize(channelInfo, VertexProperty.class);
-            if (property.getAuth() == null 
-                || property.getAuth().getType() != AuthorizationProperty.AuthType.GOOGLE_JSON
-                || StringUtils.isBlank(property.getAuth().getVertexAICredentials())
-                || StringUtils.isBlank(property.getDeployName())) {
-                throw new IllegalArgumentException("配置无效：需要GOOGLE_JSON认证类型、Vertex AI凭据和模型名称");
+            if (StringUtils.isBlank(property.getVertexAICredentials()) || StringUtils.isBlank(property.getDeployName())) {
+                throw new IllegalArgumentException("配置无效：需要vertexAICredentials和deployName");
             }
         } catch (Exception e) {
             throw new IllegalArgumentException("Vertex AI渠道配置验证失败: " + e.getMessage(), e);
