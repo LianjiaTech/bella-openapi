@@ -155,6 +155,11 @@ public class CompletionRequest implements UserRequest, Serializable {
      */
     private Boolean enable_thinking;
 
+    /**
+     * Vertex AI特有参数：推理努力程度 (low, medium, high, none)
+     */
+    private String reasoning_effort;
+
     @Data
     public static class StreamOptions {
         /**

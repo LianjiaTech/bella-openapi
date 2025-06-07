@@ -12,7 +12,10 @@ public class ResponseHelper {
     public static final String START_THINK = "<think>";
     public static final String END_THINK = "</think>";
 
-    public static void splitReasoningFromContent(CompletionResponse rsp, OpenAIProperty property) {
+    /**
+     * 通用的splitReasoningFromContent方法，支持所有继承自CompletionProperty的属性类
+     */
+    public static void splitReasoningFromContent(CompletionResponse rsp, CompletionProperty property) {
         if(!property.isSplitReasoningFromContent()) {
             return;
         }

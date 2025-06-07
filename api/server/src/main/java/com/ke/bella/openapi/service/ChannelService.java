@@ -12,6 +12,7 @@ import com.ke.bella.openapi.metadata.MetaDataOps;
 import com.ke.bella.openapi.metadata.PriceDetails;
 import com.ke.bella.openapi.protocol.AdaptorManager;
 import com.ke.bella.openapi.protocol.IPriceInfo;
+import com.ke.bella.openapi.protocol.IProtocolAdaptor;
 import com.ke.bella.openapi.protocol.cost.CostCalculator;
 import com.ke.bella.openapi.tables.pojos.ChannelDB;
 import com.ke.bella.openapi.tables.pojos.EndpointDB;
@@ -95,7 +96,16 @@ public class ChannelService {
             op.setVisibility(PUBLIC);
         }
         
-        //todo: 根据协议检查channelInfo
+        // 验证渠道配置信息
+        if (StringUtils.isNotBlank(op.getChannelInfo())) {
+            endpoints.forEach(endpoint -> {
+                IProtocolAdaptor adaptor = adaptorManager.getProtocolAdaptor(endpoint, op.getProtocol());
+                if (adaptor != null) {
+                    adaptor.validateChannelInfo(op.getChannelInfo());
+                }
+            });
+        }
+        
         ChannelDB channelDB = channelRepo.insert(op);
         updateCache(channelDB.getEntityType(), channelDB.getEntityCode());
         return channelDB;
@@ -115,7 +125,26 @@ public class ChannelService {
             }
             endpoints.forEach(endpoint -> Assert.isTrue(CostCalculator.validate(endpoint, op.getPriceInfo()), "priceInfo invalid"));
         }
-        //todo: 根据协议检查channelInfo
+        
+        // 验证渠道配置信息
+        if (StringUtils.isNotBlank(op.getChannelInfo())) {
+            Entity entity = getEntityInfoByCode(op.getChannelCode());
+            List<String> endpoints = new ArrayList<>();
+            if(entity.getEntityType().equals(MODEL)) {
+                ModelDB model = modelService.getOne(entity.getEntityCode());
+                endpoints = modelService.getAllEndpoints(model.getModelName());
+            } else {
+                endpoints.add(entity.getEntityCode());
+            }
+            ChannelDB existingChannel = getOne(op.getChannelCode());
+            endpoints.forEach(endpoint -> {
+                IProtocolAdaptor adaptor = adaptorManager.getProtocolAdaptor(endpoint, existingChannel.getProtocol());
+                if (adaptor != null) {
+                    adaptor.validateChannelInfo(op.getChannelInfo());
+                }
+            });
+        }
+        
         channelRepo.update(op, op.getChannelCode());
         updateCache(op.getChannelCode());
     }
