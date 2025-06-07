@@ -13,7 +13,7 @@ import java.util.Map;
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class VertexProperty extends CompletionProperty {
-    String vertexAICredentials;
+    Map<String, Object> vertexAICredentials;
     String deployName;
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     String location = "us-central1";

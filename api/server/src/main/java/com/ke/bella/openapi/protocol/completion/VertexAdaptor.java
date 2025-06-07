@@ -1,7 +1,6 @@
 package com.ke.bella.openapi.protocol.completion;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.genai.Client;
 import com.google.genai.ResponseStream;
@@ -23,21 +22,21 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Google Vertex AI适配器
+ * Google Vertex AI协议适配器
  */
 @Component("VertexCompletion")
 public class VertexAdaptor implements CompletionAdaptorDelegator<VertexProperty> {
 
     private static final Logger logger = LoggerFactory.getLogger(VertexAdaptor.class);
-    private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final ConcurrentHashMap<String, Client> clientCache = new ConcurrentHashMap<>();
 
-    // 严格复用 OpenAI 的设计模式
+    // SSE事件转换器
     public final Callbacks.SseEventConverter<StreamCompletionResponse> sseConverter = new Callbacks.DefaultSseConverter();
 
     Callbacks.ChannelErrorCallback<CompletionResponse> errorCallback = (errorResponse, res) -> {
@@ -86,7 +85,7 @@ public class VertexAdaptor implements CompletionAdaptorDelegator<VertexProperty>
     }
 
     /**
-     * 处理Vertex流式响应并转换为SSE格式
+     * 流式响应处理
      */
     private void processVertexStream(CompletionRequest request, VertexProperty property, CompletionSseListener listener) {
         CompletableFuture.runAsync(() -> {
@@ -123,21 +122,22 @@ public class VertexAdaptor implements CompletionAdaptorDelegator<VertexProperty>
     }
 
     /**
-     * 获取缓存的Vertex AI客户端
+     * 获取客户端实例
      */
     private Client getClient(VertexProperty property) {
         String cacheKey = getCacheKey(property);
 
         return clientCache.computeIfAbsent(cacheKey, k -> {
             try {
-                String jsonCreds = property.getVertexAICredentials();
+                Map<String, Object> creds = property.getVertexAICredentials();
+                String jsonCreds = JacksonUtils.serialize(creds);
                 GoogleCredentials credentials = GoogleCredentials.fromStream(
                         new ByteArrayInputStream(jsonCreds.getBytes(StandardCharsets.UTF_8)))
                         .createScoped(Arrays.asList("https://www.googleapis.com/auth/cloud-platform"));
 
                 return Client.builder()
                         .vertexAI(true)
-                        .project(extractProjectId(jsonCreds))
+                        .project(creds.get("project_id").toString())
                         .location(StringUtils.defaultIfBlank(property.getLocation(), "us-central1"))
                         .credentials(credentials)
                         .build();
@@ -150,22 +150,13 @@ public class VertexAdaptor implements CompletionAdaptorDelegator<VertexProperty>
 
 
     private String getCacheKey(VertexProperty property) {
-        return property.getLocation() + ":" + property.getVertexAICredentials().hashCode();
+        Map<String, Object> creds = property.getVertexAICredentials();
+        String projectId = creds != null && creds.get("project_id") != null ? 
+            creds.get("project_id").toString() : "unknown";
+        return property.getLocation() + ":" + projectId;
     }
 
-    private String extractProjectId(String jsonCreds) throws IOException {
-        JsonNode json = objectMapper.readTree(jsonCreds);
-        if(json.has("project_id")) {
-            return json.get("project_id").asText();
-        }
-        if(json.has("client_email")) {
-            String[] parts = json.get("client_email").asText().split("@");
-            if(parts.length > 1) {
-                return parts[1].split("\\.")[0];
-            }
-        }
-        throw new IllegalArgumentException("无法从JSON凭据中提取project_id");
-    }
+
 
     private String extractUserMessage(CompletionRequest request) {
         if(request.getMessages() == null || request.getMessages().isEmpty()) {
@@ -286,8 +277,14 @@ public class VertexAdaptor implements CompletionAdaptorDelegator<VertexProperty>
     public void validateChannelInfo(String channelInfo) {
         try {
             VertexProperty property = JacksonUtils.deserialize(channelInfo, VertexProperty.class);
-            if (StringUtils.isBlank(property.getVertexAICredentials()) || StringUtils.isBlank(property.getDeployName())) {
+            Map<String, Object> creds = property.getVertexAICredentials();
+            if (creds == null || creds.isEmpty() || StringUtils.isBlank(property.getDeployName())) {
                 throw new IllegalArgumentException("配置无效：需要vertexAICredentials和deployName");
+            }
+            
+            // 验证必要字段
+            if (creds.get("project_id") == null || creds.get("private_key") == null || creds.get("client_email") == null) {
+                throw new IllegalArgumentException("缺少必要字段：project_id、private_key、client_email");
             }
         } catch (Exception e) {
             throw new IllegalArgumentException("Vertex AI渠道配置验证失败: " + e.getMessage(), e);
