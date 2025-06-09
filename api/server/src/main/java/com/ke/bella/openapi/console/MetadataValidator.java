@@ -143,12 +143,12 @@ public class MetadataValidator {
                 "实体类型只能是endpoint或model");
         Assert.hasText(op.getProtocol(), "请求协议不可为空");
         Assert.hasText(op.getSupplier(), "供应商不可为空");
-        
-                    // 对于Google Vertex AI协议，url可以为空（因为它使用Vertex AI SDK，不需要自定义URL）
-            if (!Protocol.VERTEX.getCode().equals(op.getProtocol())) {
+
+        // 对于Google Vertex AI协议，url可以为空（因为它使用Vertex AI SDK，不需要自定义URL）
+        if(!Protocol.VERTEX.getCode().equals(op.getProtocol())) {
             Assert.hasText(op.getUrl(), "url不可为空");
         }
-        
+
         Assert.isTrue(DATA_DESTINATIONS.contains(op.getDataDestination()),
                 "通道的数据流向只能是：" + String.join("或", DATA_DESTINATIONS));
         Assert.isTrue(CHANNEL_PRIORITY.contains(op.getPriority()),
@@ -156,13 +156,13 @@ public class MetadataValidator {
         Assert.isTrue(op.getTrialEnabled() == 1 || op.getTrialEnabled() == 0, "试用开关只能是0或1");
         Assert.hasText(op.getProtocol(), "请求协议不可为空字符串");
         Assert.hasText(op.getSupplier(), "供应商不可为空字符串");
-        
+
         // Validate visibility if provided
         if (StringUtils.isNotEmpty(op.getVisibility())) {
-            Assert.isTrue(PRIVATE.equals(op.getVisibility()) || 
+            Assert.isTrue(PRIVATE.equals(op.getVisibility()) ||
                           PUBLIC.equals(op.getVisibility()),
                     "通道的可见性只能是：" + PRIVATE + "或" + PUBLIC);
-                    
+
             // If it's a private channel, validate owner information
             if (PRIVATE.equals(op.getVisibility())) {
                 Assert.hasText(op.getOwnerType(), "私有通道的所有者类型不可为空");
@@ -171,7 +171,7 @@ public class MetadataValidator {
                         "所有者类型只能是：" + String.join("或", OWNER_TYPES));
             }
         }
-        
+
         checkJsonInfo(op.getChannelInfo());
         checkJsonInfo(op.getPriceInfo());
     }

@@ -1,6 +1,5 @@
 package com.ke.bella.openapi.protocol.completion;
 
-
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.genai.Client;
 import com.google.genai.ResponseStream;
@@ -74,7 +73,6 @@ public class VertexAdaptor implements CompletionAdaptorDelegator<VertexProperty>
             ResponseHelper.splitReasoningFromContent(result, property);
             return result;
         } catch (Exception e) {
-            logger.error("Vertex AI调用失败", e);
             throw new RuntimeException("Vertex AI调用失败: " + e.getMessage(), e);
         }
     }
@@ -91,22 +89,22 @@ public class VertexAdaptor implements CompletionAdaptorDelegator<VertexProperty>
         CompletableFuture.runAsync(() -> {
             listener.setConnectionInitFuture(new CompletableFuture<>());
             listener.onOpen(null, null);
-            
+
             try (ResponseStream<GenerateContentResponse> responseStream = getClient(property).models
                     .generateContentStream(property.getDeployName(), extractUserMessage(request), buildConfig(request))) {
 
                 for (GenerateContentResponse response : responseStream) {
                     String content = response.text();
-                    if (StringUtils.isNotBlank(content)) {
+                    if(StringUtils.isNotBlank(content)) {
                         Message delta = new Message();
                         delta.setContent(content);
                         sendEvent(listener, createStreamResponse(request.getModel(), delta, null));
                     }
                 }
-                
+
                 sendEvent(listener, createStreamResponse(request.getModel(), new Message(), "stop"));
                 sendEvent(listener, "[DONE]");
-                
+
             } catch (Exception e) {
                 logger.error("Vertex AI流式处理异常", e);
                 sendEvent(listener, StreamCompletionResponse.builder().error(buildError(e.getMessage())).build());
@@ -147,16 +145,11 @@ public class VertexAdaptor implements CompletionAdaptorDelegator<VertexProperty>
         });
     }
 
-
-
     private String getCacheKey(VertexProperty property) {
         Map<String, Object> creds = property.getVertexAICredentials();
-        String projectId = creds != null && creds.get("project_id") != null ? 
-            creds.get("project_id").toString() : "unknown";
+        String projectId = creds != null && creds.get("project_id") != null ? creds.get("project_id").toString() : "unknown";
         return property.getLocation() + ":" + projectId;
     }
-
-
 
     private String extractUserMessage(CompletionRequest request) {
         if(request.getMessages() == null || request.getMessages().isEmpty()) {
@@ -171,21 +164,21 @@ public class VertexAdaptor implements CompletionAdaptorDelegator<VertexProperty>
 
     private GenerateContentConfig buildConfig(CompletionRequest request) {
         GenerateContentConfig.Builder builder = GenerateContentConfig.builder();
-        
+
         Optional.ofNullable(request.getMax_tokens())
-            .filter(tokens -> tokens > 0)
-            .ifPresent(builder::maxOutputTokens);
-            
+                .filter(tokens -> tokens > 0)
+                .ifPresent(builder::maxOutputTokens);
+
         Optional.ofNullable(request.getN())
-            .filter(n -> n > 0)
-            .ifPresent(builder::candidateCount);
-            
+                .filter(n -> n > 0)
+                .ifPresent(builder::candidateCount);
+
         Optional.ofNullable(request.getTemperature())
-            .ifPresent(temp -> builder.temperature(temp.floatValue()));
-            
+                .ifPresent(temp -> builder.temperature(temp.floatValue()));
+
         Optional.ofNullable(request.getTop_p())
-            .ifPresent(topP -> builder.topP(topP.floatValue()));
-            
+                .ifPresent(topP -> builder.topP(topP.floatValue()));
+
         return builder.build();
     }
 
@@ -210,8 +203,6 @@ public class VertexAdaptor implements CompletionAdaptorDelegator<VertexProperty>
         return result;
     }
 
-
-
     private StreamCompletionResponse createStreamResponse(String model, Message delta, String finishReason) {
         StreamCompletionResponse.Choice choice = StreamCompletionResponse.Choice.builder()
                 .index(0)
@@ -227,10 +218,6 @@ public class VertexAdaptor implements CompletionAdaptorDelegator<VertexProperty>
     }
 
     private CompletionResponse.TokenUsage buildTokenUsage(GenerateContentResponse response) {
-        if(!response.usageMetadata().isPresent()) {
-            throw new IllegalStateException("Vertex AI响应缺少usageMetadata信息");
-        }
-
         GenerateContentResponseUsageMetadata usageMetadata = response.usageMetadata().get();
 
         int basePromptTokens = safeOptionalIntValue(usageMetadata.promptTokenCount());
@@ -278,12 +265,12 @@ public class VertexAdaptor implements CompletionAdaptorDelegator<VertexProperty>
         try {
             VertexProperty property = JacksonUtils.deserialize(channelInfo, VertexProperty.class);
             Map<String, Object> creds = property.getVertexAICredentials();
-            if (creds == null || creds.isEmpty() || StringUtils.isBlank(property.getDeployName())) {
+            if(creds == null || creds.isEmpty() || StringUtils.isBlank(property.getDeployName())) {
                 throw new IllegalArgumentException("配置无效：需要vertexAICredentials和deployName");
             }
-            
+
             // 验证必要字段
-            if (creds.get("project_id") == null || creds.get("private_key") == null || creds.get("client_email") == null) {
+            if(creds.get("project_id") == null || creds.get("private_key") == null || creds.get("client_email") == null) {
                 throw new IllegalArgumentException("缺少必要字段：project_id、private_key、client_email");
             }
         } catch (Exception e) {
