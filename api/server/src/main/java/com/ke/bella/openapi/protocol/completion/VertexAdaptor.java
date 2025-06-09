@@ -220,13 +220,14 @@ public class VertexAdaptor implements CompletionAdaptorDelegator<VertexProperty>
     private CompletionResponse.TokenUsage buildTokenUsage(GenerateContentResponse response) {
         GenerateContentResponseUsageMetadata usageMetadata = response.usageMetadata().get();
 
-        int basePromptTokens = safeOptionalIntValue(usageMetadata.promptTokenCount());
-        int cachedTokens = safeOptionalIntValue(usageMetadata.cachedContentTokenCount());
-        int toolPromptTokens = safeOptionalIntValue(usageMetadata.toolUsePromptTokenCount());
-        int candidatesTokens = safeOptionalIntValue(usageMetadata.candidatesTokenCount());
-        int thoughtsTokens = safeOptionalIntValue(usageMetadata.thoughtsTokenCount());
+        int basePromptTokens = usageMetadata.promptTokenCount().orElse(0);
+        int cachedTokens = usageMetadata.cachedContentTokenCount().orElse(0);
+        int toolPromptTokens = usageMetadata.toolUsePromptTokenCount().orElse(0);
+        int candidatesTokens = usageMetadata.candidatesTokenCount().orElse(0);
+        int thoughtsTokens = usageMetadata.thoughtsTokenCount().orElse(0);
         Integer apiTotalTokens = usageMetadata.totalTokenCount().orElse(null);
 
+        // 计算总的token使用量(含用户的输入、缓存、工具指令tokens之和)
         int promptTokens = basePromptTokens + cachedTokens + toolPromptTokens;
         int completionTokens = candidatesTokens + thoughtsTokens;
         int totalTokens = apiTotalTokens != null ? apiTotalTokens : (promptTokens + completionTokens);
@@ -247,10 +248,6 @@ public class VertexAdaptor implements CompletionAdaptorDelegator<VertexProperty>
         usage.setTotal_tokens(totalTokens);
 
         return usage;
-    }
-
-    private int safeOptionalIntValue(Optional<Integer> optionalValue) {
-        return optionalValue.orElse(0);
     }
 
     private OpenapiResponse.OpenapiError buildError(String message) {
