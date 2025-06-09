@@ -3,8 +3,8 @@ package com.ke.bella.openapi.metadata;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.ke.bella.openapi.EnumDto;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
+lombok.AllArgsConstructor;
+lombok.Getter;
 
 import java.util.Arrays;
 import java.util.List;
@@ -25,7 +25,10 @@ public enum MetadataFeatures {
     FUNCTION_CALL("function_call", "工具调用", ImmutableSet.of("/v1/chat/completions")),
     STREAM_FUNCTION_CALL("stream_function_call", "流式工具调用", ImmutableSet.of("/v1/chat/completions")),
     VISION("vision", "视觉", ImmutableSet.of("/v1/chat/completions")),
-    JSON_FORMAT("json_format", "json格式", ImmutableSet.of("/v1/chat/completions"))
+    JSON_FORMAT("json_format", "json格式", ImmutableSet.of("/v1/chat/completions")),
+    HIGH_QUALITY("high_quality", "高质量生成", ImmutableSet.of("/v1/images/generations")),
+    MULTIPLE_STYLES("multiple_styles", "多种风格", ImmutableSet.of("/v1/images/generations")),
+    BATCH_GENERATION("batch_generation", "批量生成", ImmutableSet.of("/v1/images/generations"))
     ;
     private final String code;
     private final String name;

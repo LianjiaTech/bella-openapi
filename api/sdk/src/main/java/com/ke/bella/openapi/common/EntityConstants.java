@@ -1,8 +1,8 @@
 package com.ke.bella.openapi.common;
 
 import com.google.common.collect.ImmutableList;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
+lombok.AllArgsConstructor;
+lombok.Getter;
 
 import java.util.List;
 
@@ -49,7 +49,7 @@ public class EntityConstants {
         SPEECH_ENDPOINT("/v*/audio/speech", "语音合成", TEXT2SPEECH),
         ASR_ENDPOINT("/v*/audio/transcriptions", "语音识别", AUDIO2TEXT),
         TEXT2IMAGE_ENDPOINT("/v*/images/generations", "文生图", IMAGES),
-        IMAGE2IMAGE_ENDPOINT("/v*/images/edits", "图生图", IMAGES),
+        IMAGE2IMAGE_ENDPOINT("/v*/images/edits", "图生图", IMAGES)
         ;
         private final String endpoint;
         private final String name;

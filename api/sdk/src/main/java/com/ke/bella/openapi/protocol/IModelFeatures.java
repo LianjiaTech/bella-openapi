@@ -3,8 +3,9 @@ package com.ke.bella.openapi.protocol;
 import com.ke.bella.openapi.IDescription;
 import com.ke.bella.openapi.protocol.completion.CompletionModelFeatures;
 import com.ke.bella.openapi.protocol.tts.TTSModelFeatures;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
+import com.ke.bella.openapi.protocol.images.ImagesModelFeatures;
+lombok.AllArgsConstructor;
+lombok.Getter;
 
 public interface IModelFeatures extends IDescription {
 
@@ -12,7 +13,8 @@ public interface IModelFeatures extends IDescription {
     @Getter
     enum EndpointModelFeatureType {
         COMPLETION("/v1/chat/completions", CompletionModelFeatures.class),
-        TTS("/v1/audio/speech", TTSModelFeatures.class)
+        TTS("/v1/audio/speech", TTSModelFeatures.class),
+        IMAGES("/v1/images/generations", ImagesModelFeatures.class)
         ;
 
         private final String endpoint;

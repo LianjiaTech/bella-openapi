@@ -1,0 +1,3518 @@
+# 项目文件描述
+
+
+- api/server/sql/02-meta.sql: SQL脚本文件，创建和管理应用中的数据库表结构，涉及模型、能力点和通道等表，定义了相关的字段和约束，用于系统的数据存储及关系定义。
+
+- api/server/sql/04-init.sql: 该文件用于初始化数据库的SQL脚本，插入endpoint、category、model、model_endpoint_rel以及apikey_role等信息，涉及的关键字段包括模型名称、API路径和访问权限等，与数据库交互密切。
+
+- api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionAdaptor.java: 无描述
+
+- api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/OpenAIAdaptor.java: 无描述
+
+- api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionRequest.java: 这个文件定义了CompletionRequest类，表示完成请求的数据结构，包含模型ID、用户标识、消息列表等字段。
+
+- api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionResponse.java: 该文件定义了CompletionResponse类，包含OpenAPI响应的细节信息与Choice内部类。
+
+- api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionProperty.java: 定义Completion配置属性类，实现协议属性接口，包含编码类型、队列名等配置。
+
+- api/server/src/main/java/com/ke/bella/openapi/endpoints/ChatController.java: 这个文件实现了聊天控制器，处理聊天相关的API请求。主要包含completion方法，用于处理请求，并与ChannelRouter、AdaptorManager等交互。
+
+- api/server/src/main/java/com/ke/bella/openapi/protocol/AdaptorManager.java: 定义了AdaptorManager类，用于管理不同协议适配器的注册和获取操作。通过endpoint和protocol识别适配器，并提供相应的服务支持。
+
+- api/server/src/main/java/com/ke/bella/openapi/protocol/IProtocolAdaptor.java: 定义协议适配器接口IProtocolAdaptor，主要提供终端信息和授权请求生成方法，支持不同类型的授权请求构建。
+
+- api/sdk/src/main/java/com/ke/bella/openapi/protocol/IModelFeatures.java: 定义模型功能接口IModelFeatures，包括EndpointModelFeatureType枚举，用于关联端点和模型功能类型。
+
+- api/sdk/src/main/java/com/ke/bella/openapi/protocol/IModelProperties.java: IModelProperties.java定义了模型属性接口及其子类型的枚举类，描述了不同端点对应的模型属性类型，实现IDescription接口，用于在不同的OpenAPI模型间选择适用的属性类型。
+
+- api/sdk/src/main/java/com/ke/bella/openapi/protocol/IPriceInfo.java: 定义价格信息接口IPriceInfo，提供获取单位的方法，并定义相关枚举类型。
+
+- api/server/src/main/java/com/ke/bella/openapi/protocol/log/EndpointLogHandler.java: 定义了EndpointLogHandler接口，以处理特定endpoint的日志，包含日志处理方法。与EndpointProcessData类交互。
+
+- api/server/src/main/java/com/ke/bella/openapi/protocol/metrics/MetricsResolver.java: 定义MetricsResolver接口，包含度量数据的处理方法。用于解析与EndpointProcessData相关的度量信息。
+
+- api/sdk/src/main/java/com/ke/bella/openapi/metadata/MetadataFeatures.java: 定义了枚举类MetadataFeatures，列举不同的元数据特性和相关端点。提供了特性列表和验证方法。
+
+- api/sdk/src/main/java/com/ke/bella/openapi/common/EntityConstants.java: 此文件定义了系统中的常量，包括实体类型、角色、优先级等，使用多个枚举类组织常量数据，与系统配置强相关。
+
+- api/server/src/main/java/com/ke/bella/openapi/endpoints/MetadataController.java: 这个文件定义了REST API控制器MetadataController，负责处理元数据相关的HTTP请求，包括能力点、模型、渠道和类目等的CRUD操作。主要类/方法：listEndpointDetails、listModel、createPrivateChannel等。与服务层交互以实现具体功能。
+
+- api/server/src/main/java/com/ke/bella/openapi/console/MetadataConsoleController.java: 此文件定义了MetadataConsoleController类，负责管理元数据，包括端点、模式、频道和类目等的增删改查操作。主要通过RESTful API接口与前端通信，调用各个Service类进行业务处理。
+
+- web/src/app/meta/page.tsx: 该文件是一个React组件，用于显示元信息页面，包括侧边栏和主显示区域，使用Hooks管理状态，获取并展示分类树及端点信息。与多个组件配合展示数据。
+
+- web/src/app/playground/page.tsx: 这个文件定义了Playground组件页面，用于展示模型选择和能力点的互动。通过组件如ClientHeader和Sidebar进行界面组织并利用API来获取数据。
+
+- web/src/components/meta/endpoint-details.tsx: 展示和过滤API端点的详细信息及关联模型的组件，支持用户自定义筛选条件。
+
+- web/src/components/playground/ChatCompletionsProcessor.ts: ChatCompletionsProcessor类用于发送和处理聊天生成的流式响应，管理连接的状态变化，解析响应数据。
+
+- api/pom.xml: api/pom.xml 是 Maven 项目的配置文件，定义了项目的模块、依赖管理和构建插件。主要功能是管理项目的依赖和构建过程，包含的关键配置有 Spring Boot、Spring Cloud 以及各种插件如 maven-source-plugin 和 maven-gpg-plugin，和 server、sdk、spi 模块的交互显著。
+
+- api/server/pom.xml: 此文件是server模块的Maven POM文件，继承自父POM(bella-openapi)，定义了模块的依赖，如Spring Boot、Jooq等，并配置了数据库连接属性以及代码生成插件。
+
+
+# 文件内容
+
+
+
+```
+File: api/server/sql/02-meta.sql
+1 SET NAMES utf8mb4;
+2 create table endpoint
+3 (
+4     id              bigint(20) not null auto_increment comment '主键ID',
+5     endpoint        varchar(64) default ''                not null comment '请求path',
+6     endpoint_code   varchar(64) default ''                not null comment '能力点编码',
+7     endpoint_name   varchar(64) default ''                not null comment '能力点名称',
+8     maintainer_code varchar(16) default ''                not null comment '维护人ucid',
+9     maintainer_name varchar(16) default ''                not null comment '维护人姓名',
+10     status          varchar(64) default 'active'          not null comment '状态(active/inactive)',
+11     cuid            bigint(20) default 0 not null comment '创建人id',
+12     cu_name         varchar(16) default ''                not null comment '创建人姓名',
+13     muid            bigint(20) default 0 not null comment '编辑人id',
+14     mu_name         varchar(16) default ''                not null comment '编辑人姓名',
+15     ctime           timestamp   default CURRENT_TIMESTAMP not null,
+16     mtime           timestamp   default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP,
+17     primary key (id),
+18     unique key `uniq_idx_uni_endpoint_code` (`endpoint_code`),
+19     unique key `uniq_idx_uni_endpoint` (`endpoint`),
+20     key             `uniq_idx_uni_endpoint_name` (`endpoint_name`)
+21 )engine=InnoDB default charset=utf8mb4 comment='能力点';
+22 
+23 
+24 create table model
+25 (
+26     id           bigint(20) not null auto_increment comment '主键ID',
+27     model_name   varchar(64)   default ''                not null comment '模型名称',
+28     document_url varchar(256)  default ''                not null comment '文档地址',
+29     visibility   varchar(64)   default 'private'         not null comment '是否公开(private/public)',
+30     owner_type   varchar(16)   default ''                not null comment '所有者类型（系统/组织/个人）',
+31     owner_code   varchar(64)   default ''                not null comment '所有者系统号',
+32     owner_name   varchar(16)   default ''                not null comment '所有者名称',
+33     status       varchar(64)   default 'active'          not null comment '状态(active/inactive)',
+34     properties   varchar(1024) default '{}'              not null comment '属性',
+35     features     varchar(1024) default '{}'              not null comment '特性',
+36     cuid         bigint(20) default 0 not null comment '创建人id',
+37     cu_name      varchar(16)   default ''                not null comment '创建人姓名',
+38     muid         bigint(20) default 0 not null comment '编辑人id',
+39     mu_name      varchar(16)   default ''                not null comment '编辑人姓名',
+40     ctime        timestamp     default CURRENT_TIMESTAMP not null,
+41     mtime        timestamp     default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP,
+42     primary key (id),
+43     unique key `uniq_idx_uni_model_name` (`model_name`),
+44     key          `idx_owner_type_code` (`owner_type`, `owner_code`),
+45     key          `idx_owner_name` (`owner_name`)
+46 )engine=InnoDB default charset=utf8mb4 comment='模型';
+47 
+48 create table model_endpoint_rel
+49 (
+50     id         bigint(20) not null auto_increment comment '主键ID',
+51     model_name varchar(64) default ''                not null comment '模型名称',
+52     endpoint   varchar(64) default ''                not null comment '请求path',
+53     cuid       bigint(20) default 0 not null comment '创建人id',
+54     cu_name    varchar(16) default ''                not null comment '创建人姓名',
+55     muid       bigint(20) default 0 not null comment '编辑人id',
+56     mu_name    varchar(16) default ''                not null comment '编辑人姓名',
+57     ctime      timestamp   default CURRENT_TIMESTAMP not null,
+58     mtime      timestamp   default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP,
+59     primary key (id),
+60     unique key `uniq_idx_uni_endpoint_model` (`endpoint`, `model_name`),
+61     key        `idx_model_name` (`model_name`)
+62 )engine=InnoDB default charset=utf8mb4 comment='模型能力点';
+63 
+64 create table model_authorizer_rel
+65 (
+66     id              bigint(20) not null auto_increment comment '主键ID',
+67     model_name      varchar(64) default ''                not null comment '模型名称',
+68     authorizer_type varchar(16) default ''                not null comment '所有者类型（组织/个人）',
+69     authorizer_code varchar(64) default ''                not null comment '所有者系统号',
+70     authorizer_name varchar(16) default ''                not null comment '所有者名称',
+71     cuid            bigint(20) default 0 not null comment '创建人id',
+72     cu_name         varchar(16) default ''                not null comment '创建人姓名',
+73     muid            bigint(20) default 0 not null comment '编辑人id',
+74     mu_name         varchar(16) default ''                not null comment '编辑人姓名',
+75     ctime           timestamp   default CURRENT_TIMESTAMP not null,
+76     mtime           timestamp   default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP,
+77     primary key (id),
+78     unique key `uniq_idx_uni_model_name_authorizer_code` (`model_name`, `authorizer_code`),
+79     key             `idx_authorizer_code` (`authorizer_code`)
+80 )engine=InnoDB default charset=utf8mb4 comment='模型授权信息';
+81 
+82 
+83 create table channel
+84 (
+85     id               bigint(20) not null auto_increment comment '主键ID',
+86     entity_type      varchar(64)  default 'model'           not null comment '实体类型（endpoint/model）',
+87     entity_code      varchar(64)  default ''                not null comment '实体编码',
+88     channel_code     varchar(64)  default ''                not null comment '渠道编码',
+89     status           varchar(64)  default 'active'          not null comment '状态状态(active/inactive)',
+90     data_destination varchar(64)  default 'inner'           not null comment '数据流向(inner/mainland/overseas)',
+91     priority         varchar(64)  default 'normal'          not null comment '优先级(high/normal/low)',
+92     protocol         varchar(64)  default ''                not null comment '协议',
+93     supplier         varchar(64)  default ''                not null comment '服务商',
+94     url              varchar(512) default ''                not null comment '请求通道的url',
+95     channel_info     varchar(512) default '{}'              not null comment '渠道信息',
+96     price_info       varchar(256) default '{}'              not null comment '单价',
+97     cuid             bigint(20) default 0 not null comment '创建人id',
+98     cu_name          varchar(16)  default ''                not null comment '创建人姓名',
+99     muid             bigint(20) default 0 not null comment '编辑人id',
+100     mu_name          varchar(16)  default ''                not null comment '编辑人姓名',
+101     ctime            timestamp    default CURRENT_TIMESTAMP not null,
+102     mtime            timestamp    default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP,
+103     primary key (id),
+104     unique key `uniq_idx_uni_channel_code` (`channel_code`),
+105     key              `idx_entity_type_code` (`entity_type`,`entity_code`),
+106     key              `idx_protocol` (`protocol`),
+107     key              `idx_supplier` (`supplier`)
+108 )engine=InnoDB default charset=utf8mb4 comment='通道';
+109 
+110 create table category
+111 (
+112     id            bigint(20) not null auto_increment comment '主键ID',
+113     category_code varchar(128) default ''                not null comment '类目编码',
+114     category_name varchar(64)  default ''                not null comment '类目名',
+115     parent_code   varchar(128) default ''                not null comment '父类目编码',
+116     status        varchar(64)  default 'active'          not null comment '状态(active/inactive)',
+117     cuid          bigint(20) default 0 not null comment '创建人id',
+118     cu_name       varchar(16)  default ''                not null comment '创建人姓名',
+119     muid          bigint(20) default 0 not null comment '编辑人id',
+120     mu_name       varchar(16)  default ''                not null comment '编辑人姓名',
+121     ctime         timestamp    default CURRENT_TIMESTAMP not null,
+122     mtime         timestamp    default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP,
+123     primary key (id),
+124     unique key `uniq_idx_uni_category_code` (`category_code`),
+125     unique key `uniq_idx_parent_code_category_name` (`parent_code`, `category_name`),
+126     key           `idx_category_name` (`category_name`)
+127 )engine=InnoDB default charset=utf8mb4 comment='类目';
+128 
+129 create table endpoint_category_rel
+130 (
+131     id            bigint(20) not null auto_increment comment '主键ID',
+132     endpoint      varchar(64)  default ''                not null comment '能力点',
+133     category_code varchar(128) default ''                not null comment '类目编码',
+134     sort          int(10) default 0 not null comment '排序',
+135     cuid          bigint(20) default 0 not null comment '创建人id',
+136     cu_name       varchar(16)  default ''                not null comment '创建人姓名',
+137     muid          bigint(20) default 0 not null comment '编辑人id',
+138     mu_name       varchar(16)  default ''                not null comment '编辑人姓名',
+139     ctime         timestamp    default CURRENT_TIMESTAMP not null,
+140     mtime         timestamp    default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP,
+141     primary key (id),
+142     unique key `uniq_idx_uni_endpoint_category_code` (`endpoint`,`category_code`),
+143     key           `idx_category_code` (`category_code`),
+144     key           `idx_sort` (`sort`)
+145 )engine=InnoDB default charset=utf8mb4 comment='能力点类目';
+146
+```
+
+
+
+
+```
+File: api/server/sql/04-init.sql
+1 insert into endpoint ( endpoint, endpoint_code, endpoint_name, maintainer_code, maintainer_name, status, cuid
+2                      , cu_name, muid, mu_name)
+3 values ('/v1/chat/completions', 'ep-cd2190a7-38dc-427e-a167-2f138b9078e7', N'智能问答', '0', 'system', 'active',
+4         0, 'system', 0, 'system');
+5 
+6 insert into endpoint ( endpoint, endpoint_code, endpoint_name, maintainer_code, maintainer_name, status, cuid
+7                      , cu_name, muid, mu_name)
+8 values ('/v1/embeddings', 'ep-4eb69c9c-4acc-40e8-a671-0b25d9473139', N'向量化', '0', 'system', 'active', 0, 'system', 0, 'system');
+9 
+10 insert into endpoint ( endpoint, endpoint_code, endpoint_name, maintainer_code, maintainer_name, status, cuid
+11                      , cu_name, muid, mu_name)
+12 values ('/v1/audio/speech', 'ep-c73addd8-0517-4ad9-8272-8fb1286ef456', N'语音合成', '0', 'system', 'active', 0, 'system', 0, 'system');
+13 
+14 insert into endpoint ( endpoint, endpoint_code, endpoint_name, maintainer_code, maintainer_name, status, cuid
+15                      , cu_name, muid, mu_name)
+16 values ('/v1/audio/transcriptions', 'ep-bd4b69f0-f9b8-4175-8296-3b267bf76fb1', N'语音识别', '0', 'system', 'active', 0, 'system', 0, 'system');
+17 
+18 insert into endpoint ( endpoint, endpoint_code, endpoint_name, maintainer_code, maintainer_name, status, cuid
+19                      , cu_name, muid, mu_name)
+20 values ('/v1/audio/asr/stream', 'ep-e2b95d24-8b74-4316-8cab-5943e899854d', N'流式语音识别', '0', 'system', 'active', 0, 'system', 0, 'system');
+21 
+22 insert into endpoint ( endpoint, endpoint_code, endpoint_name, maintainer_code, maintainer_name, status, cuid
+23                      , cu_name, muid, mu_name)
+24 values ('/v1/audio/asr/flash', 'ep-0371270b-0b90-4bb2-a760-25a00b4f9ef6', N'一句话语音识别', '0', 'system', 'active', 0, 'system', 0, 'system');
+25 
+26 insert into endpoint ( endpoint, endpoint_code, endpoint_name, maintainer_code, maintainer_name, status, cuid
+27                      , cu_name, muid, mu_name)
+28 values ('/v1/images/generations', 'ep-c1079a7b-1c29-44fa-b5d8-ef8a2bfd493d', N'文生图', '0', 'system', 'active', 0, 'system', 0, 'system');
+29 
+30 insert into endpoint ( endpoint, endpoint_code, endpoint_name, maintainer_code, maintainer_name, status, cuid
+31                      , cu_name, muid, mu_name)
+32 values ('/v1/images/edits', 'ep-ed2a031e-15e7-4199-9f93-73e1d190798e', N'图生图', '0', 'system', 'active', 0, 'system', 0, 'system');
+33 
+34 insert into category (category_code, category_name, parent_code, status, cuid, cu_name, muid, mu_name)
+35 values ('0001', N'语言类', '', 'active', 0, 'system', 0, 'system');
+36 
+37 insert into category (category_code, category_name, parent_code, status, cuid, cu_name, muid, mu_name)
+38 values ('0002', N'语音类', '', 'active', 0, 'system', 0, 'system');
+39 
+40 insert into category (category_code, category_name, parent_code, status, cuid, cu_name, muid, mu_name)
+41 values ('0003', N'图像类', '', 'active', 0, 'system', 0, 'system');
+42 
+43 insert into category (category_code, category_name, parent_code, status, cuid, cu_name, muid, mu_name)
+44 values ('0002-0001', N'语音合成', '0002', 'active', 0, 'system', 0, 'system');
+45 
+46 insert into category (category_code, category_name, parent_code, status, cuid, cu_name, muid, mu_name)
+47 values ('0002-0002', N'语音识别', '0002', 'active', 0, 'system', 0, 'system');
+48 
+49 insert into endpoint_category_rel (endpoint, category_code, cuid, cu_name, muid, mu_name)
+50 values ('/v1/chat/completions', '0001', 0, 'system', 0, 'system');
+51 
+52 insert into endpoint_category_rel (endpoint, category_code, cuid, cu_name, muid, mu_name)
+53 values ('/v1/embeddings', '0001', 0, 'system', 0, 'system');
+54 
+55 insert into endpoint_category_rel (endpoint, category_code, cuid, cu_name, muid, mu_name)
+56 values ('/v1/audio/speech', '0002-0001', 0, 'system', 0, 'system');
+57 
+58 insert into endpoint_category_rel (endpoint, category_code, cuid, cu_name, muid, mu_name)
+59 values ('/v1/audio/transcriptions', '0002-0002', 0, 'system', 0, 'system');
+60 
+61 insert into endpoint_category_rel (endpoint, category_code, cuid, cu_name, muid, mu_name)
+62 values ('/v1/audio/asr/flash', '0002-0002', 0, 'system', 0, 'system');
+63 
+64 insert into endpoint_category_rel (endpoint, category_code, cuid, cu_name, muid, mu_name)
+65 values ('/v1/audio/asr/stream', '0002-0002', 0, 'system', 0, 'system');
+66 
+67 insert into endpoint_category_rel (endpoint, category_code, cuid, cu_name, muid, mu_name)
+68 values ('/v1/images/generations', '0003', 0, 'system', 0, 'system');
+69 
+70 insert into endpoint_category_rel (endpoint, category_code, cuid, cu_name, muid, mu_name)
+71 values ('/v1/images/edits', '0003', 0, 'system', 0, 'system');
+72 
+73 insert into model (model_name, document_url, visibility, owner_type, owner_code, owner_name, properties, features, cuid, cu_name, muid, mu_name)
+74 values ('deepseek-reasoner', 'https://api-docs.deepseek.com/zh-cn/', 'public', 'system', '0', 'system',
+75         '{"max_input_context":64000,"max_output_context":8192}',
+76         '{"json_format":false,"stream_function_call":true,"stream":true,"function_call":true,"agent_thought":true,"reason_content":true}',
+77         0, 'system', 0, 'system');
+78 
+79 insert into model_endpoint_rel (model_name, endpoint, cuid, cu_name, muid, mu_name)
+80 values ('deepseek-reasoner', '/v1/chat/completions', 0, 'system', 0, 'system');
+81 
+82 insert into model (model_name, document_url, visibility, owner_type, owner_code, owner_name, properties, features, cuid, cu_name, muid, mu_name)
+83 values ('deepseek-chat', 'https://api-docs.deepseek.com/zh-cn/', 'public', 'system', '0', 'system',
+84         '{"max_input_context":64000,"max_output_context":8192}',
+85         '{"json_format":false,"stream_function_call":true,"stream":true,"function_call":true,"parallel_tool_calls":false}',
+86         0, 'system', 0, 'system');
+87 
+88 insert into model_endpoint_rel (model_name, endpoint, cuid, cu_name, muid, mu_name)
+89 values ('deepseek-chat', '/v1/chat/completions', 0, 'system', 0, 'system');
+90 
+91 insert into model (model_name, document_url, visibility, owner_type, owner_code, owner_name, properties, features, cuid, cu_name, muid, mu_name)
+92 values ('claude-3.7-sonnet', 'https://docs.anthropic.com/en/docs/intro-to-claude', 'public', 'system', '0', 'system',
+93         '{"max_input_context":128000,"max_output_context":128000}',
+94         '{"vision":true,"json_format":false,"stream_function_call":true,"parallel_tool_calls":false,"stream":true,"function_call":true}',
+95         0, 'system', 0, 'system');
+96 
+97 insert into model_endpoint_rel (model_name, endpoint, cuid, cu_name, muid, mu_name)
+98 values ('claude-3.7-sonnet', '/v1/chat/completions', 0, 'system', 0, 'system');
+99 
+100 insert into model (model_name, document_url, visibility, owner_type, owner_code, owner_name, properties, features, cuid, cu_name, muid, mu_name)
+101 values ('claude-3.5-sonnet', 'https://docs.anthropic.com/en/docs/intro-to-claude', 'public', 'system', '0', 'system',
+102         '{"max_input_context":200000,"max_output_context":200000}',
+103         '{"vision":true,"json_format":false,"stream_function_call":true,"parallel_tool_calls":false,"stream":true,"function_call":true,"reason_content":true}',
+104         0, 'system', 0, 'system');
+105 
+106 insert into model_endpoint_rel (model_name, endpoint, cuid, cu_name, muid, mu_name)
+107 values ('claude-3.5-sonnet', '/v1/chat/completions', 0, 'system', 0, 'system');
+108 
+109 insert into model (model_name, document_url, visibility, owner_type, owner_code, owner_name, properties, features, cuid, cu_name, muid, mu_name)
+110 values ('o3', 'https://platform.openai.com/docs/models', 'public', 'system', '0', 'system',
+111         '{"max_input_context":200000,"max_output_context":100000}',
+112         '{"stream":true,"function_call":true,"stream_function_call":true,"parallel_tool_calls":true,"vision":true,"json_format":true,"json_schema":true}',
+113         0, 'system', 0, 'system');
+114 
+115 insert into model_endpoint_rel (model_name, endpoint, cuid, cu_name, muid, mu_name)
+116 values ('o3', '/v1/chat/completions', 0, 'system', 0, 'system');
+117 
+118 insert into model (model_name, document_url, visibility, owner_type, owner_code, owner_name, properties, features, cuid, cu_name, muid, mu_name)
+119 values ('o1', 'https://platform.openai.com/docs/models', 'public', 'system', '0', 'system',
+120         '{"max_input_context":200000,"max_output_context":100000}',
+121         '{"stream":true,"function_call":true,"stream_function_call":true,"parallel_tool_calls":true,"vision":true,"json_format":true,"json_schema":true}',
+122         0, 'system', 0, 'system');
+123 
+124 insert into model_endpoint_rel (model_name, endpoint, cuid, cu_name, muid, mu_name)
+125 values ('o1', '/v1/chat/completions', 0, 'system', 0, 'system');
+126 
+127 insert into model (model_name, document_url, visibility, owner_type, owner_code, owner_name, properties, features, cuid, cu_name, muid, mu_name)
+128 values ('gpt-4o', 'https://platform.openai.com/docs/models', 'public', 'system', '0', 'system',
+129         '{"max_input_context":128000,"max_output_context": 16384}',
+130         '{"stream":true,"function_call":true,"stream_function_call":true,"parallel_tool_calls":true,"vision":true,"json_format":true,"json_schema":true}',
+131         0, 'system', 0, 'system');
+132 
+133 insert into model_endpoint_rel (model_name, endpoint, cuid, cu_name, muid, mu_name)
+134 values ('gpt-4o', '/v1/chat/completions', 0, 'system', 0, 'system');
+135 
+136 insert into model (model_name, document_url, visibility, owner_type, owner_code, owner_name, properties, features, cuid, cu_name, muid, mu_name)
+137 values ('qwen-vl-max', 'https://help.aliyun.com/zh/model-studio/getting-started/models',
+138         'public', 'system', '0', 'system',
+139         '{"max_input_context":129024,"max_output_context":8192}',
+140         '{"vision":true,"json_format":true,"stream_function_call":true,"parallel_tool_calls":false,"stream":true,"function_call":true,"json_schema":false}',
+141         0, 'system', 0, 'system');
+142 
+143 insert into model_endpoint_rel (model_name, endpoint, cuid, cu_name, muid, mu_name)
+144 values ('qwen-vl-max', '/v1/chat/completions', 0, 'system', 0, 'system');
+145 
+146 insert into model (model_name, document_url, visibility, owner_type, owner_code, owner_name, properties, features, cuid, cu_name, muid, mu_name)
+147 values ('Doubao-1.5-vision-pro-32k', 'https://www.volcengine.com/docs/82379/1330310', 'public', 'system', '0', 'system',
+148         '{"max_input_context":32000,"max_output_context":12288}',
+149         '{"vision":true,"json_format":true,"stream_function_call":false,"parallel_tool_calls":false,"stream":true,"function_call":false,"json_schema":false}',
+150         0, 'system', 0, 'system');
+151 
+152 insert into model_endpoint_rel (model_name, endpoint, cuid, cu_name, muid, mu_name)
+153 values ('Doubao-1.5-vision-pro-32k', '/v1/chat/completions', 0, 'system', 0, 'system');
+154 
+155 insert into model (model_name, document_url, visibility, owner_type, owner_code, owner_name, properties, features, cuid, cu_name, muid, mu_name)
+156 values ('qwen-max', 'https://help.aliyun.com/zh/model-studio/getting-started/models', 'public', 'system', '0', 'system',
+157         '{"max_input_context":30720,"max_output_context":8192}',
+158         '{"stream":true,"function_call":true,"stream_function_call":true,"parallel_tool_calls":false,"vision":false,"json_format":false}',
+159         0, 'system', 0, 'system');
+160 
+161 insert into model_endpoint_rel (model_name, endpoint, cuid, cu_name, muid, mu_name)
+162 values ('qwen-max', '/v1/chat/completions', 0, 'system', 0, 'system');
+163 
+164 insert into model (model_name, document_url, visibility, owner_type, owner_code, owner_name, properties, features, cuid, cu_name, muid, mu_name)
+165 values ('qwen-vl-plus', 'https://help.aliyun.com/zh/model-studio/getting-started/models',
+166         'public', 'system', '0', 'system',
+167         '{"max_input_context":129024,"max_output_context":8192}',
+168         '{"json_format":true,"stream_function_call":true,"vision":true,"stream":true,"parallel_tool_calls":false,"function_call":true,"json_schema":false}',
+169         0, 'system', 0, 'system');
+170 
+171 insert into model_endpoint_rel (model_name, endpoint, cuid, cu_name, muid, mu_name)
+172 values ('qwen-vl-plus', '/v1/chat/completions', 0, 'system', 0, 'system');
+173 
+174 insert into model (model_name, document_url, visibility, owner_type, owner_code, owner_name, properties, features, cuid, cu_name, muid, mu_name)
+175 values ('qwen-plus', 'https://help.aliyun.com/zh/model-studio/getting-started/models',
+176         'public', 'system', '0', 'system',
+177         '{"max_input_context":129024,"max_output_context":8192}',
+178         '{"stream":true,"function_call":true,"stream_function_call":true,"parallel_tool_calls":false,"vision":false,"json_format":false}',
+179         0, 'system', 0, 'system');
+180 
+181 insert into model_endpoint_rel (model_name, endpoint, cuid, cu_name, muid, mu_name)
+182 values ('qwen-plus', '/v1/chat/completions', 0, 'system', 0, 'system');
+183 
+184 insert into model (model_name, document_url, visibility, owner_type, owner_code, owner_name, properties, features, cuid, cu_name, muid, mu_name)
+185 values ('qwen-turbo', 'https://help.aliyun.com/zh/model-studio/getting-started/models',
+186         'public', 'system', '0', 'system',
+187         '{"max_input_context":1000000,"max_output_context":8192}',
+188         '{"stream":true,"function_call":true,"stream_function_call":true,"parallel_tool_calls":false,"vision":false,"json_format":false}',
+189         0, 'system', 0, 'system');
+190 
+191 insert into model_endpoint_rel (model_name, endpoint, cuid, cu_name, muid, mu_name)
+192 values ('qwen-turbo', '/v1/chat/completions', 0, 'system', 0, 'system');
+193 
+194 insert into model (model_name, document_url, visibility, owner_type, owner_code, owner_name, properties, features, cuid, cu_name, muid, mu_name)
+195 values ('qwen-long', 'https://help.aliyun.com/zh/model-studio/getting-started/models', 'public', 'system', '0', 'system',
+196         '{"max_input_context":10000000,"max_output_context":6000}',
+197         '{"stream":true,"function_call":true,"stream_function_call":true,"parallel_tool_calls":false,"vision":false,"json_format":false}',
+198         0, 'system', 0, 'system');
+199 
+200 insert into model_endpoint_rel (model_name, endpoint, cuid, cu_name, muid, mu_name)
+201 values ('qwen-long', '/v1/chat/completions', 0, 'system', 0, 'system');
+202 
+203 insert into model (model_name, document_url, visibility, owner_type, owner_code, owner_name, properties, features, cuid, cu_name, muid, mu_name)
+204 values ('Doubao-1.5-pro-256k', 'https://www.volcengine.com/docs/82379/1330310', 'public', 'system', '0', 'system',
+205         '{"max_input_context":256000,"max_output_context":12288}',
+206         '{"json_format":true,"stream":true}',
+207         0, 'system', 0, 'system');
+208 
+209 insert into model_endpoint_rel (model_name, endpoint, cuid, cu_name, muid, mu_name)
+210 values ('Doubao-1.5-pro-256k', '/v1/chat/completions', 0, 'system', 0, 'system');
+211 
+212 insert into model (model_name, document_url, visibility, owner_type, owner_code, owner_name, properties, features, cuid, cu_name, muid, mu_name)
+213 values ('Doubao-1.5-pro-32k', 'https://www.volcengine.com/docs/82379/1330310', 'public', 'system', '0', 'system',
+214         '{"max_input_context":32000,"max_output_context":12288}',
+215         '{"json_format":true,"stream_function_call":true,"parallel_tool_calls":false,"stream":true,"function_call":true,"json_schema":true}',
+216         0, 'system', 0, 'system');
+217 
+218 insert into model_endpoint_rel (model_name, endpoint, cuid, cu_name, muid, mu_name)
+219 values ('Doubao-1.5-pro-32k', '/v1/chat/completions', 0, 'system', 0, 'system');
+220 
+221 insert into model (model_name, document_url, visibility, owner_type, owner_code, owner_name, properties, features, cuid, cu_name, muid, mu_name)
+222 values ('doubao-pro-256k', 'https://www.volcengine.com/docs/82379/1330310', 'public', 'system', '0', 'system',
+223         '{"max_input_context":256000,"max_output_context":4096}',
+224         '{"json_format":true,"function_call":true,"stream_function_call":false,"stream":true}',
+225         0, 'system', 0, 'system');
+226 
+227 insert into model_endpoint_rel (model_name, endpoint, cuid, cu_name, muid, mu_name)
+228 values ('doubao-pro-256k', '/v1/chat/completions', 0, 'system', 0, 'system');
+229 
+230 insert into model (model_name, document_url, visibility, owner_type, owner_code, owner_name, properties, features, cuid, cu_name, muid, mu_name)
+231 values ('doubao-pro-32k', 'https://www.volcengine.com/docs/82379/1330310', 'public', 'system', '0', 'system',
+232         '{"max_input_context":32000,"max_output_context":4096}',
+233         '{"stream":true,"function_call":true,"stream_function_call":true,"parallel_tool_calls":false,"vision":false,"json_format":false}',
+234         0, 'system', 0, 'system');
+235 
+236 insert into model_endpoint_rel (model_name, endpoint, cuid, cu_name, muid, mu_name)
+237 values ('doubao-pro-32k', '/v1/chat/completions', 0, 'system', 0, 'system');
+238 
+239 insert into model (model_name, document_url, visibility, owner_type, owner_code, owner_name, properties, features, cuid, cu_name, muid, mu_name)
+240 values ('moonshot-v1-128k', 'https://platform.moonshot.cn/docs', 'public', 'system', '0', 'system',
+241         '{"max_input_context":128000,"max_output_context":4096}',
+242         '{"stream":true,"function_call":true,"stream_function_call":true,"parallel_tool_calls":false,"vision":false,"json_format":false}',
+243         0, 'system', 0, 'system');
+244 
+245 insert into model_endpoint_rel (model_name, endpoint, cuid, cu_name, muid, mu_name)
+246 values ('moonshot-v1-128k', '/v1/chat/completions', 0, 'system', 0, 'system');
+247 
+248 insert into model (model_name, document_url, visibility, owner_type, owner_code, owner_name, properties, features, cuid, cu_name, muid, mu_name)
+249 values ('moonshot-v1-32k', 'https://platform.moonshot.cn/docs', 'public', 'system', '0', 'system',
+250         '{"max_input_context":32000,"max_output_context":4096}',
+251         '{"stream":true,"function_call":true,"stream_function_call":true,"parallel_tool_calls":false,"vision":false,"json_format":false}',
+252         0, 'system', 0, 'system');
+253 
+254 insert into model_endpoint_rel (model_name, endpoint, cuid, cu_name, muid, mu_name)
+255 values ('moonshot-v1-32k', '/v1/chat/completions', 0, 'system', 0, 'system');
+256 
+257 insert into model (model_name, document_url, visibility, owner_type, owner_code, owner_name, properties, features, cuid, cu_name, muid, mu_name)
+258 values ('moonshot-v1-8k', 'https://platform.moonshot.cn/docs', 'public', 'system', '0', 'system',
+259         '{"max_input_context":8000,"max_output_context":4096}',
+260         '{"stream":true,"function_call":true,"stream_function_call":true,"parallel_tool_calls":false,"vision":false,"json_format":false}',
+261         0, 'system', 0, 'system');
+262 
+263 insert into model_endpoint_rel (model_name, endpoint, cuid, cu_name, muid, mu_name)
+264 values ('moonshot-v1-8k', '/v1/chat/completions', 0, 'system', 0, 'system');
+265 
+266 insert into model (model_name, document_url, visibility, owner_type, owner_code, owner_name, properties, features, cuid, cu_name, muid, mu_name)
+267 values ('GLM-3-130B', 'https://open.bigmodel.cn/console/modelcenter/square', 'public', 'system', '0', 'system',
+268         '{"max_input_context":8000,"max_output_context":4096}',
+269         '{"stream":true,"function_call":true,"stream_function_call":true,"parallel_tool_calls":false,"vision":false,"json_format":false}',
+270         0, 'system', 0, 'system');
+271 
+272 insert into model_endpoint_rel (model_name, endpoint, cuid, cu_name, muid, mu_name)
+273 values ('GLM-3-130B', '/v1/chat/completions', 0, 'system', 0, 'system');
+274 
+275 insert into model (model_name, document_url, visibility, owner_type, owner_code, owner_name, properties, features, cuid, cu_name, muid, mu_name)
+276 values ('gpt-4o-mini', 'https://platform.openai.com/docs/models', 'public', 'system', '0', 'system',
+277         '{"max_input_context":128000,"max_output_context":16384}',
+278         '{"stream":true,"function_call":true,"stream_function_call":true,"parallel_tool_calls":true,"vision":true,"json_format":true,"json_schema":true}',
+279         0, 'system', 0, 'system');
+280 
+281 insert into model_endpoint_rel (model_name, endpoint, cuid, cu_name, muid, mu_name)
+282 values ('gpt-4o-mini', '/v1/chat/completions', 0, 'system', 0, 'system');
+283 
+284 insert into model (model_name, document_url, visibility, owner_type, owner_code, owner_name, properties, features, cuid, cu_name, muid, mu_name)
+285 values ('o1-mini', 'https://platform.openai.com/docs/models', 'public', 'system', '0', 'system',
+286         '{"max_input_context":128000,"max_output_context":65536}',
+287         '{"stream":true,"function_call":true,"stream_function_call":true,"parallel_tool_calls":true,"vision":false,"json_format":true,"json_schema":true}',
+288         0, 'system', 0, 'system');
+289 
+290 insert into model_endpoint_rel (model_name, endpoint, cuid, cu_name, muid, mu_name)
+291 values ('o1-mini', '/v1/chat/completions', 0, 'system', 0, 'system');
+292 
+293 insert into model (model_name, document_url, visibility, owner_type, owner_code, owner_name, properties, features, cuid, cu_name, muid, mu_name)
+294 values ('o3-mini', 'https://platform.openai.com/docs/models', 'public', 'system', '0', 'system',
+295         '{"max_input_context":200000,"max_output_context":100000}',
+296         '{"stream":true,"function_call":true,"stream_function_call":true,"parallel_tool_calls":true,"vision":false,"json_format":true,"json_schema":true}',
+297         0, 'system', 0, 'system');
+298 
+299 insert into model_endpoint_rel (model_name, endpoint, cuid, cu_name, muid, mu_name)
+300 values ('o3-mini', '/v1/chat/completions', 0, 'system', 0, 'system');
+301 
+302 insert into model (model_name, document_url, visibility, owner_type, owner_code, owner_name, properties, features, cuid, cu_name, muid, mu_name)
+303 values ('qwen2-72b-instruct', 'https://help.aliyun.com/zh/model-studio/getting-started/models', 'public', 'system', '0', 'system',
+304         '{"max_input_context":131072,"max_output_context":129024}',
+305         '{"stream":true,"function_call":true,"stream_function_call":true,"parallel_tool_calls":false,"vision":false,"json_format":false}',
+306         0, 'system', 0, 'system');
+307 
+308 insert into model_endpoint_rel (model_name, endpoint, cuid, cu_name, muid, mu_name)
+309 values ('qwen2-72b-instruct', '/v1/chat/completions', 0, 'system', 0, 'system');
+310 
+311 insert into model (model_name, document_url, visibility, owner_type, owner_code, owner_name, properties, features, cuid, cu_name, muid, mu_name)
+312 values ('qwen2.5-72b-instruct', 'https://help.aliyun.com/zh/model-studio/getting-started/models', 'public', 'system', '0', 'system',
+313         '{"max_input_context":131072,"max_output_context":129024}',
+314         '{"stream":true,"function_call":true,"stream_function_call":true,"parallel_tool_calls":false,"vision":false,"json_format":false}',
+315         0, 'system', 0, 'system');
+316 
+317 insert into model_endpoint_rel (model_name, endpoint, cuid, cu_name, muid, mu_name)
+318 values ('qwen2.5-72b-instruct', '/v1/chat/completions', 0, 'system', 0, 'system');
+319 
+320 insert into model (model_name, document_url, visibility, owner_type, owner_code, owner_name, properties, features, cuid, cu_name, muid, mu_name)
+321 values ('qwen2.5-32b-instruct', 'https://help.aliyun.com/zh/model-studio/getting-started/models', 'public', 'system', '0', 'system',
+322         '{"max_input_context":131072,"max_output_context":129024}',
+323         '{"stream":true,"function_call":true,"stream_function_call":true,"parallel_tool_calls":false,"vision":false,"json_format":false}',
+324         0, 'system', 0, 'system');
+325 
+326 insert into model_endpoint_rel (model_name, endpoint, cuid, cu_name, muid, mu_name)
+327 values ('qwen2.5-32b-instruct', '/v1/chat/completions', 0, 'system', 0, 'system');
+328 
+329 insert into model (model_name, document_url, visibility, owner_type, owner_code, owner_name, properties, features, cuid, cu_name, muid, mu_name)
+330 values ('qwen2.5-14b-instruct', 'https://help.aliyun.com/zh/model-studio/getting-started/models', 'public', 'system', '0', 'system',
+331         '{"max_input_context":131072,"max_output_context":129024}',
+332         '{"stream":true,"function_call":true,"stream_function_call":true,"parallel_tool_calls":false,"vision":false,"json_format":false}',
+333         0, 'system', 0, 'system');
+334 
+335 insert into model_endpoint_rel (model_name, endpoint, cuid, cu_name, muid, mu_name)
+336 values ('qwen2.5-14b-instruct', '/v1/chat/completions', 0, 'system', 0, 'system');
+337 
+338 insert into model (model_name, document_url, visibility, owner_type, owner_code, owner_name, properties, features, cuid, cu_name, muid, mu_name)
+339 values ('qwen2.5-7b-instruct', 'https://help.aliyun.com/zh/model-studio/getting-started/models', 'public', 'system', '0', 'system',
+340         '{"max_input_context":131072,"max_output_context":129024}',
+341         '{"stream":true,"function_call":true,"stream_function_call":true,"parallel_tool_calls":false,"vision":false,"json_format":false}',
+342         0, 'system', 0, 'system');
+343 
+344 insert into model_endpoint_rel (model_name, endpoint, cuid, cu_name, muid, mu_name)
+345 values ('qwen2.5-7b-instruct', '/v1/chat/completions', 0, 'system', 0, 'system');
+346 
+347 insert into model (model_name, document_url, visibility, owner_type, owner_code, owner_name, properties, features, cuid, cu_name, muid, mu_name)
+348 values ('text_embedding_v1', 'https://help.aliyun.com/zh/model-studio/user-guide/embedding', 'public', 'system', '0', 'system',
+349         '{}','{}',0, 'system', 0, 'system');
+350 
+351 insert into model_endpoint_rel (model_name, endpoint, cuid, cu_name, muid, mu_name)
+352 values ('text_embedding_v1', '/v1/embeddings', 0, 'system', 0, 'system');
+353 
+354 insert into model (model_name, document_url, visibility, owner_type, owner_code, owner_name, properties, features, cuid, cu_name, muid, mu_name)
+355 values ('text_embedding_v2', 'https://help.aliyun.com/zh/model-studio/user-guide/embedding', 'public', 'system', '0', 'system',
+356         '{}','{}',0, 'system', 0, 'system');
+357 
+358 insert into model_endpoint_rel (model_name, endpoint, cuid, cu_name, muid, mu_name)
+359 values ('text_embedding_v2', '/v1/embeddings', 0, 'system', 0, 'system');
+360 
+361 insert into model (model_name, document_url, visibility, owner_type, owner_code, owner_name, properties, features, cuid, cu_name, muid, mu_name)
+362 values ('text_embedding_v3', 'https://help.aliyun.com/zh/model-studio/user-guide/embedding', 'public', 'system', '0', 'system',
+363         '{}','{}',0, 'system', 0, 'system');
+364 
+365 insert into model_endpoint_rel (model_name, endpoint, cuid, cu_name, muid, mu_name)
+366 values ('text_embedding_v3', '/v1/embeddings', 0, 'system', 0, 'system');
+367 
+368 insert into model (model_name, document_url, visibility, owner_type, owner_code, owner_name, properties, features, cuid, cu_name, muid, mu_name)
+369 values ('text-embedding-3-small', 'https://platform.openai.com/docs/models', 'public', 'system', '0', 'system',
+370         '{}','{}',0, 'system', 0, 'system');
+371 
+372 insert into model_endpoint_rel (model_name, endpoint, cuid, cu_name, muid, mu_name)
+373 values ('text-embedding-3-small', '/v1/embeddings', 0, 'system', 0, 'system');
+374 
+375 insert into model (model_name, document_url, visibility, owner_type, owner_code, owner_name, properties, features, cuid, cu_name, muid, mu_name)
+376 values ('text-embedding-3-large', 'https://platform.openai.com/docs/models', 'public', 'system', '0', 'system',
+377         '{}','{}',0, 'system', 0, 'system');
+378 
+379 insert into model_endpoint_rel (model_name, endpoint, cuid, cu_name, muid, mu_name)
+380 values ('text-embedding-3-large', '/v1/embeddings', 0, 'system', 0, 'system');
+381 
+382 insert into model (model_name, document_url, visibility, owner_type, owner_code, owner_name, properties, features, cuid, cu_name, muid, mu_name)
+383 values ('text-embedding-ada-002', 'https://platform.openai.com/docs/models', 'public', 'system', '0', 'system',
+384         '{}','{}',0, 'system', 0, 'system');
+385 
+386 insert into model_endpoint_rel (model_name, endpoint, cuid, cu_name, muid, mu_name)
+387 values ('text-embedding-ada-002', '/v1/embeddings', 0, 'system', 0, 'system');
+388 
+389 insert into model (model_name, document_url, visibility, owner_type, owner_code, owner_name, properties, features, cuid, cu_name, muid, mu_name)
+390 values ('doubao-embedding', 'https://www.volcengine.com/docs/82379/1330310#doubao-embedding', 'public', 'system', '0', 'system',
+391         '{}','{}',0, 'system', 0, 'system');
+392 
+393 insert into model_endpoint_rel (model_name, endpoint, cuid, cu_name, muid, mu_name)
+394 values ('doubao-embedding', '/v1/embeddings', 0, 'system', 0, 'system');
+395 
+396 insert into model (model_name, document_url, visibility, owner_type, owner_code, owner_name, properties, features, cuid, cu_name, muid, mu_name)
+397 values ('doubao-embedding-large', 'https://www.volcengine.com/docs/82379/1330310#doubao-embedding', 'public', 'system', '0', 'system',
+398         '{}','{}',0, 'system', 0, 'system');
+399 
+400 insert into model_endpoint_rel (model_name, endpoint, cuid, cu_name, muid, mu_name)
+401 values ('doubao-embedding-large', '/v1/embeddings', 0, 'system', 0, 'system');
+402 
+403 insert into model (model_name, document_url, visibility, owner_type, owner_code, owner_name, properties, features, cuid, cu_name, muid, mu_name)
+404 values ('tts-1', 'https://platform.openai.com/docs/models/tts-1', 'public', 'system', '0', 'system',
+405         '{}','{}',0, 'system', 0, 'system');
+406 
+407 insert into model_endpoint_rel (model_name, endpoint, cuid, cu_name, muid, mu_name)
+408 values ('tts-1', '/v1/audio/speech', 0, 'system', 0, 'system');
+409 
+410 insert into model (model_name, document_url, visibility, owner_type, owner_code, owner_name, properties, features, cuid, cu_name, muid, mu_name)
+411 values ('tts-1-hd', 'https://platform.openai.com/docs/models/tts-1-hd', 'public', 'system', '0', 'system',
+412         '{}','{}',0, 'system', 0, 'system');
+413 
+414 insert into model_endpoint_rel (model_name, endpoint, cuid, cu_name, muid, mu_name)
+415 values ('tts-1-hd', '/v1/audio/speech', 0, 'system', 0, 'system');
+416 
+417 insert into model (model_name, document_url, visibility, owner_type, owner_code, owner_name, properties, features, cuid, cu_name, muid, mu_name)
+418 values ('huoshan-tts', 'https://www.volcengine.com/docs/6561/162929', 'public', 'system', '0', 'system',
+419         '{}','{"stream":true}',0, 'system', 0, 'system');
+420 
+421 insert into model_endpoint_rel (model_name, endpoint, cuid, cu_name, muid, mu_name)
+422 values ('huoshan-tts', '/v1/audio/speech', 0, 'system', 0, 'system');
+423 
+424 insert into model (model_name, document_url, visibility, owner_type, owner_code, owner_name, properties, features, cuid, cu_name, muid, mu_name)
+425 values ('whisper-1', 'https://platform.openai.com/docs/guides/speech-to-text', 'public', 'system', '0', 'system',
+426         '{}','{}',0, 'system', 0, 'system');
+427 
+428 insert into model_endpoint_rel (model_name, endpoint, cuid, cu_name, muid, mu_name)
+429 values ('whisper-1', '/v1/audio/transcriptions', 0, 'system', 0, 'system');
+430 
+431 insert into model (model_name, document_url, visibility, owner_type, owner_code, owner_name, properties, features, cuid, cu_name, muid, mu_name)
+432 values ('huoshan-flash-asr', 'https://www.volcengine.com/docs/6561/162929', 'public', 'system', '0', 'system',
+433         '{}','{}',0, 'system', 0, 'system');
+434 
+435 insert into model_endpoint_rel (model_name, endpoint, cuid, cu_name, muid, mu_name)
+436 values ('huoshan-flash-asr', '/v1/audio/asr/flash', 0, 'system', 0, 'system');
+437 
+438 insert into model (model_name, document_url, visibility, owner_type, owner_code, owner_name, properties, features, cuid, cu_name, muid, mu_name)
+439 values ('huoshan-realtime-asr', 'https://www.volcengine.com/docs/6561/162929', 'public', 'system', '0', 'system',
+440         '{}','{}',0, 'system', 0, 'system');
+441 
+442 insert into model_endpoint_rel (model_name, endpoint, cuid, cu_name, muid, mu_name)
+443 values ('huoshan-realtime-asr', '/v1/audio/asr/stream', 0, 'system', 0, 'system');
+444 
+445 insert into model (model_name, document_url, visibility, owner_type, owner_code, owner_name, properties, features, cuid, cu_name, muid, mu_name)
+446 values ('dall-e-3', 'https://platform.openai.com/docs/models/dall-e-3', 'public', 'system', '0', 'system',
+447         '{}','{}',0, 'system', 0, 'system');
+448 
+449 insert into model_endpoint_rel (model_name, endpoint, cuid, cu_name, muid, mu_name)
+450 values ('dall-e-3', '/v1/images/generations', 0, 'system', 0, 'system');
+451 
+452 insert into model (model_name, document_url, visibility, owner_type, owner_code, owner_name, properties, features, cuid, cu_name, muid, mu_name)
+453 values ('dall-e-2', 'https://platform.openai.com/docs/models/dall-e-2', 'public', 'system', '0', 'system',
+454         '{}','{}',0, 'system', 0, 'system');
+455 
+456 insert into model_endpoint_rel (model_name, endpoint, cuid, cu_name, muid, mu_name)
+457 values ('dall-e-2', '/v1/images/generations', 0, 'system', 0, 'system');
+458 
+459 insert into apikey_role(role_code, path, cuid, cu_name, muid, mu_name)
+460 values ('low', '{"included":["/v*/**", "/console/apikey/**", "/console/userInfo"], "excluded":["/v*/apikey/create", "/v*/route/**", "/v*/log/**", "/console/apikey/quota/update", "/console/apikey/role/update"]}', 0, 'system', 0, 'system');
+461 
+462 insert into apikey_role(role_code, path, cuid, cu_name, muid, mu_name)
+463 values ('high', '{"included":["/v*/**", "/console/apikey/**", "/console/userInfo"], "excluded":["/v*/route/**", "/v*/log/**", "/console/apikey/quota/update", "/console/apikey/role/update"]}', 0, 'system', 0, 'system');
+464 
+465 insert into apikey_role(role_code, path, cuid, cu_name, muid, mu_name)
+466 values ('console', '{"included":["/v*/**", "/console/**"], "excluded":[]}', 0, 'system', 0, 'system');
+467 
+468 insert into apikey_role(role_code, path, cuid, cu_name, muid, mu_name)
+469 values ('all', '{"included":["/**"], "excluded":[]}', 0, 'system', 0, 'system');
+470 
+471
+```
+
+
+
+
+
+
+
+
+```
+File: api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionRequest.java
+1 package com.ke.bella.openapi.protocol.completion;
+2 
+3 import com.fasterxml.jackson.annotation.JsonInclude;
+4 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+5 import com.ke.bella.openapi.protocol.UserRequest;
+6 import lombok.Data;
+7 import lombok.NoArgsConstructor;
+8 import lombok.experimental.SuperBuilder;
+9 
+10 import javax.annotation.Nullable;
+11 import java.io.Serializable;
+12 import java.util.List;
+13 import java.util.Map;
+14 
+15 @Data
+16 @SuperBuilder
+17 @NoArgsConstructor
+18 public class CompletionRequest implements UserRequest, Serializable {
+19     private static final long serialVersionUID = 1L;
+20     /**
+21      * ID of the model to use. Can be a comma-separated list of models.
+22      */
+23     private String model;
+24 
+25     /**
+26      * A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse. Learn more.
+27      */
+28     private String user;
+29 
+30     /**
+31      * A list of messages comprising the conversation so far
+32      */
+33     private List<Message> messages;
+34 
+35     /**
+36      * Deprecated in favor of tools.
+37      */
+38     @Deprecated
+39     private List<Message.Function> functions;
+40 
+41     /**
+42      * A list of tools the model may call. Currently, only functions are supported as a tool. <br/> Use this to provide a list of functions the model
+43      * may generate JSON inputs for.
+44      */
+45     @JsonInclude(Include.NON_NULL)
+46     private List<Message.Tool> tools;
+47 
+48     /**
+49      * Deprecated in favor of tool_choice. Controls how the model responds to function calls. "none" means the model does not call a function, and
+50      * responds to the end-user. "auto" means the model can pick between an end-user or calling a function. Specifying a particular function via
+51      * {"name":"my_function"} forces the model to call that function. "none" is the default when no functions are present. "auto" is the default if
+52      * functions are present.
+53      */
+54     @Nullable
+55     @Deprecated
+56     private Object function_call;
+57 
+58     /**
+59      * Controls which (if any) function is called by the model. none means the model will not call a function and instead generates a message. auto
+60      * means the model can pick between generating a message or calling a function. <br/><br/> Specifying a particular function via {"type:
+61      * "function", "function": { "name": "my_function"}} forces the model to call that function.
+62      */
+63     @Nullable
+64     private Object tool_choice;
+65 
+66     /**
+67      * defaults to 1; lower values will make it more focused and deterministic.
+68      */
+69     @Nullable
+70     private Float temperature;
+71 
+72     /**
+73      * An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with top_p
+74      * probability mass. So 0.1 means only the tokens comprising the top 10% probability mass are considered. We generally recommend altering this or
+75      * temperature but not both.
+76      */
+77     @Nullable
+78     private Float top_p;
+79 
+80     /**
+81      * defaults to 1
+82      */
+83     @Nullable
+84     private Integer n;
+85 
+86     /**
+87      * defaults to false
+88      */
+89     private boolean stream = false;
+90 
+91     /**
+92      * Options for streaming response. Only set this when you set stream: true.
+93      */
+94     private StreamOptions stream_options;
+95 
+96     /**
+97      * String or array Up to 4 sequences where the API will stop generating further tokens.
+98      */
+99     @Nullable
+100     private Object stop;
+101 
+102     /**
+103      * The maximum number of tokens to generate in the chat completion.
+104      */
+105     @Nullable
+106     private Integer max_tokens;
+107 
+108     /**
+109      * defaults to 0 Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the
+110      * model's likelihood to talk about new topics.
+111      */
+112     @Nullable
+113     private Float presence_penalty;
+114 
+115     /**
+116      * defaults to 0 Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing
+117      * the model's likelihood to repeat the same line verbatim.
+118      */
+119     @Nullable
+120     private Float frequency_penalty;
+121 
+122     /**
+123      * defaults to null Modify the likelihood of specified tokens appearing in the completion.
+124      * <p>
+125      * Accepts a json object that maps tokens (specified by their token ID in the tokenizer) to an associated bias value from -100 to 100.
+126      * Mathematically, the bias is added to the logits generated by the model prior to sampling. The exact effect will vary per model, but values
+127      * between -1 and 1 should decrease or increase likelihood of selection; values like -100 or 100 should result in a ban or exclusive selection of
+128      * the relevant token.
+129      */
+130     @Nullable
+131     private Map<String, Integer> logit_bias;
+132 
+133     /**
+134      * An object specifying the format that the model must output.<br/><br/> Setting to { "type": "json_object" } enables JSON mode,</br> which
+135      * guarantees the message the model generates is valid JSON.<br/><br/> Important: when using JSON mode, you must also instruct the model to
+136      * produce JSON yourself via a system or user message. <br/> Without this, the model may generate an unending stream of whitespace until the
+137      * generation reaches the token limit, <br> resulting in a long-running and seemingly "stuck" request. Also note that the message content may be
+138      * partially cut off if finish_reason="length", which indicates the generation exceeded max_tokens or the conversation exceeded the max context
+139      * length.<br/><br/> type  properties Defaults to text Must be one of text or json_object.
+140      */
+141     @javax.annotation.Nullable
+142     private Object response_format;
+143 
+144     /**
+145      * This feature is in Beta. If specified, our system will make a best effort to sample deterministically, such that repeated requests with the
+146      * same seed and parameters should return the same result. Determinism is not guaranteed, and you should refer to the system_fingerprint response
+147      * parameter to monitor changes in the backend.
+148      */
+149     private Integer seed;
+150 
+151     private Boolean parallel_tool_calls;
+152 
+153     /**
+154      * 是否开启思考模式
+155      */
+156     private Boolean enable_thinking;
+157 
+158     @Data
+159     public static class StreamOptions {
+160         /**
+161          * If set, an additional chunk will be streamed before the data: [DONE] message.
+162          * The usage field on this chunk shows the token usage statistics for the entire request,
+163          * and the choices field will always be an empty array.
+164          * All other chunks will also include a usage field, but with a null value.
+165          */
+166         private boolean include_usage = true;
+167     }
+168 }
+169
+```
+
+
+
+
+```
+File: api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionResponse.java
+1 package com.ke.bella.openapi.protocol.completion;
+2 
+3 import java.util.List;
+4 
+5 import org.apache.commons.collections4.CollectionUtils;
+6 
+7 import com.fasterxml.jackson.annotation.JsonInclude;
+8 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+9 import com.ke.bella.openapi.protocol.OpenapiResponse;
+10 import com.ke.bella.openapi.protocol.completion.Message.ToolCall;
+11 
+12 import lombok.AllArgsConstructor;
+13 import lombok.Data;
+14 import lombok.NoArgsConstructor;
+15 import lombok.experimental.SuperBuilder;
+16 import org.springframework.util.Assert;
+17 
+18 @Data
+19 @JsonInclude(Include.NON_NULL)
+20 @NoArgsConstructor
+21 @AllArgsConstructor
+22 @SuperBuilder
+23 public class CompletionResponse extends OpenapiResponse {
+24 
+25     private List<Choice> choices;
+26     /**
+27      * 时间戳
+28      */
+29     private long created;
+30     /**
+31      * 唯一id
+32      */
+33     private String id;
+34     /**
+35      * 调用模型
+36      */
+37     private String model;
+38 
+39     /**
+40      * This fingerprint represents the backend configuration that the model runs with.<br/><br/> Can be used in conjunction with the seed request
+41      * parameter to understand when backend changes have been made that might impact determinism.
+42      */
+43     private String system_fingerprint;
+44 
+45     /**
+46      * 调用接口
+47      */
+48     private String object;
+49 
+50     private TokenUsage usage;
+51 
+52     public String content() {
+53         if(CollectionUtils.isNotEmpty(choices)) {
+54             return choices.get(0).content();
+55         } else {
+56             return "";
+57         }
+58     }
+59 
+60     public String reasoning() {
+61         if(CollectionUtils.isNotEmpty(choices)) {
+62             return choices.get(0).reasoning();
+63         } else {
+64             return "";
+65         }
+66     }
+67 
+68     public String finishReason() {
+69         if(CollectionUtils.isNotEmpty(choices)) {
+70             return choices.get(0).getFinish_reason();
+71         } else {
+72             return null;
+73         }
+74     }
+75 
+76     public void setContent(String content) {
+77         Assert.notEmpty(choices, "choices must not be null");
+78         choices.get(0).setContent(content);
+79     }
+80 
+81     public void setReasoning(String reasoning) {
+82         Assert.notNull(choices, "choices must not be null");
+83         choices.get(0).setReasoning(reasoning);
+84     }
+85 
+86     @Data
+87     @JsonInclude(Include.NON_NULL)
+88     @SuperBuilder
+89     @NoArgsConstructor
+90     public static class Choice {
+91 
+92         /**
+93          * Every response will include a finish_reason. The possible values for finish_reason are:
+94          * <p>
+95          * stop: API returned complete message, or a message terminated by one of the stop sequences provided via the stop parameter length:
+96          * Incomplete model output due to max_tokens parameter or token limit function_call: The model decided to call a function content_filter:
+97          * Omitted content due to a flag from our content filters null: API response still in progress or incomplete
+98          */
+99         private String finish_reason;
+100         private int index;
+101         private Message message;
+102 
+103         public String content() {
+104             if(message != null && message.getContent() != null) {
+105                 return message.getContent().toString();
+106             } else {
+107                 return "";
+108             }
+109         }
+110 
+111         public String reasoning() {
+112             if(message != null) {
+113                 return message.getReasoning_content();
+114             } else {
+115                 return "";
+116             }
+117         }
+118 
+119         public void setContent(String content) {
+120             Assert.notNull(message, "message must not be null");
+121             message.setContent(content);
+122         }
+123 
+124         public void setReasoning(String reasoning) {
+125             Assert.notNull(message, "message must not be null");
+126             message.setReasoning_content(reasoning);
+127         }
+128     }
+129 
+130     public static Choice toolcallChoice(String reasoning, List<ToolCall> calls) {
+131         Choice c = Choice.builder()
+132                 .message(Message.builder()
+133                         .role("assistant")
+134                         .reasoning_content(reasoning)
+135                         .tool_calls(calls)
+136                         .build())
+137                 .build();
+138         return c;
+139     }
+140 
+141     public static Choice assistantMessageChoice(String reasoning, String content) {
+142         Choice c = Choice.builder()
+143                 .message(Message.builder()
+144                         .role("assistant")
+145                         .reasoning_content(reasoning)
+146                         .content(content)
+147                         .build())
+148                 .build();
+149         return c;
+150     }
+151 
+152     @Data
+153     public static class TokenUsage {
+154         private int completion_tokens;
+155         private int prompt_tokens;
+156         private int total_tokens;
+157 
+158         public TokenUsage add(TokenUsage u) {
+159             this.completion_tokens += u.completion_tokens;
+160             this.prompt_tokens += u.prompt_tokens;
+161             this.total_tokens += u.total_tokens;
+162             return this;
+163         }
+164     }
+165 
+166 }
+167 
+168
+```
+
+
+
+
+```
+File: api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionProperty.java
+1 package com.ke.bella.openapi.protocol.completion;
+2 
+3 import com.ke.bella.openapi.protocol.IProtocolProperty;
+4 import lombok.Data;
+5 import org.apache.commons.lang3.StringUtils;
+6 
+7 import java.util.Map;
+8 import java.util.SortedMap;
+9 import java.util.TreeMap;
+10 
+11 @Data
+12 public class CompletionProperty implements IProtocolProperty {
+13     String encodingType = StringUtils.EMPTY;
+14     boolean mergeReasoningContent = false;
+15     boolean splitReasoningFromContent = false;
+16     boolean functionCallSimulate = false;
+17     Map<String, String> extraHeaders;
+18     String queueName;
+19 
+20     @Override
+21     public Map<String, String> description() {
+22         SortedMap<String, String> map = new TreeMap<>();
+23         map.put("encodingType", "编码类型");
+24         map.put("mergeReasoningContent", "是否合并推理内容");
+25         map.put("splitReasoningFromContent", "是否需要拆分推理内容");
+26         map.put("functionCallSimulate", "是否需要强制支持function call");
+27         map.put("extraHeaders", "额外的请求头");
+28         map.put("queueName", "队列（配置后请求被bella-job-queue服务代理）");
+29         return map;
+30     }
+31 }
+32
+```
+
+
+
+
+```
+File: api/server/src/main/java/com/ke/bella/openapi/endpoints/ChatController.java
+1 package com.ke.bella.openapi.endpoints;
+2 
+3 import com.ke.bella.openapi.BellaContext;
+4 import com.ke.bella.openapi.EndpointContext;
+5 import com.ke.bella.openapi.EndpointProcessData;
+6 import com.ke.bella.openapi.annotations.EndpointAPI;
+7 import com.ke.bella.openapi.common.exception.BizParamCheckException;
+8 import com.ke.bella.openapi.common.exception.ChannelException;
+9 import com.ke.bella.openapi.protocol.AdaptorManager;
+10 import com.ke.bella.openapi.protocol.ChannelRouter;
+11 import com.ke.bella.openapi.protocol.completion.CompletionAdaptor;
+12 import com.ke.bella.openapi.protocol.completion.CompletionAdaptorDelegator;
+13 import com.ke.bella.openapi.protocol.completion.CompletionProperty;
+14 import com.ke.bella.openapi.protocol.completion.CompletionRequest;
+15 import com.ke.bella.openapi.protocol.completion.CompletionResponse;
+16 import com.ke.bella.openapi.protocol.completion.QueueAdaptor;
+17 import com.ke.bella.openapi.protocol.completion.ToolCallSimulator;
+18 import com.ke.bella.openapi.protocol.completion.callback.StreamCallbackProvider;
+19 import com.ke.bella.openapi.protocol.limiter.LimiterManager;
+20 import com.ke.bella.openapi.protocol.log.EndpointLogger;
+21 import com.ke.bella.openapi.safety.ISafetyCheckService;
+22 import com.ke.bella.openapi.safety.SafetyCheckRequest;
+23 import com.ke.bella.openapi.service.JobQueueService;
+24 import com.ke.bella.openapi.tables.pojos.ChannelDB;
+25 import com.ke.bella.openapi.utils.JacksonUtils;
+26 import com.ke.bella.openapi.utils.SseHelper;
+27 import io.swagger.v3.oas.annotations.tags.Tag;
+28 import lombok.extern.slf4j.Slf4j;
+29 import org.apache.commons.lang3.StringUtils;
+30 import org.springframework.beans.factory.annotation.Autowired;
+31 import org.springframework.beans.factory.annotation.Value;
+32 import org.springframework.web.bind.annotation.PostMapping;
+33 import org.springframework.web.bind.annotation.RequestBody;
+34 import org.springframework.web.bind.annotation.RequestMapping;
+35 import org.springframework.web.bind.annotation.RestController;
+36 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+37 
+38 import java.util.Map;
+39 import java.util.logging.Logger;
+40 
+41 @EndpointAPI
+42 @RestController
+43 @RequestMapping("/v1/chat")
+44 @Tag(name = "chat")
+45 @Slf4j
+46 public class ChatController {
+47     @Autowired
+48     private ChannelRouter router;
+49     @Autowired
+50     private AdaptorManager adaptorManager;
+51     @Autowired
+52     private LimiterManager limiterManager;
+53     @Autowired
+54     private EndpointLogger logger;
+55     @Autowired
+56     private ISafetyCheckService.IChatSafetyCheckService safetyCheckService;
+57     @Autowired
+58     private JobQueueService jobQueueService;
+59     @Value("${bella.openapi.max-models-per-request:3}")
+60     private Integer maxModelsPerRequest;
+61     
+62     @SuppressWarnings({ "rawtypes", "unchecked" })
+63     @PostMapping("/completions")
+64     public Object completion(@RequestBody CompletionRequest request) {
+65         String endpoint = EndpointContext.getRequest().getRequestURI();
+66         String model = request.getModel();
+67         
+68         // Handle multi-model requests
+69         if (model != null && model.contains(",")) {
+70             
+71             // Try each model in order
+72             String[] models = model.split(",");
+73             int maxNum = models.length;
+74             // Validate model count
+75             if (models.length > maxModelsPerRequest) {
+76                 LOGGER.warn("请求模型数量超过最大限制: " + maxModelsPerRequest);
+77                 maxNum = maxModelsPerRequest;
+78             }
+79             Exception lastException = null;
+80             
+81             for (int i = 0; i < maxNum; i++) {
+82                 String singleModel = models[i];
+83                 String trimmedModel = singleModel.trim();
+84                 // Create a copy of the request with just this model
+85                 request.setModel(trimmedModel);
+86                 
+87                 try {
+88                     // Try to process with this model
+89                     return processCompletionRequest(endpoint, trimmedModel, request);
+90                 } catch (Exception e) {
+91                     // Log the exception and continue to the next model
+92                     lastException = e;
+93                 }
+94             }
+95             
+96             // If we get here, all models failed
+97             if (lastException != null) {
+98                 throw ChannelException.fromException(lastException);
+99             } else {
+100                 throw new BizParamCheckException("所有指定的模型都无法处理请求");
+101             }
+102         }
+103         
+104         // Single model processing
+105         return processCompletionRequest(endpoint, model, request);
+106     }
+107     
+108     private Object processCompletionRequest(String endpoint, String model, CompletionRequest request) {
+109         EndpointContext.setEndpointData(endpoint, model, request);
+110         boolean isMock = EndpointContext.getProcessData().isMock();
+111         ChannelDB channel = router.route(endpoint, model, EndpointContext.getApikey(), isMock);
+112         EndpointContext.setEndpointData(channel);
+113         if(!EndpointContext.getProcessData().isPrivate()) {
+114             limiterManager.incrementConcurrentCount(EndpointContext.getProcessData().getAkCode(), model);
+115         }
+116         Object requestRiskData = safetyCheckService.safetyCheck(SafetyCheckRequest.Chat.convertFrom(request,
+117                     EndpointContext.getProcessData(), EndpointContext.getApikey()), isMock);
+118         EndpointContext.getProcessData().setRequestRiskData(requestRiskData);
+119         EndpointProcessData processData = EndpointContext.getProcessData();
+120         String protocol = processData.getProtocol();
+121         String url = processData.getForwardUrl();
+122         String channelInfo = channel.getChannelInfo();
+123         CompletionAdaptor adaptor = adaptorManager.getProtocolAdaptor(endpoint, protocol, CompletionAdaptor.class);
+124         CompletionProperty property = (CompletionProperty) JacksonUtils.deserialize(channelInfo, adaptor.getPropertyClass());
+125         if(isMock) {
+126             fillMockProperty(property);
+127         }
+128         adaptor = decorateAdaptor(adaptor, property, processData);
+129 
+130         EndpointContext.setEncodingType(property.getEncodingType());
+131         if(request.isStream()) {
+132             SseEmitter sse = SseHelper.createSse(1000L * 60 * 5, EndpointContext.getProcessData().getRequestId());
+133             adaptor.streamCompletion(request, url, property, StreamCallbackProvider.provide(sse, processData, EndpointContext.getApikey(), logger, safetyCheckService, property));
+134             return sse;
+135         }
+136 
+137         CompletionResponse response = adaptor.completion(request, url, property);
+138         Object responseRiskData = safetyCheckService.safetyCheck(SafetyCheckRequest.Chat.convertFrom(response, EndpointContext.getProcessData(), EndpointContext.getApikey()), isMock);
+139         response.setSensitives(responseRiskData);
+140         response.setRequestRiskData(requestRiskData);
+141         return response;
+142     }
+143 
+144     private void fillMockProperty(CompletionProperty property) {
+145         Map<String, String> requestInfo = BellaContext.getHeaders();
+146         String functionCallSimulate = requestInfo.get("X-BELLA-FUNCTION-SIMULATE");
+147         String mergeReasoningContent = requestInfo.get("X-BELLA-MERGE-REASONING");
+148         String splitReasoningFromContent = requestInfo.get("X-BELLA-SPLIT-REASONING");
+149         property.setFunctionCallSimulate("true".equals(functionCallSimulate) || property.isFunctionCallSimulate());
+150         property.setMergeReasoningContent("true".equals(mergeReasoningContent) || property.isMergeReasoningContent());
+151         property.setSplitReasoningFromContent("true".equals(splitReasoningFromContent) || property.isSplitReasoningFromContent());
+152     }
+153 
+154     private CompletionAdaptor<?> decorateAdaptor(CompletionAdaptor<?> adaptor, CompletionProperty property, EndpointProcessData processData) {
+155         if(StringUtils.isNotBlank(property.getQueueName())) {
+156             if(adaptor instanceof CompletionAdaptorDelegator) {
+157                 adaptor = new QueueAdaptor<>((CompletionAdaptorDelegator<?>)adaptor, jobQueueService, jobQueueService, processData);
+158             } else {
+159                 throw new IllegalStateException(adaptor.getClass().getSimpleName() + "不支持请求代理");
+160             }
+161         }
+162         if(property.isFunctionCallSimulate()) {
+163             adaptor = new ToolCallSimulator<>(adaptor, processData);
+164         }
+165         return adaptor;
+166     }
+167 }
+168
+```
+
+
+
+
+```
+File: api/server/src/main/java/com/ke/bella/openapi/protocol/AdaptorManager.java
+1 package com.ke.bella.openapi.protocol;
+2 
+3 import com.google.common.collect.Maps;
+4 import com.google.common.collect.Sets;
+5 
+6 import java.util.HashMap;
+7 import java.util.Map;
+8 import java.util.Set;
+9 import java.util.concurrent.ConcurrentHashMap;
+10 
+11 public class AdaptorManager {
+12     private final Map<String, Map<String, IProtocolAdaptor>> adaptors = new ConcurrentHashMap<>();
+13 
+14     public Set<String> getProtocols(String endpoint) {
+15         if(!adaptors.containsKey(endpoint)) {
+16             return Sets.newHashSet();
+17         }
+18         return adaptors.get(endpoint).keySet();
+19     }
+20 
+21     public boolean support(String endpoint, String protocol) {
+22         return getProtocols(endpoint).contains(protocol);
+23     }
+24 
+25     public <T extends IProtocolAdaptor> T getProtocolAdaptor(String endpoint, String protocol, Class<T> clazz) {
+26         return clazz.cast(adaptors.get(endpoint).get(protocol));
+27     }
+28 
+29     public IProtocolAdaptor getProtocolAdaptor(String endpoint, String protocol) {
+30         return adaptors.get(endpoint).get(protocol);
+31     }
+32 
+33     public Map<String, IProtocolAdaptor> getProtocolAdaptors(String endpoint) {
+34         if(!adaptors.containsKey(endpoint)) {
+35             return Maps.newHashMap();
+36         }
+37         return adaptors.get(endpoint);
+38     }
+39 
+40     public synchronized void register(String endpoint, IProtocolAdaptor adaptor) {
+41         Map<String, IProtocolAdaptor> map = adaptors.computeIfAbsent(endpoint, k -> new HashMap<>());
+42         map.put(adaptor.getClass().getSimpleName(), adaptor);
+43     }
+44 }
+45
+```
+
+
+
+
+```
+File: api/server/src/main/java/com/ke/bella/openapi/protocol/IProtocolAdaptor.java
+1 package com.ke.bella.openapi.protocol;
+2 
+3 import okhttp3.Request;
+4 
+5 public interface IProtocolAdaptor {
+6 
+7     String endpoint();
+8 
+9     String getDescription();
+10 
+11     Class<?> getPropertyClass();
+12 
+13     default Request.Builder authorizationRequestBuilder(AuthorizationProperty property) {
+14         Request.Builder builder = new Request.Builder();
+15         if(property == null) {
+16             return builder;
+17         }
+18         switch (property.type) {
+19         case BASIC:
+20             return builder.header("Authorization", property.getApiKey());
+21         case CUSTOM:
+22             return builder.header(property.getHeader(), property.getApiKey());
+23         default:
+24             return builder.header("Authorization", "Bearer " + property.getApiKey());
+25         }
+26     }
+27 }
+28
+```
+
+
+
+
+```
+File: api/sdk/src/main/java/com/ke/bella/openapi/protocol/IModelFeatures.java
+1 package com.ke.bella.openapi.protocol;
+2 
+3 import com.ke.bella.openapi.IDescription;
+4 import com.ke.bella.openapi.protocol.completion.CompletionModelFeatures;
+5 import com.ke.bella.openapi.protocol.tts.TTSModelFeatures;
+6 import lombok.AllArgsConstructor;
+7 import lombok.Getter;
+8 
+9 public interface IModelFeatures extends IDescription {
+10 
+11     @AllArgsConstructor
+12     @Getter
+13     enum EndpointModelFeatureType {
+14         COMPLETION("/v1/chat/completions", CompletionModelFeatures.class),
+15         TTS("/v1/audio/speech", TTSModelFeatures.class)
+16         ;
+17 
+18         private final String endpoint;
+19         private final Class<? extends IModelFeatures> type;
+20 
+21         public static Class<? extends IModelFeatures> fetchType(String endpoint) {
+22             for (EndpointModelFeatureType t : EndpointModelFeatureType.values()) {
+23                 if (t.endpoint.equals(endpoint)) {
+24                     return t.type;
+25                 }
+26             }
+27             return null;
+28         }
+29 
+30     }
+31 }
+32
+```
+
+
+
+
+```
+File: api/sdk/src/main/java/com/ke/bella/openapi/protocol/IModelProperties.java
+1 package com.ke.bella.openapi.protocol;
+2 
+3 import com.ke.bella.openapi.IDescription;
+4 import com.ke.bella.openapi.protocol.completion.CompletionModelProperties;
+5 import com.ke.bella.openapi.protocol.tts.VoiceProperties;
+6 import lombok.AllArgsConstructor;
+7 import lombok.Getter;
+8 
+9 public interface IModelProperties extends IDescription {
+10 
+11     @AllArgsConstructor
+12     @Getter
+13     enum EndpointModelPropertyType {
+14         COMPLETION("/v1/chat/completions", CompletionModelProperties.class),
+15         REALTIME("/v1/audio/realtime", VoiceProperties.class),
+16         TTS("/v1/audio/speech", VoiceProperties.class),
+17         ;
+18 
+19         private final String endpoint;
+20         private final Class<? extends IModelProperties> type;
+21 
+22         public static Class<? extends IModelProperties> fetchType(String endpoint) {
+23             for (EndpointModelPropertyType t : EndpointModelPropertyType.values()) {
+24                 if (t.endpoint.equals(endpoint)) {
+25                     return t.type;
+26                 }
+27             }
+28             return null;
+29         }
+30 
+31     }
+32 }
+33
+```
+
+
+
+
+```
+File: api/sdk/src/main/java/com/ke/bella/openapi/protocol/IPriceInfo.java
+1 package com.ke.bella.openapi.protocol;
+2 
+3 import com.ke.bella.openapi.IDescription;
+4 import com.ke.bella.openapi.protocol.asr.flash.FlashAsrPriceInfo;
+5 import com.ke.bella.openapi.protocol.realtime.RealTimePriceInfo;
+6 import com.ke.bella.openapi.protocol.completion.CompletionPriceInfo;
+7 import com.ke.bella.openapi.protocol.embedding.EmbeddingPriceInfo;
+8 import com.ke.bella.openapi.protocol.tts.TtsPriceInfo;
+9 import lombok.AllArgsConstructor;
+10 import lombok.Getter;
+11 
+12 public interface IPriceInfo extends IDescription {
+13     String getUnit();
+14 
+15     @AllArgsConstructor
+16     @Getter
+17     enum EndpointPriceInfoType {
+18         COMPLETION("/v1/chat/completions", CompletionPriceInfo.class),
+19         EMBEDDING("/v1/embeddings", EmbeddingPriceInfo.class),
+20         TTS("/v1/audio/speech", TtsPriceInfo.class),
+21         FLASH_ASR("/v1/audio/asr/flash", FlashAsrPriceInfo.class),
+22         REALTIME_ASR("/v1/audio/asr/stream", RealTimePriceInfo.class),
+23         REALTIME("/v1/audio/realtime", RealTimePriceInfo.class)
+24         ;
+25 
+26         private final String endpoint;
+27         private final Class<? extends IPriceInfo> type;
+28 
+29         public static Class<? extends IPriceInfo> fetchType(String endpoint) {
+30             for (EndpointPriceInfoType t : EndpointPriceInfoType.values()) {
+31                 if (t.endpoint.equals(endpoint)) {
+32                     return t.type;
+33                 }
+34             }
+35             return null;
+36         }
+37 
+38     }
+39 }
+40
+```
+
+
+
+
+```
+File: api/server/src/main/java/com/ke/bella/openapi/protocol/log/EndpointLogHandler.java
+1 package com.ke.bella.openapi.protocol.log;
+2 
+3 import com.ke.bella.openapi.EndpointProcessData;
+4 
+5 public interface EndpointLogHandler {
+6     void process(EndpointProcessData endpointProcessData);
+7     String endpoint();
+8 }
+9
+```
+
+
+
+
+```
+File: api/server/src/main/java/com/ke/bella/openapi/protocol/metrics/MetricsResolver.java
+1 package com.ke.bella.openapi.protocol.metrics;
+2 
+3 import com.ke.bella.openapi.EndpointProcessData;
+4 
+5 import java.util.List;
+6 
+7 public interface MetricsResolver {
+8     Integer resolveUnavailableSeconds(EndpointProcessData processData);
+9     List<String> metricsName();
+10     String support();
+11 }
+12
+```
+
+
+
+
+```
+File: api/sdk/src/main/java/com/ke/bella/openapi/metadata/MetadataFeatures.java
+1 package com.ke.bella.openapi.metadata;
+2 
+3 import com.google.common.collect.ImmutableSet;
+4 import com.google.common.collect.Sets;
+5 import com.ke.bella.openapi.EnumDto;
+6 import lombok.AllArgsConstructor;
+7 import lombok.Getter;
+8 
+9 import java.util.Arrays;
+10 import java.util.List;
+11 import java.util.Set;
+12 import java.util.stream.Collectors;
+13 
+14 @Getter
+15 @AllArgsConstructor
+16 public enum MetadataFeatures {
+17     OVERSEAS("overseas", "国外", ImmutableSet.of("*")),
+18     MAINLAND("mainland", "国内", ImmutableSet.of("*")),
+19     INNER("inner", "内部", ImmutableSet.of("*")),
+20     PROTECTED("protected", "内部已备案", ImmutableSet.of("*")),
+21     LARGE_INPUT_CONTEXT("long_input_context", "超长上下文", ImmutableSet.of("/v1/chat/completions")),
+22     LARGE_OUTPUT_CONTEXT("long_output_context", "超长输出", ImmutableSet.of("/v1/chat/completions")),
+23     REASON_CONTENT("reason_content", "深度思索", ImmutableSet.of("/v1/chat/completions")),
+24     STREAM("stream", "流式", ImmutableSet.of("/v1/chat/completions")),
+25     FUNCTION_CALL("function_call", "工具调用", ImmutableSet.of("/v1/chat/completions")),
+26     STREAM_FUNCTION_CALL("stream_function_call", "流式工具调用", ImmutableSet.of("/v1/chat/completions")),
+27     VISION("vision", "视觉", ImmutableSet.of("/v1/chat/completions")),
+28     JSON_FORMAT("json_format", "json格式", ImmutableSet.of("/v1/chat/completions"))
+29     ;
+30     private final String code;
+31     private final String name;
+32     private final Set<String> endpoint;
+33     public static List<EnumDto> listFeatures(String endpoint) {
+34         return Arrays.stream(MetadataFeatures.values()).filter(t -> t.endpoint.contains(endpoint) || t.endpoint.contains("*"))
+35                 .map(t -> new EnumDto(t.getCode(), t.getName())).collect(Collectors.toList());
+36     }
+37 
+38     public static boolean validate(List<String> features) {
+39         Set<String> set = Sets.newHashSet(OVERSEAS.code, MAINLAND.code, INNER.code, PROTECTED.code);
+40         int i = 0;
+41         for(String feature : features) {
+42             if(set.contains(feature)) {
+43                 i++;
+44             }
+45         }
+46         return i <= 1;
+47     }
+48 }
+49
+```
+
+
+
+
+```
+File: api/sdk/src/main/java/com/ke/bella/openapi/common/EntityConstants.java
+1 package com.ke.bella.openapi.common;
+2 
+3 import com.google.common.collect.ImmutableList;
+4 import lombok.AllArgsConstructor;
+5 import lombok.Getter;
+6 
+7 import java.util.List;
+8 
+9 import static com.ke.bella.openapi.common.EntityConstants.SystemBasicCategory.AUDIO2TEXT;
+10 import static com.ke.bella.openapi.common.EntityConstants.SystemBasicCategory.CHAT;
+11 import static com.ke.bella.openapi.common.EntityConstants.SystemBasicCategory.IMAGES;
+12 import static com.ke.bella.openapi.common.EntityConstants.SystemBasicCategory.TEXT2SPEECH;
+13 import static com.ke.bella.openapi.common.EntityConstants.SystemBasicEndpoint.COMPLETION_ENDPOINT;
+14 
+15 public class EntityConstants {
+16     public static final String ACTIVE = "active";
+17     public static final String INACTIVE = "inactive";
+18     public static final String PUBLIC = "public";
+19     public static final String PRIVATE = "private";
+20     public static final String PROTECTED = "protected";
+21     public static final String INNER = "inner";
+22     public static final String MAINLAND = "mainland";
+23     public static final String OVERSEAS = "overseas";
+24     public static final String BASIC_ROLE = "low";
+25     public static final String MANAGER_ROLE = "console";
+26     public static final List<String> DATA_DESTINATIONS = ImmutableList.of(PROTECTED, INNER, MAINLAND, OVERSEAS);
+27     public static final String HIGH = "high";
+28     public static final String NORMAL = "normal";
+29     public static final String LOW = "low";
+30     public static final List<String> CHANNEL_PRIORITY = ImmutableList.of(HIGH, NORMAL, LOW);
+31     public static final String MODEL = "model";
+32     public static final String ENDPOINT = "endpoint";
+33     public static final List<String> ENTITY_TYPES = ImmutableList.of(MODEL, ENDPOINT);
+34     public static final String SYSTEM = "system";
+35     public static final String ORG = "org";
+36     public static final String PERSON = "person";
+37     public static final String CONSOLE = "console";
+38     public static final List<String> OWNER_TYPES = ImmutableList.of(SYSTEM, ORG, PERSON);
+39     public static final List<String> AUTHORIZER_TYPES = ImmutableList.of(ORG, PERSON);
+40 
+41     public static final Byte LOWEST_SAFETY_LEVEL = 10;
+42     public static final Byte HIGHEST_SAFETY_LEVEL = 40;
+43 
+44     @AllArgsConstructor
+45     @Getter
+46     public enum SystemBasicEndpoint {
+47         COMPLETION_ENDPOINT("/v*/chat/completions", "智能问答", CHAT),
+48         EMBEDDING_ENDPOINT("/v*/embeddings", "向量化", CHAT),
+49         SPEECH_ENDPOINT("/v*/audio/speech", "语音合成", TEXT2SPEECH),
+50         ASR_ENDPOINT("/v*/audio/transcriptions", "语音识别", AUDIO2TEXT),
+51         TEXT2IMAGE_ENDPOINT("/v*/images/generations", "文生图", IMAGES),
+52         IMAGE2IMAGE_ENDPOINT("/v*/images/edits", "图生图", IMAGES),
+53         ;
+54         private final String endpoint;
+55         private final String name;
+56         private final SystemBasicCategory category;
+57     }
+58 
+59     @AllArgsConstructor
+60     @Getter
+61     public enum SystemBasicCategory {
+62         CHAT("0001", "语言类", null),
+63         AUDIO("0002", "语音类", null),
+64         IMAGES("0003", "图像类", null),
+65         TEXT2SPEECH("0002-0001", "语音合成", AUDIO),
+66         AUDIO2TEXT("0002-0002", "语音识别", AUDIO),
+67         ;
+68         private final String code;
+69         private final String name;
+70         private final SystemBasicCategory parent;
+71     }
+72 
+73     @AllArgsConstructor
+74     @Getter
+75     public enum ModelJsonKey {
+76         MAX_INPUT(COMPLETION_ENDPOINT.endpoint, "properties", "max_input_context", Integer.class, "最大输入"),
+77         MAX_OUTPUT(COMPLETION_ENDPOINT.endpoint, "properties", "max_output_context", Integer.class, "最大输出"),
+78         FUNCTION_CALL(COMPLETION_ENDPOINT.endpoint, "features", "function_call", Boolean.class, "是否支持工具调用"),
+79         STEAM(COMPLETION_ENDPOINT.endpoint, "features", "stream", Boolean.class, "是否支持流式"),
+80         STREAM_FUNCTION_CALL(COMPLETION_ENDPOINT.endpoint, "features", "stream_function_call", Boolean.class, "是否支持流式工具调用"),
+81         PARALLEL_TOOL_CALLS(COMPLETION_ENDPOINT.endpoint, "features", "parallel_tool_calls", Boolean.class, "是否支持并行工具调用"),
+82         VISION(COMPLETION_ENDPOINT.endpoint, "features", "vision", Boolean.class, "是否支持图片输入"),
+83         JSON_FORMAT(COMPLETION_ENDPOINT.endpoint, "features", "json_format", Boolean.class, "是否支持json模式"),
+84         ;
+85         private final String endpoint;
+86         private final String fied;
+87         private final String code;
+88         private final Class<?> type;
+89         private final String description;
+90     }
+91 
+92     @AllArgsConstructor
+93     @Getter
+94     public enum Protocol {
+95         OPENAPI("OpenAIAdaptor"),
+96         ALI("AliAdaptor"),
+97         AWS("AwsAdaptor"),
+98         HUOSHAN("HuoShanAdaptor"),
+99         ;
+100         private final String code;
+101     }
+102 
+103     @AllArgsConstructor
+104     @Getter
+105     public enum Supplier {
+106         Ke("ke", "贝壳"),
+107         ALI("阿里百炼", "阿里百炼"),
+108         HUO_SHAN("火山方舟", "火山方舟"),
+109         AWS("Bedrock", "Bedrock"),
+110         AZURE("Azure", "Azure")
+111         ;
+112         private final String code;
+113         private final String name;
+114     }
+115 
+116 }
+117
+```
+
+
+
+
+```
+File: api/server/src/main/java/com/ke/bella/openapi/endpoints/MetadataController.java
+1 package com.ke.bella.openapi.endpoints;
+2 
+3 import com.ke.bella.openapi.BellaContext;
+4 import com.ke.bella.openapi.EndpointContext;
+5 import com.ke.bella.openapi.JsonSchema;
+6 import com.ke.bella.openapi.Operator;
+7 import com.ke.bella.openapi.annotations.BellaAPI;
+8 import com.ke.bella.openapi.common.EntityConstants;
+9 import com.ke.bella.openapi.common.exception.BizParamCheckException;
+10 import com.ke.bella.openapi.console.MetadataValidator;
+11 import com.ke.bella.openapi.db.repo.Page;
+12 import com.ke.bella.openapi.metadata.Condition;
+13 import com.ke.bella.openapi.metadata.EndpointCategoryTree;
+14 import com.ke.bella.openapi.metadata.EndpointDetails;
+15 import com.ke.bella.openapi.metadata.MetaDataOps;
+16 import com.ke.bella.openapi.metadata.Model;
+17 import com.ke.bella.openapi.protocol.tts.VoiceProperties;
+18 import com.ke.bella.openapi.service.CategoryService;
+19 import com.ke.bella.openapi.service.ChannelService;
+20 import com.ke.bella.openapi.service.EndpointService;
+21 import com.ke.bella.openapi.service.ModelService;
+22 import com.ke.bella.openapi.tables.pojos.CategoryDB;
+23 import com.ke.bella.openapi.tables.pojos.ChannelDB;
+24 import com.ke.bella.openapi.tables.pojos.EndpointDB;
+25 import com.ke.bella.openapi.tables.pojos.ModelDB;
+26 import com.ke.bella.openapi.utils.JacksonUtils;
+27 import io.swagger.v3.oas.annotations.tags.Tag;
+28 import org.apache.commons.collections4.MapUtils;
+29 import org.apache.commons.lang3.StringUtils;
+30 import org.springframework.beans.factory.annotation.Autowired;
+31 import org.springframework.util.Assert;
+32 import org.springframework.util.CollectionUtils;
+33 import org.springframework.web.bind.annotation.GetMapping;
+34 import org.springframework.web.bind.annotation.PathVariable;
+35 import org.springframework.web.bind.annotation.PostMapping;
+36 import org.springframework.web.bind.annotation.PutMapping;
+37 import org.springframework.web.bind.annotation.RequestBody;
+38 import org.springframework.web.bind.annotation.RequestMapping;
+39 import org.springframework.web.bind.annotation.RequestParam;
+40 import org.springframework.web.bind.annotation.RestController;
+41 
+42 import java.util.List;
+43 import java.util.Map;
+44 import java.util.Set;
+45 
+46 @BellaAPI
+47 @RestController
+48 @RequestMapping("/v1/meta")
+49 @Tag(name = "信息查询")
+50 public class MetadataController {
+51     @Autowired
+52     private EndpointService endpointService;
+53     @Autowired
+54     private ModelService modelService;
+55     @Autowired
+56     private ChannelService channelService;
+57     @Autowired
+58     private CategoryService categoryService;
+59 
+60 
+61     @GetMapping("/endpoint/details")
+62     public EndpointDetails listEndpointDetails(Condition.EndpointDetailsCondition condition) {
+63         Assert.notNull(condition.getEndpoint(), "能力点不可为空");
+64         String identity = BellaContext.getOperatorIgnoreNull() != null ?
+65                 BellaContext.getOperator().getUserId().toString() : EndpointContext.getApikey().getCode();
+66         return endpointService.getEndpointDetails(condition, identity);
+67     }
+68 
+69     @GetMapping("/endpoint/list")
+70     public List<EndpointDB> listEndpoint(Condition.EndpointCondition condition) {
+71         return endpointService.listByCondition(condition);
+72     }
+73 
+74     @GetMapping("/endpoint/page")
+75     public Page<EndpointDB> pageEndpoint(Condition.EndpointCondition condition) {
+76         return endpointService.pageByCondition(condition);
+77     }
+78 
+79     @GetMapping("/endpoint/info/{code}")
+80     public EndpointDB getEndpoint(@PathVariable String code) {
+81         return endpointService.getOne(EndpointService.UniqueKeyQuery.builder().endpointCode(code).build());
+82     }
+83 
+84     @GetMapping("/model/list/for-selection")
+85     public List<Model> listModelForSelection(Condition.ModelCondition condition) {
+86         return modelService.listByConditionForSelectList(condition);
+87     }
+88 
+89     @GetMapping("/model/list")
+90     public List<ModelDB> listModel(Condition.ModelCondition condition) {
+91         return modelService.listByConditionWithPermission(condition, true);
+92     }
+93 
+94     @GetMapping("/model/page")
+95     public Page<ModelDB> pageModel(Condition.ModelCondition condition) {
+96         return modelService.pageByConditionWithPermission(condition, true);
+97     }
+98 
+99     @GetMapping("/model/info/{name}")
+100     public ModelDB getModel(@PathVariable String name) {
+101         return modelService.getOne(name);
+102     }
+103 
+104     @GetMapping("/channel/list")
+105     public List<ChannelDB> listChannel(Condition.ChannelCondition condition) {
+106         fillChannelCondition(condition);
+107         return channelService.listByCondition(condition);
+108     }
+109 
+110     @GetMapping("/channel/page")
+111     public Page<ChannelDB> pageChannel(Condition.ChannelCondition condition) {
+112         fillChannelCondition(condition);
+113         return channelService.pageByCondition(condition);
+114     }
+115 
+116     private void fillChannelCondition(Condition.ChannelCondition condition) {
+117         Operator operator = BellaContext.getOperatorIgnoreNull();
+118         String accountType = operator != null ? EntityConstants.PERSON : BellaContext.getApikey().getOwnerType();
+119         String accountCode = operator != null ? operator.getUserId().toString() : BellaContext.getApikey().getOwnerCode();
+120         condition.setVisibility(EntityConstants.PRIVATE);
+121         condition.setOwnerType(accountType);
+122         condition.setOwnerCode(accountCode);
+123     }
+124 
+125     @GetMapping("/category/list")
+126     public List<CategoryDB> listCategory(Condition.CategoryCondition condition) {
+127         return categoryService.listByCondition(condition);
+128     }
+129 
+130     @GetMapping("/category/page")
+131     public Page<CategoryDB> pageCategory(Condition.CategoryCondition condition) {
+132         return categoryService.pageByCondition(condition);
+133     }
+134 
+135     @GetMapping("/category/tree")
+136     public EndpointCategoryTree listTree(Condition.CategoryTreeCondition condition) {
+137         return categoryService.listTree(condition);
+138     }
+139 
+140     @GetMapping("/category/tree/all")
+141     public List<EndpointCategoryTree> listAllTree() {
+142         return categoryService.listAllTree();
+143     }
+144 
+145     @GetMapping("/supplier/list")
+146     public List<String> listSuppliers() {
+147         return channelService.listSuppliers();
+148     }
+149 
+150     @GetMapping("/schema/modelProperty")
+151     public JsonSchema getModelPropertySchema(@RequestParam Set<String> endpoints) {
+152         return endpointService.getModelPropertySchema(endpoints);
+153     }
+154 
+155     @GetMapping("/schema/modelFeature")
+156     public JsonSchema getModelFeatureSchema(@RequestParam Set<String> endpoints) {
+157         return endpointService.getModelFeatureSchema(endpoints);
+158     }
+159 
+160     @GetMapping("/schema/priceInfo")
+161     public JsonSchema getPriceInfoSchema(@RequestParam String entityType, @RequestParam String entityCode) {
+162         return endpointService.getPriceInfoSchema(entityType, entityCode);
+163     }
+164 
+165     @GetMapping("/schema/channelInfo")
+166     public JsonSchema getChannelInfoSchema(@RequestParam String entityType, @RequestParam String entityCode, @RequestParam String protocol) {
+167         return endpointService.getChannelInfo(entityType, entityCode, protocol);
+168     }
+169 
+170     @GetMapping("/protocol/list")
+171     public Map<String, String> listProtocols(@RequestParam String entityType, @RequestParam String entityCode) {
+172         return endpointService.listProtocols(entityType, entityCode);
+173     }
+174     
+175     @PostMapping("/channel/private")
+176     public ChannelDB createPrivateChannel(@RequestBody MetaDataOps.ChannelCreateOp op) {
+177         op.setVisibility(EntityConstants.PRIVATE);
+178         Operator operator = BellaContext.getOperatorIgnoreNull();
+179         if(StringUtils.isBlank(op.getOwnerType()) || StringUtils.isBlank(op.getOwnerCode())) {
+180             String accountType = operator != null ? EntityConstants.PERSON : BellaContext.getApikey().getOwnerType();
+181             String accountCode = operator != null ? operator.getUserId().toString() : BellaContext.getApikey().getOwnerCode();
+182             String accountName = operator != null ? operator.getUserName() : BellaContext.getApikey().getOwnerName();
+183             op.setOwnerType(accountType);
+184             op.setOwnerCode(accountCode);
+185             if(StringUtils.isNotBlank(accountName)) {
+186                 op.setOwnerName(accountName);
+187             }
+188         }
+189         MetadataValidator.checkChannelCreateOp(op);
+190         return channelService.createChannel(op);
+191     }
+192 
+193     @PutMapping("/channel/private")
+194     public Boolean updatePrivateChannel(@RequestBody MetaDataOps.ChannelUpdateOp op) {
+195         checkChannel(op.getChannelCode());
+196         channelService.updateChannel(op);
+197         return true;
+198     }
+199     
+200     @PostMapping("/channel/private/activate")
+201     public Boolean activatePrivateChannel(@RequestBody MetaDataOps.ChannelStatusOp op) {
+202         checkChannel(op.getChannelCode());
+203         channelService.changeStatus(op.getChannelCode(), true);
+204         return true;
+205     }
+206     
+207     @PostMapping("/channel/private/inactivate")
+208     public Boolean inactivatePrivateChannel(@RequestBody MetaDataOps.ChannelStatusOp op) {
+209         checkChannel(op.getChannelCode());
+210         channelService.changeStatus(op.getChannelCode(), false);
+211         return true;
+212     }
+213 
+214     @GetMapping("/property/voice")
+215     public VoiceProperties fetchVoiceProperty(Condition.ChannelCondition condition) {
+216         String model = condition.getEntityCode();
+217         if(EntityConstants.ENDPOINT.equals(condition.getEntityType())) {
+218             model = null;
+219             List<ChannelDB> channels = channelService.listActives(condition.getEntityType(), condition.getEntityCode());
+220             if(CollectionUtils.isEmpty(channels)) {
+221                 return null;
+222             }
+223             Map<String, Object> channelInfos = JacksonUtils.toMap(channels.get(0).getChannelInfo());
+224             if(MapUtils.isNotEmpty(channelInfos) && channelInfos.containsKey("modelName")) {
+225                model = channelInfos.get("modelName").toString();
+226             }
+227         }
+228         if(model == null) {
+229             return null;
+230         }
+231         ModelDB modelDB = modelService.getOne(model);
+232         if(modelDB == null) {
+233             return null;
+234         }
+235         return JacksonUtils.deserialize(modelDB.getProperties(), VoiceProperties.class);
+236     }
+237 
+238     private void checkChannel(String channelCode) {
+239         ChannelDB channel = channelService.getOne(channelCode);
+240         if (channel == null) {
+241             throw new BizParamCheckException("渠道不存在" );
+242         }
+243         if (EntityConstants.PUBLIC.equals(channel.getVisibility())) {
+244             throw new BizParamCheckException("只能修改私有渠道");
+245         }
+246 
+247         // 检查用户是否有权限更新该渠道
+248         Operator operator = BellaContext.getOperatorIgnoreNull();
+249         String accountType = operator != null ? EntityConstants.PERSON : BellaContext.getApikey().getOwnerType();
+250         String accountCode = operator != null ? operator.getUserId().toString() : BellaContext.getApikey().getOwnerCode();
+251 
+252         if (!channel.getOwnerType().equals(accountType) || !channel.getOwnerCode().equals(accountCode)) {
+253             throw new BizParamCheckException("只能修改自己的私有渠道");
+254         }
+255     }
+256 }
+257
+```
+
+
+
+
+```
+File: api/server/src/main/java/com/ke/bella/openapi/console/MetadataConsoleController.java
+1 package com.ke.bella.openapi.console;
+2 
+3 import com.ke.bella.openapi.JsonSchema;
+4 import com.ke.bella.openapi.annotations.BellaAPI;
+5 import com.ke.bella.openapi.metadata.Condition;
+6 import com.ke.bella.openapi.metadata.MetaDataOps;
+7 import com.ke.bella.openapi.metadata.ModelDetails;
+8 import com.ke.bella.openapi.service.CategoryService;
+9 import com.ke.bella.openapi.service.ChannelService;
+10 import com.ke.bella.openapi.service.EndpointService;
+11 import com.ke.bella.openapi.service.ModelService;
+12 import com.ke.bella.openapi.tables.pojos.CategoryDB;
+13 import com.ke.bella.openapi.tables.pojos.ChannelDB;
+14 import com.ke.bella.openapi.tables.pojos.EndpointDB;
+15 import com.ke.bella.openapi.tables.pojos.ModelDB;
+16 import io.swagger.v3.oas.annotations.tags.Tag;
+17 import org.springframework.beans.factory.annotation.Autowired;
+18 import org.springframework.web.bind.annotation.DeleteMapping;
+19 import org.springframework.web.bind.annotation.GetMapping;
+20 import org.springframework.web.bind.annotation.PostMapping;
+21 import org.springframework.web.bind.annotation.PutMapping;
+22 import org.springframework.web.bind.annotation.RequestBody;
+23 import org.springframework.web.bind.annotation.RequestMapping;
+24 import org.springframework.web.bind.annotation.RequestParam;
+25 import org.springframework.web.bind.annotation.RestController;
+26 
+27 import java.util.List;
+28 import java.util.Map;
+29 import java.util.Set;
+30 
+31 import static com.ke.bella.openapi.console.MetadataValidator.checkCategoryCreateOp;
+32 import static com.ke.bella.openapi.console.MetadataValidator.checkCategoryStatus;
+33 import static com.ke.bella.openapi.console.MetadataValidator.checkChannelCreateOp;
+34 import static com.ke.bella.openapi.console.MetadataValidator.checkChannelStatusOp;
+35 import static com.ke.bella.openapi.console.MetadataValidator.checkChannelUpdateOp;
+36 import static com.ke.bella.openapi.console.MetadataValidator.checkEndpointCategoryOp;
+37 import static com.ke.bella.openapi.console.MetadataValidator.checkEndpointOp;
+38 import static com.ke.bella.openapi.console.MetadataValidator.checkEndpointStatusOp;
+39 import static com.ke.bella.openapi.console.MetadataValidator.checkModelAuthorizerOp;
+40 import static com.ke.bella.openapi.console.MetadataValidator.checkModelLinkOp;
+41 import static com.ke.bella.openapi.console.MetadataValidator.checkModelNameOp;
+42 import static com.ke.bella.openapi.console.MetadataValidator.checkModelOp;
+43 import static com.ke.bella.openapi.console.MetadataValidator.checkReplaceEndpointCategoryOp;
+44 
+45 @BellaAPI
+46 @RestController
+47 @RequestMapping("/console")
+48 @Tag(name = "元数据管理")
+49 public class MetadataConsoleController {
+50     @Autowired
+51     private EndpointService endpointService;
+52     @Autowired
+53     private ModelService modelService;
+54     @Autowired
+55     private ChannelService channelService;
+56     @Autowired
+57     private CategoryService categoryService;
+58 
+59     @PostMapping("/endpoint")
+60     public EndpointDB createEndpoint(@RequestBody MetaDataOps.EndpointOp op) {
+61         checkEndpointOp(op, true);
+62         return endpointService.createEndpoint(op);
+63     }
+64 
+65     @PutMapping("/endpoint")
+66     public Boolean updateEndpoint(@RequestBody MetaDataOps.EndpointOp op) {
+67         checkEndpointOp(op, false);
+68         endpointService.updateEndpoint(op);
+69         return true;
+70     }
+71 
+72     @PostMapping("/endpoint/activate")
+73     public Boolean activateEndpoint(@RequestBody MetaDataOps.EndpointStatusOp op) {
+74         checkEndpointStatusOp(op);
+75         endpointService.changeStatus(op.getEndpoint(), true);
+76         return true;
+77     }
+78 
+79     @PostMapping("/endpoint/inactivate")
+80     public Boolean inactivateEndpoint(@RequestBody MetaDataOps.EndpointStatusOp op) {
+81         checkEndpointStatusOp(op);
+82         endpointService.changeStatus(op.getEndpoint(), false);
+83         return true;
+84     }
+85 
+86     @PostMapping("/model")
+87     public ModelDB createModel(@RequestBody MetaDataOps.ModelOp op) {
+88         checkModelOp(op, true);
+89         return modelService.createModel(op);
+90     }
+91 
+92     @PutMapping("/model")
+93     public Boolean updateModel(@RequestBody MetaDataOps.ModelOp op) {
+94         checkModelOp(op, false);
+95         modelService.updateModel(op);
+96         return true;
+97     }
+98 
+99     @PostMapping("/model/activate")
+100     public Boolean activateModel(@RequestBody MetaDataOps.ModelStatusOp op) {
+101         checkModelNameOp(op);
+102         modelService.changeStatus(op.getModelName(), true);
+103         return true;
+104     }
+105 
+106     @PostMapping("/model/inactivate")
+107     public Boolean inactivateModel(@RequestBody MetaDataOps.ModelStatusOp op) {
+108         checkModelNameOp(op);
+109         modelService.changeStatus(op.getModelName(), false);
+110         return true;
+111     }
+112 
+113     @PostMapping("/model/publish")
+114     public Boolean publishModel(@RequestBody MetaDataOps.ModelVisibilityOp op) {
+115         checkModelNameOp(op);
+116         modelService.changeVisibility(op.getModelName(), true);
+117         return true;
+118     }
+119 
+120     @PostMapping("/model/publish/cancel")
+121     public Boolean cancelPublishModel(@RequestBody MetaDataOps.ModelVisibilityOp op) {
+122         checkModelNameOp(op);
+123         modelService.changeVisibility(op.getModelName(), false);
+124         return true;
+125     }
+126 
+127     @PostMapping("/model/authorize")
+128     public Boolean authorizeModel(@RequestBody MetaDataOps.ModelAuthorizerOp op) {
+129         checkModelAuthorizerOp(op);
+130         modelService.modelAuthorize(op);
+131         return true;
+132     }
+133 
+134     @PostMapping("/model/link")
+135     public Boolean linkModel(@RequestBody MetaDataOps.ModelLinkOp op) {
+136         checkModelLinkOp(op);
+137         modelService.modelLink(op);
+138         return true;
+139     }
+140 
+141     @PostMapping("/channel")
+142     public ChannelDB createChannel(@RequestBody MetaDataOps.ChannelCreateOp op) {
+143         checkChannelCreateOp(op);
+144         return channelService.createChannel(op);
+145     }
+146 
+147     @PutMapping("/channel")
+148     public Boolean updateChannel(@RequestBody MetaDataOps.ChannelUpdateOp op) {
+149         checkChannelUpdateOp(op);
+150         channelService.updateChannel(op);
+151         return true;
+152     }
+153 
+154     @PostMapping("/channel/activate")
+155     public Boolean activateChannel(@RequestBody MetaDataOps.ChannelStatusOp op) {
+156         checkChannelStatusOp(op);
+157         channelService.changeStatus(op.getChannelCode(), true);
+158         return true;
+159     }
+160 
+161     @PostMapping("/channel/inactivate")
+162     public Boolean inactivateChannel(@RequestBody MetaDataOps.ChannelStatusOp op) {
+163         checkChannelStatusOp(op);
+164         channelService.changeStatus(op.getChannelCode(), false);
+165         return true;
+166     }
+167 
+168     @PostMapping("/category")
+169     public CategoryDB createCategory(@RequestBody MetaDataOps.CategoryCreateOp op) {
+170         checkCategoryCreateOp(op);
+171         return categoryService.createCategory(op);
+172     }
+173 
+174     @PostMapping("/category/activate")
+175     public Boolean activateCategory(@RequestBody MetaDataOps.CategoryStatusOp op) {
+176         checkCategoryStatus(op);
+177         categoryService.changeStatus(op.getCategoryCode(), true);
+178         return true;
+179     }
+180 
+181     @PostMapping("/category/inactivate/")
+182     public Boolean inactivateCategory(@RequestBody MetaDataOps.CategoryStatusOp op) {
+183         checkCategoryStatus(op);
+184         categoryService.changeStatus(op.getCategoryCode(), false);
+185         return true;
+186     }
+187 
+188     @PostMapping("/endpoint/category")
+189     public Boolean addCategoryWithEndpoint(@RequestBody MetaDataOps.EndpointCategoriesOp op) {
+190         checkEndpointCategoryOp(op);
+191         categoryService.addCategoriesWithEndpoint(op);
+192         return true;
+193     }
+194 
+195     @DeleteMapping("/endpoint/category")
+196     public Boolean removeCategoryWithEndpoint(@RequestBody MetaDataOps.EndpointCategoriesOp op) {
+197         checkEndpointCategoryOp(op);
+198         categoryService.removeCategoriesWithEndpoint(op);
+199         return true;
+200     }
+201 
+202     @PostMapping("/endpoint/category/replace")
+203     public Boolean replaceCategoryWithEndpoint(@RequestBody MetaDataOps.EndpointCategoriesOp op) {
+204         checkReplaceEndpointCategoryOp(op);
+205         categoryService.replaceCategoryWithEndpoint(op);
+206         return true;
+207     }
+208 
+209     @GetMapping("/model/details")
+210     public ModelDetails getModelDetails(@RequestParam String modelName) {
+211         return modelService.getModelDetails(modelName);
+212     }
+213 
+214     @GetMapping("/model/list")
+215     public List<ModelDB> listModels(Condition.ModelCondition condition) {
+216         return modelService.listByCondition(condition);
+217     }
+218 }
+219
+```
+
+
+
+
+```
+File: web/src/app/meta/page.tsx
+1 'use client';
+2 
+3 import React, { useState, useEffect } from 'react';
+4 import { Sidebar } from '@/components/meta/sidebar';
+5 import { EndpointDisplay } from '@/components/meta/endpoint-details';
+6 import { getAllCategoryTrees } from '@/lib/api/meta';
+7 import { CategoryTree } from '@/lib/types/openapi';
+8 import {ClientHeader} from "@/components/user/client-header";
+9 
+10 export default function MetaPage() {
+11     const [categoryTrees, setCategoryTrees] = useState<CategoryTree[]>([]);
+12     const [selectedEndpoint, setSelectedEndpoint] = useState<string | null>(null);
+13 
+14     useEffect(() => {
+15         setSelectedEndpoint('/v1/chat/completions')
+16 
+17         async function fetchAllData() {
+18             const trees = await getAllCategoryTrees();
+19             setCategoryTrees(trees);
+20         }
+21 
+22         fetchAllData();
+23     }, []);
+24 
+25     return (
+26         <div className="min-h-screen bg-gray-50">
+27             <ClientHeader title='Bella Openapi'/>
+28             <div className="flex">
+29                 <Sidebar categoryTrees={categoryTrees} onEndpointSelect={setSelectedEndpoint}
+30                          defaultEndpoint='/v1/chat/completions'/>
+31                 <main className="flex-1">
+32                     <EndpointDisplay endpoint={selectedEndpoint}/>
+33                 </main>
+34             </div>
+35         </div>
+36     );
+37 }
+38
+```
+
+
+
+
+```
+File: web/src/app/playground/page.tsx
+1 'use client';
+2 
+3 import {useEffect, useState} from 'react';
+4 import {ClientHeader} from "@/components/user/client-header";
+5 import {ModelSelect} from "@/components/ui/model-select";
+6 import {Sidebar} from '@/components/meta/sidebar';
+7 import {getAllCategoryTrees, getEndpointDetails} from '@/lib/api/meta';
+8 import {CategoryTree, Model} from "@/lib/types/openapi";
+9 
+10 
+11 function Playground() {
+12     const [selectedEndpoint, setSelectedEndpoint] = useState<string>('/v1/chat/completions');
+13     const [models, setModels] = useState<Model[]>([]);
+14     const [loading, setLoading] = useState(true);
+15     const [filteredModels, setFilteredModels] = useState<Model[]>([]);
+16     const [searchQuery, setSearchQuery] = useState('');
+17     const [selectedModel, setSelectedModel] = useState<string>('');
+18     const [selectedDisplayModel, setSelectedDisplayModel] = useState<string>('');
+19     const [categoryTrees, setCategoryTrees] = useState<CategoryTree[]>([]);
+20 
+21     useEffect(() => {
+22         async function fetchCategoryTrees() {
+23             try {
+24                 const trees = await getAllCategoryTrees();
+25                 setCategoryTrees(trees);
+26             } catch (error) {
+27                 console.error('Error fetching category trees:', error);
+28             }
+29         }
+30         fetchCategoryTrees();
+31     }, []);
+32 
+33     useEffect(() => {
+34         async function fetchModels() {
+35             try {
+36                 setLoading(true);
+37                 const data = await getEndpointDetails(selectedEndpoint, '', []);
+38                 setModels(data.models || []);
+39                 setSelectedModel(data.models[0]?.terminalModel || data.models[0]?.modelName);
+40                 setSelectedDisplayModel(data.models[0]?.modelName);
+41             } catch (error) {
+42                 console.error('Error fetching endpoint details:', error);
+43             } finally {
+44                 setLoading(false);
+45             }
+46         }
+47         fetchModels();
+48     }, [selectedEndpoint]);
+49 
+50     useEffect(() => {
+51         const filtered = models.filter((model) =>
+52             model.modelName.toLowerCase().includes(searchQuery.toLowerCase())
+53         );
+54         setFilteredModels(filtered);
+55     }, [searchQuery, models]);
+56 
+57     return (
+58         <div className="min-h-screen bg-white dark:bg-white">
+59             <ClientHeader title="Playground" />
+60             <div className="flex h-screen">
+61                 <Sidebar
+62                     categoryTrees={categoryTrees}
+63                     onEndpointSelect={setSelectedEndpoint}
+64                     defaultEndpoint={selectedEndpoint}
+65                 />
+66                 <main className="flex-1 flex flex-col overflow-hidden">
+67                     {models.length > 0 &&  (
+68                     <div className="bg-white p-3">
+69                         <div className="flex items-center space-x-2">
+70                             <label className="text-sm font-medium text-gray-700 whitespace-nowrap">模型:</label>
+71                             <ModelSelect
+72                                 value={selectedDisplayModel}
+73                                 onChange={(value) => {
+74                                     const model = models.find(m => m.modelName === value);
+75                                     setSelectedModel(model?.terminalModel || model?.modelName || value);
+76                                     setSelectedDisplayModel(model?.modelName || value);
+77                                 }}
+78                                 models={models.map(m => m.modelName || '')}
+79                                 className="w-full"
+80                             />
+81                         </div>
+82                     </div>)}
+83                     <div className="flex-1 overflow-hidden">
+84                         <iframe
+85                             src={`/playground${selectedEndpoint}?model=${selectedModel}`}
+86                             className="w-full h-full border-0"
+87                             sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"
+88                             referrerPolicy="no-referrer"
+89                         />
+90                     </div>
+91                 </main>
+92             </div>
+93         </div>
+94     );
+95 }
+96 
+97 export default function MonitorPage() {
+98     return <Playground/>;
+99 }
+100
+```
+
+
+
+
+```
+File: web/src/components/meta/endpoint-details.tsx
+1 import { useState, useEffect } from 'react';
+2 import { getEndpointDetails, listEndpoints } from '@/lib/api/meta';
+3 import { EndpointDetails, Model, Endpoint } from '@/lib/types/openapi';
+4 import { ModelCard } from './model-card';
+5 import { SearchBar } from './search-bar';
+6 import { FeatureFilter } from './feature-filter';
+7 import { Loader } from "lucide-react";
+8 import { DocumentIframeCard } from './document-iframe-card';
+9 
+10 interface EndpointDetailsProps {
+11     endpoint: string | null;
+12 }
+13 
+14 export function EndpointDisplay({ endpoint }: EndpointDetailsProps) {
+15     const [endpointData, setEndpointData] = useState<EndpointDetails | null>(null);
+16     const [endpointModels, setEndpointModels] = useState<Model[]>([]);
+17     const [endpointInfo, setEndpointInfo] = useState<Endpoint | null>(null);
+18     const [searchTerm, setSearchTerm] = useState('');
+19     const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
+20     const [loading, setLoading] = useState(true);
+21 
+22     async function fetchEndpointModels() {
+23         if (endpoint) {
+24             try {
+25                 setLoading(true);
+26                 const data = await getEndpointDetails(endpoint, searchTerm, selectedFeatures);
+27                 setEndpointData(data);
+28                 setEndpointModels(data.models);
+29             } catch (error) {
+30                 console.error('Error fetching endpoint details:', error);
+31             } finally {
+32                 setLoading(false);
+33             }
+34         } else {
+35             setEndpointData(null);
+36             setEndpointModels([]);
+37             setLoading(false);
+38         }
+39     }
+40 
+41     async function fetchEndpointInfo() {
+42         if (endpoint) {
+43             try {
+44                 const endpoints = await listEndpoints('active');
+45                 const currentEndpoint = endpoints.find(e => e.endpoint === endpoint);
+46                 setEndpointInfo(currentEndpoint || null);
+47             } catch (error) {
+48                 console.error('Error fetching endpoint info:', error);
+49             }
+50         } else {
+51             setEndpointInfo(null);
+52         }
+53     }
+54 
+55     useEffect(() => {
+56         setSelectedFeatures([]);
+57         setSearchTerm('');
+58         fetchEndpointModels();
+59         fetchEndpointInfo();
+60     }, [endpoint]);
+61 
+62     useEffect(() => {
+63         fetchEndpointModels();
+64     }, [searchTerm, selectedFeatures]);
+65 
+66     if (!endpoint || loading) {
+67         return (
+68             <div className="flex justify-center items-center p-4 h-64">
+69                 <Loader className="h-8 w-8 animate-spin" />
+70             </div>
+71         );
+72     }
+73 
+74     // 如果能力点有文档URL，并且没有关联模型，则显示文档页面
+75     const hasDocumentUrl = endpointInfo?.documentUrl;
+76     const hasNoModels = !endpointModels || endpointModels.length === 0;
+77     const shouldShowDocument = hasDocumentUrl && hasNoModels;
+78 
+79     if (shouldShowDocument && endpointInfo) {
+80         return (
+81             <div className="p-4">
+82                 <DocumentIframeCard endpoint={endpointInfo} />
+83             </div>
+84         );
+85     }
+86 
+87     return (
+88         <div className="p-4">
+89             <div className="mb-4">
+90                 <SearchBar onSearch={setSearchTerm} />
+91             </div>
+92             <div className="mb-4">
+93                 <FeatureFilter 
+94                     features={endpointData?.features || []} 
+95                     onSelect={setSelectedFeatures} 
+96                     selectedFeatures={selectedFeatures} 
+97                 />
+98             </div>
+99             {endpointModels && <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+100                 {endpointModels.map(model => (
+101                     <ModelCard key={model.modelName} model={model} update={false} />
+102                 ))}
+103             </div>}
+104             {hasNoModels && !hasDocumentUrl && (
+105                 <div className="flex flex-col items-center justify-center p-8 bg-gray-50 rounded-lg border border-gray-200">
+106                     <p className="text-gray-500 mb-2">该能力点暂无关联模型或文档</p>
+107                     <p className="text-sm text-gray-400">请联系维护人员添加模型或文档</p>
+108                 </div>
+109             )}
+110         </div>
+111     );
+112 }
+113
+```
+
+
+
+
+```
+File: web/src/components/playground/ChatCompletionsProcessor.ts
+1 import {EventEmitter} from 'events';
+2 import {createParser} from 'eventsource-parser';
+3 
+4 /**
+5  * ChatCompletions请求配置
+6  */
+7 export interface ChatCompletionsConfig {
+8   /** API请求地址 */
+9   url: string;
+10   /** 请求超时时间(ms) */
+11   timeoutMs?: number;
+12   /** 请求头 */
+13   headers?: Record<string, string>;
+14 }
+15 
+16 /**
+17  * 消息角色类型
+18  */
+19 export type MessageRole = 'user' | 'assistant' | 'system' | 'function';
+20 
+21 /**
+22  * 消息对象
+23  */
+24 export interface ChatMessage {
+25   /** 消息角色 */
+26   role: MessageRole;
+27   /** 消息内容 */
+28   content: string;
+29   /** 深度思考内容 */
+30   reasoning_content?: string;
+31   /** 是否是思考内容 */
+32   isReasoningContent?: boolean;
+33   /** 对于function角色，可选的函数名称 */
+34   name?: string;
+35   /** 对于function角色，可选的函数参数 */
+36   error?: string;
+37 }
+38 
+39 /**
+40  * ChatCompletions请求参数
+41  */
+42 export interface ChatCompletionsRequest {
+43   /** 模型名称 */
+44   model: string;
+45   /** 消息列表 */
+46   messages: ChatMessage[];
+47   /** 请求ID */
+48   request_id?: string;
+49   /** 是否流式响应 */
+50   stream?: boolean;
+51   /** 生成随机性 */
+52   temperature?: number;
+53   /** Token限制 */
+54   max_tokens?: number;
+55   /** 附加参数 */
+56   [key: string]: any;
+57 }
+58 
+59 /**
+60  * ChatCompletions事件类型
+61  */
+62 export enum ChatCompletionsEventType {
+63   /** 开始响应 */
+64   START = 'start',
+65   /** 中间响应 */
+66   DELTA = 'delta',
+67   /** 完成 */
+68   FINISH = 'finish',
+69   /** 错误 */
+70   ERROR = 'error',
+71   /** 请求状态变化 */
+72   STATE_CHANGE = 'state_change'
+73 }
+74 
+75 /**
+76  * ChatCompletions状态
+77  */
+78 export enum ChatCompletionsState {
+79   /** 空闲 */
+80   IDLE = 'idle',
+81   /** 连接中 */
+82   CONNECTING = 'connecting',
+83   /** 连接已建立 */
+84   CONNECTED = 'connected',
+85   /** 响应中 */
+86   RESPONDING = 'responding',
+87   /** 已完成 */
+88   FINISHED = 'finished',
+89   /** 已取消 */
+90   CANCELLED = 'cancelled',
+91   /** 错误 */
+92   ERROR = 'error'
+93 }
+94 
+95 /**
+96  * ChatCompletions响应
+97  */
+98 export interface ChatCompletionsResponse {
+99   /** 创建时间 */
+100   created: number;
+101   /** 响应ID */
+102   id: string;
+103   /** 模型名称 */
+104   model: string;
+105   /** 选择列表 */
+106   choices: {
+107     /** 序号 */
+108     index: number;
+109     /** 结束原因 */
+110     finish_reason?: string;
+111     /** 消息或增量更新 */
+112     message?: ChatMessage;
+113     /** 增量更新 */
+114     delta?: Partial<ChatMessage>;
+115   }[];
+116 }
+117 
+118 /**
+119  * ChatCompletions响应解析器
+120  */
+121 class ChatCompletionsResponseParser {
+122   /**
+123    * 判断是否是结束信号
+124    * @param data 数据
+125    */
+126   static isDone(data: string): boolean {
+127     return data === '[DONE]';
+128   }
+129 
+130   /**
+131    * 解析数据
+132    * @param data 数据
+133    */
+134   static parseData(data: string): ChatCompletionsResponse | null {
+135     if (!data || data === '[DONE]') {
+136       return null;
+137     }
+138 
+139     try {
+140       return JSON.parse(data) as ChatCompletionsResponse;
+141     } catch (error) {
+142       console.error('解析SSE数据失败:', error, data);
+143       return null;
+144     }
+145   }
+146 }
+147 
+148 /**
+149  * ChatCompletions Writer
+150  * 用于处理流式LLM响应
+151  */
+152 export class ChatCompletionsProcessor extends EventEmitter {
+153   private config: ChatCompletionsConfig;
+154   private controller: AbortController | null = null;
+155   private state: ChatCompletionsState = ChatCompletionsState.IDLE;
+156   private responseText: string = '';
+157 
+158   /**
+159    * 构造函数
+160    * @param config 配置
+161    */
+162   constructor(config: ChatCompletionsConfig) {
+163     super();
+164     this.config = {
+165       timeoutMs: 30000,
+166       ...config
+167     };
+168 
+169   }
+170 
+171   /**
+172    * 获取当前状态
+173    */
+174   public getState(): ChatCompletionsState {
+175     return this.state;
+176   }
+177 
+178   /**
+179    * 获取当前已收到的完整响应文本
+180    */
+181   public getResponseText(): string {
+182     return this.responseText;
+183   }
+184 
+185   /**
+186    * 设置状态并触发状态变更事件
+187    * @param newState 新状态
+188    */
+189   private setState(newState: ChatCompletionsState): void {
+190     const oldState = this.state;
+191     this.state = newState;
+192     this.emit(ChatCompletionsEventType.STATE_CHANGE, { oldState, newState });
+193   }
+194 
+195   /**
+196    * 发送请求
+197    * @param request 请求参数
+198    */
+199   public async send(request: ChatCompletionsRequest): Promise<void> {
+200 
+201     if (this.state !== ChatCompletionsState.IDLE &&
+202         this.state !== ChatCompletionsState.FINISHED &&
+203         this.state !== ChatCompletionsState.ERROR &&
+204         this.state !== ChatCompletionsState.CANCELLED) {
+205       throw new Error(`不能在${this.state}状态下发送请求`);
+206     }
+207 
+208     // 重置状态
+209     this.responseText = '';
+210     this.setState(ChatCompletionsState.CONNECTING);
+211 
+212     // 创建取消控制器
+213     this.controller = new AbortController();
+214     const signal = this.controller.signal;
+215 
+216     // 准备请求参数
+217     const requestParams: RequestInit = {
+218       method: 'POST',
+219       headers: {
+220         'Content-Type': 'application/json',
+221         ...this.config.headers
+222       },
+223       body: JSON.stringify(request),
+224       credentials: 'include', // 添加此行确保携带cookie
+225       signal
+226     };
+227 
+228     // 设置超时
+229     const timeoutId = setTimeout(() => {
+230       this.cancel('请求超时');
+231     }, this.config.timeoutMs);
+232 
+233     try {
+234 
+235       // 发送请求并获取流式响应
+236       const response = await fetch(this.config.url, requestParams);
+237 
+238       clearTimeout(timeoutId);
+239 
+240       if (!response.ok) {
+241         const errorText = await response.text();
+242         throw new Error(`请求失败: ${response.status} ${response.statusText} - ${errorText}`);
+243       }
+244 
+245       if (response.body === null) {
+246         throw new Error('响应体为空');
+247       }
+248 
+249       // 触发开始事件
+250       this.setState(ChatCompletionsState.CONNECTED);
+251 
+252       // 开始处理流式响应
+253       await this.processStream(response.body);
+254 
+255     } catch (error) {
+256       clearTimeout(timeoutId);
+257       if (signal.aborted) {
+258         // 请求已被取消，不需要处理错误
+259         return;
+260       }
+261 
+262       this.setState(ChatCompletionsState.ERROR);
+263       this.emit(ChatCompletionsEventType.ERROR, error instanceof Error ? error.message : String(error));
+264       // 在错误处理后自动重置状态到IDLE，这样可以继续发送新的请求
+265       setTimeout(() => {
+266         if (this.state === ChatCompletionsState.ERROR) {
+267           this.setState(ChatCompletionsState.IDLE);
+268         }
+269       }, 500);
+270     }
+271   }
+272 
+273   /**
+274    * 处理流式响应
+275    * @param body 响应体
+276    */
+277   private async processStream(body: ReadableStream<Uint8Array>): Promise<void> {
+278 
+279     // 设置状态
+280     this.setState(ChatCompletionsState.RESPONDING);
+281     this.emit(ChatCompletionsEventType.START, {});
+282 
+283     const reader = body.getReader();
+284     const decoder = new TextDecoder();
+285 
+286     try {
+287       // 创建SSE解析器
+288       const parser = createParser({
+289         onEvent: (event) => {
+290           // 所有的onEvent调用都是事件
+291           {
+292           const data = event.data;
+293 
+294           // 检查是否为结束信号
+295           if (ChatCompletionsResponseParser.isDone(data)) {
+296             this.setState(ChatCompletionsState.FINISHED);
+297             this.emit(ChatCompletionsEventType.FINISH, {});
+298             return;
+299           }
+300 
+301           try {
+302             // 解析JSON数据
+303             const response = ChatCompletionsResponseParser.parseData(data);
+304 
+305             // 处理数据
+306             if (response && response.choices.length > 0) {
+307               const choice = response.choices[0];
+308 
+309                 // 处理正常内容
+310                 if (choice.delta?.content !== undefined) {
+311                   // 累积响应文本
+312                   this.responseText += choice.delta.content;
+313 
+314                   // 触发内容增量事件
+315                   this.emit(ChatCompletionsEventType.DELTA, {
+316                     content: choice.delta.content,
+317                     role: choice.delta.role || 'assistant',
+318                     response: response
+319                   });
+320                 }
+321 
+322                 // 处理深度思考内容
+323                 if (choice.delta?.reasoning_content !== undefined) {
+324                   // 触发深度思考内容增量事件
+325                   this.emit(ChatCompletionsEventType.DELTA, {
+326                     reasoning_content: choice.delta.reasoning_content,
+327                     role: choice.delta.role || 'assistant',
+328                     isReasoningContent: true,
+329                     response: response
+330                   });
+331                 }
+332 
+333                 // 处理完成原因
+334                 if (choice.finish_reason) {
+335                   this.setState(ChatCompletionsState.FINISHED);
+336                   this.emit(ChatCompletionsEventType.FINISH, { reason: choice.finish_reason });
+337                 }
+338             }
+339           } catch (error) {
+340             return;
+341           }
+342           }
+343         },
+344         onError: (err) => {
+345           this.setState(ChatCompletionsState.ERROR);
+346           this.emit(ChatCompletionsEventType.ERROR, err instanceof Error ? err.message : String(err));
+347         }
+348       });
+349 
+350       // 流式处理返回数据
+351       while (true) {
+352         const { done, value } = await reader.read();
+353         if (done) {
+354           break;
+355         }
+356 
+357         // 将二进制数据转换为文本并传递给解析器
+358         const text = decoder.decode(value, { stream: true });
+359 
+360         parser.feed(text);
+361       }
+362 
+363       // 确保最终状态为完成
+364       if (this.state !== ChatCompletionsState.FINISHED) {
+365         this.setState(ChatCompletionsState.FINISHED);
+366         this.emit(ChatCompletionsEventType.FINISH, {});
+367       }
+368 
+369     } catch (error) {
+370       if (this.controller && !this.controller.signal.aborted) {
+371         this.setState(ChatCompletionsState.ERROR);
+372         this.emit(ChatCompletionsEventType.ERROR, error instanceof Error ? error.message : String(error));
+373 
+374         // 在流处理错误后也自动重置状态
+375         setTimeout(() => {
+376           if (this.state === ChatCompletionsState.ERROR) {
+377             this.setState(ChatCompletionsState.IDLE);
+378           }
+379         }, 500);
+380       }
+381     } finally {
+382       reader.releaseLock();
+383     }
+384   }
+385 
+386   /**
+387    * 取消请求
+388    * @param reason 取消原因
+389    */
+390   public cancel(reason?: string): void {
+391     if (this.controller) {
+392       this.controller.abort();
+393       this.controller = null;
+394       this.setState(ChatCompletionsState.CANCELLED);
+395       // 用户取消不显示为错误，而是完成状态
+396       this.emit(ChatCompletionsEventType.FINISH, { cancelled: true, reason: reason || '用户取消' });
+397     }
+398   }
+399 }
+400
+```
+
+
+
+
+```
+File: api/pom.xml
+1 <?xml version="1.0" encoding="UTF-8"?>
+2 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+3   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+4   <modelVersion>4.0.0</modelVersion>
+5   <packaging>pom</packaging>
+6   <modules>
+7     <module>server</module>
+8     <module>sdk</module>
+9     <module>spi</module>
+10   </modules>
+11   <parent>
+12     <groupId>org.springframework.boot</groupId>
+13     <artifactId>spring-boot-starter-parent</artifactId>
+14     <version>2.3.12.RELEASE</version>
+15     <relativePath />
+16   </parent>
+17 
+18   <groupId>io.github.bella-top</groupId>
+19   <artifactId>bella-openapi</artifactId>
+20   <version>1.0.3</version>
+21   <name>bella-openapi</name>
+22   <description>Bella OpenAPI SDK</description>
+23   <url>https://github.com/LianjiaTech/bella-openapi</url>
+24 
+25   <properties>
+26     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+27     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+28     <java.version>1.8</java.version>
+29     <spring-cloud.version>Hoxton.SR12</spring-cloud.version>
+30     <ke-infrastructure.version>2.1.28</ke-infrastructure.version>
+31     <jooq.version>3.14.15</jooq.version>
+32     <redisson.version>3.9.1</redisson.version>
+33     <apollo.version>2.1.0</apollo.version>
+34     <awssdk.version>2.31.42</awssdk.version>
+35   </properties>
+36 
+37   <licenses>
+38     <license>
+39       <name>The Apache License, Version 2.0</name>
+40       <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+41     </license>
+42   </licenses>
+43 
+44   <developers>
+45     <developer>
+46       <name>Bella</name>
+47       <email>bellatop999@gmail.com</email>
+48       <organization>Bella</organization>
+49       <organizationUrl>https://api.bella.top</organizationUrl>
+50     </developer>
+51   </developers>
+52 
+53   <scm>
+54     <connection>scm:git:git://github.com/LianjiaTech/bella-openapi.git</connection>
+55     <developerConnection>scm:git:ssh://github.com:LianjiaTech/bella-openapi.git</developerConnection>
+56     <url>https://github.com/LianjiaTech/bella-openapi/tree/develop</url>
+57   </scm>
+58 
+59   <distributionManagement>
+60     <repository>
+61       <id>central</id>
+62       <name>Central Repository</name>
+63       <url>https://central.sonatype.com/maven/v1</url>
+64     </repository>
+65     <snapshotRepository>
+66       <id>central</id>
+67       <name>Central Repository</name>
+68       <url>https://central.sonatype.com/maven/v1</url>
+69     </snapshotRepository>
+70   </distributionManagement>
+71 
+72 
+73   <dependencyManagement>
+74     <dependencies>
+75       <dependency>
+76         <groupId>org.springframework.cloud</groupId>
+77         <artifactId>spring-cloud-dependencies</artifactId>
+78         <version>${spring-cloud.version}</version>
+79         <type>pom</type>
+80         <scope>import</scope>
+81       </dependency>
+82       <dependency>
+83         <groupId>net.bytebuddy</groupId>
+84         <artifactId>byte-buddy</artifactId>
+85         <version>1.10.20</version>
+86       </dependency>
+87       <dependency>
+88         <groupId>com.google.guava</groupId>
+89         <artifactId>guava</artifactId>
+90         <version>30.1-jre</version>
+91       </dependency>
+92       <dependency>
+93         <groupId>org.jetbrains.kotlin</groupId>
+94         <artifactId>kotlin-stdlib</artifactId>
+95         <version>1.3.70</version>
+96       </dependency>
+97       <dependency>
+98         <groupId>com.knuddels</groupId>
+99         <artifactId>jtokkit</artifactId>
+100         <version>1.1.0</version>
+101       </dependency>
+102       <dependency>
+103         <groupId>org.springframework.data</groupId>
+104         <artifactId>spring-data-keyvalue</artifactId>
+105         <version>2.3.9.RELEASE</version>
+106       </dependency>
+107       <dependency>
+108         <groupId>org.springframework.data</groupId>
+109         <artifactId>spring-data-commons</artifactId>
+110         <version>2.3.9.RELEASE</version>
+111       </dependency>
+112       <dependency>
+113         <groupId>com.ctrip.framework.apollo</groupId>
+114         <artifactId>apollo-client</artifactId>
+115         <version>${apollo.version}</version>
+116       </dependency>
+117     </dependencies>
+118   </dependencyManagement>
+119 
+120   <profiles>
+121     <profile>
+122       <id>release</id>
+123       <build>
+124         <plugins>
+125           <!-- 源码插件 -->
+126           <plugin>
+127             <groupId>org.apache.maven.plugins</groupId>
+128             <artifactId>maven-source-plugin</artifactId>
+129             <version>3.2.1</version>
+130             <executions>
+131               <execution>
+132                 <id>attach-sources</id>
+133                 <goals>
+134                   <goal>jar-no-fork</goal>
+135                 </goals>
+136               </execution>
+137             </executions>
+138           </plugin>
+139 
+140           <!-- Javadoc插件 -->
+141           <plugin>
+142             <groupId>org.apache.maven.plugins</groupId>
+143             <artifactId>maven-javadoc-plugin</artifactId>
+144             <version>3.3.0</version>
+145             <configuration>
+146               <encoding>UTF-8</encoding>
+147               <charset>UTF-8</charset>
+148               <docencoding>UTF-8</docencoding>
+149               <failOnError>false</failOnError>
+150               <doclint>none</doclint>
+151             </configuration>
+152             <executions>
+153               <execution>
+154                 <id>attach-javadocs</id>
+155                 <goals>
+156                   <goal>jar</goal>
+157                 </goals>
+158               </execution>
+159             </executions>
+160           </plugin>
+161 
+162           <!-- GPG签名插件 -->
+163           <plugin>
+164             <groupId>org.apache.maven.plugins</groupId>
+165             <artifactId>maven-gpg-plugin</artifactId>
+166             <version>3.0.1</version>
+167             <configuration>
+168               <gpgArguments>
+169                 <arg>--pinentry-mode</arg>
+170                 <arg>loopback</arg>
+171               </gpgArguments>
+172               <passphrase>${env.MAVEN_GPG_PASSPHRASE}</passphrase>
+173             </configuration>
+174             <executions>
+175               <execution>
+176                 <id>sign-artifacts</id>
+177                 <phase>verify</phase>
+178                 <goals>
+179                   <goal>sign</goal>
+180                 </goals>
+181               </execution>
+182             </executions>
+183           </plugin>
+184 
+185           <!-- maven deploy插件 -->
+186           <plugin>
+187             <groupId>org.sonatype.central</groupId>
+188             <artifactId>central-publishing-maven-plugin</artifactId>
+189             <version>0.7.0</version>
+190             <extensions>true</extensions>
+191             <configuration>
+192               <publishingServerId>central</publishingServerId>
+193               <autoPublish>true</autoPublish>
+194               <excludeArtifacts>
+195                 <excludeArtifact>server</excludeArtifact>
+196               </excludeArtifacts>
+197             </configuration>
+198           </plugin>
+199         </plugins>
+200       </build>
+201     </profile>
+202   </profiles>
+203 </project>
+204
+```
+
+
+
+
+```
+File: api/server/pom.xml
+1 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+2          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+3     <modelVersion>4.0.0</modelVersion>
+4     <parent>
+5         <groupId>io.github.bella-top</groupId>
+6         <artifactId>bella-openapi</artifactId>
+7         <version>1.0.3</version>
+8     </parent>
+9     <artifactId>server</artifactId>
+10     <name>server</name>
+11     <packaging>jar</packaging>
+12 
+13     <properties>
+14         <!-- jooq数据库连接配置，jooq生成代码时替换为真实数据库配置 -->
+15         <db.driver>com.mysql.cj.jdbc.Driver</db.driver>
+16         <db.url>jdbc:mysql://localhost:3306/bella_openapi?useSSL=false</db.url>
+17         <db.username>bella_user</db.username>
+18         <db.password>123456</db.password>
+19         <db.schema>bella_openapi</db.schema>
+20     </properties>
+21 
+22     <dependencies>
+23         <dependency>
+24             <groupId>io.micrometer</groupId>
+25             <artifactId>micrometer-registry-prometheus</artifactId>
+26         </dependency>
+27         <dependency>
+28             <groupId>io.micrometer</groupId>
+29             <artifactId>micrometer-core</artifactId>
+30         </dependency>
+31         <dependency>
+32             <groupId>io.github.bella-top</groupId>
+33             <artifactId>sdk</artifactId>
+34             <version>${project.parent.version}</version>
+35         </dependency>
+36         <dependency>
+37             <groupId>io.github.bella-top</groupId>
+38             <artifactId>spi</artifactId>
+39             <version>${project.parent.version}</version>
+40         </dependency>
+41         <dependency>
+42             <groupId>org.springframework.boot</groupId>
+43             <artifactId>spring-boot-starter-web</artifactId>
+44         </dependency>
+45         <dependency>
+46             <groupId>org.springframework</groupId>
+47             <artifactId>spring-websocket</artifactId>
+48         </dependency>
+49         <dependency>
+50             <groupId>org.springframework.boot</groupId>
+51             <artifactId>spring-boot-starter-aop</artifactId>
+52         </dependency>
+53         <dependency>
+54             <groupId>org.springframework.boot</groupId>
+55             <artifactId>spring-boot-starter-jdbc</artifactId>
+56         </dependency>
+57         <dependency>
+58             <groupId>org.springframework.boot</groupId>
+59             <artifactId>spring-boot-starter-actuator</artifactId>
+60         </dependency>
+61         <dependency>
+62             <groupId>org.springframework.boot</groupId>
+63             <artifactId>spring-boot-starter-data-redis</artifactId>
+64         </dependency>
+65         <dependency>
+66             <groupId>org.springframework.boot</groupId>
+67             <artifactId>spring-boot-starter-validation</artifactId>
+68         </dependency>
+69         <dependency>
+70             <groupId>com.ctrip.framework.apollo</groupId>
+71             <artifactId>apollo-client</artifactId>
+72         </dependency>
+73         <dependency>
+74             <groupId>net.logstash.logback</groupId>
+75             <artifactId>logstash-logback-encoder</artifactId>
+76             <version>7.4</version>
+77         </dependency>
+78         <dependency>
+79             <groupId>commons-io</groupId>
+80             <artifactId>commons-io</artifactId>
+81             <version>2.11.0</version>
+82         </dependency>
+83         <dependency>
+84             <groupId>org.springdoc</groupId>
+85             <artifactId>springdoc-openapi-ui</artifactId>
+86             <version>1.8.0</version>
+87         </dependency>
+88         <dependency>
+89             <groupId>com.cronutils</groupId>
+90             <artifactId>cron-utils</artifactId>
+91             <version>9.2.1</version>
+92         </dependency>
+93         <dependency>
+94             <groupId>org.springframework</groupId>
+95             <artifactId>spring-tx</artifactId>
+96         </dependency>
+97         <dependency>
+98             <groupId>com.google.guava</groupId>
+99             <artifactId>guava</artifactId>
+100         </dependency>
+101         <dependency>
+102             <groupId>com.fasterxml.jackson.core</groupId>
+103             <artifactId>jackson-annotations</artifactId>
+104         </dependency>
+105 
+106         <dependency>
+107             <groupId>com.fasterxml.jackson.core</groupId>
+108             <artifactId>jackson-core</artifactId>
+109         </dependency>
+110 
+111         <dependency>
+112             <groupId>com.fasterxml.jackson.core</groupId>
+113             <artifactId>jackson-databind</artifactId>
+114         </dependency>
+115 
+116         <dependency>
+117             <groupId>com.fasterxml.jackson.dataformat</groupId>
+118             <artifactId>jackson-dataformat-xml</artifactId>
+119         </dependency>
+120         <dependency>
+121             <groupId>com.fasterxml.jackson.datatype</groupId>
+122             <artifactId>jackson-datatype-jsr310</artifactId>
+123         </dependency>
+124         <dependency>
+125             <groupId>org.jetbrains.kotlin</groupId>
+126             <artifactId>kotlin-stdlib</artifactId>
+127         </dependency>
+128         <dependency>
+129             <groupId>io.pebbletemplates</groupId>
+130             <artifactId>pebble-legacy-spring-boot-starter</artifactId>
+131             <version>3.2.2</version>
+132         </dependency>
+133         <dependency>
+134             <groupId>com.hubspot.jinjava</groupId>
+135             <artifactId>jinjava</artifactId>
+136             <version>2.7.2</version>
+137         </dependency>
+138         <dependency>
+139             <groupId>io.github.lambdua</groupId>
+140             <artifactId>service</artifactId>
+141             <version>0.20.8</version>
+142         </dependency>
+143         <dependency>
+144             <groupId>org.jooq</groupId>
+145             <artifactId>jooq</artifactId>
+146         </dependency>
+147         <dependency>
+148             <groupId>org.jooq</groupId>
+149             <artifactId>jooq-meta</artifactId>
+150         </dependency>
+151         <dependency>
+152             <groupId>org.springframework</groupId>
+153             <artifactId>spring-tx</artifactId>
+154         </dependency>
+155         <dependency>
+156             <groupId>org.cooder</groupId>
+157             <artifactId>jooq-mate-types</artifactId>
+158             <version>2.1.0</version>
+159         </dependency>
+160         <dependency>
+161             <groupId>org.cooder</groupId>
+162             <artifactId>jooq-mate-generator</artifactId>
+163             <version>2.1.0</version>
+164             <exclusions>
+165                 <exclusion>
+166                     <groupId>org.apache.logging.log4j</groupId>
+167                     <artifactId>log4j-core</artifactId>
+168                 </exclusion>
+169             </exclusions>
+170             <scope>test</scope>
+171         </dependency>
+172         <dependency>
+173             <groupId>mysql</groupId>
+174             <artifactId>mysql-connector-java</artifactId>
+175         </dependency>
+176         <dependency>
+177             <groupId>com.google.guava</groupId>
+178             <artifactId>guava</artifactId>
+179         </dependency>
+180         <dependency>
+181             <groupId>com.fasterxml.jackson.core</groupId>
+182             <artifactId>jackson-core</artifactId>
+183         </dependency>
+184         <dependency>
+185             <groupId>com.fasterxml.jackson.core</groupId>
+186             <artifactId>jackson-databind</artifactId>
+187         </dependency>
+188         <dependency>
+189             <groupId>com.fasterxml.jackson.datatype</groupId>
+190             <artifactId>jackson-datatype-jsr310</artifactId>
+191         </dependency>
+192         <dependency>
+193             <groupId>org.projectlombok</groupId>
+194             <artifactId>lombok</artifactId>
+195             <optional>true</optional>
+196         </dependency>
+197         <dependency>
+198             <groupId>org.springframework.kafka</groupId>
+199             <artifactId>spring-kafka</artifactId>
+200         </dependency>
+201         <dependency>
+202             <groupId>com.googlecode.aviator</groupId>
+203             <artifactId>aviator</artifactId>
+204             <version>5.4.3</version>
+205         </dependency>
+206         <dependency>
+207             <groupId>org.springframework.boot</groupId>
+208             <artifactId>spring-boot-starter-test</artifactId>
+209             <scope>test</scope>
+210         </dependency>
+211         <dependency>
+212             <groupId>io.swagger</groupId>
+213             <artifactId>swagger-annotations</artifactId>
+214             <version>1.5.24</version>
+215             <scope>compile</scope>
+216         </dependency>
+217         <dependency>
+218             <groupId>software.amazon.awssdk</groupId>
+219             <artifactId>bedrockruntime</artifactId>
+220             <version>${awssdk.version}</version>
+221         </dependency>
+222         <dependency>
+223             <groupId>software.amazon.awssdk</groupId>
+224             <artifactId>apache-client</artifactId>
+225             <version>${awssdk.version}</version>
+226         </dependency>
+227         <dependency>
+228             <groupId>software.amazon.awssdk</groupId>
+229             <artifactId>netty-nio-client</artifactId>
+230             <version>${awssdk.version}</version>
+231         </dependency>
+232         <dependency>
+233             <groupId>com.github.ben-manes.caffeine</groupId>
+234             <artifactId>caffeine</artifactId>
+235             <version>2.8.8</version>
+236         </dependency>
+237         <dependency>
+238             <groupId>com.alicp.jetcache</groupId>
+239             <artifactId>jetcache-starter-redisson</artifactId>
+240             <version>2.7.5</version>
+241             <exclusions>
+242                 <exclusion>
+243                     <groupId>org.springframework.boot</groupId>
+244                     <artifactId>spring-boot-starter-logging</artifactId>
+245                 </exclusion>
+246             </exclusions>
+247         </dependency>
+248         <dependency>
+249             <groupId>com.lmax</groupId>
+250             <artifactId>disruptor</artifactId>
+251             <version>3.4.4</version>
+252             <exclusions>
+253                 <exclusion>
+254                     <groupId>com.github.ben-manes.caffeine</groupId>
+255                     <artifactId>caffeine</artifactId>
+256                 </exclusion>
+257             </exclusions>
+258         </dependency>
+259         <dependency>
+260             <groupId>com.github.ben-manes.caffeine</groupId>
+261             <artifactId>caffeine</artifactId>
+262             <version>2.8.8</version>
+263         </dependency>
+264         <dependency>
+265             <groupId>org.springdoc</groupId>
+266             <artifactId>springdoc-openapi-ui</artifactId>
+267             <version>1.8.0</version>
+268         </dependency>
+269         <dependency>
+270             <groupId>org.jasig.cas.client</groupId>
+271             <artifactId>cas-client-core</artifactId>
+272             <version>3.6.4</version>
+273         </dependency>
+274         <dependency>
+275             <groupId>org.springframework.data</groupId>
+276             <artifactId>spring-data-redis</artifactId>
+277             <version>2.2.0.RELEASE</version>
+278         </dependency>
+279         <dependency>
+280             <groupId>junit</groupId>
+281             <artifactId>junit</artifactId>
+282             <scope>test</scope>
+283         </dependency>
+284     </dependencies>
+285 
+286     <build>
+287         <finalName>${project.parent.artifactId}</finalName>
+288         <plugins>
+289             <plugin>
+290                 <groupId>org.apache.maven.plugins</groupId>
+291                 <artifactId>maven-deploy-plugin</artifactId>
+292                 <configuration>
+293                     <skip>true</skip>
+294                 </configuration>
+295             </plugin>
+296             <plugin>
+297                 <groupId>org.codehaus.mojo</groupId>
+298                 <artifactId>build-helper-maven-plugin</artifactId>
+299                 <executions>
+300                     <execution>
+301                         <id>add-source</id>
+302                         <phase>generate-sources</phase>
+303                         <goals>
+304                             <goal>add-source</goal>
+305                         </goals>
+306                         <configuration>
+307                             <sources>
+308                                 <source>src/codegen/java</source>
+309                             </sources>
+310                         </configuration>
+311                     </execution>
+312                 </executions>
+313             </plugin>
+314             <!-- 代码生成器插件 -->
+315             <plugin>
+316                 <groupId>org.jooq</groupId>
+317                 <artifactId>jooq-codegen-maven</artifactId>
+318                 <version>${jooq.version}</version>
+319                 <configuration>
+320                     <jdbc>
+321                         <driver>${db.driver}</driver>
+322                         <url>${db.url}</url>
+323                         <user>${db.username}</user>
+324                         <password>${db.password}</password>
+325                     </jdbc>
+326                     <generator>
+327                         <database>
+328                             <inputSchema>${db.schema}</inputSchema>
+329                             <outputSchemaToDefault>true</outputSchemaToDefault>
+330                             <includes>.*</includes>
+331                             <unsignedTypes>false</unsignedTypes>
+332                         </database>
+333                         <strategy>
+334                             <name>org.jooq.codegen.DefaultGeneratorStrategy</name>
+335                             <matchers>
+336                                 <tables>
+337                                     <table>
+338                                         <daoClass>
+339                                             <transform>PASCAL</transform>
+340                                             <expression>$0_D_B_Dao</expression>
+341                                         </daoClass>
+342                                         <pojoClass>
+343                                             <transform>PASCAL</transform>
+344                                             <expression>$0_D_B</expression>
+345                                         </pojoClass>
+346                                         <pojoImplements>io.github.bella-top.db.repo.Timed</pojoImplements>
+347                                         <recordImplements>io.github.bella-top.db.repo.Timed</recordImplements>
+348                                         <expression>user</expression>
+349                                     </table>
+350                                     <table>
+351                                         <daoClass>
+352                                             <transform>PASCAL</transform>
+353                                             <expression>$0_D_B_Dao</expression>
+354                                         </daoClass>
+355                                         <pojoClass>
+356                                             <transform>PASCAL</transform>
+357                                             <expression>$0_D_B</expression>
+358                                         </pojoClass>
+359                                         <pojoImplements>io.github.bella-top.db.repo.Timed</pojoImplements>
+360                                         <recordImplements>io.github.bella-top.db.repo.Timed</recordImplements>
+361                                         <expression>apikey_month_cost</expression>
+362                                     </table>
+363                                     <table>
+364                                         <daoClass>
+365                                             <transform>PASCAL</transform>
+366                                             <expression>$0_D_B_Dao</expression>
+367                                         </daoClass>
+368                                         <pojoClass>
+369                                             <transform>PASCAL</transform>
+370                                             <expression>$0_D_B</expression>
+371                                         </pojoClass>
+372                                         <pojoImplements>io.github.bella-top.db.repo.Timed</pojoImplements>
+373                                         <recordImplements>io.github.bella-top.db.repo.Timed</recordImplements>
+374                                         <expression>space</expression>
+375                                     </table>
+376                                     <table>
+377                                         <daoClass>
+378                                             <transform>PASCAL</transform>
+379                                             <expression>$0_D_B_Dao</expression>
+380                                         </daoClass>
+381                                         <pojoClass>
+382                                             <transform>PASCAL</transform>
+383                                             <expression>$0_D_B</expression>
+384                                         </pojoClass>
+385                                         <pojoImplements>io.github.bella-top.db.repo.Timed</pojoImplements>
+386                                         <recordImplements>io.github.bella-top.db.repo.Timed</recordImplements>
+387                                         <expression>space_role</expression>
+388                                     </table>
+389                                     <table>
+390                                         <daoClass>
+391                                             <transform>PASCAL</transform>
+392                                             <expression>$0_D_B_Dao</expression>
+393                                         </daoClass>
+394                                         <pojoClass>
+395                                             <transform>PASCAL</transform>
+396                                             <expression>$0_D_B</expression>
+397                                         </pojoClass>
+398                                         <pojoImplements>io.github.bella-top.db.repo.Timed</pojoImplements>
+399                                         <recordImplements>io.github.bella-top.db.repo.Timed</recordImplements>
+400                                         <expression>space_member</expression>
+401                                     </table>
+402                                     <table>
+403                                         <daoClass>
+404                                             <transform>PASCAL</transform>
+405                                             <expression>$0_D_B_Dao</expression>
+406                                         </daoClass>
+407                                         <pojoClass>
+408                                             <transform>PASCAL</transform>
+409                                             <expression>$0_D_B</expression>
+410                                         </pojoClass>
+411                                         <pojoImplements>io.github.bella-top.db.repo.Operator</pojoImplements>
+412                                         <recordImplements>io.github.bella-top.db.repo.Operator</recordImplements>
+413                                     </table>
+414                                 </tables>
+415                             </matchers>
+416                         </strategy>
+417                         <generate>
+418                             <deprecated>false</deprecated>
+419                             <records>true</records>
+420                             <pojos>true</pojos>
+421                             <daos>false</daos>
+422                         </generate>
+423                         <target>
+424                             <packageName>io.github.bella-top</packageName>
+425                             <directory>src/codegen/java</directory>
+426                             <encoding>UTF-8</encoding>
+427                         </target>
+428                     </generator>
+429                 </configuration>
+430             </plugin>
+431             <plugin>
+432                 <groupId>org.springframework.boot</groupId>
+433                 <artifactId>spring-boot-maven-plugin</artifactId>
+434             </plugin>
+435         </plugins>
+436     </build>
+437 </project>
+438
+```
+
+
+
+
+# 用户需求
+
+title：增加文生图模型支持
+
+希望bella的api可以支持目前主流的文生图大模型接入，帮助我们自己模型的迭代和业务的直接应用
+
+<img width=1244 alt=Image src=https://github.com/user-attachments/assets/0b991c7f-992d-4246-8d7f-d57bd8006fed />

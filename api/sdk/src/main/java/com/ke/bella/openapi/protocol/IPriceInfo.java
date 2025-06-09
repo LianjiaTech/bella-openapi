@@ -6,6 +6,7 @@ import com.ke.bella.openapi.protocol.realtime.RealTimePriceInfo;
 import com.ke.bella.openapi.protocol.completion.CompletionPriceInfo;
 import com.ke.bella.openapi.protocol.embedding.EmbeddingPriceInfo;
 import com.ke.bella.openapi.protocol.tts.TtsPriceInfo;
+import com.ke.bella.openapi.protocol.images.ImagesPriceInfo;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -20,7 +21,8 @@ public interface IPriceInfo extends IDescription {
         TTS("/v1/audio/speech", TtsPriceInfo.class),
         FLASH_ASR("/v1/audio/asr/flash", FlashAsrPriceInfo.class),
         REALTIME_ASR("/v1/audio/asr/stream", RealTimePriceInfo.class),
-        REALTIME("/v1/audio/realtime", RealTimePriceInfo.class)
+        REALTIME("/v1/audio/realtime", RealTimePriceInfo.class),
+        IMAGES("/v1/images/generations", ImagesPriceInfo.class),
         ;
 
         private final String endpoint;

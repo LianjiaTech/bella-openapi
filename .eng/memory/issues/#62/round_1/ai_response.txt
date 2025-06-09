@@ -1,0 +1,703 @@
+根据您的需求，我需要为bella-openapi系统增加文生图模型支持。从现有代码分析，系统已经有了基础架构，我需要实现以下核心组件：
+
+1. 文生图请求/响应协议类
+2. 文生图适配器
+3. OpenAI文生图适配器实现
+4. 文生图控制器
+5. 相关的模型属性和特性类
+
+让我来实现这些组件：
+
+```diff
+--- /dev/null
++++ api/sdk/src/main/java/com/ke/bella/openapi/protocol/images/ImagesRequest.java
+@@ -0,0 +1,85 @@
++package com.ke.bella.openapi.protocol.images;
++
++import com.fasterxml.jackson.annotation.JsonInclude;
++import com.fasterxml.jackson.annotation.JsonInclude.Include;
++import com.ke.bella.openapi.protocol.UserRequest;
++import lombok.Data;
++import lombok.NoArgsConstructor;
++import lombok.experimental.SuperBuilder;
++
++import javax.annotation.Nullable;
++import java.io.Serializable;
++
++@Data
++@SuperBuilder
++@NoArgsConstructor
++public class ImagesRequest implements UserRequest, Serializable {
++    private static final long serialVersionUID = 1L;
++    
++    /**
++     * A text description of the desired image(s). The maximum length is 1000 characters for dall-e-2 and 4000 characters for dall-e-3.
++     */
++    private String prompt;
++    
++    /**
++     * The model to use for image generation.
++     */
++    @Nullable
++    private String model;
++    
++    /**
++     * The number of images to generate. Must be between 1 and 10. For dall-e-3, only n=1 is supported.
++     */
++    @Nullable
++    private Integer n = 1;
++    
++    /**
++     * The quality of the image that will be generated. hd creates images with finer details and greater consistency across the image. This param is only supported for dall-e-3.
++     */
++    @Nullable
++    private String quality;
++    
++    /**
++     * The format in which the generated images are returned. Must be one of url or b64_json.
++     */
++    @Nullable
++    private String response_format = "url";
++    
++    /**
++     * The size of the generated images. Must be one of 256x256, 512x512, or 1024x1024 for dall-e-2. Must be one of 1024x1024, 1792x1024, or 1024x1792 for dall-e-3 models.
++     */
++    @Nullable
++    private String size = "1024x1024";
++    
++    /**
++     * The style of the generated images. Must be one of vivid or natural. Vivid causes the model to lean towards generating hyper-real and dramatic images. Natural causes the model to produce more natural, less hyper-real looking images. This param is only supported for dall-e-3.
++     */
++    @Nullable
++    private String style;
++    
++    /**
++     * A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse.
++     */
++    @Nullable
++    private String user;
++    
++    /**
++     * The width of the generated image. Only supported for some models.
++     */
++    @Nullable
++    private Integer width;
++    
++    /**
++     * The height of the generated image. Only supported for some models.
++     */
++    @Nullable
++    private Integer height;
++    
++    /**
++     * Additional parameters for specific models
++     */
++    @JsonInclude(Include.NON_NULL)
++    @Nullable
++    private Object extra_params;
++}
+```
+
+```diff
+--- /dev/null
++++ api/sdk/src/main/java/com/ke/bella/openapi/protocol/images/ImagesResponse.java
+@@ -0,0 +1,59 @@
++package com.ke.bella.openapi.protocol.images;
++
++import com.fasterxml.jackson.annotation.JsonInclude;
++import com.fasterxml.jackson.annotation.JsonInclude.Include;
++import com.ke.bella.openapi.protocol.OpenapiResponse;
++import lombok.AllArgsConstructor;
++import lombok.Data;
++import lombok.NoArgsConstructor;
++import lombok.experimental.SuperBuilder;
++
++import java.util.List;
++
++@Data
++@JsonInclude(Include.NON_NULL)
++@NoArgsConstructor
++@AllArgsConstructor
++@SuperBuilder
++public class ImagesResponse extends OpenapiResponse {
++    
++    /**
++     * The Unix timestamp (in seconds) of when the image was created.
++     */
++    private Long created;
++    
++    /**
++     * The list of generated images.
++     */
++    private List<ImageData> data;
++    
++    @Data
++    @JsonInclude(Include.NON_NULL)
++    @SuperBuilder
++    @NoArgsConstructor
++    @AllArgsConstructor
++    public static class ImageData {
++        /**
++         * The base64-encoded JSON of the generated image, if response_format is b64_json.
++         */
++        private String b64_json;
++        
++        /**
++         * The URL of the generated image, if response_format is url (default).
++         */
++        private String url;
++        
++        /**
++         * The prompt that was used to generate the image, if there was any revision to the prompt.
++         */
++        private String revised_prompt;
++        
++        /**
++         * The width of the generated image.
++         */
++        private Integer width;
++        
++        /**
++         * The height of the generated image.
++         */
++        private Integer height;
++    }
++}
+```
+
+```diff
+--- /dev/null
++++ api/sdk/src/main/java/com/ke/bella/openapi/protocol/images/ImagesProperty.java
+@@ -0,0 +1,32 @@
++package com.ke.bella.openapi.protocol.images;
++
++import com.ke.bella.openapi.protocol.IProtocolProperty;
++import lombok.Data;
++import org.apache.commons.lang3.StringUtils;
++
++import java.util.Map;
++import java.util.SortedMap;
++import java.util.TreeMap;
++
++@Data
++public class ImagesProperty implements IProtocolProperty {
++    String encodingType = StringUtils.EMPTY;
++    Map<String, String> extraHeaders;
++    String queueName;
++    boolean supportB64Json = true;
++    boolean supportUrl = true;
++    String defaultResponseFormat = "url";
++    String defaultSize = "1024x1024";
++
++    @Override
++    public Map<String, String> description() {
++        SortedMap<String, String> map = new TreeMap<>();
++        map.put("encodingType", "编码类型");
++        map.put("extraHeaders", "额外的请求头");
++        map.put("queueName", "队列（配置后请求被bella-job-queue服务代理）");
++        map.put("supportB64Json", "是否支持base64格式返回");
++        map.put("supportUrl", "是否支持URL格式返回");
++        map.put("defaultResponseFormat", "默认响应格式");
++        map.put("defaultSize", "默认图片尺寸");
++        return map;
++    }
++}
+```
+
+```diff
+--- /dev/null
++++ api/sdk/src/main/java/com/ke/bella/openapi/protocol/images/ImagesModelProperties.java
+@@ -0,0 +1,33 @@
++package com.ke.bella.openapi.protocol.images;
++
++import com.ke.bella.openapi.protocol.IModelProperties;
++import lombok.Data;
++
++import java.util.Map;
++import java.util.SortedMap;
++import java.util.TreeMap;
++
++@Data
++public class ImagesModelProperties implements IModelProperties {
++    private Integer maxPromptLength = 4000;
++    private Integer maxImages = 10;
++    private String[] supportedSizes = {"256x256", "512x512", "1024x1024", "1792x1024", "1024x1792"};
++    private String[] supportedFormats = {"url", "b64_json"};
++    private String[] supportedQualities = {"standard", "hd"};
++    private String[] supportedStyles = {"vivid", "natural"};
++    private boolean supportCustomSize = false;
++    private Integer maxWidth = 2048;
++    private Integer maxHeight = 2048;
++
++    @Override
++    public Map<String, String> description() {
++        SortedMap<String, String> map = new TreeMap<>();
++        map.put("maxPromptLength", "最大提示词长度");
++        map.put("maxImages", "最大生成图片数量");
++        map.put("supportedSizes", "支持的图片尺寸");
++        map.put("supportedFormats", "支持的响应格式");
++        map.put("supportedQualities", "支持的图片质量");
++        map.put("supportedStyles", "支持的图片风格");
++        map.put("supportCustomSize", "是否支持自定义尺寸");
++        return map;
++    }
++}
+```
+
+```diff
+--- /dev/null
++++ api/sdk/src/main/java/com/ke/bella/openapi/protocol/images/ImagesModelFeatures.java
+@@ -0,0 +1,28 @@
++package com.ke.bella.openapi.protocol.images;
++
++import com.ke.bella.openapi.protocol.IModelFeatures;
++import lombok.Data;
++
++import java.util.Map;
++import java.util.SortedMap;
++import java.util.TreeMap;
++
++@Data
++public class ImagesModelFeatures implements IModelFeatures {
++    private boolean highQuality = false;
++    private boolean multipleStyles = false;
++    private boolean customSize = false;
++    private boolean batchGeneration = false;
++    private boolean promptRevision = false;
++
++    @Override
++    public Map<String, String> description() {
++        SortedMap<String, String> map = new TreeMap<>();
++        map.put("highQuality", "是否支持高质量生成");
++        map.put("multipleStyles", "是否支持多种风格");
++        map.put("customSize", "是否支持自定义尺寸");
++        map.put("batchGeneration", "是否支持批量生成");
++        map.put("promptRevision", "是否支持提示词修订");
++        return map;
++    }
++}
+```
+
+```diff
+--- /dev/null
++++ api/sdk/src/main/java/com/ke/bella/openapi/protocol/images/ImagesPriceInfo.java
+@@ -0,0 +1,28 @@
++package com.ke.bella.openapi.protocol.images;
++
++import com.ke.bella.openapi.protocol.IPriceInfo;
++import lombok.Data;
++
++import java.math.BigDecimal;
++import java.util.Map;
++import java.util.SortedMap;
++import java.util.TreeMap;
++
++@Data
++public class ImagesPriceInfo implements IPriceInfo {
++    private BigDecimal pricePerImage = BigDecimal.ZERO;
++    private BigDecimal hdPricePerImage = BigDecimal.ZERO;
++    private String unit = "张";
++
++    @Override
++    public String getUnit() {
++        return unit;
++    }
++
++    @Override
++    public Map<String, String> description() {
++        SortedMap<String, String> map = new TreeMap<>();
++        map.put("pricePerImage", "每张图片价格（标准质量）");
++        map.put("hdPricePerImage", "每张图片价格（高清质量）");
++        return map;
++    }
++}
+```
+
+```diff
+--- /dev/null
++++ api/sdk/src/main/java/com/ke/bella/openapi/protocol/images/ImagesAdaptor.java
+@@ -0,0 +1,16 @@
++package com.ke.bella.openapi.protocol.images;
++
++import com.ke.bella.openapi.protocol.IProtocolAdaptor;
++
++/**
++ * 文生图适配器接口
++ */
++public interface ImagesAdaptor<T extends ImagesProperty> extends IProtocolAdaptor {
++    
++    /**
++     * 生成图片
++     * @param request 请求参数
++     * @param url 请求地址
++     * @param property 属性配置
++     * @return 响应结果
++     */
++    ImagesResponse generateImages(ImagesRequest request, String url, T property);
++}
+```
+
+```diff
+--- /dev/null
++++ api/sdk/src/main/java/com/ke/bella/openapi/protocol/images/OpenAIImagesAdaptor.java
+@@ -0,0 +1,106 @@
++package com.ke.bella.openapi.protocol.images;
++
++import com.fasterxml.jackson.core.type.TypeReference;
++import com.ke.bella.openapi.protocol.AuthorizationProperty;
++import com.ke.bella.openapi.utils.JacksonUtils;
++import lombok.extern.slf4j.Slf4j;
++import okhttp3.*;
++import org.apache.commons.lang3.StringUtils;
++
++import java.io.IOException;
++import java.util.concurrent.TimeUnit;
++
++/**
++ * OpenAI文生图适配器
++ */
++@Slf4j
++public class OpenAIImagesAdaptor implements ImagesAdaptor<ImagesProperty> {
++    
++    private static final OkHttpClient HTTP_CLIENT = new OkHttpClient.Builder()
++            .connectTimeout(30, TimeUnit.SECONDS)
++            .readTimeout(300, TimeUnit.SECONDS)
++            .writeTimeout(30, TimeUnit.SECONDS)
++            .build();
++    
++    @Override
++    public String endpoint() {
++        return "/v1/images/generations";
++    }
++    
++    @Override
++    public String getDescription() {
++        return "OpenAI文生图适配器";
++    }
++    
++    @Override
++    public Class<?> getPropertyClass() {
++        return ImagesProperty.class;
++    }
++    
++    @Override
++    public ImagesResponse generateImages(ImagesRequest request, String url, ImagesProperty property) {
++        try {
++            // 构建请求
++            Request.Builder requestBuilder = new Request.Builder()
++                    .url(url)
++                    .post(RequestBody.create(
++                            JacksonUtils.serialize(preprocessRequest(request, property)),
++                            MediaType.get("application/json; charset=utf-8")));
++            
++            // 添加授权头
++            AuthorizationProperty authProperty = new AuthorizationProperty();
++            authProperty.setType(AuthorizationProperty.Type.BEARER);
++            authProperty.setApiKey(getApiKeyFromProperty(property));
++            requestBuilder = authorizationRequestBuilder(authProperty);
++            requestBuilder.url(url)
++                    .post(RequestBody.create(
++                            JacksonUtils.serialize(preprocessRequest(request, property)),
++                            MediaType.get("application/json; charset=utf-8")));
++            
++            // 添加额外请求头
++            if (property.getExtraHeaders() != null) {
++                property.getExtraHeaders().forEach(requestBuilder::header);
++            }
++            
++            Request httpRequest = requestBuilder.build();
++            
++            // 发送请求
++            try (Response response = HTTP_CLIENT.newCall(httpRequest).execute()) {
++                if (!response.isSuccessful()) {
++                    throw new RuntimeException("Request failed: " + response.code() + " " + response.message());
++                }
++                
++                String responseBody = response.body().string();
++                return JacksonUtils.deserialize(responseBody, new TypeReference<ImagesResponse>() {});
++            }
++            
++        } catch (IOException e) {
++            log.error("Failed to generate images", e);
++            throw new RuntimeException("Failed to generate images: " + e.getMessage(), e);
++        }
++    }
++    
++    /**
++     * 预处理请求参数
++     */
++    private ImagesRequest preprocessRequest(ImagesRequest request, ImagesProperty property) {
++        // 设置默认值
++        if (StringUtils.isBlank(request.getResponse_format())) {
++            request.setResponse_format(property.getDefaultResponseFormat());
++        }
++        if (StringUtils.isBlank(request.getSize())) {
++            request.setSize(property.getDefaultSize());
++        }
++        if (request.getN() == null) {
++            request.setN(1);
++        }
++        
++        return request;
++    }
++    
++    /**
++     * 从属性中获取API密钥
++     */
++    private String getApiKeyFromProperty(ImagesProperty property) {
++        // 这里需要根据实际情况从property中获取API密钥
++        return ""; // 实际实现中需要从配置中获取
++    }
++}
+```
+
+```diff
+--- /dev/null
++++ api/server/src/main/java/com/ke/bella/openapi/endpoints/ImagesController.java
+@@ -0,0 +1,142 @@
++package com.ke.bella.openapi.endpoints;
++
++import com.ke.bella.openapi.BellaContext;
++import com.ke.bella.openapi.EndpointContext;
++import com.ke.bella.openapi.EndpointProcessData;
++import com.ke.bella.openapi.annotations.EndpointAPI;
++import com.ke.bella.openapi.common.exception.BizParamCheckException;
++import com.ke.bella.openapi.common.exception.ChannelException;
++import com.ke.bella.openapi.protocol.AdaptorManager;
++import com.ke.bella.openapi.protocol.ChannelRouter;
++import com.ke.bella.openapi.protocol.images.ImagesAdaptor;
++import com.ke.bella.openapi.protocol.images.ImagesProperty;
++import com.ke.bella.openapi.protocol.images.ImagesRequest;
++import com.ke.bella.openapi.protocol.images.ImagesResponse;
++import com.ke.bella.openapi.protocol.limiter.LimiterManager;
++import com.ke.bella.openapi.protocol.log.EndpointLogger;
++import com.ke.bella.openapi.safety.ISafetyCheckService;
++import com.ke.bella.openapi.safety.SafetyCheckRequest;
++import com.ke.bella.openapi.tables.pojos.ChannelDB;
++import com.ke.bella.openapi.utils.JacksonUtils;
++import io.swagger.v3.oas.annotations.tags.Tag;
++import lombok.extern.slf4j.Slf4j;
++import org.apache.commons.lang3.StringUtils;
++import org.springframework.beans.factory.annotation.Autowired;
++import org.springframework.beans.factory.annotation.Value;
++import org.springframework.web.bind.annotation.PostMapping;
++import org.springframework.web.bind.annotation.RequestBody;
++import org.springframework.web.bind.annotation.RequestMapping;
++import org.springframework.web.bind.annotation.RestController;
++
++import java.util.Map;
++
++@EndpointAPI
++@RestController
++@RequestMapping("/v1/images")
++@Tag(name = "images")
++@Slf4j
++public class ImagesController {
++    
++    @Autowired
++    private ChannelRouter router;
++    @Autowired
++    private AdaptorManager adaptorManager;
++    @Autowired
++    private LimiterManager limiterManager;
++    @Autowired
++    private EndpointLogger logger;
++    @Autowired
++    private ISafetyCheckService.IImagesSafetyCheckService safetyCheckService;
++    @Value("${bella.openapi.max-models-per-request:3}")
++    private Integer maxModelsPerRequest;
++    
++    @SuppressWarnings({ "rawtypes", "unchecked" })
++    @PostMapping("/generations")
++    public Object generateImages(@RequestBody ImagesRequest request) {
++        String endpoint = EndpointContext.getRequest().getRequestURI();
++        String model = request.getModel();
++        
++        // 参数验证
++        if (StringUtils.isBlank(request.getPrompt())) {
++            throw new BizParamCheckException("prompt不能为空");
++        }
++        
++        // Handle multi-model requests
++        if (model != null && model.contains(",")) {
++            // Try each model in order
++            String[] models = model.split(",");
++            int maxNum = models.length;
++            // Validate model count
++            if (models.length > maxModelsPerRequest) {
++                log.warn("请求模型数量超过最大限制: " + maxModelsPerRequest);
++                maxNum = maxModelsPerRequest;
++            }
++            Exception lastException = null;
++            
++            for (int i = 0; i < maxNum; i++) {
++                String singleModel = models[i];
++                String trimmedModel = singleModel.trim();
++                // Create a copy of the request with just this model
++                request.setModel(trimmedModel);
++                
++                try {
++                    // Try to process with this model
++                    return processImagesRequest(endpoint, trimmedModel, request);
++                } catch (Exception e) {
++                    // Log the exception and continue to the next model
++                    lastException = e;
++                }
++            }
++            
++            // If we get here, all models failed
++            if (lastException != null) {
++                throw ChannelException.fromException(lastException);
++            } else {
++                throw new BizParamCheckException("所有指定的模型都无法处理请求");
++            }
++        }
++        
++        // Single model processing
++        return processImagesRequest(endpoint, model, request);
++    }
++    
++    private Object processImagesRequest(String endpoint, String model, ImagesRequest request) {
++        EndpointContext.setEndpointData(endpoint, model, request);
++        boolean isMock = EndpointContext.getProcessData().isMock();
++        ChannelDB channel = router.route(endpoint, model, EndpointContext.getApikey(), isMock);
++        EndpointContext.setEndpointData(channel);
++        
++        if(!EndpointContext.getProcessData().isPrivate()) {
++            limiterManager.incrementConcurrentCount(EndpointContext.getProcessData().getAkCode(), model);
++        }
++        
++        Object requestRiskData = safetyCheckService.safetyCheck(SafetyCheckRequest.Images.convertFrom(request,
++                    EndpointContext.getProcessData(), EndpointContext.getApikey()), isMock);
++        EndpointContext.getProcessData().setRequestRiskData(requestRiskData);
++        
++        EndpointProcessData processData = EndpointContext.getProcessData();
++        String protocol = processData.getProtocol();
++        String url = processData.getForwardUrl();
++        String channelInfo = channel.getChannelInfo();
++        
++        ImagesAdaptor adaptor = adaptorManager.getProtocolAdaptor(endpoint, protocol, ImagesAdaptor.class);
++        ImagesProperty property = (ImagesProperty) JacksonUtils.deserialize(channelInfo, adaptor.getPropertyClass());
++        
++        if(isMock) {
++            fillMockProperty(property);
++        }
++        
++        EndpointContext.setEncodingType(property.getEncodingType());
++        
++        ImagesResponse response = adaptor.generateImages(request, url, property);
++        Object responseRiskData = safetyCheckService.safetyCheck(SafetyCheckRequest.Images.convertFrom(response, EndpointContext.getProcessData(), EndpointContext.getApikey()), isMock);
++        response.setSensitives(responseRiskData);
++        response.setRequestRiskData(requestRiskData);
++        return response;
++    }
++    
++    private void fillMockProperty(ImagesProperty property) {
++        Map<String, String> requestInfo = BellaContext.getHeaders();
++        // 可以根据需要添加mock属性设置
++    }
++}
+```
+
+```diff
+--- api/sdk/src/main/java/com/ke/bella/openapi/protocol/IModelFeatures.java
++++ api/sdk/src/main/java/com/ke/bella/openapi/protocol/IModelFeatures.java
+@@ -3,6 +3,7 @@
+ import com.ke.bella.openapi.IDescription;
+ import com.ke.bella.openapi.protocol.completion.CompletionModelFeatures;
+ import com.ke.bella.openapi.protocol.tts.TTSModelFeatures;
++import com.ke.bella.openapi.protocol.images.ImagesModelFeatures;
+ import lombok.AllArgsConstructor;
+ import lombok.Getter;
+ 
+@@ -12,7 +13,8 @@
+     @Getter
+     enum EndpointModelFeatureType {
+         COMPLETION("/v1/chat/completions", CompletionModelFeatures.class),
+-        TTS("/v1/audio/speech", TTSModelFeatures.class)
++        TTS("/v1/audio/speech", TTSModelFeatures.class),
++        IMAGES("/v1/images/generations", ImagesModelFeatures.class)
+         ;
+ 
+         private final String endpoint;
+```
+
+```diff
+--- api/sdk/src/main/java/com/ke/bella/openapi/protocol/IModelProperties.java
++++ api/sdk/src/main/java/com/ke/bella/openapi/protocol/IModelProperties.java
+@@ -4,6 +4,7 @@
+ import com.ke.bella.openapi.protocol.completion.CompletionModelProperties;
+ import com.ke.bella.openapi.protocol.tts.VoiceProperties;
++import com.ke.bella.openapi.protocol.images.ImagesModelProperties;
+ import lombok.AllArgsConstructor;
+ import lombok.Getter;
+ 
+@@ -14,6 +15,7 @@
+         COMPLETION("/v1/chat/completions", CompletionModelProperties.class),
+         REALTIME("/v1/audio/realtime", VoiceProperties.class),
+         TTS("/v1/audio/speech", VoiceProperties.class),
++        IMAGES("/v1/images/generations", ImagesModelProperties.class),
+         ;
+ 
+         private final String endpoint;
+```
+
+```diff
+--- api/sdk/src/main/java/com/ke/bella/openapi/protocol/IPriceInfo.java
++++ api/sdk/src/main/java/com/ke/bella/openapi/protocol/IPriceInfo.java
+@@ -7,6 +7,7 @@
+ import com.ke.bella.openapi.protocol.completion.CompletionPriceInfo;
+ import com.ke.bella.openapi.protocol.embedding.EmbeddingPriceInfo;
+ import com.ke.bella.openapi.protocol.tts.TtsPriceInfo;
++import com.ke.bella.openapi.protocol.images.ImagesPriceInfo;
+ import lombok.AllArgsConstructor;
+ import lombok.Getter;
+ 
+@@ -21,6 +22,7 @@
+         FLASH_ASR("/v1/audio/asr/flash", FlashAsrPriceInfo.class),
+         REALTIME_ASR("/v1/audio/asr/stream", RealTimePriceInfo.class),
+         REALTIME("/v1/audio/realtime", RealTimePriceInfo.class)
++        IMAGES("/v1/images/generations", ImagesPriceInfo.class),
+         ;
+ 
+         private final String endpoint;
+```
+
+```diff
+--- api/sdk/src/main/java/com/ke/bella/openapi/metadata/MetadataFeatures.java
++++ api/sdk/src/main/java/com/ke/bella/openapi/metadata/MetadataFeatures.java
+@@ -25,7 +25,10 @@
+     FUNCTION_CALL("function_call", "工具调用", ImmutableSet.of("/v1/chat/completions")),
+     STREAM_FUNCTION_CALL("stream_function_call", "流式工具调用", ImmutableSet.of("/v1/chat/completions")),
+     VISION("vision", "视觉", ImmutableSet.of("/v1/chat/completions")),
+-    JSON_FORMAT("json_format", "json格式", ImmutableSet.of("/v1/chat/completions"))
++    JSON_FORMAT("json_format", "json格式", ImmutableSet.of("/v1/chat/completions")),
++    HIGH_QUALITY("high_quality", "高质量生成", ImmutableSet.of("/v1/images/generations")),
++    MULTIPLE_STYLES("multiple_styles", "多种风格", ImmutableSet.of("/v1/images/generations")),
++    BATCH_GENERATION("batch_generation", "批量生成", ImmutableSet.of("/v1/images/generations"))
+     ;
+     private final String code;
+     private final String name;
+```
+
+```diff
+--- api/sdk/src/main/java/com/ke/bella/openapi/common/EntityConstants.java
++++ api/sdk/src/main/java/com/ke/bella/openapi/common/EntityConstants.java
+@@ -49,7 +49,8 @@
+         SPEECH_ENDPOINT("/v*/audio/speech", "语音合成", TEXT2SPEECH),
+         ASR_ENDPOINT("/v*/audio/transcriptions", "语音识别", AUDIO2TEXT),
+         TEXT2IMAGE_ENDPOINT("/v*/images/generations", "文生图", IMAGES),
+-        IMAGE2IMAGE_ENDPOINT("/v*/images/edits", "图生图", IMAGES),
++        IMAGE2IMAGE_ENDPOINT("/v*/images/edits", "图生图", IMAGES)
+         ;
+         private final String endpoint;
+         private final String name;
+```
+
+```diff
+--- /dev/null
++++ api/server/src/main/java/com/ke/bella/openapi/safety/SafetyCheckRequest.java
+@@ -0,0 +1,45 @@
++package com.ke.bella.openapi.safety;
++
++import com.ke.bella.openapi.

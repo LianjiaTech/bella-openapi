@@ -3,8 +3,9 @@ package com.ke.bella.openapi.protocol;
 import com.ke.bella.openapi.IDescription;
 import com.ke.bella.openapi.protocol.completion.CompletionModelProperties;
 import com.ke.bella.openapi.protocol.tts.VoiceProperties;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
+import com.ke.bella.openapi.protocol.images.ImagesModelProperties;
+lombok.AllArgsConstructor;
+lombok.Getter;
 
 public interface IModelProperties extends IDescription {
 
@@ -14,6 +15,7 @@ public interface IModelProperties extends IDescription {
         COMPLETION("/v1/chat/completions", CompletionModelProperties.class),
         REALTIME("/v1/audio/realtime", VoiceProperties.class),
         TTS("/v1/audio/speech", VoiceProperties.class),
+        IMAGES("/v1/images/generations", ImagesModelProperties.class),
         ;
 
         private final String endpoint;
