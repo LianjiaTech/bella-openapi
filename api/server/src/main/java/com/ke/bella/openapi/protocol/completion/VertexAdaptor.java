@@ -2,10 +2,13 @@ package com.ke.bella.openapi.protocol.completion;
 
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.genai.Client;
-import com.google.genai.ResponseStream;
+import com.google.genai.Chat;
+import com.google.genai.AsyncChat;
 import com.google.genai.types.GenerateContentConfig;
 import com.google.genai.types.GenerateContentResponse;
 import com.google.genai.types.GenerateContentResponseUsageMetadata;
+import com.google.genai.types.Content;
+import com.google.genai.types.Part;
 import com.ke.bella.openapi.protocol.OpenapiResponse;
 import com.ke.bella.openapi.protocol.Callbacks;
 import com.ke.bella.openapi.protocol.Callbacks.StreamCompletionCallback;
@@ -18,56 +21,30 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CompletableFuture;
 
 /**
  * Google Vertex AI协议适配器
  */
 @Component("VertexCompletion")
-public class VertexAdaptor implements CompletionAdaptorDelegator<VertexProperty> {
+public class VertexAdaptor implements CompletionAdaptor<VertexProperty> {
 
     private static final Logger logger = LoggerFactory.getLogger(VertexAdaptor.class);
-    private static final ConcurrentHashMap<String, Client> clientCache = new ConcurrentHashMap<>();
-
-    // SSE事件转换器
     public final Callbacks.SseEventConverter<StreamCompletionResponse> sseConverter = new Callbacks.DefaultSseConverter();
-
-    Callbacks.ChannelErrorCallback<CompletionResponse> errorCallback = (errorResponse, res) -> {
-        if(errorResponse.getError() != null) {
-            errorResponse.getError().setHttpCode(res.code());
-        }
-    };
-
-    @Override
-    public CompletionResponse completion(CompletionRequest request, String url, VertexProperty property,
-            com.ke.bella.openapi.protocol.Callbacks.HttpDelegator delegator) {
-        return completion(request, url, property);
-    }
-
-    @Override
-    public void streamCompletion(CompletionRequest request, String url, VertexProperty property,
-            StreamCompletionCallback callback, Callbacks.StreamDelegator delegator) {
-        CompletionSseListener listener = new CompletionSseListener(callback, sseConverter);
-        if(delegator == null) {
-            processVertexStream(request, property, listener);
-        } else {
-            delegator.request(request, listener);
-        }
-    }
 
     @Override
     public CompletionResponse completion(CompletionRequest request, String url, VertexProperty property) {
         try {
             Client client = getClient(property);
-            String userMessage = extractUserMessage(request);
+
+            Chat chat = client.chats.create(property.getDeployName());
+            Content userContent = buildContentFromRequest(request);
             GenerateContentConfig config = buildConfig(request);
-            GenerateContentResponse response = client.models.generateContent(property.getDeployName(), userMessage, config);
+            GenerateContentResponse response = chat.sendMessage(userContent, config);
 
             CompletionResponse result = buildCompletionResponse(response, request.getModel());
             ResponseHelper.splitReasoningFromContent(result, property);
@@ -79,39 +56,48 @@ public class VertexAdaptor implements CompletionAdaptorDelegator<VertexProperty>
 
     @Override
     public void streamCompletion(CompletionRequest request, String url, VertexProperty property, StreamCompletionCallback callback) {
-        streamCompletion(request, url, property, callback, null);
+        CompletionSseListener listener = new CompletionSseListener(callback, sseConverter);
+        processVertexStream(request, property, listener);
     }
 
-    /**
-     * 流式响应处理
-     */
     private void processVertexStream(CompletionRequest request, VertexProperty property, CompletionSseListener listener) {
-        CompletableFuture.runAsync(() -> {
-            listener.setConnectionInitFuture(new CompletableFuture<>());
-            listener.onOpen(null, null);
+        listener.setConnectionInitFuture(new CompletableFuture<>());
+        listener.onOpen(null, null);
 
-            try (ResponseStream<GenerateContentResponse> responseStream = getClient(property).models
-                    .generateContentStream(property.getDeployName(), extractUserMessage(request), buildConfig(request))) {
+        try {
+            Client client = getClient(property);
+            AsyncChat asyncChat = client.async.chats.create(property.getDeployName());
+            Content userContent = buildContentFromRequest(request);
+            GenerateContentConfig config = buildConfig(request);
 
-                for (GenerateContentResponse response : responseStream) {
-                    String content = response.text();
-                    if(StringUtils.isNotBlank(content)) {
-                        Message delta = new Message();
-                        delta.setContent(content);
-                        sendEvent(listener, createStreamResponse(request.getModel(), delta, null));
-                    }
-                }
+            asyncChat.sendMessageStream(userContent, config)
+                    .thenAccept(responseStream -> {
+                        try {
+                            for (GenerateContentResponse response : responseStream) {
+                                String content = response.text();
+                                if(StringUtils.isNotBlank(content)) {
+                                    Message delta = new Message();
+                                    delta.setContent(content);
+                                    sendEvent(listener, createStreamResponse(request.getModel(), delta, null));
+                                }
+                            }
+                            sendEvent(listener, createStreamResponse(request.getModel(), new Message(), "stop"));
+                            sendEvent(listener, "[DONE]");
+                            responseStream.close();
+                        } catch (Exception e) {
+                            handleStreamError(listener, e, "流式响应处理失败");
+                        } finally {
+                            listener.onClosed(null);
+                        }
+                    })
+                    .exceptionally(throwable -> {
+                        handleStreamError(listener, throwable, "AsyncChat流式调用失败");
+                        return null;
+                    });
 
-                sendEvent(listener, createStreamResponse(request.getModel(), new Message(), "stop"));
-                sendEvent(listener, "[DONE]");
-
-            } catch (Exception e) {
-                logger.error("Vertex AI流式处理异常", e);
-                sendEvent(listener, StreamCompletionResponse.builder().error(buildError(e.getMessage())).build());
-            } finally {
-                listener.onClosed(null);
-            }
-        });
+        } catch (Exception e) {
+            handleStreamError(listener, e, "Vertex AI流式处理异常");
+        }
     }
 
     private void sendEvent(CompletionSseListener listener, Object data) {
@@ -119,47 +105,29 @@ public class VertexAdaptor implements CompletionAdaptorDelegator<VertexProperty>
         listener.onEvent(null, null, null, eventData);
     }
 
-    /**
-     * 获取客户端实例
-     */
+    private void handleStreamError(CompletionSseListener listener, Throwable throwable, String message) {
+        logger.error(message, throwable);
+        sendEvent(listener, StreamCompletionResponse.builder().error(buildError(throwable.getMessage())).build());
+        listener.onClosed(null);
+    }
+
     private Client getClient(VertexProperty property) {
-        String cacheKey = getCacheKey(property);
+        try {
+            Map<String, Object> creds = property.getVertexAICredentials();
+            String jsonCreds = JacksonUtils.serialize(creds);
+            GoogleCredentials credentials = GoogleCredentials.fromStream(
+                    new ByteArrayInputStream(jsonCreds.getBytes(StandardCharsets.UTF_8)))
+                    .createScoped(Arrays.asList("https://www.googleapis.com/auth/cloud-platform"));
 
-        return clientCache.computeIfAbsent(cacheKey, k -> {
-            try {
-                Map<String, Object> creds = property.getVertexAICredentials();
-                String jsonCreds = JacksonUtils.serialize(creds);
-                GoogleCredentials credentials = GoogleCredentials.fromStream(
-                        new ByteArrayInputStream(jsonCreds.getBytes(StandardCharsets.UTF_8)))
-                        .createScoped(Arrays.asList("https://www.googleapis.com/auth/cloud-platform"));
-
-                return Client.builder()
-                        .vertexAI(true)
-                        .project(creds.get("project_id").toString())
-                        .location(StringUtils.defaultIfBlank(property.getLocation(), "us-central1"))
-                        .credentials(credentials)
-                        .build();
-            } catch (Exception e) {
-                throw new RuntimeException("创建Vertex AI客户端失败: " + e.getMessage(), e);
-            }
-        });
-    }
-
-    private String getCacheKey(VertexProperty property) {
-        Map<String, Object> creds = property.getVertexAICredentials();
-        String projectId = creds != null && creds.get("project_id") != null ? creds.get("project_id").toString() : "unknown";
-        return property.getLocation() + ":" + projectId;
-    }
-
-    private String extractUserMessage(CompletionRequest request) {
-        if(request.getMessages() == null || request.getMessages().isEmpty()) {
-            throw new IllegalArgumentException("消息列表为空");
+            return Client.builder()
+                    .vertexAI(true)
+                    .project(creds.get("project_id").toString())
+                    .location(StringUtils.defaultIfBlank(property.getLocation(), "us-central1"))
+                    .credentials(credentials)
+                    .build();
+        } catch (Exception e) {
+            throw new RuntimeException("创建Vertex AI客户端失败: " + e.getMessage(), e);
         }
-        return request.getMessages().stream()
-                .filter(msg -> "user".equals(msg.getRole()) && msg.getContent() != null)
-                .reduce((first, second) -> second)
-                .map(msg -> msg.getContent().toString())
-                .orElseThrow(() -> new IllegalArgumentException("未找到用户消息"));
     }
 
     private GenerateContentConfig buildConfig(CompletionRequest request) {
@@ -192,7 +160,7 @@ public class VertexAdaptor implements CompletionAdaptorDelegator<VertexProperty>
 
         CompletionResponse.Choice choice = new CompletionResponse.Choice();
         choice.setIndex(0);
-        choice.setFinish_reason("stop");
+        choice.setFinish_reason(choice.getFinish_reason());
         choice.setMessage(message);
 
         CompletionResponse result = new CompletionResponse();
@@ -227,20 +195,13 @@ public class VertexAdaptor implements CompletionAdaptorDelegator<VertexProperty>
         int thoughtsTokens = usageMetadata.thoughtsTokenCount().orElse(0);
         Integer apiTotalTokens = usageMetadata.totalTokenCount().orElse(null);
 
-        // 计算总的token使用量(含用户的输入、缓存、工具指令tokens之和)
         int promptTokens = basePromptTokens + cachedTokens + toolPromptTokens;
         int completionTokens = candidatesTokens + thoughtsTokens;
         int totalTokens = apiTotalTokens != null ? apiTotalTokens : (promptTokens + completionTokens);
 
         if(apiTotalTokens != null && apiTotalTokens < (promptTokens + completionTokens)) {
-            logger.warn("Vertex AI API返回的totalTokenCount({})小于计算的输入+输出({}+{}={}), 使用计算值",
-                    apiTotalTokens, promptTokens, completionTokens, promptTokens + completionTokens);
             totalTokens = promptTokens + completionTokens;
         }
-
-        logger.debug("Vertex AI token分解: prompt={}(base:{}, cached:{}, tool:{}), completion={}(candidates:{}, thoughts:{}), total={}",
-                promptTokens, basePromptTokens, cachedTokens, toolPromptTokens,
-                completionTokens, candidatesTokens, thoughtsTokens, totalTokens);
 
         CompletionResponse.TokenUsage usage = new CompletionResponse.TokenUsage();
         usage.setPrompt_tokens(promptTokens);
@@ -266,7 +227,6 @@ public class VertexAdaptor implements CompletionAdaptorDelegator<VertexProperty>
                 throw new IllegalArgumentException("配置无效：需要vertexAICredentials和deployName");
             }
 
-            // 验证必要字段
             if(creds.get("project_id") == null || creds.get("private_key") == null || creds.get("client_email") == null) {
                 throw new IllegalArgumentException("缺少必要字段：project_id、private_key、client_email");
             }
@@ -284,4 +244,19 @@ public class VertexAdaptor implements CompletionAdaptorDelegator<VertexProperty>
     public Class<VertexProperty> getPropertyClass() {
         return VertexProperty.class;
     }
+
+    private Content buildContentFromRequest(CompletionRequest request) {
+        if(request.getMessages() == null || request.getMessages().isEmpty()) {
+            throw new IllegalArgumentException("消息列表为空");
+        }
+
+        String userMessage = request.getMessages().stream()
+                .filter(msg -> "user".equals(msg.getRole()) && msg.getContent() != null)
+                .reduce((first, second) -> second)
+                .map(msg -> msg.getContent().toString())
+                .orElseThrow(() -> new IllegalArgumentException("未找到用户消息"));
+
+        return Content.fromParts(Part.fromText(userMessage));
+    }
+
 }

@@ -15,13 +15,9 @@ import java.util.Map;
 public class VertexProperty extends CompletionProperty {
     Map<String, Object> vertexAICredentials;
     String deployName;
-    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     String location = "us-central1";
-    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     boolean supportStreamOptions;
-    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     boolean supportThinking;
-    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     String reasoningEffort = "medium";
 
     @Override
@@ -35,4 +31,4 @@ public class VertexProperty extends CompletionProperty {
         map.put("reasoningEffort", "推理努力程度(low/medium/high/none)");
         return map;
     }
-} 
+}
