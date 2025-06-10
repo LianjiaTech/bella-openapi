@@ -69,7 +69,7 @@ public class CompletionLogHandler implements EndpointLogHandler {
             response = (CompletionResponse) openapiResponse;
         }
         if(response != null && response.getUsage() != null) {
-            return response.getUsage();
+            return response.getUsage().validate();
         }
         EncodingType encoding = EncodingType.fromName(encodingType).orElse(EncodingType.CL100K_BASE);
         //计费模型请求消耗量

@@ -150,10 +150,12 @@ public class CompletionResponse extends OpenapiResponse {
     }
 
     @Data
+    @JsonInclude(Include.NON_NULL)
     public static class TokenUsage {
         private int completion_tokens;
         private int prompt_tokens;
         private int total_tokens;
+        private TokenTokensDetail completion_tokens_details;
 
         public TokenUsage add(TokenUsage u) {
             this.completion_tokens += u.completion_tokens;
@@ -161,6 +163,19 @@ public class CompletionResponse extends OpenapiResponse {
             this.total_tokens += u.total_tokens;
             return this;
         }
+
+        @Deprecated
+        public TokenUsage validate() {
+            if (this.completion_tokens_details != null && this.completion_tokens < this.completion_tokens_details.reasoning_tokens){
+                this.completion_tokens += this.completion_tokens_details.reasoning_tokens;
+            }
+            return this;
+        }
+    }
+
+    @Data
+    public static class TokenTokensDetail {
+        private int reasoning_tokens;
     }
 
 }

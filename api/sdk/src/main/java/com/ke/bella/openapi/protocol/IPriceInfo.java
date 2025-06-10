@@ -2,6 +2,7 @@ package com.ke.bella.openapi.protocol;
 
 import com.ke.bella.openapi.IDescription;
 import com.ke.bella.openapi.protocol.asr.flash.FlashAsrPriceInfo;
+import com.ke.bella.openapi.protocol.asr.transcription.TranscriptionsAsrPriceInfo;
 import com.ke.bella.openapi.protocol.realtime.RealTimePriceInfo;
 import com.ke.bella.openapi.protocol.completion.CompletionPriceInfo;
 import com.ke.bella.openapi.protocol.embedding.EmbeddingPriceInfo;
@@ -20,7 +21,8 @@ public interface IPriceInfo extends IDescription {
         TTS("/v1/audio/speech", TtsPriceInfo.class),
         FLASH_ASR("/v1/audio/asr/flash", FlashAsrPriceInfo.class),
         REALTIME_ASR("/v1/audio/asr/stream", RealTimePriceInfo.class),
-        REALTIME("/v1/audio/realtime", RealTimePriceInfo.class)
+        REALTIME("/v1/audio/realtime", RealTimePriceInfo.class),
+        TRANSCRIPTION_ASR("/v1/audio/transcriptions", TranscriptionsAsrPriceInfo.class)
         ;
 
         private final String endpoint;
