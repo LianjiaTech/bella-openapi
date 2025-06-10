@@ -6,7 +6,7 @@ api/build.sh:此脚本用于编译API服务，包含Maven构建流程及相关�
 api/lombok.config:该配置文件用于控制lombok插件行为，例如日志字段名称、是否静态等。
 api/pom.xml:api/pom.xml 是 Maven 项目的配置文件，定义了项目的模块、依赖管理和构建插件。主要功能是管理项目的依赖和构建过程，包含的关键配置有 Spring Boot、Spring Cloud 以及各种插件如 maven-source-plugin 和 maven-gpg-plugin，和 server、sdk、spi 模块的交互显著。
 api/run.sh:用于启动Java应用的脚本，设置JVM及GC参数，并根据环境变量适配不同配置。
-api/sdk/pom.xml:这个文件是 Maven 项目对象模型配置文件，定义了 `sdk` 模块的依赖和插件，涉及 Spring, Lombok, OkHttp 等。
+api/sdk/pom.xml:这个POM文件是Maven项目的配置文件，定义了项目的依赖关系和构建设置，包括Spring框架、Jackson、Guava等库，支持项目构建和包管理。
 api/sdk/src/main/java/com/ke/bella/openapi/BaseDto.java:BaseDto类是Bella API中数据传输对象的基类，提供了创建和修改用户的基础信息，如用户ID与名称及时间戳，用于其他DTO的继承。
 api/sdk/src/main/java/com/ke/bella/openapi/BellaContext.java:Bella系统的上下文管理类，负责在请求处理过程中保存和传递上下文信息，如操作人和API key信息。
 api/sdk/src/main/java/com/ke/bella/openapi/BellaResponse.java:BellaResponse.java定义了一个通用响应结构，使用泛型T来表示数据类型。使用Lombok注解提供getter、setter和toString方法，简化Java Bean的编写。
@@ -43,7 +43,7 @@ api/sdk/src/main/java/com/ke/bella/openapi/mock/ContentGenerator.java:模拟内�
 api/sdk/src/main/java/com/ke/bella/openapi/mock/FunctionCallGenerator.java:此工具类用于从工具定义中生成函数调用和工具调用。关键方法包括generatePythonCode和generateToolCalls，可生成相应的Python代码字符串及工具调用列表。主要与Message类交互。
 api/sdk/src/main/java/com/ke/bella/openapi/mock/MockNetworkIO.java:提供网络IO的模拟实现，包含httpRequest和sseRequest方法，用于模拟网络请求和服务器事件推送。
 api/sdk/src/main/java/com/ke/bella/openapi/mock/MockSseWriter.java:定义了一个MockSseWriter接口，包括处理SSE连接的打开、写入、完成和错误事件的方法。用于模拟和管理SSE通信过程。
-api/sdk/src/main/java/com/ke/bella/openapi/protocol/AuthorizationProperty.java:该类实现了IProtocolProperty接口，用于定义鉴权属性。包含AuthType枚举，定义不同的鉴权方式，如BASIC、BEARER等，负责描述鉴权方法。
+api/sdk/src/main/java/com/ke/bella/openapi/protocol/AuthorizationProperty.java:这个Java文件定义了AuthorizationProperty类，负责处理不同的鉴权方式，包括BASIC、BEARER、IAM等，以及Google身份验证。提供了获取API密钥的方法，支持Google身份验证的凭据刷新。
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/BellaEventSourceListener.java:继承自OkHttp的EventSourceListener，定义了一个监听器，处理EventSource的open事件，用于异步操作的连接初始化。
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/BellaStreamCallback.java:这个文件实现了一种OkHttp Callback的实现BellaStreamCallback，用于处理流式HTTP请求。它处理连接的打开、数据流的读取以及错误的处理，和Callbacks.HttpStreamTtsCallback接口交互。
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/BellaWebSocketListener.java:这个文件定义了BellaWebSocketListener类，用于处理WebSocket的连接、消息和关闭事件，依赖于外部的Callbacks接口实现特定回调逻辑。
@@ -61,6 +61,7 @@ api/sdk/src/main/java/com/ke/bella/openapi/protocol/asr/AsrRequest.java:该文�
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/asr/HuoshanProperty.java:定义火山协议的ASR属性，继承自AsrProperty，提供如appid和chunkSize等参数。
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/asr/flash/FlashAsrPriceInfo.java:实现了FlashAsrPriceInfo类，提供ASR的价格信息描述。
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/asr/flash/FlashAsrResponse.java:这个文件定义了FlashAsrResponse类，继承自OpenapiResponse，用于ASR语音识别的闪电响应，包括任务ID、用户信息和闪电结果等。
+api/sdk/src/main/java/com/ke/bella/openapi/protocol/asr/transcription/TranscriptionsAsrPriceInfo.java:这个文件定义了TranscriptionsAsrPriceInfo类，用于表示转录服务的价格信息。实现了IPriceInfo接口，提供价格单位和描述信息的方法。
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/AliProperty.java:AliProperty类继承自CompletionProperty，主要描述阿里云完成任务的属性，例如鉴权配置和部署名称等。
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/AwsProperty.java:
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionModelFeatures.java:定义了CompletionModelFeatures类，描述了完成模型的功能特性，如流式输出和函数调用，主要用于模型功能配置。
@@ -140,6 +141,7 @@ api/server/sql/08-user.sql:该SQL文件用于创建用户表，定义了用户�
 api/server/sql/09-20250227_alter_endpoint.sql:SQL脚本文件，用于在endpoint表中添加名为document_url的列，用来存储文档地址信息。
 api/server/sql/10-20250306_alter.channel.sql:SQL脚本文件，用于修改channel表结构，增加所有者信息和可见性字段。
 api/server/sql/11-20250312_alter_endpoint.sql:SQL脚本文件，用于在endpoint表中添加名为cost_script的列，用来存储计费脚本信息。
+api/server/sql/12-20250610_alter_endpoint.sql:这个SQL文件用于修改数据库中`channel`表的`channel_info`列，将其类型更改为varchar(4096)，确保不为空并设置默认值为'{}'.
 api/server/src/codegen/java/com/ke/bella/openapi/DefaultCatalog.java:这个文件是由jOOQ生成的类，定义了数据库的默认目录DefaultCatalog。包含默认的模式DEFAULT_SCHEMA。没有额外的关键类或函数，定位于数据库架构定义。
 api/server/src/codegen/java/com/ke/bella/openapi/DefaultSchema.java:由jOOQ生成的数据库默认Schema类，包含表定义和Schema的元数据信息。
 api/server/src/codegen/java/com/ke/bella/openapi/Indexes.java:通过jOOQ生成，建模数据库默认模式中表的索引，包括MODEL_AUTHORIZER_REL_IDX_AUTHORIZER_CODE等，提供查询优化支持，不直接与其他文件交互。
@@ -259,6 +261,8 @@ api/server/src/main/java/com/ke/bella/openapi/protocol/asr/realtime/HuoshanLMAda
 api/server/src/main/java/com/ke/bella/openapi/protocol/asr/realtime/KeAdaptor.java:该类继承并实现实时ASR适配器接口，使用了组件注解实现Spring管理Bean。
 api/server/src/main/java/com/ke/bella/openapi/protocol/asr/realtime/RealTimeAsrAdaptor.java:这个文件定义了实时 ASR 适配器接口 `RealTimeAsrAdaptor`，用于处理实时音频流的 ASR 服务，提供默认端点实现。
 api/server/src/main/java/com/ke/bella/openapi/protocol/asr/realtime/RealTimeAsrLogHandler.java:RealTimeAsrLogHandler继承自RealTimeLogHandler，处理ASR流式日志，与/endpoint路径相结合。
+api/server/src/main/java/com/ke/bella/openapi/protocol/asr/transcription/TranscriptionsAsrAdaptor.java:这个文件定义了TranscriptionsAsrAdaptor接口，继承自IProtocolAdaptor。用于适配ASR属性，提供通用的音频转录端点。
+api/server/src/main/java/com/ke/bella/openapi/protocol/asr/transcription/TranscriptionsAsrLogHandler.java:这个文件实现了日志处理器TranscriptionsAsrLogHandler，处理音频转录请求的日志。主要函数是process()，用于根据模型和端点路由请求，并设置定价信息。与ChannelRouter类交互以获取路由信息。
 api/server/src/main/java/com/ke/bella/openapi/protocol/completion/AliAdaptor.java:实现了阿里协议的适配器，包含请求构建及响应处理，支持流式及非流式完成请求，通过Http请求与阿里服务交互。
 api/server/src/main/java/com/ke/bella/openapi/protocol/completion/AliCompletionRequest.java:此文件定义了AliCompletionRequest类，用于封装请求模型的参数和配置。包含内部类AliCompletionInput和AliCompletionParameters，支持模型推理参数设置。没有明显的外部交互。
 api/server/src/main/java/com/ke/bella/openapi/protocol/completion/AliCompletionResponse.java:阿里完成响应类，定义了处理来自阿里的响应信息的结构，支持JSON属性绑定，用于接收完成模型的反馈。
