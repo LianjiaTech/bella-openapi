@@ -1,6 +1,7 @@
 package com.ke.bella.openapi.protocol.cost;
 
 import com.ke.bella.openapi.protocol.asr.flash.FlashAsrPriceInfo;
+import com.ke.bella.openapi.protocol.asr.transcription.TranscriptionsAsrPriceInfo;
 import com.ke.bella.openapi.protocol.realtime.RealTimePriceInfo;
 import com.ke.bella.openapi.protocol.completion.CompletionPriceInfo;
 import com.ke.bella.openapi.protocol.completion.CompletionResponse;
@@ -48,6 +49,7 @@ public class CostCalculator  {
         ASR_FLASH("/v*/audio/asr/flash", asr_flash),
         ASR_STREAM("/v*/audio/asr/stream", realtime),
         REAL_TIME("/v*/audio/realtime", realtime),
+        ASR_TRANSCRIPTIONS("/v*/audio/transcriptions", asr_transcriptions)
         ;
         final String endpoint;
         final EndpointCostCalculator calculator;
@@ -123,6 +125,21 @@ public class CostCalculator  {
         @Override
         public boolean checkPriceInfo(String priceInfo) {
             RealTimePriceInfo price = JacksonUtils.deserialize(priceInfo, RealTimePriceInfo.class);
+            return price != null && price.getPrice() != null;
+        }
+    };
+
+    static EndpointCostCalculator asr_transcriptions = new EndpointCostCalculator() {
+        @Override
+        public BigDecimal calculate(String priceInfo, Object usage) {
+            // Assuming usage is the duration in seconds
+            TranscriptionsAsrPriceInfo price = JacksonUtils.deserialize(priceInfo, TranscriptionsAsrPriceInfo.class);
+            return BigDecimal.valueOf((price.getPrice().doubleValue() / 3600 * 100) * Double.valueOf(usage.toString()));
+        }
+
+        @Override
+        public boolean checkPriceInfo(String priceInfo) {
+            TranscriptionsAsrPriceInfo price = JacksonUtils.deserialize(priceInfo, TranscriptionsAsrPriceInfo.class);
             return price != null && price.getPrice() != null;
         }
     };
