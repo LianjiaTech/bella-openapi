@@ -3,6 +3,7 @@ package com.ke.bella.openapi.protocol.completion;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.ke.bella.openapi.EndpointProcessData;
+import com.ke.bella.openapi.protocol.AuthorizationProperty;
 import com.ke.bella.openapi.protocol.OpenapiResponse;
 import com.ke.bella.openapi.protocol.log.EndpointLogHandler;
 import com.ke.bella.openapi.utils.DateTimeUtils;
@@ -33,6 +34,9 @@ public class CompletionLogHandler implements EndpointLogHandler {
         CompletionRequest request = (CompletionRequest) processData.getRequest();
         String encodingType = processData.getEncodingType();
         CompletionResponse.TokenUsage usage = countTokenUsage(request, processData.getResponse(), encodingType);
+        if (AuthorizationProperty.AuthType.GOOGLE_AUTH.equals(processData.getAuthType())){
+            usage = usage.validate();
+        }
         processData.setUsage(usage);
         processData.setMetrics(countMetrics(startTime, processData.getRequestMillis(), created, firstPackageTime, usage));
     }
@@ -69,7 +73,7 @@ public class CompletionLogHandler implements EndpointLogHandler {
             response = (CompletionResponse) openapiResponse;
         }
         if(response != null && response.getUsage() != null) {
-            return response.getUsage().validate();
+            return response.getUsage();
         }
         EncodingType encoding = EncodingType.fromName(encodingType).orElse(EncodingType.CL100K_BASE);
         //计费模型请求消耗量

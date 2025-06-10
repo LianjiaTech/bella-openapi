@@ -13,6 +13,7 @@ import com.ke.bella.openapi.protocol.completion.CompletionAdaptorDelegator;
 import com.ke.bella.openapi.protocol.completion.CompletionProperty;
 import com.ke.bella.openapi.protocol.completion.CompletionRequest;
 import com.ke.bella.openapi.protocol.completion.CompletionResponse;
+import com.ke.bella.openapi.protocol.completion.OpenAIProperty;
 import com.ke.bella.openapi.protocol.completion.QueueAdaptor;
 import com.ke.bella.openapi.protocol.completion.ToolCallSimulator;
 import com.ke.bella.openapi.protocol.completion.callback.StreamCallbackProvider;
@@ -122,6 +123,10 @@ public class ChatController {
         String channelInfo = channel.getChannelInfo();
         CompletionAdaptor adaptor = adaptorManager.getProtocolAdaptor(endpoint, protocol, CompletionAdaptor.class);
         CompletionProperty property = (CompletionProperty) JacksonUtils.deserialize(channelInfo, adaptor.getPropertyClass());
+        if(property instanceof OpenAIProperty){
+            OpenAIProperty openAIProperty = (OpenAIProperty) property;
+            EndpointContext.getProcessData().setAuthType(openAIProperty.getAuth().getType());
+        }
         if(isMock) {
             fillMockProperty(property);
         }

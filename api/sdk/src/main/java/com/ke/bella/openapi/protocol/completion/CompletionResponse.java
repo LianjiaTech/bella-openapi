@@ -166,7 +166,8 @@ public class CompletionResponse extends OpenapiResponse {
 
         @Deprecated
         public TokenUsage validate() {
-            if (this.completion_tokens_details != null && this.completion_tokens < this.completion_tokens_details.reasoning_tokens){
+            if (this.completion_tokens_details != null &&
+                    this.prompt_tokens + this.completion_tokens < this.total_tokens){
                 this.completion_tokens += this.completion_tokens_details.reasoning_tokens;
             }
             return this;

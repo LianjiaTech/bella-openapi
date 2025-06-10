@@ -2,6 +2,7 @@ package com.ke.bella.openapi;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.ke.bella.openapi.apikey.ApikeyInfo;
+import com.ke.bella.openapi.protocol.AuthorizationProperty;
 import com.ke.bella.openapi.protocol.OpenapiResponse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -52,6 +53,7 @@ public class EndpointProcessData {
     private BigDecimal cost;
     private boolean innerLog;
     private Integer maxWaitSec;
+    private AuthorizationProperty.AuthType authType;
 
     public void setApikeyInfo(ApikeyInfo ak) {
         this.setApikey(ak.getApikey());
