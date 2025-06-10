@@ -69,7 +69,7 @@ api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionModelPr
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionPriceInfo.java:实现CompletionPriceInfo类，提供完成操作的价格信息。
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionProperty.java:定义Completion配置属性类，实现协议属性接口，包含编码类型、队列名等配置。
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionRequest.java:这个文件定义了CompletionRequest类，表示完成请求的数据结构，包含模型ID、用户标识、消息列表等字段。
-api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionResponse.java:该文件定义了CompletionResponse类，包含OpenAPI响应的细节信息与Choice内部类。
+api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionResponse.java:这个文件定义了CompletionResponse类，继承自OpenapiResponse。包含Choice和TokenUsage嵌套类，用于描述响应结果的详细信息和token使用情况。与CompletionLogHandler类交互，提供响应的数据结构。
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionSseListener.java:实现了CompletionSseListener类，用于处理SSE事件流中的完成消息，通过Callback接口进行回调。
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/Message.java:定义了Message类，用于描述协议消息的结构体，包含角色、内容、功能调用等信息。
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/OpenAIProperty.java:定义OpenAI接口配置属性类，包含鉴权和API版本等，可序列化为JSON，与AI模型的配置和调用相关联。
@@ -271,7 +271,7 @@ api/server/src/main/java/com/ke/bella/openapi/protocol/completion/AwsClientManag
 api/server/src/main/java/com/ke/bella/openapi/protocol/completion/AwsCompletionConverter.java:
 api/server/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionAdaptor.java:定义CompletionAdaptor接口，用于处理补全请求，支持普通和流式补全。关联CompletionProperty类，用于异步或同步数据补全。
 api/server/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionAdaptorDelegator.java:CompletionAdaptorDelegator.java定义了一个接口，用于处理完成请求和流式完成请求，主要提供了completion和streamCompletion方法，处理请求的实际逻辑由实装类提供。
-api/server/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionLogHandler.java:处理Completion接口的日志记录，计算完成请求的时间和令牌使用。
+api/server/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionLogHandler.java:这个文件实现了CompletionLogHandler类，用于处理端点日志。主要功能是计算请求和响应的token使用量，以及处理完成响应的时间度量。与CompletionResponse类交互，处理端点为/v1/chat/completions。
 api/server/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionMetricsResolver.java:该文件实现了CompletionMetricsResolver类，处理Azure实际调用的延迟时间。主要功能包括利用正则表达式解析OpenapiResponse中的等待时间，并返回调整后的禁用时间。与EndpointProcessData和OpenapiResponse等类进行交互。
 api/server/src/main/java/com/ke/bella/openapi/protocol/completion/MockAdaptor.java:这个文件实现了MockAdaptor类，用于模拟协议的适配器。它提供了完成和流式完成的方法，使用线程池执行异步网络请求，与MockNetworkIO类交互来进行HTTP和SSE请求。
 api/server/src/main/java/com/ke/bella/openapi/protocol/completion/OpenAIAdaptor.java:用于适配OpenAI协议完成请求的适配器类，实现了流式及非流式任务请求。
