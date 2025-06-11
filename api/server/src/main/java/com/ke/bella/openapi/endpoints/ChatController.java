@@ -58,8 +58,7 @@ public class ChatController {
     private JobQueueService jobQueueService;
     @Value("${bella.openapi.max-models-per-request:3}")
     private Integer maxModelsPerRequest;
-    
-    @SuppressWarnings({ "rawtypes", "unchecked" })
+
     @PostMapping("/completions")
     public Object completion(@RequestBody CompletionRequest request) {
         String endpoint = EndpointContext.getRequest().getRequestURI();
@@ -104,7 +103,8 @@ public class ChatController {
         // Single model processing
         return processCompletionRequest(endpoint, model, request);
     }
-    
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     private Object processCompletionRequest(String endpoint, String model, CompletionRequest request) {
         EndpointContext.setEndpointData(endpoint, model, request);
         boolean isMock = EndpointContext.getProcessData().isMock();

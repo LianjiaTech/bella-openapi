@@ -28,7 +28,7 @@ import java.util.Map;
 @Slf4j
 public class StreamCompletionCallback implements Callbacks.StreamCompletionCallback {
     @Getter
-    private final SseEmitter sse;
+    protected final SseEmitter sse;
     private final EndpointProcessData processData;
     private final ApikeyInfo apikeyInfo;
     private final EndpointLogger logger;
@@ -98,7 +98,7 @@ public class StreamCompletionCallback implements Callbacks.StreamCompletionCallb
         }
     }
 
-    private void updateBuffer(StreamCompletionResponse streamResponse) {
+    protected void updateBuffer(StreamCompletionResponse streamResponse) {
         ResponseHelper.overwrite(responseBuffer, streamResponse);
         if(CollectionUtils.isEmpty(streamResponse.getChoices()) || streamResponse.getChoices().get(0).getDelta() == null) {
             return;

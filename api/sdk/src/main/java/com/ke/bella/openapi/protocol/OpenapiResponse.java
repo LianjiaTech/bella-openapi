@@ -1,5 +1,6 @@
 package com.ke.bella.openapi.protocol;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.ke.bella.openapi.common.exception.ChannelException;
 import lombok.AllArgsConstructor;
@@ -49,6 +50,7 @@ public class OpenapiResponse implements Serializable {
         /**
          * 安全检查结果为failed，返回error中包含检查结果
          */
+        @JsonInclude(JsonInclude.Include.NON_NULL)
         private Object sensitive;
         /**
          * code通常存在
