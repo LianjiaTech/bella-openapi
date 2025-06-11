@@ -272,6 +272,7 @@ api/server/src/main/java/com/ke/bella/openapi/protocol/asr/transcription/Transcr
 api/server/src/main/java/com/ke/bella/openapi/protocol/completion/AliAdaptor.java:实现了阿里协议的适配器，包含请求构建及响应处理，支持流式及非流式完成请求，通过Http请求与阿里服务交互。
 api/server/src/main/java/com/ke/bella/openapi/protocol/completion/AliCompletionRequest.java:此文件定义了AliCompletionRequest类，用于封装请求模型的参数和配置。包含内部类AliCompletionInput和AliCompletionParameters，支持模型推理参数设置。没有明显的外部交互。
 api/server/src/main/java/com/ke/bella/openapi/protocol/completion/AliCompletionResponse.java:阿里完成响应类，定义了处理来自阿里的响应信息的结构，支持JSON属性绑定，用于接收完成模型的反馈。
+api/server/src/main/java/com/ke/bella/openapi/protocol/completion/ArgumentsNullSafetyHelper.java:该文件实现了一个工具类ArgumentsNullSafetyHelper，主要功能是确保不同对象的arguments字段不为null。包含的方法有ensureArgumentsNotNull，用于检查并设置Message、ToolCall、FunctionCall和StreamCompletionResponse对象的arguments字段。与其他文件的交互体现在对Message和StreamCompletionResponse类的操作上。
 api/server/src/main/java/com/ke/bella/openapi/protocol/completion/AwsAdaptor.java:这个文件实现了CompletionAdaptor接口，负责处理与AWS协议相关的操作。提供了文本生成请求和流式文本生成的功能。关键类/方法：AwsCompletionConverter、completion、streamCompletion等。
 api/server/src/main/java/com/ke/bella/openapi/protocol/completion/AwsClientManager.java:此Java文件定义了AwsClientManager类，负责管理AWS BedrockRuntime客户端的创建和缓存。包含同步和异步客户端的创建方法及内部认证提供者AwsAuthorizationProvider类。
 api/server/src/main/java/com/ke/bella/openapi/protocol/completion/AwsCompletionConverter.java:这个文件负责将OpenAI请求和响应转换为AWS格式，包含多个静态方法用于转换请求和响应。核心类是AwsCompletionConverter，主要与ConverseRequest和ConverseResponse等AWS类进行交互。
@@ -391,21 +392,13 @@ api/spi/src/main/java/com/ke/bella/openapi/server/BellaServerContextHolder.java:
 api/spi/src/main/java/com/ke/bella/openapi/server/BellaServerContextInitializer.java:初始化BellaServer上下文，获取IP、端口和应用名称，设置到上下文中。关键类包括InetUtils和BellaServerContext，与配置环境交互。
 api/spi/src/main/resources/META-INF/spring.factories:这个文件配置了Spring工厂加载机制，指定了ApplicationContextInitializer的实现类。
 authorize-admin.sh:用于管理员授权的脚本，通过API请求系统，使用用户ID或邮箱授予管理员权限。
-config-details.md:详细介绍了Bella OpenAPI配置，包括环境变量、数据库、缓存和OAuth配置的说明文档。
-contributor-guid.md:该文件为 Bella OpenAPI 项目的贡献者指南，提供了项目概述、开发流程、代码贡献、代码风格等详细说明。主要功能是帮助新贡献者快速了解项目并参与开发。文件详细介绍了如何提交 Issues 和 Pull Requests，与 GitHub 仓库的交互尤为重要。
 contributor-guide.md:Bella OpenAPI 贡献者指南，帮助开发者参与项目。包含项目概述、开发流程、提交Issues和代码贡献的详细步骤，强调代码风格和测试要求，指导新贡献者如何开始。与智能bot交互以处理Issues。
 contributor-guide_EN.md:Bella OpenAPI Contributor Guide，提供英文版贡献指南，帮助开发者参与项目。内容包括项目概述、开发流程、提交Issues和代码贡献的步骤，强调代码风格和测试，指导新贡献者如何开始。与智能bot交互以处理Issues。
-doc/chat-completions.md:该文档提供了智能问答接口的使用说明，详细描述了请求和响应格式、支持的消息类型以及错误码等。此外，它还介绍了如何调用工具来扩展模型的功能。主要与OpenAI的Chat Completions API交互。
-doc/embeddings.md:文本向量接口文档，描述了创建文本嵌入的方法和API调用，支持语义搜索、文本分类等应用。详细介绍了请求和响应格式，及典型应用场景。
-doc/flash-asr.md:语音识别接口的文档，描述了接口的功能、请求和响应格式，包括示例和错误码说明，适用于开发者集成该语音识别服务。
-doc/realtime.md:实时语音对话接口文档，详细描述了接口功能、请求和响应参数以及接入指南。提供实时语音识别、大模型对话和语音合成功能，支持全双工通信，适用于智能语音助手等场景。
-doc/tts.md:语音合成接口文档，描述了如何根据文本生成语音，包括请求方法、参数、响应格式及示例。支持多种声音和音频格式，是其他开发者进行语音合成集成的指南。
 docker-compose.yml:定义了多个Docker服务的编排配置，包括API服务、Web服务、Nginx、MySQL和Redis服务。配置了环境变量、端口和依赖关系等。
 generate-system-apikey.sh:用于生成系统API key并插入数据库的脚本。通过检查Docker中的MySQL容器，生成API key、计算SHA值并插入数据库表，保存访问密钥到文件中。
 nginx/conf.d/default.conf:这个文件是Nginx的配置文件，定义了服务器的基本设置和路径转发规则。主要将/v1、/console、/openapi路径的请求转发到api服务，其他请求转发到web服务。文件通过代理设置与bella-openapi-api和bella-openapi-web服务进行交互。
 package-lock.json:记录了bella-openapi项目的所有依赖及其版本信息，确保项目在不同环境中的一致性。
 package.json:定义了项目的JavaScript依赖项，以npm包管理格式列出所有所需的库及其版本范围。
-start-details.md:提供Bella OpenAPI的启动与部署说明，涵盖项目概述、前提条件、启动服务、环境变量配置、服务管理和系统初始化等。
 start.sh:Shell脚本，用于通过Docker Compose启动和管理Bella OpenAPI服务，支持构建、推送镜像、配置OAuth等多种功能。
 stop.sh:这个shell脚本用于停止Bella OpenAPI服务，使用docker-compose停止api和web服务。
 web/.dockerignore:该.dockerignore文件用于在构建Docker镜像时排除特定文件和目录，例如日志、node_modules、.env文件等。
