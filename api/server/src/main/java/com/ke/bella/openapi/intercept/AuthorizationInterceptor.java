@@ -44,7 +44,7 @@ public class AuthorizationInterceptor extends HandlerInterceptorAdapter {
             EndpointContext.setApikey(apikeyInfo);
             hasPermission = apikeyInfo.hasPermission(url);
         } else {
-            String auth = request.getHeader(HttpHeaders.AUTHORIZATION);
+            String auth = request.getHeader(getHeader(request.getRequestURI()));
             if(StringUtils.isEmpty(auth)) {
                 throw new ChannelException.AuthorizationException("Authorization is empty");
             }
@@ -56,5 +56,10 @@ public class AuthorizationInterceptor extends HandlerInterceptorAdapter {
             throw new ChannelException.AuthorizationException("没有操作权限");
         }
         return true;
+    }
+
+
+    private String getHeader(String uri) {
+        return HttpHeaders.AUTHORIZATION;
     }
 }
