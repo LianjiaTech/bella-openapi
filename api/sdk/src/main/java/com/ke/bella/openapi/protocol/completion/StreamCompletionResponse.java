@@ -94,6 +94,16 @@ public class StreamCompletionResponse extends OpenapiResponse {
         choices.get(0).setFinish_reason(finishReason);
     }
 
+    public void ensureArgumentsNotNull() {
+        if (CollectionUtils.isNotEmpty(choices) && choices.get(0).getDelta() != null && CollectionUtils.isNotEmpty(choices.get(0).getDelta().getTool_calls())) {
+            choices.get(0).getDelta().getTool_calls().forEach(toolCall -> {
+                if (toolCall.getFunction() != null && toolCall.getFunction().getArguments() == null) {
+                    toolCall.getFunction().setArguments("");
+                }
+            });
+        }
+    }
+
     public String finishReason() {
         if(CollectionUtils.isNotEmpty(choices)
                 && choices.get(0).getFinish_reason() != null) {

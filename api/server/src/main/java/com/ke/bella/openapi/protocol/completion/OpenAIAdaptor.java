@@ -1,5 +1,6 @@
 package com.ke.bella.openapi.protocol.completion;
 
+import java.util.stream.Collectors;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
@@ -34,6 +35,8 @@ public class OpenAIAdaptor implements CompletionAdaptorDelegator<OpenAIProperty>
         } else {
             response = delegator.request(request, CompletionResponse.class, errorCallback);
         }
+        // 确保arguments字段不为null
+        ArgumentsNullSafetyHelper.ensureArgumentsNotNull(response);
         ResponseHelper.splitReasoningFromContent(response, property);
         response.setCreated(DateTimeUtils.getCurrentSeconds());
         return response;

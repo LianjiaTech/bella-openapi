@@ -1,0 +1,1814 @@
+# 项目文件描述
+
+
+- api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionResponse.java: 这个文件定义了CompletionResponse类，继承自OpenapiResponse。包含Choice和TokenUsage嵌套类，用于描述响应结果的详细信息和token使用情况。与CompletionLogHandler类交互，提供响应的数据结构。
+
+- api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/StreamCompletionResponse.java: 这个文件定义了StreamCompletionResponse类，继承自OpenapiResponse，表示一个流式的完成响应。包含的关键类有内部静态类Choice，用于表示选择项。该文件与消息工具的调用紧密相关，涉及到ToolCall等类。
+
+- api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/Message.java: 这个文件定义了Message类，表示完成消息的结构，支持多角色和工具调用，包含函数调用和内容的定义。
+
+- api/server/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionLogHandler.java: 这个文件实现了CompletionLogHandler类，用于处理端点日志。主要功能是计算请求和响应的token使用量，以及处理完成响应的时间度量。与CompletionResponse类交互，处理端点为/v1/chat/completions。
+
+- api/server/src/main/java/com/ke/bella/openapi/protocol/completion/ResponseHelper.java: 这个文件定义了ResponseHelper类，提供了完成响应的数据处理和转换功能。
+
+- api/server/src/main/java/com/ke/bella/openapi/protocol/completion/OpenAIAdaptor.java: 用于适配OpenAI协议完成请求的适配器类，实现了流式及非流式任务请求。
+
+- api/server/src/main/java/com/ke/bella/openapi/protocol/completion/callback/StreamCompletionCallback.java: 这个文件实现了StreamCompletionCallback类，负责处理流式完成响应的回调。涉及到的关键功能包括安全检查和日志记录，与EndpointProcessData和ISafetyCheckService等类有重要交互。
+
+- api/server/src/main/java/com/ke/bella/openapi/endpoints/ChatController.java: ChatController类提供聊天相关的REST API端点，处理完成请求，使用AdaptorManager等类进行协议适配。
+
+- api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionSseListener.java: 实现了CompletionSseListener类，用于处理SSE事件流中的完成消息，通过Callback接口进行回调。
+
+- api/server/src/main/java/com/ke/bella/openapi/protocol/completion/callback/StreamCallbackProvider.java: StreamCallbackProvider类提供流式回调的生成，支持消息和完成回调，与SseEmitter等类交互。
+
+- api/sdk/src/main/java/com/ke/bella/openapi/utils/JacksonUtils.java: JacksonUtils提供JSON序列化和反序列化的工具方法，包含日期处理和格式自定义功能。
+
+
+# 文件内容
+
+
+
+```
+File: api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionResponse.java
+1 package com.ke.bella.openapi.protocol.completion;
+2 
+3 import java.util.List;
+4 
+5 import org.apache.commons.collections4.CollectionUtils;
+6 
+7 import com.fasterxml.jackson.annotation.JsonInclude;
+8 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+9 import com.ke.bella.openapi.protocol.OpenapiResponse;
+10 import com.ke.bella.openapi.protocol.completion.Message.ToolCall;
+11 
+12 import lombok.AllArgsConstructor;
+13 import lombok.Data;
+14 import lombok.NoArgsConstructor;
+15 import lombok.experimental.SuperBuilder;
+16 import org.springframework.util.Assert;
+17 
+18 @Data
+19 @JsonInclude(Include.NON_NULL)
+20 @NoArgsConstructor
+21 @AllArgsConstructor
+22 @SuperBuilder
+23 public class CompletionResponse extends OpenapiResponse {
+24 
+25     private List<Choice> choices;
+26     /**
+27      * 时间戳
+28      */
+29     private long created;
+30     /**
+31      * 唯一id
+32      */
+33     private String id;
+34     /**
+35      * 调用模型
+36      */
+37     private String model;
+38 
+39     /**
+40      * This fingerprint represents the backend configuration that the model runs with.<br/><br/> Can be used in conjunction with the seed request
+41      * parameter to understand when backend changes have been made that might impact determinism.
+42      */
+43     private String system_fingerprint;
+44 
+45     /**
+46      * 调用接口
+47      */
+48     private String object;
+49 
+50     private TokenUsage usage;
+51 
+52     public String content() {
+53         if(CollectionUtils.isNotEmpty(choices)) {
+54             return choices.get(0).content();
+55         } else {
+56             return "";
+57         }
+58     }
+59 
+60     public String reasoning() {
+61         if(CollectionUtils.isNotEmpty(choices)) {
+62             return choices.get(0).reasoning();
+63         } else {
+64             return "";
+65         }
+66     }
+67 
+68     public String finishReason() {
+69         if(CollectionUtils.isNotEmpty(choices)) {
+70             return choices.get(0).getFinish_reason();
+71         } else {
+72             return null;
+73         }
+74     }
+75 
+76     public void setContent(String content) {
+77         Assert.notEmpty(choices, "choices must not be null");
+78         choices.get(0).setContent(content);
+79     }
+80 
+81     public void setReasoning(String reasoning) {
+82         Assert.notNull(choices, "choices must not be null");
+83         choices.get(0).setReasoning(reasoning);
+84     }
+85 
+86     @Data
+87     @JsonInclude(Include.NON_NULL)
+88     @SuperBuilder
+89     @NoArgsConstructor
+90     public static class Choice {
+91 
+92         /**
+93          * Every response will include a finish_reason. The possible values for finish_reason are:
+94          * <p>
+95          * stop: API returned complete message, or a message terminated by one of the stop sequences provided via the stop parameter length:
+96          * Incomplete model output due to max_tokens parameter or token limit function_call: The model decided to call a function content_filter:
+97          * Omitted content due to a flag from our content filters null: API response still in progress or incomplete
+98          */
+99         private String finish_reason;
+100         private int index;
+101         private Message message;
+102 
+103         public String content() {
+104             if(message != null && message.getContent() != null) {
+105                 return message.getContent().toString();
+106             } else {
+107                 return "";
+108             }
+109         }
+110 
+111         public String reasoning() {
+112             if(message != null) {
+113                 return message.getReasoning_content();
+114             } else {
+115                 return "";
+116             }
+117         }
+118 
+119         public void setContent(String content) {
+120             Assert.notNull(message, "message must not be null");
+121             message.setContent(content);
+122         }
+123 
+124         public void setReasoning(String reasoning) {
+125             Assert.notNull(message, "message must not be null");
+126             message.setReasoning_content(reasoning);
+127         }
+128     }
+129 
+130     public static Choice toolcallChoice(String reasoning, List<ToolCall> calls) {
+131         Choice c = Choice.builder()
+132                 .message(Message.builder()
+133                         .role("assistant")
+134                         .reasoning_content(reasoning)
+135                         .tool_calls(calls)
+136                         .build())
+137                 .build();
+138         return c;
+139     }
+140 
+141     public static Choice assistantMessageChoice(String reasoning, String content) {
+142         Choice c = Choice.builder()
+143                 .message(Message.builder()
+144                         .role("assistant")
+145                         .reasoning_content(reasoning)
+146                         .content(content)
+147                         .build())
+148                 .build();
+149         return c;
+150     }
+151 
+152     @Data
+153     @JsonInclude(Include.NON_NULL)
+154     public static class TokenUsage {
+155         private int completion_tokens;
+156         private int prompt_tokens;
+157         private int total_tokens;
+158         private TokenTokensDetail completion_tokens_details;
+159 
+160         public TokenUsage add(TokenUsage u) {
+161             this.completion_tokens += u.completion_tokens;
+162             this.prompt_tokens += u.prompt_tokens;
+163             this.total_tokens += u.total_tokens;
+164             return this;
+165         }
+166 
+167         @Deprecated
+168         public TokenUsage validate() {
+169             if (this.completion_tokens_details != null && this.completion_tokens < this.completion_tokens_details.reasoning_tokens){
+170                 this.completion_tokens += this.completion_tokens_details.reasoning_tokens;
+171             }
+172             return this;
+173         }
+174     }
+175 
+176     @Data
+177     public static class TokenTokensDetail {
+178         private int reasoning_tokens;
+179     }
+180 
+181 }
+182 
+183
+```
+
+
+
+
+```
+File: api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/StreamCompletionResponse.java
+1 package com.ke.bella.openapi.protocol.completion;
+2 
+3 import com.fasterxml.jackson.annotation.JsonIgnore;
+4 import com.fasterxml.jackson.annotation.JsonInclude;
+5 import com.google.common.collect.Lists;
+6 import com.ke.bella.openapi.protocol.OpenapiResponse;
+7 import com.ke.bella.openapi.protocol.completion.Message.ToolCall;
+8 import lombok.AllArgsConstructor;
+9 import lombok.Builder;
+10 import lombok.Data;
+11 import lombok.NoArgsConstructor;
+12 import lombok.experimental.SuperBuilder;
+13 import org.apache.commons.collections4.CollectionUtils;
+14 import org.springframework.util.Assert;
+15 
+16 import java.util.Arrays;
+17 import java.util.List;
+18 
+19 @Data
+20 @SuperBuilder
+21 @AllArgsConstructor
+22 @NoArgsConstructor
+23 @JsonInclude(JsonInclude.Include.NON_NULL)
+24 public class StreamCompletionResponse extends OpenapiResponse {
+25     public static final String CHAT_COMPLETION_CHUNK_OBJECT = "chat.completion.chunk";
+26 
+27     /**
+28      * 时间戳
+29      */
+30     private long created;
+31 
+32     private String object = CHAT_COMPLETION_CHUNK_OBJECT;
+33     /**
+34      * 唯一id
+35      */
+36     private String id;
+37     /**
+38      * 调用模型
+39      */
+40     private String model;
+41 
+42     private CompletionResponse.TokenUsage usage;
+43 
+44     private List<Choice> choices;
+45 
+46     @JsonIgnore
+47     private StreamCompletionResponse standardFormat;
+48 
+49     public List<Choice> getChoices() {
+50         return choices == null ? Lists.newArrayList() : choices;
+51     }
+52 
+53     public String content() {
+54         if(CollectionUtils.isNotEmpty(choices)) {
+55             return choices.get(0).content();
+56         } else {
+57             return "";
+58         }
+59     }
+60 
+61     public String reasoning() {
+62         if(CollectionUtils.isNotEmpty(choices)) {
+63             return choices.get(0).reasoning();
+64         } else {
+65             return "";
+66         }
+67     }
+68 
+69     public List<ToolCall> toolCalls() {
+70         if(CollectionUtils.isNotEmpty(choices)) {
+71             return choices.get(0).getDelta().getTool_calls();
+72         } else {
+73             return null;
+74         }
+75     }
+76 
+77     public void setContent(String content) {
+78         Assert.notEmpty(choices, "choices must not be null");
+79         choices.get(0).setContent(content);
+80     }
+81 
+82     public void setReasoning(String reasoning) {
+83         Assert.notNull(choices, "choices must not be null");
+84         choices.get(0).setReasoning(reasoning);
+85     }
+86 
+87     public void setToolCall(ToolCall toolCall) {
+88         Assert.notNull(choices, "choices must not be null");
+89         choices.get(0).setTooCall(toolCall);
+90     }
+91 
+92     public void setFinishReason(String finishReason) {
+93         Assert.notNull(choices, "choices must not be null");
+94         choices.get(0).setFinish_reason(finishReason);
+95     }
+96 
+97     public String finishReason() {
+98         if(CollectionUtils.isNotEmpty(choices)
+99                 && choices.get(0).getFinish_reason() != null) {
+100             return choices.get(0).getFinish_reason();
+101         } else {
+102             return "";
+103         }
+104     }
+105 
+106     @Data
+107     @AllArgsConstructor
+108     @NoArgsConstructor
+109     @Builder
+110     @JsonInclude(JsonInclude.Include.NON_NULL)
+111     public static class Choice {
+112 
+113         /**
+114          * Every response will include a finish_reason. The possible values for
+115          * finish_reason are:
+116          * <p>
+117          * stop: API returned complete message, or a message terminated by one
+118          * of the stop sequences provided via the stop parameter length:
+119          * Incomplete model output due to max_tokens parameter or token limit
+120          * function_call: The model decided to call a function content_filter:
+121          * Omitted content due to a
+122          * flag from our content filters null: API response still in progress or
+123          * incomplete
+124          */
+125         private String finish_reason;
+126         private int index;
+127         private Message delta;
+128 
+129         public String content() {
+130             if(delta != null && delta.getContent() != null) {
+131                 return delta.getContent().toString();
+132             } else {
+133                 return "";
+134             }
+135         }
+136 
+137         public String reasoning() {
+138             if(delta != null) {
+139                 return delta.getReasoning_content();
+140             } else {
+141                 return "";
+142             }
+143         }
+144 
+145         public void setContent(String content) {
+146             Assert.notNull(delta, "delta must not be null");
+147             delta.setContent(content);
+148         }
+149 
+150         public void setReasoning(String reasoning) {
+151             Assert.notNull(delta, "delta must not be null");
+152             delta.setReasoning_content(reasoning);
+153         }
+154 
+155         public void setTooCall(ToolCall toolCall) {
+156             Assert.notNull(delta, "delta must not be null");
+157             delta.setTool_calls(Lists.newArrayList(toolCall));
+158         }
+159     }
+160 
+161     public static List<Choice> toolcallChoice(ToolCall fc) {
+162         Choice choice = Choice.builder()
+163                 .delta(Message.builder()
+164                         .role("assistant")
+165                         .tool_calls(Arrays.asList(fc))
+166                         .tool_call_id(fc.getId())
+167                         .build())
+168                 .build();
+169         return Arrays.asList(choice);
+170 
+171     }
+172 
+173     public static List<Choice> assistantMessageChoice(String delta) {
+174         Choice choice = Choice.builder()
+175                 .delta(Message.builder()
+176                         .role("assistant")
+177                         .content(delta)
+178                         .build())
+179                 .build();
+180         return Arrays.asList(choice);
+181     }
+182 
+183 }
+184
+```
+
+
+
+
+```
+File: api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/Message.java
+1 package com.ke.bella.openapi.protocol.completion;
+2 
+3 import com.fasterxml.jackson.annotation.JsonInclude;
+4 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+5 import com.fasterxml.jackson.annotation.JsonProperty;
+6 import lombok.AllArgsConstructor;
+7 import lombok.Builder;
+8 import lombok.Data;
+9 import lombok.NoArgsConstructor;
+10 import org.apache.commons.lang3.StringUtils;
+11 
+12 import javax.annotation.Nullable;
+13 import javax.validation.constraints.NotNull;
+14 import javax.validation.constraints.Size;
+15 import java.util.List;
+16 import java.util.UUID;
+17 
+18 @Data
+19 @AllArgsConstructor
+20 @NoArgsConstructor
+21 @Builder
+22 @JsonInclude(Include.NON_NULL)
+23 public class Message {
+24 
+25     // one of the system, user, assistant, function, tool
+26     @NotNull
+27     private String role;
+28     /**
+29      * content is required for all messages except assistant messages with
+30      * function calls; string or array<br/>
+31      * <br/>
+32      * for user role message, the
+33      * content can be array:<br/>
+34      * <br/>
+35      * [ { "type": "text", "text": "What’s in this image?" }, { "type":
+36      * "image_url", "image_url": { "url":
+37      * "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg"
+38      * } } ]
+39      */
+40     @Nullable
+41     private Object content;
+42 
+43     @JsonInclude(Include.NON_NULL)
+44     @Nullable
+45     private String reasoning_content;
+46     /**
+47      * name is required if role is function, and it should be the name of the
+48      * function whose response is in the content;
+49      */
+50     @Nullable
+51     private String name;
+52     /**
+53      * Deprecated and replaced by tool_calls. The name and arguments of a
+54      * function that should be called, as generated by the model.
+55      */
+56     @JsonInclude(Include.NON_NULL)
+57     @Nullable
+58     private FunctionCall function_call;
+59     @JsonInclude(Include.NON_NULL)
+60     private List<ToolCall> tool_calls;
+61     /**
+62      * Tool call that this message is responding to.
+63      */
+64     private String tool_call_id;
+65 
+66     @Data
+67     @AllArgsConstructor
+68     @NoArgsConstructor
+69     @Builder
+70     public static class ToolCall {
+71 
+72         private int index;
+73 
+74         /**
+75          * The ID of the tool call.
+76          */
+77         private String id;
+78 
+79         /**
+80          * The type of the tool. Currently, only function is supported.
+81          */
+82         private String type;
+83 
+84         /**
+85          * The function that the model called.
+86          */
+87         private FunctionCall function;
+88 
+89         @JsonProperty("id")
+90         public String getId() {
+91             return StringUtils.isBlank(id) ? "" : id;
+92         }
+93 
+94         public static ToolCall fromFunctionName(String name, int index) {
+95             return ToolCall.builder()
+96                     .id(UUID.randomUUID().toString())
+97                     .index(index)
+98                     .type("function")
+99                     .function(FunctionCall.builder().name(name).arguments("").build())
+100                     .build();
+101         }
+102 
+103         public static ToolCall fromFunctionIdAndName(String id, String name) {
+104             return ToolCall.builder()
+105                     .id(id)
+106                     .type("function")
+107                     .function(FunctionCall.builder().name(name).arguments("").build())
+108                     .build();
+109         }
+110     }
+111 
+112     @Data
+113     @AllArgsConstructor
+114     @NoArgsConstructor
+115     @Builder
+116     public static class Tool {
+117         private String type;
+118         private Function function;
+119     }
+120 
+121     @Data
+122     @AllArgsConstructor
+123     @NoArgsConstructor
+124     @Builder
+125     public static class Function {
+126 
+127         /**
+128          * The name of the function to be called. Must be a-z, A-Z, 0-9, or
+129          * contain underscores and dashes, with a maximum length of 64.
+130          */
+131         @NotNull
+132         @Size(max = 64)
+133         private String name;
+134         /**
+135          * The description of what the function does.
+136          */
+137         @Nullable
+138         private String description;
+139         /**
+140          * The parameters the functions accepts, described as a JSON Schema
+141          * objec
+142          */
+143         @Nullable
+144         private FunctionParameter parameters;
+145 
+146         /**
+147          * JSON Schema 结构 example: { "type": "object", "properties": {
+148          * "location": { "type": "string", "description": "The city and state,
+149          * e.g. San
+150          * Francisco, CA", }, "unit": {"type": "string", "enum": ["celsius",
+151          * "fahrenheit"]}, }, "required": ["location"], }
+152          */
+153 
+154         @Data
+155         @AllArgsConstructor
+156         @NoArgsConstructor
+157         @Builder
+158         public static class FunctionParameter {
+159             private String type;
+160             private List<String> required;
+161             private Object properties;
+162             private boolean additionalProperties;
+163         }
+164     }
+165 
+166     @Data
+167     @AllArgsConstructor
+168     @NoArgsConstructor
+169     @Builder
+170     public static class FunctionCall {
+171 
+172         /**
+173          * The name of the function to call.
+174          */
+175         private String name;
+176         /**
+177          * The arguments to call the function with, as generated by the model in
+178          * JSON format. Note that the model does not always generate valid JSON,
+179          * and may hallucinate parameters not defined by your function schema.
+180          * Validate the arguments in your code before calling your function.
+181          */
+182         private String arguments;
+183 
+184         public void appendArguments(String delta) {
+185             this.arguments += delta;
+186         }
+187     }
+188 
+189 }
+190
+```
+
+
+
+
+```
+File: api/server/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionLogHandler.java
+1 package com.ke.bella.openapi.protocol.completion;
+2 
+3 import com.google.common.collect.ImmutableMap;
+4 import com.google.common.collect.Lists;
+5 import com.ke.bella.openapi.EndpointProcessData;
+6 import com.ke.bella.openapi.protocol.OpenapiResponse;
+7 import com.ke.bella.openapi.protocol.log.EndpointLogHandler;
+8 import com.ke.bella.openapi.utils.DateTimeUtils;
+9 import com.ke.bella.openapi.utils.TokenCounter;
+10 import com.knuddels.jtokkit.api.EncodingType;
+11 import org.apache.commons.collections4.CollectionUtils;
+12 import org.apache.commons.lang3.tuple.Pair;
+13 import org.springframework.stereotype.Component;
+14 
+15 import java.util.LinkedList;
+16 import java.util.List;
+17 import java.util.Map;
+18 import java.util.Optional;
+19 import java.util.stream.Collectors;
+20 
+21 @Component
+22 public class CompletionLogHandler implements EndpointLogHandler {
+23 
+24     @Override
+25     public void process(EndpointProcessData processData) {
+26         long startTime = processData.getRequestTime();
+27         CompletionResponse response = null;
+28         if(processData.getResponse() instanceof CompletionResponse) {
+29             response = (CompletionResponse) processData.getResponse();
+30         }
+31         long created = response == null || response.getCreated() <= 0 ? DateTimeUtils.getCurrentSeconds() : response.getCreated();
+32         long firstPackageTime = processData.getFirstPackageTime();
+33         CompletionRequest request = (CompletionRequest) processData.getRequest();
+34         String encodingType = processData.getEncodingType();
+35         CompletionResponse.TokenUsage usage = countTokenUsage(request, processData.getResponse(), encodingType);
+36         processData.setUsage(usage);
+37         processData.setMetrics(countMetrics(startTime, processData.getRequestMillis(), created, firstPackageTime, usage));
+38     }
+39 
+40     @Override
+41     public String endpoint() {
+42         return "/v1/chat/completions";
+43     }
+44 
+45     private Map<String, Object> countMetrics(long startTime, long startMills, long endTime, long firstPackageTime, CompletionResponse.TokenUsage usage) {
+46         int inputToken = usage.getPrompt_tokens();
+47         int outputToken = usage.getCompletion_tokens();
+48         int ttft = 0;
+49         if(firstPackageTime != 0) {
+50             ttft = (int) (firstPackageTime - startMills);
+51         }
+52         int ttlt = (int) (endTime - startTime);
+53         return ImmutableMap.of("ttft", ttft, "ttlt", ttlt, "input_token", inputToken, "output_token", outputToken);
+54     }
+55 
+56     private CompletionResponse.TokenUsage countTokenUsage(CompletionRequest request, OpenapiResponse openapiResponse, String encodingType) {
+57         if(openapiResponse.getError() != null) {
+58             int httpCode = openapiResponse.getError().getHttpCode();
+59             if(httpCode > 399 && httpCode < 500 && httpCode != 408) {
+60                 CompletionResponse.TokenUsage tokenUsage = new CompletionResponse.TokenUsage();
+61                 tokenUsage.setPrompt_tokens(0);
+62                 tokenUsage.setCompletion_tokens(0);
+63                 tokenUsage.setTotal_tokens(0);
+64                 return tokenUsage;
+65             }
+66         }
+67         CompletionResponse response = null;
+68         if(openapiResponse instanceof CompletionResponse) {
+69             response = (CompletionResponse) openapiResponse;
+70         }
+71         if(response != null && response.getUsage() != null) {
+72             return response.getUsage().validate();
+73         }
+74         EncodingType encoding = EncodingType.fromName(encodingType).orElse(EncodingType.CL100K_BASE);
+75         //计费模型请求消耗量
+76         //计算非userMessage的token用量
+77         int requestToken = 0;
+78         List<String> textMessage = new LinkedList<>();
+79         List<Pair<String, Boolean>> imgMessage = new LinkedList<>();
+80         if(request.getMessages() != null) {
+81             for (Message message : request.getMessages()) {
+82                 if(CollectionUtils.isNotEmpty(message.getTool_calls())) {
+83                     textMessage.addAll(getToolCallStr(message.getTool_calls()));
+84                 } else {
+85                     //如果message.getContent()是String类型
+86                     if(message.getContent() instanceof String) {
+87                         textMessage.add((String) message.getContent());
+88                     } else if(message.getContent() instanceof java.util.List) {
+89                         for (Map content : (java.util.List<Map>) message.getContent()) {
+90                             if(content.containsKey("text")) {
+91                                 textMessage.add((String) content.get("text"));
+92                             } else if(content.containsKey("image_url")) {
+93                                 //如果包含类型为string的image_url
+94                                 if(content.get("image_url") instanceof String) {
+95                                     imgMessage.add(Pair.of((String) content.get("image_url"), false));
+96                                 } else if(content.get("image_url") instanceof Map) {
+97                                     String url = (String) ((Map) content.get("image_url")).get("url");
+98                                     boolean lowResolution = "low".equals(((Map) content.get("image_url")).get("detail"));
+99                                     imgMessage.add(Pair.of(url, lowResolution));
+100                                 }
+101                             }
+102                         }
+103                     }
+104                 }
+105             }
+106         }
+107         Optional<Integer> userTextMessageToken = textMessage.stream().map(x -> TokenCounter.tokenCount(x, encoding)).reduce(Integer::sum);
+108         Optional<Integer> userImgMessageToken = imgMessage.stream().map(x-> TokenCounter.imageToken(x.getLeft(), x.getRight())).reduce(Integer::sum);
+109         requestToken += userTextMessageToken.orElse(0) + userImgMessageToken.orElse(0);
+110 
+111         int responseToken = (response == null || response.getChoices() == null) ? 0 : response.getChoices().stream()
+112                 .map(x -> {
+113                     if(CollectionUtils.isNotEmpty(x.getMessage().getTool_calls())) {
+114                         return getToolCallStr(x.getMessage().getTool_calls());
+115                     } else {
+116                         return Lists.newArrayList(x.getMessage().getContent());
+117                     }
+118                 }).flatMap(List::stream)
+119                 .map(String.class::cast)
+120                 .map(x -> TokenCounter.tokenCount(x, encoding)).reduce(Integer::sum).orElse(0);
+121         CompletionResponse.TokenUsage tokenUsage = new CompletionResponse.TokenUsage();
+122         tokenUsage.setPrompt_tokens(requestToken);
+123         tokenUsage.setCompletion_tokens(responseToken);
+124         tokenUsage.setTotal_tokens(requestToken + responseToken);
+125         return tokenUsage;
+126     }
+127 
+128     private List<String> getToolCallStr(List<Message.ToolCall> toolCalls) {
+129         return toolCalls.stream()
+130                 .map(t->getFunctionStr(t.getFunction()))
+131                 .collect(Collectors.toList());
+132     }
+133     private String getFunctionStr(Message.FunctionCall functionCall) {
+134         return functionCall.getName() == null ? functionCall.getArguments() :
+135                 functionCall.getName() + functionCall.getArguments();
+136     }
+137 
+138 
+139 }
+140
+```
+
+
+
+
+```
+File: api/server/src/main/java/com/ke/bella/openapi/protocol/completion/ResponseHelper.java
+1 package com.ke.bella.openapi.protocol.completion;
+2 
+3 import org.apache.commons.collections4.CollectionUtils;
+4 import org.apache.commons.lang3.StringUtils;
+5 
+6 import java.util.ArrayList;
+7 import java.util.List;
+8 
+9 import static com.ke.bella.openapi.protocol.completion.StreamCompletionResponse.CHAT_COMPLETION_CHUNK_OBJECT;
+10 
+11 public class ResponseHelper {
+12     public static final String START_THINK = "<think>";
+13     public static final String END_THINK = "</think>";
+14 
+15     public static void splitReasoningFromContent(CompletionResponse rsp, OpenAIProperty property) {
+16         if(!property.isSplitReasoningFromContent()) {
+17             return;
+18         }
+19         String content = rsp.content();
+20         if(StringUtils.isEmpty(content) || !content.startsWith(START_THINK)) {
+21             return;
+22         }
+23         String[] parts = content.split(END_THINK);
+24         if(parts.length != 2) {
+25             return;
+26         }
+27         String reasonContent = parts[0].replace(START_THINK, "");
+28         content = parts[1];
+29         rsp.setReasoning(reasonContent);
+30         rsp.setContent(content);
+31     }
+32 
+33     public static CompletionResponse overwrite(CompletionResponse response, StreamCompletionResponse streamCompletionResponse) {
+34         response.setError(streamCompletionResponse.getError());
+35         response.setCreated(streamCompletionResponse.getCreated());
+36         response.setId(streamCompletionResponse.getId());
+37         response.setModel(streamCompletionResponse.getModel());
+38         response.setUsage(streamCompletionResponse.getUsage());
+39         response.setObject(CHAT_COMPLETION_CHUNK_OBJECT);
+40         return response;
+41     }
+42 
+43     public static CompletionResponse.Choice convert(StreamCompletionResponse.Choice streamChoice) {
+44         CompletionResponse.Choice choice = new CompletionResponse.Choice();
+45         choice.setIndex(streamChoice.getIndex());
+46         choice.setFinish_reason(streamChoice.getFinish_reason());
+47         choice.setMessage(combineMessage(null, streamChoice.getDelta()));
+48         return choice;
+49     }
+50 
+51     public static Message combineMessage(Message target, Message message) {
+52         if(target == null) {
+53             target = new Message();
+54         }
+55         Object contentObj = message.getContent();
+56         List<Message.ToolCall> toolCallList = message.getTool_calls();
+57         if(StringUtils.isNotEmpty(message.getReasoning_content())) {
+58             if(target.getReasoning_content() == null) {
+59                 target.setReasoning_content(message.getReasoning_content());
+60             } else {
+61                 target.setReasoning_content(target.getReasoning_content() + message.getReasoning_content());
+62             }
+63         } else if(contentObj != null) {
+64             String content = contentObj.toString();
+65             if(target.getContent() == null) {
+66                 target.setContent(content);
+67             } else {
+68                 target.setContent(target.getContent() + content);
+69             }
+70         }  else if(CollectionUtils.isNotEmpty(toolCallList)) {
+71             if(target.getTool_calls() == null) {
+72                 target.setTool_calls(new ArrayList<>());
+73             }
+74             for (Message.ToolCall streamToolCall : toolCallList) {
+75                 //拼接对应index的function
+76                 int toolIndex = streamToolCall.getIndex();
+77                 String name = streamToolCall.getFunction().getName();
+78                 String arguments = streamToolCall.getFunction().getArguments();
+79                 if(StringUtils.isBlank(name) && StringUtils.isEmpty(arguments)) {
+80                     return target;
+81                 }
+82                 boolean add = true;
+83                 for (Message.ToolCall toolCall : target.getTool_calls()) {
+84                     if(toolCall.getIndex() == toolIndex) {
+85                         add = false;
+86                         if(StringUtils.isNotBlank(name) && StringUtils.isBlank(toolCall.getFunction().getName())) {
+87                             toolCall.getFunction().setName(name);
+88                         }
+89                         if(toolCall.getFunction().getArguments() == null) {
+90                             toolCall.getFunction().setArguments(arguments);
+91                         } else {
+92                             toolCall.getFunction().setArguments(toolCall.getFunction().getArguments() + arguments);
+93                         }
+94                     }
+95                 }
+96                 if(add) {
+97                     target.getTool_calls().add(copyToolCall(streamToolCall));
+98                 }
+99             }
+100         }
+101         return target;
+102     }
+103 
+104     public static Message.ToolCall copyToolCall(Message.ToolCall toolCall) {
+105         return new Message.ToolCall(toolCall.getIndex(), toolCall.getId(), toolCall.getType(),
+106                 Message.FunctionCall.builder().name(toolCall.getFunction().getName()).arguments(toolCall.getFunction().getArguments()).build());
+107     }
+108 
+109 }
+110
+```
+
+
+
+
+```
+File: api/server/src/main/java/com/ke/bella/openapi/protocol/completion/OpenAIAdaptor.java
+1 package com.ke.bella.openapi.protocol.completion;
+2 
+3 import org.apache.commons.collections4.MapUtils;
+4 import org.apache.commons.lang3.StringUtils;
+5 import org.springframework.stereotype.Component;
+6 
+7 import com.ke.bella.openapi.protocol.Callbacks;
+8 import com.ke.bella.openapi.protocol.Callbacks.StreamCompletionCallback;
+9 import com.ke.bella.openapi.utils.DateTimeUtils;
+10 import com.ke.bella.openapi.utils.HttpUtils;
+11 import com.ke.bella.openapi.utils.JacksonUtils;
+12 
+13 import okhttp3.MediaType;
+14 import okhttp3.Request;
+15 import okhttp3.RequestBody;
+16 
+17 @Component("OpenAICompletion")
+18 public class OpenAIAdaptor implements CompletionAdaptorDelegator<OpenAIProperty> {
+19 
+20     public final Callbacks.SseEventConverter<StreamCompletionResponse> sseConverter = new Callbacks.DefaultSseConverter();
+21 
+22     Callbacks.ChannelErrorCallback<CompletionResponse> errorCallback = (errorResponse, res) -> {
+23         if(errorResponse.getError() != null) {
+24             errorResponse.getError().setHttpCode(res.code());
+25         }
+26     };
+27 
+28     @Override
+29     public CompletionResponse completion(CompletionRequest request, String url, OpenAIProperty property, Callbacks.HttpDelegator delegator) {
+30         CompletionResponse response;
+31         if(delegator == null) {
+32             Request httpRequest = buildRequest(request, url, property);
+33             response = HttpUtils.httpRequest(httpRequest, CompletionResponse.class, errorCallback);
+34         } else {
+35             response = delegator.request(request, CompletionResponse.class, errorCallback);
+36         }
+37         ResponseHelper.splitReasoningFromContent(response, property);
+38         response.setCreated(DateTimeUtils.getCurrentSeconds());
+39         return response;
+40     }
+41 
+42     @Override
+43     public void streamCompletion(CompletionRequest request, String url, OpenAIProperty property, StreamCompletionCallback callback,
+44             Callbacks.StreamDelegator delegator) {
+45         CompletionSseListener listener = new CompletionSseListener(callback, sseConverter);
+46         if(delegator == null) {
+47             Request httpRequest = buildRequest(request, url, property);
+48             HttpUtils.streamRequest(httpRequest, listener);
+49         } else {
+50             delegator.request(request, listener);
+51         }
+52     }
+53     @Override
+54     public CompletionResponse completion(CompletionRequest request, String url, OpenAIProperty property) {
+55         return completion(request, url, property, null);
+56     }
+57 
+58     @Override
+59     public void streamCompletion(CompletionRequest request, String url, OpenAIProperty property, StreamCompletionCallback callback) {
+60         streamCompletion(request, url, property, callback, null);
+61     }
+62 
+63     private Request buildRequest(CompletionRequest request, String url, OpenAIProperty property) {
+64         if(property.supportStreamOptions && request.isStream()) {
+65             request.setStream_options(new CompletionRequest.StreamOptions());
+66         }
+67         request.setModel(property.getDeployName());
+68         if(StringUtils.isNotEmpty(property.getApiVersion())) {
+69             url += property.getApiVersion();
+70         }
+71         Request.Builder builder = authorizationRequestBuilder(property.getAuth())
+72                 .url(url)
+73                 .post(RequestBody.create(MediaType.parse("application/json"), JacksonUtils.serialize(request)));
+74         if(MapUtils.isNotEmpty(property.getExtraHeaders())) {
+75             property.getExtraHeaders().forEach(builder::addHeader);
+76         }
+77         return builder.build();
+78     }
+79 
+80     @Override
+81     public String getDescription() {
+82         return "OpenAI协议";
+83     }
+84 
+85     @Override
+86     public Class<OpenAIProperty> getPropertyClass() {
+87         return OpenAIProperty.class;
+88     }
+89 }
+90
+```
+
+
+
+
+```
+File: api/server/src/main/java/com/ke/bella/openapi/protocol/completion/callback/StreamCompletionCallback.java
+1 package com.ke.bella.openapi.protocol.completion.callback;
+2 
+3 import com.google.common.collect.Lists;
+4 import com.ke.bella.openapi.EndpointProcessData;
+5 import com.ke.bella.openapi.apikey.ApikeyInfo;
+6 import com.ke.bella.openapi.common.exception.ChannelException;
+7 import com.ke.bella.openapi.protocol.Callbacks;
+8 import com.ke.bella.openapi.protocol.OpenapiResponse;
+9 import com.ke.bella.openapi.protocol.completion.CompletionResponse;
+10 import com.ke.bella.openapi.protocol.completion.ResponseHelper;
+11 import com.ke.bella.openapi.protocol.completion.StreamCompletionResponse;
+12 import com.ke.bella.openapi.protocol.log.EndpointLogger;
+13 import com.ke.bella.openapi.safety.ISafetyCheckService;
+14 import com.ke.bella.openapi.safety.SafetyCheckRequest;
+15 import com.ke.bella.openapi.utils.DateTimeUtils;
+16 import com.ke.bella.openapi.utils.PunctuationUtils;
+17 import com.ke.bella.openapi.utils.SseHelper;
+18 import lombok.Getter;
+19 import lombok.extern.slf4j.Slf4j;
+20 import org.apache.commons.collections4.CollectionUtils;
+21 import org.apache.commons.lang3.StringUtils;
+22 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+23 
+24 import java.util.Collections;
+25 import java.util.HashMap;
+26 import java.util.Map;
+27 
+28 @Slf4j
+29 public class StreamCompletionCallback implements Callbacks.StreamCompletionCallback {
+30     @Getter
+31     protected final SseEmitter sse;
+32     private final EndpointProcessData processData;
+33     private final ApikeyInfo apikeyInfo;
+34     private final EndpointLogger logger;
+35     private final ISafetyCheckService.IChatSafetyCheckService safetyService;
+36     private final CompletionResponse responseBuffer;
+37     private final Map<Integer, CompletionResponse.Choice> choiceBuffer;
+38     private boolean dirtyChoice;
+39     private Long firstPackageTime;
+40     private Object requestRiskData;
+41     private Integer safetyCheckIndex;
+42     private Integer thinkStage = 0; // 0: 推理未开始; 1: 推理开始; 2: 推理进行中；3:推理完成；-1:推理已结束
+43 
+44     public StreamCompletionCallback(SseEmitter sse, EndpointProcessData processData, ApikeyInfo apikeyInfo,
+45             EndpointLogger logger, ISafetyCheckService.IChatSafetyCheckService safetyService) {
+46         this.sse = sse;
+47         this.processData = processData;
+48         this.apikeyInfo = apikeyInfo;
+49         this.logger = logger;
+50         this.safetyService = safetyService;
+51         this.safetyCheckIndex = 0;
+52         this.responseBuffer = new CompletionResponse();
+53         responseBuffer.setCreated(DateTimeUtils.getCurrentSeconds());
+54         this.choiceBuffer = new HashMap<>();
+55         this.requestRiskData = processData.getRequestRiskData();
+56     }
+57 
+58     @Override
+59     public void onOpen() {
+60 
+61     }
+62 
+63     @Override
+64     public void callback(StreamCompletionResponse msg) {
+65         msg.setCreated(DateTimeUtils.getCurrentSeconds());
+66         if(requestRiskData != null) {
+67             msg.setRequestRiskData(requestRiskData);
+68             requestRiskData = null;
+69         }
+70         SseHelper.sendEvent(sse, msg);
+71         updateBuffer(msg.getStandardFormat() == null ? msg : msg.getStandardFormat());
+72         safetyCheck(false);
+73     }
+74 
+75     @Override
+76     public void done() {
+77         safetyCheck(true);
+78         SseHelper.sendEvent(sse, "[DONE]");
+79     }
+80 
+81     public void finish() {
+82         sse.complete();
+83         log();
+84     }
+85 
+86     @Override
+87     public void finish(ChannelException exception) {
+88         OpenapiResponse.OpenapiError openapiError = exception.convertToOpenapiError();
+89         StreamCompletionResponse response = StreamCompletionResponse.builder()
+90                 .created(DateTimeUtils.getCurrentSeconds())
+91                 .error(openapiError)
+92                 .build();
+93         try {
+94             callback(response);
+95         } finally {
+96             sse.completeWithError(exception);
+97             log();
+98         }
+99     }
+100 
+101     protected void updateBuffer(StreamCompletionResponse streamResponse) {
+102         ResponseHelper.overwrite(responseBuffer, streamResponse);
+103         if(CollectionUtils.isEmpty(streamResponse.getChoices()) || streamResponse.getChoices().get(0).getDelta() == null) {
+104             return;
+105         }
+106         thinkStage = getThinkStage(streamResponse, thinkStage);
+107         if(thinkStage == 1 || thinkStage == 3) {
+108             safetyCheckIndex = 0;
+109         }
+110         if(firstPackageTime == null) {
+111             firstPackageTime = DateTimeUtils.getCurrentMills();
+112         }
+113         StreamCompletionResponse.Choice choice = streamResponse.getChoices().get(0);
+114         Integer choiceIndex = choice.getIndex();
+115         if(!choiceBuffer.containsKey(choiceIndex)) {
+116             choiceBuffer.put(choiceIndex, ResponseHelper.convert(choice));
+117         } else {
+118             ResponseHelper.combineMessage(choiceBuffer.get(choiceIndex).getMessage(), choice.getDelta());
+119             choiceBuffer.get(choiceIndex).setFinish_reason(choice.getFinish_reason());
+120         }
+121         if(isSafetyCheckChoice(choice)) {
+122             dirtyChoice = true;
+123         }
+124     }
+125 
+126     private Integer getThinkStage(StreamCompletionResponse msg, Integer currentStage) {
+127         if(currentStage == 0 && StringUtils.isNotEmpty(msg.reasoning())) {
+128             return 1;
+129         }
+130         if(currentStage == 1 && StringUtils.isNotEmpty(msg.reasoning())) {
+131             return 2;
+132         }
+133         if(currentStage == 2 && StringUtils.isNotEmpty(msg.content())) {
+134             return 3;
+135         }
+136         if(currentStage == 3 && StringUtils.isNotEmpty(msg.content())) {
+137             return -1;
+138         }
+139         return currentStage;
+140     }
+141 
+142     private boolean isSafetyCheckChoice(StreamCompletionResponse.Choice choice) {
+143         if(choice.getIndex() != 0) {
+144             return false;
+145         }
+146         return StringUtils.isNotBlank(choice.content()) || StringUtils.isNotBlank(choice.reasoning());
+147     }
+148 
+149     private void log() {
+150         CompletionResponse response = responseBuffer;
+151         long created = response.getCreated() <= 0 ? DateTimeUtils.getCurrentSeconds() : response.getCreated();
+152         processData.setDuration(created - processData.getRequestTime());
+153         processData.setFirstPackageTime(firstPackageTime == null ? DateTimeUtils.getCurrentMills() : firstPackageTime);
+154         response.setChoices(Lists.newArrayList(choiceBuffer.values()));
+155         processData.setResponse(response);
+156         logger.log(processData);
+157     }
+158 
+159     private void safetyCheck(boolean done) {
+160         if(!dirtyChoice) {
+161             return;
+162         }
+163         CompletionResponse.Choice choice = choiceBuffer.get(0);
+164         if(!done) {
+165             String content = thinkStage == 2 ? choice.reasoning() : choice.content();
+166             String delta = content.substring(safetyCheckIndex);
+167             if(!PunctuationUtils.endsWithPunctuation(delta)) {
+168                 return;
+169             }
+170             safetyCheckIndex = content.length();
+171         }
+172         responseBuffer.setChoices(Collections.singletonList(choice));
+173         Object result = safetyService.safetyCheck(SafetyCheckRequest.Chat.convertFrom(responseBuffer, processData, apikeyInfo), processData.isMock());
+174         if(result != null) {
+175             StreamCompletionResponse response = new StreamCompletionResponse();
+176             response.setSensitives(result);
+177             response.setCreated(DateTimeUtils.getCurrentSeconds());
+178             SseHelper.sendEvent(sse, response);
+179         }
+180         dirtyChoice = false;
+181     }
+182 }
+183
+```
+
+
+
+
+```
+File: api/server/src/main/java/com/ke/bella/openapi/endpoints/ChatController.java
+1 package com.ke.bella.openapi.endpoints;
+2 
+3 import com.ke.bella.openapi.BellaContext;
+4 import com.ke.bella.openapi.EndpointContext;
+5 import com.ke.bella.openapi.EndpointProcessData;
+6 import com.ke.bella.openapi.annotations.EndpointAPI;
+7 import com.ke.bella.openapi.common.exception.BizParamCheckException;
+8 import com.ke.bella.openapi.common.exception.ChannelException;
+9 import com.ke.bella.openapi.protocol.AdaptorManager;
+10 import com.ke.bella.openapi.protocol.ChannelRouter;
+11 import com.ke.bella.openapi.protocol.completion.CompletionAdaptor;
+12 import com.ke.bella.openapi.protocol.completion.CompletionAdaptorDelegator;
+13 import com.ke.bella.openapi.protocol.completion.CompletionProperty;
+14 import com.ke.bella.openapi.protocol.completion.CompletionRequest;
+15 import com.ke.bella.openapi.protocol.completion.CompletionResponse;
+16 import com.ke.bella.openapi.protocol.completion.QueueAdaptor;
+17 import com.ke.bella.openapi.protocol.completion.ToolCallSimulator;
+18 import com.ke.bella.openapi.protocol.completion.callback.StreamCallbackProvider;
+19 import com.ke.bella.openapi.protocol.limiter.LimiterManager;
+20 import com.ke.bella.openapi.protocol.log.EndpointLogger;
+21 import com.ke.bella.openapi.safety.ISafetyCheckService;
+22 import com.ke.bella.openapi.safety.SafetyCheckRequest;
+23 import com.ke.bella.openapi.service.JobQueueService;
+24 import com.ke.bella.openapi.tables.pojos.ChannelDB;
+25 import com.ke.bella.openapi.utils.JacksonUtils;
+26 import com.ke.bella.openapi.utils.SseHelper;
+27 import io.swagger.v3.oas.annotations.tags.Tag;
+28 import lombok.extern.slf4j.Slf4j;
+29 import org.apache.commons.lang3.StringUtils;
+30 import org.springframework.beans.factory.annotation.Autowired;
+31 import org.springframework.beans.factory.annotation.Value;
+32 import org.springframework.web.bind.annotation.PostMapping;
+33 import org.springframework.web.bind.annotation.RequestBody;
+34 import org.springframework.web.bind.annotation.RequestMapping;
+35 import org.springframework.web.bind.annotation.RestController;
+36 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+37 
+38 import java.util.Map;
+39 import java.util.logging.Logger;
+40 
+41 @EndpointAPI
+42 @RestController
+43 @RequestMapping("/v1/chat")
+44 @Tag(name = "chat")
+45 @Slf4j
+46 public class ChatController {
+47     @Autowired
+48     private ChannelRouter router;
+49     @Autowired
+50     private AdaptorManager adaptorManager;
+51     @Autowired
+52     private LimiterManager limiterManager;
+53     @Autowired
+54     private EndpointLogger logger;
+55     @Autowired
+56     private ISafetyCheckService.IChatSafetyCheckService safetyCheckService;
+57     @Autowired
+58     private JobQueueService jobQueueService;
+59     @Value("${bella.openapi.max-models-per-request:3}")
+60     private Integer maxModelsPerRequest;
+61 
+62     @PostMapping("/completions")
+63     public Object completion(@RequestBody CompletionRequest request) {
+64         String endpoint = EndpointContext.getRequest().getRequestURI();
+65         String model = request.getModel();
+66         
+67         // Handle multi-model requests
+68         if (model != null && model.contains(",")) {
+69             
+70             // Try each model in order
+71             String[] models = model.split(",");
+72             int maxNum = models.length;
+73             // Validate model count
+74             if (models.length > maxModelsPerRequest) {
+75                 LOGGER.warn("请求模型数量超过最大限制: " + maxModelsPerRequest);
+76                 maxNum = maxModelsPerRequest;
+77             }
+78             Exception lastException = null;
+79             
+80             for (int i = 0; i < maxNum; i++) {
+81                 String singleModel = models[i];
+82                 String trimmedModel = singleModel.trim();
+83                 // Create a copy of the request with just this model
+84                 request.setModel(trimmedModel);
+85                 
+86                 try {
+87                     // Try to process with this model
+88                     return processCompletionRequest(endpoint, trimmedModel, request);
+89                 } catch (Exception e) {
+90                     // Log the exception and continue to the next model
+91                     lastException = e;
+92                 }
+93             }
+94             
+95             // If we get here, all models failed
+96             if (lastException != null) {
+97                 throw ChannelException.fromException(lastException);
+98             } else {
+99                 throw new BizParamCheckException("所有指定的模型都无法处理请求");
+100             }
+101         }
+102         
+103         // Single model processing
+104         return processCompletionRequest(endpoint, model, request);
+105     }
+106 
+107     @SuppressWarnings({ "rawtypes", "unchecked" })
+108     private Object processCompletionRequest(String endpoint, String model, CompletionRequest request) {
+109         EndpointContext.setEndpointData(endpoint, model, request);
+110         boolean isMock = EndpointContext.getProcessData().isMock();
+111         ChannelDB channel = router.route(endpoint, model, EndpointContext.getApikey(), isMock);
+112         EndpointContext.setEndpointData(channel);
+113         if(!EndpointContext.getProcessData().isPrivate()) {
+114             limiterManager.incrementConcurrentCount(EndpointContext.getProcessData().getAkCode(), model);
+115         }
+116         Object requestRiskData = safetyCheckService.safetyCheck(SafetyCheckRequest.Chat.convertFrom(request,
+117                     EndpointContext.getProcessData(), EndpointContext.getApikey()), isMock);
+118         EndpointContext.getProcessData().setRequestRiskData(requestRiskData);
+119         EndpointProcessData processData = EndpointContext.getProcessData();
+120         String protocol = processData.getProtocol();
+121         String url = processData.getForwardUrl();
+122         String channelInfo = channel.getChannelInfo();
+123         CompletionAdaptor adaptor = adaptorManager.getProtocolAdaptor(endpoint, protocol, CompletionAdaptor.class);
+124         CompletionProperty property = (CompletionProperty) JacksonUtils.deserialize(channelInfo, adaptor.getPropertyClass());
+125         if(isMock) {
+126             fillMockProperty(property);
+127         }
+128         adaptor = decorateAdaptor(adaptor, property, processData);
+129 
+130         EndpointContext.setEncodingType(property.getEncodingType());
+131         if(request.isStream()) {
+132             SseEmitter sse = SseHelper.createSse(1000L * 60 * 5, EndpointContext.getProcessData().getRequestId());
+133             adaptor.streamCompletion(request, url, property, StreamCallbackProvider.provide(sse, processData, EndpointContext.getApikey(), logger, safetyCheckService, property));
+134             return sse;
+135         }
+136 
+137         CompletionResponse response = adaptor.completion(request, url, property);
+138         Object responseRiskData = safetyCheckService.safetyCheck(SafetyCheckRequest.Chat.convertFrom(response, EndpointContext.getProcessData(), EndpointContext.getApikey()), isMock);
+139         response.setSensitives(responseRiskData);
+140         response.setRequestRiskData(requestRiskData);
+141         return response;
+142     }
+143 
+144     private void fillMockProperty(CompletionProperty property) {
+145         Map<String, String> requestInfo = BellaContext.getHeaders();
+146         String functionCallSimulate = requestInfo.get("X-BELLA-FUNCTION-SIMULATE");
+147         String mergeReasoningContent = requestInfo.get("X-BELLA-MERGE-REASONING");
+148         String splitReasoningFromContent = requestInfo.get("X-BELLA-SPLIT-REASONING");
+149         property.setFunctionCallSimulate("true".equals(functionCallSimulate) || property.isFunctionCallSimulate());
+150         property.setMergeReasoningContent("true".equals(mergeReasoningContent) || property.isMergeReasoningContent());
+151         property.setSplitReasoningFromContent("true".equals(splitReasoningFromContent) || property.isSplitReasoningFromContent());
+152     }
+153 
+154     private CompletionAdaptor<?> decorateAdaptor(CompletionAdaptor<?> adaptor, CompletionProperty property, EndpointProcessData processData) {
+155         if(StringUtils.isNotBlank(property.getQueueName())) {
+156             if(adaptor instanceof CompletionAdaptorDelegator) {
+157                 adaptor = new QueueAdaptor<>((CompletionAdaptorDelegator<?>)adaptor, jobQueueService, jobQueueService, processData);
+158             } else {
+159                 throw new IllegalStateException(adaptor.getClass().getSimpleName() + "不支持请求代理");
+160             }
+161         }
+162         if(property.isFunctionCallSimulate()) {
+163             adaptor = new ToolCallSimulator<>(adaptor, processData);
+164         }
+165         return adaptor;
+166     }
+167 }
+168
+```
+
+
+
+
+```
+File: api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionSseListener.java
+1 package com.ke.bella.openapi.protocol.completion;
+2 
+3 import com.google.common.collect.ImmutableSet;
+4 import com.ke.bella.openapi.common.exception.ChannelException;
+5 import com.ke.bella.openapi.protocol.BellaEventSourceListener;
+6 import com.ke.bella.openapi.protocol.Callbacks;
+7 import lombok.extern.slf4j.Slf4j;
+8 import okhttp3.Response;
+9 import okhttp3.sse.EventSource;
+10 import org.springframework.http.HttpStatus;
+11 
+12 import java.io.IOException;
+13 import java.util.Set;
+14 
+15 @Slf4j
+16 public class CompletionSseListener extends BellaEventSourceListener {
+17     private Callbacks.StreamCompletionCallback callback;
+18     private Callbacks.SseEventConverter<StreamCompletionResponse> sseConverter;
+19     private final Set<String> DONE_FLAGS = ImmutableSet.of("[DONE]");
+20 
+21     public CompletionSseListener(Callbacks.StreamCompletionCallback sseCallback,
+22             Callbacks.SseEventConverter<StreamCompletionResponse> sseConverter) {
+23         this.callback = sseCallback;
+24         this.sseConverter = sseConverter;
+25     }
+26 
+27     @Override
+28     public void onOpen(EventSource eventSource, Response response) {
+29         callback.onOpen();
+30         super.onOpen(eventSource, response);
+31     }
+32 
+33     @Override
+34     public void onEvent(EventSource eventSource, String id, String type, String msg) {
+35         if(DONE_FLAGS.contains(msg)) {
+36             callback.done();
+37         } else {
+38             StreamCompletionResponse response = sseConverter.convert(id, type, msg);
+39             if(response != null) {
+40                 callback.callback(response);
+41             }
+42         }
+43     }
+44 
+45     @Override
+46     public void onClosed(EventSource eventSource) {
+47         callback.finish();
+48     }
+49 
+50     @Override
+51     public void onFailure(EventSource eventSource, Throwable t, Response response) {
+52         ChannelException exception = null;
+53         try {
+54             if(t == null) {
+55                 exception = convertToException(response);
+56             } else {
+57                 exception = ChannelException.fromException(t);
+58             }
+59         } catch (Exception e) {
+60             exception = ChannelException.fromException(e);
+61         } finally {
+62             if(connectionInitFuture.isDone()) {
+63                 callback.finish(exception);
+64             } else {
+65                 connectionInitFuture.completeExceptionally(exception);
+66             }
+67         }
+68     }
+69 
+70 
+71     public ChannelException convertToException(Response response) throws IOException {
+72         String msg;
+73         try {
+74             msg = response.body().string();
+75             StreamCompletionResponse streamCompletionResponse = sseConverter.convert(null, null, msg);
+76             if(streamCompletionResponse != null && streamCompletionResponse.getError() != null) {
+77                 return new ChannelException.OpenAIException(response.code(), streamCompletionResponse.getError().getType(),
+78                         streamCompletionResponse.getError().getMessage(), streamCompletionResponse.getError());
+79             } else {
+80                 return new ChannelException.OpenAIException(response.code(), HttpStatus.valueOf(response.code()).getReasonPhrase(), msg);
+81             }
+82         } catch (Exception e) {
+83             LOGGER.warn(e.getMessage(), e);
+84             return ChannelException.fromResponse(response.code(), response.message());
+85         }
+86     }
+87 }
+88
+```
+
+
+
+
+```
+File: api/server/src/main/java/com/ke/bella/openapi/protocol/completion/callback/StreamCallbackProvider.java
+1 package com.ke.bella.openapi.protocol.completion.callback;
+2 
+3 import com.ke.bella.openapi.EndpointProcessData;
+4 import com.ke.bella.openapi.apikey.ApikeyInfo;
+5 import com.ke.bella.openapi.protocol.Callbacks;
+6 import com.ke.bella.openapi.protocol.completion.CompletionProperty;
+7 import com.ke.bella.openapi.protocol.log.EndpointLogger;
+8 import com.ke.bella.openapi.safety.ISafetyCheckService;
+9 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+10 
+11 public class StreamCallbackProvider {
+12     public static Callbacks.StreamCompletionCallback provide(SseEmitter sse, EndpointProcessData processData, ApikeyInfo apikeyInfo,
+13             EndpointLogger logger, ISafetyCheckService.IChatSafetyCheckService safetyService, CompletionProperty property) {
+14         Callbacks.StreamCompletionCallbackNode root = new SplitReasoningCallback(property);
+15         root.addLast(new ToolCallSimulatorCallback(processData));
+16         root.addLast(new MergeReasoningCallback(property));
+17         root.addLast(new StreamCompletionCallback(sse, processData, apikeyInfo, logger, safetyService));
+18         return root;
+19     }
+20 
+21     public static Callbacks.StreamCompletionCallback provideForMessage(SseEmitter sse, EndpointProcessData processData, ApikeyInfo apikeyInfo,
+22             EndpointLogger logger, ISafetyCheckService.IChatSafetyCheckService safetyService, CompletionProperty property) {
+23         Callbacks.StreamCompletionCallbackNode root = new SplitReasoningCallback(property);
+24         root.addLast(new ToolCallSimulatorCallback(processData));
+25         root.addLast(new MergeReasoningCallback(property));
+26         root.addLast(new StreamMessagesCallback(sse, processData, apikeyInfo, logger, safetyService));
+27         return root;
+28     }
+29 }
+30
+```
+
+
+
+
+```
+File: api/sdk/src/main/java/com/ke/bella/openapi/utils/JacksonUtils.java
+1 package com.ke.bella.openapi.utils;
+2 
+3 import java.io.IOException;
+4 import java.lang.reflect.Field;
+5 import java.text.ParseException;
+6 import java.text.SimpleDateFormat;
+7 import java.time.LocalDate;
+8 import java.time.LocalDateTime;
+9 import java.time.LocalTime;
+10 import java.time.format.DateTimeFormatter;
+11 import java.util.Date;
+12 import java.util.HashMap;
+13 import java.util.Map;
+14 import java.util.Objects;
+15 import java.util.TimeZone;
+16 
+17 import org.apache.commons.lang3.StringUtils;
+18 import org.apache.log4j.LogManager;
+19 import org.apache.log4j.Logger;
+20 
+21 import com.fasterxml.jackson.annotation.JsonFormat;
+22 import com.fasterxml.jackson.annotation.JsonInclude;
+23 import com.fasterxml.jackson.core.JsonGenerator;
+24 import com.fasterxml.jackson.core.JsonParser;
+25 import com.fasterxml.jackson.core.JsonProcessingException;
+26 import com.fasterxml.jackson.core.type.TypeReference;
+27 import com.fasterxml.jackson.databind.DeserializationContext;
+28 import com.fasterxml.jackson.databind.DeserializationFeature;
+29 import com.fasterxml.jackson.databind.JsonDeserializer;
+30 import com.fasterxml.jackson.databind.JsonNode;
+31 import com.fasterxml.jackson.databind.JsonSerializer;
+32 import com.fasterxml.jackson.databind.ObjectMapper;
+33 import com.fasterxml.jackson.databind.SerializationFeature;
+34 import com.fasterxml.jackson.databind.SerializerProvider;
+35 import com.fasterxml.jackson.databind.module.SimpleModule;
+36 import com.fasterxml.jackson.databind.node.ArrayNode;
+37 import com.fasterxml.jackson.databind.node.ObjectNode;
+38 import com.fasterxml.jackson.databind.ser.std.DateSerializer;
+39 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+40 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+41 
+42 /**
+43  * Author: Stan Sai Date: 2024/4/11 11:55 description:
+44  */
+45 public class JacksonUtils {
+46     private static final Logger LOGGER = LogManager.getLogger(JacksonUtils.class);
+47     public static final ObjectMapper MAPPER;
+48     private static final DateTimeFormatter DATETIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+49     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+50     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss");
+51 
+52     static {
+53         MAPPER = serializingObjectMapper();
+54     }
+55 
+56     private JacksonUtils() {
+57     }
+58 
+59     public static String serialize(Object obj) {
+60         try {
+61             return MAPPER.writeValueAsString(obj);
+62         } catch (JsonProcessingException e) {
+63             LOGGER.error(e.getMessage(), e);
+64         }
+65         return "";
+66     }
+67 
+68     public static byte[] toByte(Object obj) {
+69         try {
+70             return MAPPER.writeValueAsBytes(obj);
+71         } catch (JsonProcessingException e) {
+72             LOGGER.error(e.getMessage(), e);
+73         }
+74         return new byte[0];
+75     }
+76 
+77     public static <T> T deserialize(String jsonText, TypeReference<T> type) {
+78         try {
+79             return MAPPER.readValue(jsonText, type);
+80         } catch (Exception e) {
+81             LOGGER.error(e.getMessage(), e);
+82         }
+83         return null;
+84     }
+85 
+86     public static <T> T deserialize(String jsonText, Class<T> beanClass) {
+87         try {
+88             return MAPPER.readValue(jsonText, beanClass);
+89         } catch (Exception e) {
+90             LOGGER.error(e.getMessage(), e);
+91         }
+92         return null;
+93     }
+94 
+95     public static <T> T deserialize(byte[] bytes, Class<T> beanClass) {
+96         try {
+97             return MAPPER.readValue(bytes, beanClass);
+98         } catch (Exception e) {
+99             LOGGER.error(e.getMessage(), e);
+100         }
+101         return null;
+102     }
+103 
+104     public static <T> T deserialize(byte[] bytes, TypeReference<T> tTypeReference) {
+105         try {
+106             return MAPPER.readValue(bytes, tTypeReference);
+107         } catch (Exception e) {
+108             LOGGER.error(e.getMessage(), e);
+109         }
+110         return null;
+111     }
+112 
+113     public static JsonNode deserialize(String jsonText) {
+114         try {
+115             return MAPPER.readTree(jsonText);
+116         } catch (Exception e) {
+117             LOGGER.error(e.getMessage(), e);
+118         }
+119         return null;
+120     }
+121 
+122     public static JsonNode toJsonNode(Object obj) {
+123         try {
+124             return MAPPER.readTree(serialize(obj));
+125         } catch (Exception e) {
+126             LOGGER.error(e.getMessage(), e);
+127         }
+128         return null;
+129     }
+130 
+131     public static ObjectNode createNode() {
+132         try {
+133             return MAPPER.createObjectNode();
+134         } catch (Exception e) {
+135             LOGGER.error(e.getMessage(), e);
+136         }
+137         return null;
+138     }
+139 
+140     public static ArrayNode createArrayNode() {
+141         try {
+142             return MAPPER.createArrayNode();
+143         } catch (Exception e) {
+144             LOGGER.error(e.getMessage(), e);
+145         }
+146         return null;
+147     }
+148 
+149     public static Map toMap(byte[] bytes) {
+150         Map map = new HashMap();
+151         try {
+152             map = MAPPER.readValue(bytes, Map.class);
+153         } catch (IOException e) {
+154             LOGGER.error(e.getMessage(), e);
+155         }
+156         return map;
+157     }
+158 
+159     public static Map toMap(String jsonStr) {
+160         if(jsonStr == null) {
+161             return null;
+162         }
+163         Map map = new HashMap();
+164         try {
+165             map = MAPPER.readValue(jsonStr, Map.class);
+166         } catch (IOException e) {
+167             LOGGER.error(e.getMessage(), e);
+168         }
+169         return map;
+170     }
+171 
+172     public static Map toMap(Object objEntity) {
+173         if(Objects.isNull(objEntity)) {
+174             return null;
+175         }
+176         Map map = new HashMap();
+177         try {
+178             map = MAPPER.readValue(MAPPER.writeValueAsString(objEntity), Map.class);
+179         } catch (IOException e) {
+180             LOGGER.error(e.getMessage(), e);
+181         }
+182         return map;
+183     }
+184 
+185     public static <T> T convertValue(Map source, Class<T> clazz) {
+186         return MAPPER.convertValue(source, clazz);
+187     }
+188 
+189 
+190     /**
+191      * jackson2 json序列化 null字段输出为空串
+192      */
+193     public static ObjectMapper serializingObjectMapper() {
+194 
+195         // 设置日期格式
+196         ObjectMapper objectMapper = new ObjectMapper();
+197         objectMapper.configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true);
+198         JavaTimeModule javaTimeModule = new JavaTimeModule();
+199         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+200         // 序列化日期格式
+201         javaTimeModule.addSerializer(LocalDateTime.class, new LocalDateTimeSerializer());
+202         javaTimeModule.addSerializer(LocalDate.class, new LocalDateSerializer());
+203         javaTimeModule.addSerializer(LocalTime.class, new LocalTimeSerializer());
+204         javaTimeModule.addSerializer(Date.class, new DateSerializer(false, simpleDateFormat));
+205         // 反序列化日期格式
+206         javaTimeModule.addDeserializer(LocalDateTime.class, new LocalDateTimeDeserializer());
+207         javaTimeModule.addDeserializer(LocalDate.class, new LocalDateDeserializer());
+208         javaTimeModule.addDeserializer(LocalTime.class, new LocalTimeDeserializer());
+209         javaTimeModule.addDeserializer(Date.class, new JsonDeserializer<Date>() {
+210             @Override
+211             public Date deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
+212                 String date = jsonParser.getText();
+213                 try {
+214                     return simpleDateFormat.parse(date);
+215                 } catch (ParseException e) {
+216                     throw new RuntimeException(e);
+217                 }
+218             }
+219         });
+220 
+221         objectMapper.registerModule(javaTimeModule)
+222                 .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+223                 .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+224                 .setTimeZone(TimeZone.getTimeZone("Asia/Shanghai"));
+225 
+226         // 序列化成json时，将所有的Long变成string，以解决js中的精度丢失。
+227         SimpleModule simpleModule = new SimpleModule();
+228         simpleModule.addSerializer(Long.class, ToStringSerializer.instance);
+229         simpleModule.addSerializer(Long.TYPE, ToStringSerializer.instance);
+230         objectMapper.registerModule(simpleModule);
+231 
+232         // 忽略不存在的字段
+233         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+234         // 空值不序列化
+235         objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+236 
+237         return objectMapper;
+238     }
+239 
+240     /**
+241      * LocalDateTime序列化
+242      */
+243     private static class LocalDateTimeSerializer extends JsonSerializer<LocalDateTime> {
+244 
+245         @Override
+246         public void serialize(LocalDateTime value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+247             gen.writeString(value.format(DATETIME_FORMATTER));
+248         }
+249     }
+250 
+251     /**
+252      * LocalDateTime反序列化
+253      */
+254     private static class LocalDateTimeDeserializer extends JsonDeserializer<LocalDateTime> {
+255 
+256         @Override
+257         public LocalDateTime deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+258             return LocalDateTime.parse(p.getValueAsString(), DATETIME_FORMATTER);
+259         }
+260     }
+261 
+262     /**
+263      * LocalDate序列化
+264      */
+265     private static class LocalDateSerializer extends JsonSerializer<LocalDate> {
+266 
+267         @Override
+268         public void serialize(LocalDate value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+269 
+270             // 获取value来源的类
+271             Class<?> aClass = gen.getCurrentValue().getClass();
+272 
+273             // 获取字段名
+274             String currentName = gen.getOutputContext().getCurrentName();
+275 
+276             try {
+277                 // 获取字段
+278                 Field declaredField = aClass.getDeclaredField(currentName);
+279                 // 校验是否LocalDate属性的字段
+280                 if(Objects.equals(declaredField.getType(), LocalDate.class)) {
+281                     // 是否被@JsonFormat修饰
+282                     boolean annotationPresent = declaredField.isAnnotationPresent(JsonFormat.class);
+283 
+284                     if(annotationPresent) {
+285                         String pattern = declaredField.getAnnotation(JsonFormat.class).pattern();
+286                         if(StringUtils.isNotEmpty(pattern)) {
+287                             gen.writeString(value.format(DateTimeFormatter.ofPattern(pattern)));
+288                         } else {
+289                             gen.writeString(value.format(DATE_FORMATTER));
+290 
+291                         }
+292                     } else {
+293                         gen.writeString(value.format(DATE_FORMATTER));
+294                     }
+295 
+296                 }
+297             } catch (Exception e) {
+298                 LOGGER.error(e.getMessage(), e);
+299             }
+300         }
+301     }
+302 
+303     /**
+304      * LocalDate反序列化
+305      */
+306     private static class LocalDateDeserializer extends JsonDeserializer<LocalDate> {
+307 
+308         @Override
+309         public LocalDate deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+310             return LocalDate.parse(p.getValueAsString(), DATE_FORMATTER);
+311         }
+312     }
+313 
+314     /**
+315      * LocalTime序列化
+316      */
+317     private static class LocalTimeSerializer extends JsonSerializer<LocalTime> {
+318 
+319         @Override
+320         public void serialize(LocalTime value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+321             gen.writeString(value.format(TIME_FORMATTER));
+322         }
+323     }
+324 
+325     /**
+326      * LocalTime反序列化
+327      */
+328     private static class LocalTimeDeserializer extends JsonDeserializer<LocalTime> {
+329 
+330         @Override
+331         public LocalTime deserialize(JsonParser p, DeserializationContext ctx) throws IOException {
+332             return LocalTime.parse(p.getValueAsString(), TIME_FORMATTER);
+333         }
+334     }
+335 }
+336
+```
+
+
+
+
+# 用户需求
+
+title：claude-4-sonnet和claude-3-sonnet的流式返回的
+
+curl --location '/v1/chat/completions' --data '{ model: claude-4-sonnet, user: 1232423423, messages: \[ { role: system, content: 请详细描述你的智能体设定，例如：智能体特点，说明ta的能力、希望ta完成的工作或目标，ta的作用智能体身份，描述ta的角色、和用户交互形式，需要规避的异常行为智能体行为，指定ta的行为持点、性格或个性化回用户的方式 }, { role: user, content: 帮我查一下北京今天的天气 } \], tools: \[ { type: function, function: { name: weather_search, description: 当你想询问关于天气或与天气相关的问题时，你可以使用这个工具。, parameters: { type: object, required: \[ city \], properties: { city: { title: City, description: 如果你不知道，你可以从问题中提取城市名称，或者你可以回答：请告诉我你的城市.你需要从问题中提取出中国的城市名称。, type: string } } } } }, { type: function, function: { name: coze_bing_search, description: 查询Bing的内容信息, parameters: { type: object, required: \[ query \], properties: { query: { description: 查询Bing的内容信息, type: string } } } } } \], tool_choice: auto, temperature: 0.01, top_p: 1.0, stream: true, response_format: { type: text } }' 返回值中存在null的情况：可以为空串，不能是null ，目前返回值存在：arguments: null

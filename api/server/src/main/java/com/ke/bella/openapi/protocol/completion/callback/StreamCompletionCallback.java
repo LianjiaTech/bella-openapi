@@ -64,6 +64,8 @@ public class StreamCompletionCallback implements Callbacks.StreamCompletionCallb
     public void callback(StreamCompletionResponse msg) {
         msg.setCreated(DateTimeUtils.getCurrentSeconds());
         if(requestRiskData != null) {
+            // 确保arguments字段不为null
+            msg.ensureArgumentsNotNull();
             msg.setRequestRiskData(requestRiskData);
             requestRiskData = null;
         }

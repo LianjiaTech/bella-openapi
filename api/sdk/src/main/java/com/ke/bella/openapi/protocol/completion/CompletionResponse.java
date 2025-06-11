@@ -130,6 +130,13 @@ public class CompletionResponse extends OpenapiResponse {
     public static Choice toolcallChoice(String reasoning, List<ToolCall> calls) {
         Choice c = Choice.builder()
                 .message(Message.builder()
+                        // 确保所有ToolCall的arguments不为null
+                        .tool_calls(calls.stream().map(toolCall -> {
+                            if (toolCall.getFunction() != null && toolCall.getFunction().getArguments() == null) {
+                                toolCall.getFunction().setArguments("");
+                            }
+                            return toolCall;
+                        }).collect(java.util.stream.Collectors.toList()))
                         .role("assistant")
                         .reasoning_content(reasoning)
                         .tool_calls(calls)
@@ -179,4 +186,3 @@ public class CompletionResponse extends OpenapiResponse {
     }
 
 }
-

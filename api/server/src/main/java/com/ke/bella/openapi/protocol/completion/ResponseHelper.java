@@ -76,6 +76,10 @@ public class ResponseHelper {
                 int toolIndex = streamToolCall.getIndex();
                 String name = streamToolCall.getFunction().getName();
                 String arguments = streamToolCall.getFunction().getArguments();
+                // 确保arguments不为null
+                if (arguments == null) {
+                    arguments = "";
+                }
                 if(StringUtils.isBlank(name) && StringUtils.isEmpty(arguments)) {
                     return target;
                 }
@@ -89,6 +93,9 @@ public class ResponseHelper {
                         if(toolCall.getFunction().getArguments() == null) {
                             toolCall.getFunction().setArguments(arguments);
                         } else {
+                            // 确保现有arguments不为null
+                            String existingArgs = toolCall.getFunction().getArguments();
+                            existingArgs = existingArgs == null ? "" : existingArgs;
                             toolCall.getFunction().setArguments(toolCall.getFunction().getArguments() + arguments);
                         }
                     }
@@ -104,6 +111,7 @@ public class ResponseHelper {
     public static Message.ToolCall copyToolCall(Message.ToolCall toolCall) {
         return new Message.ToolCall(toolCall.getIndex(), toolCall.getId(), toolCall.getType(),
                 Message.FunctionCall.builder().name(toolCall.getFunction().getName()).arguments(toolCall.getFunction().getArguments()).build());
+                // 注意：这里的getArguments()现在会返回空字符串而不是null
     }
 
 }

@@ -37,6 +37,8 @@ public class CompletionSseListener extends BellaEventSourceListener {
         } else {
             StreamCompletionResponse response = sseConverter.convert(id, type, msg);
             if(response != null) {
+                // 确保arguments字段不为null
+                ArgumentsNullSafetyHelper.ensureArgumentsNotNull(response);
                 callback.callback(response);
             }
         }

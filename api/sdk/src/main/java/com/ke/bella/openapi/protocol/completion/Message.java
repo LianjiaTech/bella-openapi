@@ -184,6 +184,14 @@ public class Message {
         public void appendArguments(String delta) {
             this.arguments += delta;
         }
+
+        public String getArguments() {
+            return arguments == null ? "" : arguments;
+        }
+
+        public void setArguments(String arguments) {
+            this.arguments = arguments;
+        }
     }
 
 }
