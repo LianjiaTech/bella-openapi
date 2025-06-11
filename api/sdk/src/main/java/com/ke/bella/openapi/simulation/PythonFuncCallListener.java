@@ -33,6 +33,7 @@ public class PythonFuncCallListener {
     }
 
     public void onFunctionCallEnter() {
+        currentToolCall.getFunction().setName(null);
         currentToolCall.getFunction().setArguments("{");
         if(callback != null) {
             callback.onMessage(StreamCompletionResponse.builder()
@@ -42,6 +43,7 @@ public class PythonFuncCallListener {
     }
 
     public void onArgumentName(String name) {
+        currentToolCall.getFunction().setName(null);
         if(callback != null) {
             currentToolCall.getFunction().setArguments(JacksonUtils.serialize(name));
             callback.onMessage(StreamCompletionResponse.builder()
@@ -53,6 +55,7 @@ public class PythonFuncCallListener {
     }
 
     public void onArgumentValue(Object value) {
+        currentToolCall.getFunction().setName(null);
         String tmp = ":" + JacksonUtils.serialize(value);
         if(callback != null) {
             currentToolCall.getFunction().setArguments(tmp);
@@ -66,6 +69,7 @@ public class PythonFuncCallListener {
     }
 
     public void onNextArgumentEnter() {
+        currentToolCall.getFunction().setName(null);
         if(callback != null) {
             currentToolCall.getFunction().setArguments(",");
             callback.onMessage(StreamCompletionResponse.builder()
@@ -77,6 +81,7 @@ public class PythonFuncCallListener {
     }
 
     public void onFunctionCallExit() {
+
         if(callback != null) {
             currentToolCall.getFunction().setArguments("}");
             callback.onMessage(StreamCompletionResponse.builder()

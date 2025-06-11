@@ -2,6 +2,7 @@ package com.ke.bella.openapi.protocol.completion;
 
 import com.google.common.collect.Lists;
 import com.ke.bella.openapi.protocol.OpenapiResponse;
+import com.ke.bella.openapi.protocol.message.MessageRequest;
 import com.ke.bella.openapi.utils.DateTimeUtils;
 import com.ke.bella.openapi.utils.ImageUtils;
 import com.ke.bella.openapi.utils.JacksonUtils;
@@ -70,7 +71,6 @@ public class AwsCompletionConverter {
     public static ConverseRequest convert2AwsRequest(CompletionRequest openAIRequest, AwsProperty property) {
         Pair<List<SystemContentBlock>, List<Message>> pair = generateMsg(openAIRequest.getMessages(), property);
         try {
-            rewriteMaxTokens(openAIRequest, property);
             ConverseRequest.Builder builder = ConverseRequest
                     .builder()
                     .modelId(openAIRequest.getModel())
@@ -83,6 +83,16 @@ public class AwsCompletionConverter {
             if(MapUtils.isNotEmpty(property.additionalParams)) {
                 builder.additionalModelRequestFields(convertObjectToDocument(property.additionalParams));
             }
+            if(openAIRequest.getReasoning_effort() != null) {
+                Map<String, Object> thinking = new HashMap<>();
+                if(openAIRequest.getReasoning_effort() instanceof String) {
+                    thinking.put("thinking", new MessageRequest.ThinkingConfigEnabled(2000));
+                    builder.additionalModelRequestFields(convertObjectToDocument(thinking));
+                } else {
+                    thinking.put("thinking", openAIRequest.getResponse_format());
+                    builder.additionalModelRequestFields(convertObjectToDocument(thinking));
+                }
+            }
             return builder.build();
         } catch (Exception e) {
             throw new IllegalArgumentException("invalid arguments");
@@ -91,7 +101,6 @@ public class AwsCompletionConverter {
 
     public static ConverseStreamRequest convert2AwsStreamRequest(CompletionRequest openAIRequest, AwsProperty property) {
         try {
-            rewriteMaxTokens(openAIRequest, property);
             Pair<List<SystemContentBlock>, List<software.amazon.awssdk.services.bedrockruntime.model.Message>> pair = generateMsg(
                     openAIRequest.getMessages(), property);
             ConverseStreamRequest.Builder builder = ConverseStreamRequest
@@ -109,16 +118,6 @@ public class AwsCompletionConverter {
             return builder.build();
         } catch (Exception e) {
             throw new IllegalArgumentException("invalid arguments");
-        }
-    }
-
-    private static void rewriteMaxTokens(CompletionRequest openAIRequest, AwsProperty property) {
-        if(property.supportThink) {
-            int maxTokens = property.defaultMaxTokens;
-            if(openAIRequest.getMax_tokens() != null) {
-                maxTokens = Integer.min(openAIRequest.getMax_tokens() + property.budgetTokens, maxTokens);
-            }
-            openAIRequest.setMax_tokens(maxTokens);
         }
     }
 
@@ -287,7 +286,6 @@ public class AwsCompletionConverter {
         List<SystemContentBlock> blocks = new ArrayList<>();
         Object content = openAiMsg.getContent();
         boolean hasCacheControl = false;
-
         if (content instanceof List) {
             List<?> contentList = (List<?>) content;
             for (Object item : contentList) {
@@ -298,9 +296,7 @@ public class AwsCompletionConverter {
                         if (textContent != null && !textContent.isEmpty()) {
                             blocks.add(SystemContentBlock.builder().text(textContent).build());
                         }
-
-                        // Track if any item has cache_control
-                        if (contentMap.containsKey("cache_control")) {
+                        if(contentMap.containsKey("cache_control")) {
                             hasCacheControl = true;
                         }
                     }
@@ -405,7 +401,6 @@ public class AwsCompletionConverter {
         ContentBlock.Builder textBlock = ContentBlock.builder().text(contentMap.get("text").toString());
 		contentBlocks.add(textBlock.build());
 
-        // Handle cache_control if present, always use "default" type
         if (contentMap.containsKey("cache_control") && property.supportCache) {
             contentBlocks.add(ContentBlock.builder()
                     .cachePoint(CachePointBlock.builder()
@@ -438,7 +433,6 @@ public class AwsCompletionConverter {
                         .build());
 		contentBlocks.add(imageBlock.build());
 
-        // Add cache point if cache_control is present
         if (cacheControl != null && property.supportCache) {
             contentBlocks.add(ContentBlock.builder()
                     .cachePoint(CachePointBlock.builder()
@@ -566,7 +560,7 @@ public class AwsCompletionConverter {
         } else if(value instanceof Map) {
             return convertMapToDocument((Map<String, Object>) value);
         } else {
-            throw new IllegalArgumentException("Unsupported value type:" + value.getClass().getSimpleName());
+            return convertMapToDocument(JacksonUtils.toMap(value));
         }
     }
 

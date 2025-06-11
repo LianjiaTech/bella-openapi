@@ -29,7 +29,7 @@ public class SseHelper {
     }
 
     public static void sendEvent(SseEmitter sse, String event, Object data) {
-        send(sse, SseEmitter.event().name(event).id(event).data(data));
+        send(sse, SseEmitter.event().name(event).data(data));
     }
 
     public static void sendEvent(SseEmitter sse, Object data) {

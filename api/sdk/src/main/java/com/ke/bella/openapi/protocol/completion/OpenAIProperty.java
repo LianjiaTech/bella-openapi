@@ -19,7 +19,7 @@ public class OpenAIProperty extends CompletionProperty {
     AuthorizationProperty auth;
     String deployName;
     String apiVersion;
-    boolean supportStreamOptions;
+    boolean supportStreamOptions = true;
 
     @Override
     public Map<String, String> description() {
