@@ -4,10 +4,12 @@ import com.ke.bella.openapi.EndpointContext;
 import com.ke.bella.openapi.annotations.BellaAPI;
 import com.ke.bella.openapi.apikey.ApikeyCreateOp;
 import com.ke.bella.openapi.apikey.ApikeyInfo;
+import com.ke.bella.openapi.apikey.SubApikeyUpdateOp;
 import com.ke.bella.openapi.service.ApikeyService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,14 +29,22 @@ public class ApikeyController {
     private ApikeyService as;
 
     @PostMapping("/create")
-    public String createApikey(@RequestBody ApikeyCreateOp op) {
-        ApikeyInfo cur = EndpointContext.getApikey();
-        Assert.isTrue(StringUtils.isEmpty(cur.getParentCode()), "当前AK无创建子AK权限");
+    public String createSubApikey(@RequestBody ApikeyCreateOp op) {
         Assert.notNull(op.getMonthQuota(), "配额应不可为null");
         Assert.notNull(op.getSafetyLevel(), "安全等级不可为空");
         Assert.isTrue(StringUtils.isNotEmpty(op.getRoleCode()) || CollectionUtils.isNotEmpty(op.getPaths()), "权限不可为空");
-        op.setParentCode(cur.getCode());
+        // 如果请求中没有parentCode，则使用当前AK作为父AK
+        if (StringUtils.isEmpty(op.getParentCode())) {
+            ApikeyInfo cur = EndpointContext.getApikey();
+            op.setParentCode(cur.getCode());
+        }
         return as.createByParentCode(op);
+    }
+
+    @PostMapping("/update")
+    public boolean updateSubApikey(@RequestBody SubApikeyUpdateOp op) {
+        Assert.hasText(op.getCode(), "ak code不可为空");
+        return as.updateSubApikey(op);
     }
 
     @GetMapping("/whoami")
