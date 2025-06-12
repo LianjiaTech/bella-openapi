@@ -36,16 +36,18 @@ public class EndpointResponseAdvice implements ResponseBodyAdvice<Object> {
     @Override
     public Object beforeBodyWrite(Object body, MethodParameter returnType, MediaType selectedContentType,
             Class<? extends HttpMessageConverter<?>> selectedConverterType, ServerHttpRequest request, ServerHttpResponse response) {
-        OpenapiResponse openapiResponse = body instanceof OpenapiResponse ? (OpenapiResponse) body :new OpenapiResponse();
-        String requestId = EndpointContext.getProcessData().getRequestId();
-        if(openapiResponse.getError() == null) {
-            response.setStatusCode(HttpStatus.OK);
-        } else {
-            Integer httpCode = openapiResponse.getError().getHttpCode();
-            response.setStatusCode(httpCode == null ? HttpStatus.SERVICE_UNAVAILABLE : HttpStatus.valueOf(httpCode));
-            logError(httpCode, requestId, openapiResponse.getError().getMessage(), null);
+        if(EndpointContext.getProcessData().getResponse() == null) {
+            OpenapiResponse openapiResponse = body instanceof OpenapiResponse ? (OpenapiResponse) body : new OpenapiResponse();
+            String requestId = EndpointContext.getProcessData().getRequestId();
+            if(openapiResponse.getError() == null) {
+                response.setStatusCode(HttpStatus.OK);
+            } else {
+                Integer httpCode = openapiResponse.getError().getHttpCode();
+                response.setStatusCode(httpCode == null ? HttpStatus.SERVICE_UNAVAILABLE : HttpStatus.valueOf(httpCode));
+                logError(httpCode, requestId, openapiResponse.getError().getMessage(), null);
+            }
+            EndpointContext.getProcessData().setResponse(openapiResponse);
         }
-        EndpointContext.getProcessData().setResponse(openapiResponse);
         logger.log(EndpointContext.getProcessData());
         return body;
     }

@@ -14,6 +14,7 @@ import com.ke.bella.openapi.PermissionCondition;
 import com.ke.bella.openapi.apikey.ApikeyCreateOp;
 import com.ke.bella.openapi.apikey.ApikeyInfo;
 import com.ke.bella.openapi.apikey.ApikeyOps;
+import com.ke.bella.openapi.apikey.SubApikeyUpdateOp;
 import com.ke.bella.openapi.common.exception.ChannelException;
 import com.ke.bella.openapi.db.repo.ApikeyCostRepo;
 import com.ke.bella.openapi.db.repo.ApikeyRepo;
@@ -121,10 +122,13 @@ public class ApikeyService {
 
     @Transactional
     public String createByParentCode(ApikeyCreateOp op) {
-        ApikeyInfo apikey = EndpointContext.getApikey();
-        if(!apikey.getCode().equals(op.getParentCode())) {
-            throw new ChannelException.AuthorizationException("没有操作权限");
+        ApikeyInfo cur = EndpointContext.getApikey();
+        ApikeyInfo apikey = queryByCode(op.getParentCode(), true);
+        if(!apikey.getOwnerCode().equals(cur.getOwnerCode())) {
+            throw new ChannelException.AuthorizationException("请求使用AK和父AK必须属于同一个人");
         }
+        Assert.notNull(apikey, "父AK不存在或已停用");
+        Assert.isTrue(StringUtils.isEmpty(apikey.getParentCode()), "当前AK无创建子AK权限");
         if(StringUtils.isNotEmpty(op.getRoleCode())) {
             apikeyRoleRepo.checkExist(op.getRoleCode(), true);
         }
@@ -154,6 +158,30 @@ public class ApikeyService {
             updateRole(ApikeyOps.RoleOp.builder().code(db.getCode()).paths(op.getPaths()).build());
         }
         return ak;
+    }
+
+    @Transactional
+    public boolean updateSubApikey(SubApikeyUpdateOp op) {
+        ApikeyInfo cur = EndpointContext.getApikey();
+        ApikeyInfo subApikey = apikeyRepo.queryByCode(op.getCode());
+        ApikeyInfo apikey = queryByCode(subApikey.getParentCode(), false);
+        Assert.notNull(apikey, "只可以修改子ak");
+        if(!apikey.getOwnerCode().equals(cur.getOwnerCode())) {
+            throw new ChannelException.AuthorizationException("只能修改自己的apikey");
+        }
+        if(StringUtils.isNotEmpty(op.getRoleCode())) {
+            apikeyRoleRepo.checkExist(op.getRoleCode(), true);
+        }
+        Assert.isTrue(op.getMonthQuota() == null || op.getMonthQuota().doubleValue() <= apikey.getMonthQuota().doubleValue(), "配额超出ak的最大配额");
+        Assert.isTrue(op.getSafetyLevel() <= apikey.getSafetyLevel(), "安全等级超出ak的最高等级");
+        apikeyRepo.update(op, op.getCode());
+        if(CollectionUtils.isNotEmpty(op.getPaths())) {
+            boolean match = op.getPaths().stream().allMatch(url -> apikey.getRolePath().getIncluded().stream().anyMatch(pattern -> MatchUtils.matchUrl(pattern, url))
+                    && apikey.getRolePath().getExcluded().stream().noneMatch(pattern -> MatchUtils.matchUrl(pattern, url)));
+            Assert.isTrue(match, "超出ak的权限范围");
+            updateRole(ApikeyOps.RoleOp.builder().code(op.getCode()).paths(op.getPaths()).build());
+        }
+        return true;
     }
 
     @Transactional

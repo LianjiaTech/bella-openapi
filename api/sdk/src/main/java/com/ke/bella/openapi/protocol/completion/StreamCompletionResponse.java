@@ -28,6 +28,8 @@ public class StreamCompletionResponse extends OpenapiResponse {
      * 时间戳
      */
     private long created;
+
+    private String object = CHAT_COMPLETION_CHUNK_OBJECT;
     /**
      * 唯一id
      */

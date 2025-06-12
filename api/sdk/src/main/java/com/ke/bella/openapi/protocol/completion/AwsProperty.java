@@ -23,8 +23,6 @@ public class AwsProperty extends CompletionProperty {
     boolean supportThink;
     boolean supportCache;
     Map<String, Object> additionalParams = new HashMap<>();
-    Integer budgetTokens;
-    Integer defaultMaxTokens;
 
     @Override
     public Map<String, String> description() {
@@ -33,9 +31,8 @@ public class AwsProperty extends CompletionProperty {
         map.put("region", "部署区域");
         map.put("deployName", "部署名称");
         map.put("supportThink", "是否支持思考过程");
-        map.put("additionalParams", "请求需要的额外参数");
-        map.put("budgetTokens", "思考过程的最大token");
-        map.put("defaultMaxTokens", "max_tokens的最大值");
+        map.put("supportCache", "是否支持缓存");
+        map.put("additionalParams", "请求需要的额外参数");;
         return map;
     }
 }

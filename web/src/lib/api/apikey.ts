@@ -1,11 +1,26 @@
-import { ApikeyInfo, Page} from "@/lib/types/openapi";
+import {ApikeyInfo, CreateSubApikeyRequest, Page, UpdateSubApikeyRequest} from "@/lib/types/openapi";
 import { openapi } from '@/lib/api/openapi';
 import { ApiKeyBalance } from "@/lib/types/openapi";
 
-export async function getApikeyInfos(page: number, ownerCode: number | null, search: string | null): Promise<Page<ApikeyInfo> | null> {
+export function getSafetyLevel(level: number) : string {
+    switch (level) {
+        case 10:
+            return "极低";
+        case 20:
+            return "低";
+        case 30:
+            return "中";
+        case 40:
+            return "高";
+        default:
+            return "N/A";
+    }
+}
+
+export async function getApikeyInfos(page: number, ownerCode: number | null, search: string | null, parentCode?: string): Promise<Page<ApikeyInfo> | null> {
     try {
         const response = await openapi.get<Page<ApikeyInfo>>(`/console/apikey/page`, {
-            params: { status: 'active', ownerType:'person', ownerCode: ownerCode, searchParam: search, page }
+            params: { status: 'active', ownerType:'person', ownerCode: ownerCode, searchParam: search, page, parentCode: parentCode, includeChild: !!parentCode }
         });
         return response.data;
     } catch (error) {
@@ -45,12 +60,44 @@ export async function rename(code: string, name: string): Promise<boolean> {
     return response.data ?? false;
 }
 
-export async function getApiKeyBalance(code: string): Promise<ApiKeyBalance | null> {
+export async function getApikeyByCode(code: string): Promise<ApikeyInfo | null> {
     try {
-        const response = await openapi.get<ApiKeyBalance>(`/console/apikey/balance/${code}`);
+        const response = await openapi.get<ApikeyInfo>(`/console/apikey/fetchByCode`, {
+            params: { code, onlyActive: true }
+        });
         return response.data;
     } catch (error) {
-        console.error('Error fetching apikey balance:', error);
-        return null;
+        console.error('Error fetching apikey by code:', error);
+        throw error;
+    }
+}
+
+export async function createSubApikey(request: CreateSubApikeyRequest): Promise<string | null> {
+    try {
+        const response = await openapi.post<string>(`/v1/apikey/create`, request);
+        return response.data;
+    } catch (error) {
+        console.error('Error creating sub apikey:', error);
+        throw error;
+    }
+}
+
+export async function updateSubApikey(request: UpdateSubApikeyRequest): Promise<boolean | null> {
+    try {
+        const response = await openapi.post<boolean>(`/v1/apikey/update`, request);
+        return response.data;
+    } catch (error) {
+        console.error('Error update sub apikey:', error);
+        throw error;
+    }
+}
+
+export async function getApiKeyBalance(akCode: string): Promise<ApiKeyBalance | null> {
+    try {
+        const response = await openapi.get<ApiKeyBalance>(`/console/apikey/balance/${akCode}`);
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching api key balance:', error);
+        throw error;
     }
 }

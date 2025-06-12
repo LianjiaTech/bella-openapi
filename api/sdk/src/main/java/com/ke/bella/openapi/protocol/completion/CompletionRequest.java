@@ -155,6 +155,12 @@ public class CompletionRequest implements UserRequest, Serializable {
      */
     private Boolean enable_thinking;
 
+    /**
+     * Constrains effort on reasoning for reasoning models. Currently supported values are low, medium, and high.
+     * Reducing reasoning effort can result in faster responses and fewer tokens used on reasoning in a response.
+     */
+    private Object reasoning_effort;
+
     @Data
     public static class StreamOptions {
         /**
