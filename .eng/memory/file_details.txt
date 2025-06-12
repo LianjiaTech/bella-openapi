@@ -23,6 +23,7 @@ api/sdk/src/main/java/com/ke/bella/openapi/TypeSchema.java:这个文件定义了
 api/sdk/src/main/java/com/ke/bella/openapi/apikey/ApikeyCreateOp.java:ApikeyCreateOp.java用于创建API密钥操作相关对象，包含密钥名称、关联信息及相关配额等字段，通过lombok注解生成标准的Java类方法。
 api/sdk/src/main/java/com/ke/bella/openapi/apikey/ApikeyInfo.java:包含ApikeyInfo类，管理API密钥的信息和权限。支持序列化与反序列化，并提供权限检查功能。使用Lombok简化代码。
 api/sdk/src/main/java/com/ke/bella/openapi/apikey/ApikeyOps.java:定义用于操作API密钥的操作类，包括ApplyOp、NameOp、QuotaOp等，用于分配或修改API密钥属性。
+api/sdk/src/main/java/com/ke/bella/openapi/apikey/SubApikeyUpdateOp.java:这个Java类定义了SubApikeyUpdateOp对象，用于更新子API Key的信息。包含的字段有code、name、safetyLevel等，主要用于数据传输和更新操作。
 api/sdk/src/main/java/com/ke/bella/openapi/client/OpenapiClient.java:OpenapiClient类主要负责与开放API交互，提供了API密钥验证、文件上传、下载和路由请求的功能。
 api/sdk/src/main/java/com/ke/bella/openapi/common/AudioFormat.java:定义了音频格式的枚举类型AudioFormat，包括PCM, MP3, WAV等，提供了根据格式获取MIME类型的功能。
 api/sdk/src/main/java/com/ke/bella/openapi/common/EntityConstants.java:此文件定义了系统中的常量，包括实体类型、角色、优先级等，使用多个枚举类组织常量数据，与系统配置强相关。
@@ -226,7 +227,7 @@ api/server/src/main/java/com/ke/bella/openapi/db/repo/StatusRepo.java:数据库�
 api/server/src/main/java/com/ke/bella/openapi/db/repo/Timed.java:这个接口定义了与时间相关的字段和方法，包括创建时间(ctime)和最后修改时间(mtime)，并使用@JsonFormat注解格式化时间。
 api/server/src/main/java/com/ke/bella/openapi/db/repo/UniqueKeyRepo.java:定义Generic DAO类，UniqueKeyRepo，提供通用数据库操作，使用jOOQ进行记录的插入、查询、更新等操作。
 api/server/src/main/java/com/ke/bella/openapi/db/repo/UserRepo.java:实现用户数据的CRUD操作，包括用户信息验证和权限管理，涉及到Operator和Apikey信息的处理与存储。
-api/server/src/main/java/com/ke/bella/openapi/endpoints/ApikeyController.java:API密钥控制器，提供创建、查询和权限检查的API接口，通过ApikeyService与服务交互。
+api/server/src/main/java/com/ke/bella/openapi/endpoints/ApikeyController.java:该文件实现了ApikeyController类，提供API Key相关的HTTP接口，如创建、更新子API Key等，调用ApikeyService执行具体逻辑。
 api/server/src/main/java/com/ke/bella/openapi/endpoints/AudioController.java:AudioController.java实现了与音频处理相关的REST接口，包括实时语音识别、文本转语音和音频转录功能。主要使用的类和接口有ChannelRouter、AdaptorManager、LimiterManager等，通过这些接口来管理音频流和协议适配器，并处理与其他服务的交互。
 api/server/src/main/java/com/ke/bella/openapi/endpoints/ChatController.java:ChatController类提供聊天相关的REST API端点，处理完成请求，使用AdaptorManager等类进行协议适配。
 api/server/src/main/java/com/ke/bella/openapi/endpoints/EmbeddingController.java:这个文件实现了EmbeddingController控制器，负责处理/v1/embeddings端点请求。它与路由、适配器和限流管理器交互。
@@ -335,7 +336,7 @@ api/server/src/main/java/com/ke/bella/openapi/script/LuaScriptExecutor.java:Lua�
 api/server/src/main/java/com/ke/bella/openapi/script/LuaScriptManager.java:管理Lua脚本的加载和缓存，利用RedissonClient进行Redis操作，支持动态脚本重新加载。
 api/server/src/main/java/com/ke/bella/openapi/script/ScriptInfo.java:定义基本脚本信息的类，包含脚本名称和默认名称属性。
 api/server/src/main/java/com/ke/bella/openapi/script/ScriptType.java:定义ScriptType枚举类，列举了各类脚本的路径类型。方法getScriptName用以生成完整的脚本名称。
-api/server/src/main/java/com/ke/bella/openapi/service/ApikeyService.java:API key管理服务。提供API key的创建、更新、验证和权限检查等功能，使用缓存和数据库进行存储和校验。
+api/server/src/main/java/com/ke/bella/openapi/service/ApikeyService.java:该文件实现了ApikeyService类，提供API Key的申请、创建子API Key、更新等服务功能，涉及缓存和数据库操作，与ApikeyController交互。
 api/server/src/main/java/com/ke/bella/openapi/service/CategoryService.java:此文件定义了CategoryService类，负责管理类目的创建、状态变更及其与端点的关系。主要交互对象是CategoryRepo、EndpointService等类，提供类目的增删改查及类目树构建功能。
 api/server/src/main/java/com/ke/bella/openapi/service/ChannelService.java:ChannelService类提供了创建、更新和管理渠道的服务，实现了渠道信息的缓存和自动更新，以及与渠道数据库的交互。支持并发管理、费用验证等功能。
 api/server/src/main/java/com/ke/bella/openapi/service/EndpointService.java:EndpointService类提供能力点的创建、更新和查询服务，依赖EndpointRepo进行数据库操作，管理能力点状态和相关细节。
@@ -409,6 +410,7 @@ start-details.md:提供Bella OpenAPI的启动与部署说明，涵盖项目概�
 start.sh:Shell脚本，用于通过Docker Compose启动和管理Bella OpenAPI服务，支持构建、推送镜像、配置OAuth等多种功能。
 stop.sh:这个shell脚本用于停止Bella OpenAPI服务，使用docker-compose停止api和web服务。
 web/.dockerignore:该.dockerignore文件用于在构建Docker镜像时排除特定文件和目录，例如日志、node_modules、.env文件等。
+web/.env.example:这个文件是环境变量配置示例，定义了NEXT_PUBLIC_API_HOST变量，用于指定API服务器地址。
 web/Dockerfile:该Dockerfile用于构建Web应用的Docker镜像，包括基础环境设置、依赖安装、构建过程及最终运行时配置，优化和加速部署流程。
 web/README.md:Next.js项目的README文件，提供项目启动和部署的基本说明信息。
 web/components.json:包含了UI组件库的配置，定义Style、Tailwind CSS配置、路径别名等信息，供前端开发使用。此文件作为前端项目的基础配置文件，支持模块化组件的使用。
@@ -424,7 +426,8 @@ web/src/app/api/logs/route.ts:定义了日志查询API的POST路由，处理日�
 web/src/app/api/logs/trace/route.ts:此文件定义了一个用于处理GET请求的路由，负责从配置和请求参数中获取日志跟踪信息并调用相应工作流。与配置文件、调用库集成，如callWorkflow。
 web/src/app/api/logs/trace/service/route.ts:该文件定义了获取服务配置的API路由。使用callWorkflow函数与外部服务交互，获取日志服务配置列表，并通过Next.js的API路由返回。
 web/src/app/api/metrics/route.ts:实现Next.js API路由处理程序，用于获取并处理监控指标数据，与callWorkflow函数交互。
-web/src/app/apikey/page.tsx:这个文件实现了API Key管理页面的React组件，提供了创建、搜索、分页显示API Key的功能，与API进行交互以获取和更新API Key数据，使用了多个UI组件来构建界面。
+web/src/app/apikey/[akCode]/page.tsx:这个文件实现了子API Key管理页面，主要功能包括显示子API Key列表、创建和复制子API Key。关键组件有SubApikeyDialog和CopyApikeyDialog，与API相关的交互通过getApikeyInfos和getApikeyByCode函数实现。
+web/src/app/apikey/page.tsx:这个文件实现了API Key管理页面，用户可以查看、搜索、创建和管理API Key。主要组件有DataTable和ApikeyColumns，支持分页和API Key复制等功能。
 web/src/app/globals.css:这个文件包含全局样式设置，使用 Tailwind CSS 进行基础、组件和工具类的定义，并处理不同主题下的背景和前景色。
 web/src/app/layout.tsx:这个文件定义了前端项目的布局组件RootLayout，使用了多种字体和主题提供器，同时包含用户状态管理。
 web/src/app/login/page.tsx:定义了登录页面组件，使用React实现。支持OAuth和密钥两种登录方式，通过Next.js的useRouter进行页面跳转。
@@ -448,8 +451,12 @@ web/src/app/playground/v1/audio/speech/page.tsx:实现了语音合成的播放�
 web/src/app/playground/v1/chat/completions/page.tsx:React组件实现的聊天对话页面，使用了ChatCompletionsProcessor进行交互处理。负责发送和接收对话消息，管理输入状态及用户界面。
 web/src/app/playground/v1/embeddings/page.tsx:该文件实现了EmbeddingsPlayground组件，用于展示文本向量化的用户界面，包含输入文本、获取向量等交互功能。
 web/src/components/apikey/apikey-balance.tsx:这个文件定义了API Key余额显示和对话框组件，用于展示API Key的当前余额状态，提供了显示余额详情的对话框功能，与API交互以获取余额信息。
-web/src/components/apikey/apikey-coloumn.tsx:这个文件定义了API Key表格列的组件，包括可编辑单元格、备注单元格和操作单元格等，使用了多个对话框组件与用户交互，如重命名、重置等。它与API交互以更新显示信息。
-web/src/components/apikey/apikey-dialog.tsx:API密钥操作对话框组件，支持删除、重置、认证及重命名操作，通过与后台API交互实现。
+web/src/components/apikey/apikey-coloumn.tsx:这个文件定义了API Key表格的列配置，包括显示和编辑API Key的名称、安全等级、每月额度等。关键组件有EditableCell和ActionCell，支持的操作包括重置、删除和认证API Key。
+web/src/components/apikey/apikey-dialog.tsx:这个文件实现了一系列操作对话框组件，如删除、重置、认证和重命名API Key。每个对话框通过ActionDialog组件实现，提供用户交互界面和操作确认。
+web/src/components/apikey/copy-apikey-dialog.tsx:该文件实现了一个CopyApikeyDialog组件，用于展示和复制创建的API Key，包含用户提示和交互确认功能。
+web/src/components/apikey/sub-apikey-column.tsx:该文件定义了用于展示子API Key列表的列配置SubApikeyColumns，包含RemarkCell和ActionCell组件，支持显示备注、复制和修改子API Key，与API交互获取安全等级信息。
+web/src/components/apikey/sub-apikey-dialog.tsx:该文件实现了一个用于创建或修改子API Key的对话框组件SubApikeyDialog，包含数据校验、表单处理和API交互功能。
+web/src/components/apikey/sub-apikey-tips-dialog.tsx:该文件实现了一个React组件SubApikeyTipsDialog，用于展示如何管理子API Key的提示对话框，包含关闭对话框的功能，与其他文件的交互不明显。
 web/src/components/logs/sidebar.tsx:实现客户端的日志查询侧边栏组件，使用了Next.js的Link组件，主要用于导航日志查询相关页面，与前端界面交互。
 web/src/components/meta/channel-form.tsx:前端组件，用于渲染和管理渠道的表单，可以切换试用状态和启用状态，使用React实现，便于用户在UI中更新渠道信息。
 web/src/components/meta/channel-list.tsx:ChannelList组件用于展示和管理渠道列表，允许用户切换显示状态和更新渠道信息，主要与ChannelForm组件交互。
@@ -518,14 +525,14 @@ web/src/components/user/user-nav.tsx:这个文件实现了UserNav组件，用于
 web/src/config.ts:config.ts中定义了与环境变量相关的API地址配置，用于应用的HTTP请求目标。
 web/src/hooks/use-toast.ts:定义通知弹窗（toast）的状态管理和操作，允许创建、更新、消除通知，并提供自定义样式。
 web/src/lib/ant-path-matcher.ts:ant-path-matcher.ts实现了路径匹配功能，模仿Spring的AntPathMatcher。包含静态方法match和doMatch，用于路径与模式的比较操作。是一个路径匹配实用工具。
-web/src/lib/api/apikey.ts:这个文件提供了与API Key相关的API请求函数，包括获取API Key信息、申请、删除、重置、更新认证和配额、重命名等操作。它通过封装的openapi对象与后端进行数据交互。
+web/src/lib/api/apikey.ts:该文件封装了API Key的相关操作函数，如获取信息、申请、删除、更新等，提供对后端接口的调用，与多个前端组件交互。
 web/src/lib/api/meta.ts:这个文件定义了与元数据相关的API调用方法，包含获取分类、端点详情、模型详情等功能。
 web/src/lib/api/openapi.ts:创建Axios实例用于OpenAPI请求管理，处理响应拦截器，以支持与后端API的交互。
 web/src/lib/api/userInfo.ts:提供与用户信息获取和权限检查相关的函数，使用`openapi`发送请求获取用户信息。
 web/src/lib/api/workflow.ts:该文件定义了一个调用工作流的函数callWorkflow，用于通过HTTP请求调用外部工作流API，处理响应并返回调用结果。包含接口定义WorkflowResponse。
 web/src/lib/context/user-context.tsx:user-context.tsx定义了用户信息的React上下文，用于在应用中提供和管理用户登录状态。包含用户信息的状态管理和登出功能，适用于跨组件状态共享。
 web/src/lib/types/common.ts:定义了typescript接口NestedObject，用于描述嵌套的对象结构，提供灵活的数据类型定义。
-web/src/lib/types/openapi.ts:这个文件定义了与OpenAPI相关的数据类型接口，包括API Key信息、用户信息、分页信息等，为其他模块提供类型支持。
+web/src/lib/types/openapi.ts:该文件定义了OpenAPI相关的数据类型和接口，如ApikeyInfo、Page等，为前端与后端的数据交互提供类型支持。
 web/src/lib/utils.ts:utils.ts提供了一个简洁函数cn，用于结合类名字符串。主要依赖clsx和tailwind-merge两个库，将多个类名合并为一个字符串。简单实用的工具函数。
 web/tailwind.config.ts:Tailwind CSS的配置文件，包含自定义主题的颜色、边框半径等设置。支持dark mode和引入的自定义插件。
 web/tsconfig.json:TypeScript项目的配置文件，定义编译选项如模块解析、路径别名等。与Next.js插件集成。
