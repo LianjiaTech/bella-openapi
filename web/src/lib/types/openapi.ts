@@ -171,3 +171,24 @@ export interface ApiKeyBalance {
     quota: number;
     balance: number;
 }
+
+export interface CreateSubApikeyRequest {
+    parentCode: string;
+    name: string;
+    outEntityCode: string;
+    safetyLevel: number;
+    monthQuota: number;
+    remark: string;
+    roleCode: string;
+}
+
+
+export interface UpdateSubApikeyRequest {
+    code: string;
+    name: string;
+    outEntityCode: string;
+    safetyLevel: number;
+    monthQuota: number;
+    remark: string;
+    roleCode: string;
+}

@@ -99,15 +99,29 @@ public class Message {
                     .function(FunctionCall.builder().name(name).arguments("").build())
                     .build();
         }
+
+        public static ToolCall fromFunctionIdAndName(String id, String name) {
+            return ToolCall.builder()
+                    .id(id)
+                    .type("function")
+                    .function(FunctionCall.builder().name(name).arguments("").build())
+                    .build();
+        }
     }
 
     @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    @Builder
     public static class Tool {
         private String type;
         private Function function;
     }
 
     @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    @Builder
     public static class Function {
 
         /**
@@ -138,10 +152,14 @@ public class Message {
          */
 
         @Data
+        @AllArgsConstructor
+        @NoArgsConstructor
+        @Builder
         public static class FunctionParameter {
             private String type;
             private List<String> required;
             private Object properties;
+            private boolean additionalProperties;
         }
     }
 
