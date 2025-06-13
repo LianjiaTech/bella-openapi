@@ -40,7 +40,8 @@ public class StreamMessageResponse {
             @JsonSubTypes.Type(value = TextDelta.class, name = "text_delta"),
             @JsonSubTypes.Type(value = InputJsonDelta.class, name = "input_json_delta"),
             @JsonSubTypes.Type(value = ThinkingDelta.class, name = "thinking_delta"),
-            @JsonSubTypes.Type(value = SignatureDelta.class, name = "signature_delta")
+            @JsonSubTypes.Type(value = SignatureDelta.class, name = "signature_delta"),
+            @JsonSubTypes.Type(value = RedactedThinkingDelta.class, name = "redacted_thinking")
     })
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static abstract class Delta {
@@ -101,6 +102,19 @@ public class StreamMessageResponse {
         public SignatureDelta(String signature) {
             this.setType("signature_delta");
             this.signature = signature;
+        }
+    }
+
+    @Data
+    @NoArgsConstructor
+    @EqualsAndHashCode(callSuper = true)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public static class RedactedThinkingDelta extends Delta {
+        private String data;
+
+        public RedactedThinkingDelta(String data) {
+            this.setType("redacted_thinking");
+            this.data = data;
         }
     }
 

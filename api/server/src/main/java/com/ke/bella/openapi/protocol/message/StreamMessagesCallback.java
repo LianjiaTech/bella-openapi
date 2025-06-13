@@ -13,6 +13,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.util.List;
+
 @Slf4j
 public class StreamMessagesCallback extends StreamCompletionCallback {
 
@@ -40,8 +42,8 @@ public class StreamMessagesCallback extends StreamCompletionCallback {
                 isToolCall = true;
             }
         }
-        StreamMessageResponse message = TransferUtils.convertStreamResponse(msg, isToolCall);
-        if(message != null) {
+        List<StreamMessageResponse> messages = TransferUtils.convertStreamResponse(msg, isToolCall);
+        if(CollectionUtils.isNotEmpty(messages)) {
             if(first) {
                 send(StreamMessageResponse.messageStart(StreamMessageResponse.initial(msg)));
                 first = false;
@@ -52,10 +54,10 @@ public class StreamMessagesCallback extends StreamCompletionCallback {
                     if(curIndex >= 0) {
                         send(StreamMessageResponse.contentBlockStop(curIndex));
                     }
-                    if(!message.getType().equals("content_block_start")) {
+                    if(!messages.get(0).getType().equals("content_block_start")) {
                         MessageResponse.ContentBlock contentBlock;
                         if(streamChoice.getDelta().getReasoning_content() != null) {
-                            contentBlock = new MessageResponse.ResponseThinkingBlock("");
+                            contentBlock = new MessageResponse.ResponseThinkingBlock("", null);
                         } else {
                             contentBlock = new MessageResponse.ResponseTextBlock("");
                         }
@@ -64,11 +66,11 @@ public class StreamMessagesCallback extends StreamCompletionCallback {
                     curIndex = streamChoice.getIndex();
                 }
             }
-            if(message.getType().equals("message_delta")) {
+            if(messages.get(messages.size() - 1).getType().equals("message_delta")) {
                 isSendFinish = true;
-                send(StreamMessageResponse.contentBlockStop(curIndex));
+                messages.add(messages.size() - 1, StreamMessageResponse.contentBlockStop(curIndex));
             }
-            send(message);
+            messages.forEach(this::send);
         }
         updateBuffer(msg.getStandardFormat() == null ? msg : msg.getStandardFormat());
     }
@@ -76,19 +78,15 @@ public class StreamMessagesCallback extends StreamCompletionCallback {
     @Override
     public void done() {
         if(!isSendFinish) {
-            if(!isToolCall) {
-                send(StreamMessageResponse.contentBlockStop(curIndex));
-                StreamMessageResponse.StreamUsage streamUsage = StreamMessageResponse.StreamUsage.builder()
-                        .outputTokens(1)
-                        .inputTokens(1)
-                        .build();
-                StreamMessageResponse.MessageDeltaInfo messageInfo = StreamMessageResponse.MessageDeltaInfo.builder()
-                        .stopReason("end_turn")
-                        .build();
-                send(StreamMessageResponse.messageDelta(messageInfo, streamUsage));
-            } else {
-                finish(new ChannelException.OpenAIException(500, "Server Error", "Invalid function call format."));
-            }
+            send(StreamMessageResponse.contentBlockStop(curIndex));
+            StreamMessageResponse.StreamUsage streamUsage = StreamMessageResponse.StreamUsage.builder()
+                    .outputTokens(1)
+                    .inputTokens(1)
+                    .build();
+            StreamMessageResponse.MessageDeltaInfo messageInfo = StreamMessageResponse.MessageDeltaInfo.builder()
+                    .stopReason(isToolCall ? "tool_use" : "end_turn")
+                    .build();
+            send(StreamMessageResponse.messageDelta(messageInfo, streamUsage));
         }
         send(StreamMessageResponse.messageStop());
     }
