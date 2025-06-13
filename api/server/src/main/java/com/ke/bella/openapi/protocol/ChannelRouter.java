@@ -46,7 +46,7 @@ public class ChannelRouter {
         }
         List<ChannelDB> channels;
         String entityCode;
-        if(model != null) {
+        if(StringUtils.isNotEmpty(model)) {
             String terminal = modelService.fetchTerminalModelName(model);
             entityCode = terminal;
             channels = channelService.listActives(EntityConstants.MODEL, terminal);

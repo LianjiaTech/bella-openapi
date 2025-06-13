@@ -211,9 +211,10 @@ public class MessageResponse {
     @NoArgsConstructor
     public static class ResponseThinkingBlock extends ContentBlock {
         private String thinking;
-
-        public ResponseThinkingBlock(String thinking) {
+        private String signature;
+        public ResponseThinkingBlock(String thinking, String signature) {
             this.thinking = thinking;
+            this.signature = signature;
         }
     }
 
@@ -221,9 +222,10 @@ public class MessageResponse {
     @EqualsAndHashCode(callSuper = true)
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class ResponseRedactedThinkingBlock extends ContentBlock {
-        // Similar to ThinkingBlock, usually a marker.
-         public ResponseRedactedThinkingBlock() {
-        }
+         private String data;
+         public ResponseRedactedThinkingBlock(String data) {
+             this.data = data;
+         }
     }
 
 

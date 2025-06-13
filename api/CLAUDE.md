@@ -24,7 +24,7 @@ mvn test
 mvn package -DskipTests
 
 # Install to local repository
-mvn install
+mvn install -DskipTests
 ```
 
 ### Development Scripts
@@ -32,8 +32,11 @@ mvn install
 # Build the application
 ./build.sh
 
-# Run the application
+# Run the application (with optimized JVM settings)
 ./run.sh
+
+# Generate jOOQ code from database schema
+mvn jooq:generate -pl server
 ```
 
 ## Key Architecture Patterns
@@ -72,6 +75,21 @@ The core architecture uses the **AdaptorManager** pattern to route requests to d
 - `server/src/main/java/com/ke/bella/openapi/intercept/`: Request/response interceptors
 - `sdk/src/main/java/com/ke/bella/openapi/protocol/`: Protocol DTOs and interfaces
 - `server/src/main/resources/lua/`: Lua scripts for Redis operations
+
+## Request Processing Flow
+The typical request flow follows this pattern:
+1. **Endpoint Controller** receives HTTP request and validates basic parameters
+2. **Interceptors** handle authentication, authorization, quotas, and safety checks
+3. **Channel Router** selects appropriate provider/channel based on load balancing and cost
+4. **Protocol Adapter** transforms request to provider-specific format
+5. **Cost Handler** calculates and records usage metrics
+6. **Response Processing** handles streaming/non-streaming responses and metrics collection
+
+## Channel and Provider Management
+- **Channels** represent specific provider instances with their own configurations
+- **Models** define available AI models and their capabilities per provider
+- **API Keys** manage authentication and usage quotas per space/user
+- **Spaces** provide multi-tenant isolation with separate configurations
 
 ## Development Notes
 - When adding new AI providers, implement `IProtocolAdaptor` and register with `AdaptorManager`
