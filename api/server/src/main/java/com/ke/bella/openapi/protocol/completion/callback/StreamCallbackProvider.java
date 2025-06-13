@@ -5,6 +5,7 @@ import com.ke.bella.openapi.apikey.ApikeyInfo;
 import com.ke.bella.openapi.protocol.Callbacks;
 import com.ke.bella.openapi.protocol.completion.CompletionProperty;
 import com.ke.bella.openapi.protocol.log.EndpointLogger;
+import com.ke.bella.openapi.protocol.message.StreamMessagesCallback;
 import com.ke.bella.openapi.safety.ISafetyCheckService;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
