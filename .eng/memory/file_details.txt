@@ -1,7 +1,7 @@
 README.md:Bella OpenAPI的中文介绍文档，内容与README_EN.md相似，提供对AI能力、系统优势、快速启动和常见问题的详细说明，适合中文用户使用。
 README_EN.md:Bella OpenAPI的英文介绍文档，描述其作为API网关的主要功能，包括AI能力、元数据管理、统一登录服务、计费与限流等。文档详细列出系统的优势和部署方法，提供了使用Docker Compose快速启动的指导。
 api/.editorconfig:项目的代码格式配置文件，规范化各类文件的缩进和编码格式。
-api/CLAUDE.md:CLAUDE.md是项目文档，提供了Bella OpenAPI项目的概述、架构、构建和开发命令等信息。
+api/CLAUDE.md:提供了CLAUDE项目的概述和开发指南。描述了项目结构、构建命令、架构模式和关键目录等，帮助开发者理解和参与项目开发。
 api/Dockerfile:这个文件是用于构建bella-openapi项目的Dockerfile，设置了运行环境和所需目录以及端口暴露。
 api/build.sh:此脚本用于编译API服务，包含Maven构建流程及相关配置。
 api/lombok.config:该配置文件用于控制lombok插件行为，例如日志字段名称、是否静态等。
@@ -70,10 +70,10 @@ api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionModelFe
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionModelProperties.java:定义了CompletionModelProperties类，实现IModelProperties接口，用于描述完成模型的输入和输出上下文属性。
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionPriceInfo.java:实现CompletionPriceInfo类，提供完成操作的价格信息。
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionProperty.java:定义Completion配置属性类，实现协议属性接口，包含编码类型、队列名等配置。
-api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionRequest.java:CompletionRequest类定义了完成请求的结构，包括模型ID、用户信息、消息列表等，支持流式响应。
+api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionRequest.java:这个文件定义了CompletionRequest类，描述了OpenAI完成请求的参数和结构，包含多个与请求配置相关的字段。
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionResponse.java:这个文件定义了CompletionResponse类，继承自OpenapiResponse。包含Choice和TokenUsage嵌套类，用于描述响应结果的详细信息和token使用情况。与CompletionLogHandler类交互，提供响应的数据结构。
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionSseListener.java:实现了CompletionSseListener类，用于处理SSE事件流中的完成消息，通过Callback接口进行回调。
-api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/Message.java:这个文件定义了Message类，表示完成消息的结构，支持多角色和工具调用，包含函数调用和内容的定义。
+api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/Message.java:Message类用于定义消息对象，包含角色、内容以及工具调用等信息，支持多种消息格式和工具功能调用。
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/OpenAIProperty.java:OpenAIProperty类继承自CompletionProperty，定义OpenAI特有的属性，如鉴权配置、API版本等。
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/completion/StreamCompletionResponse.java:这个文件定义了StreamCompletionResponse类，继承自OpenapiResponse，表示一个流式的完成响应。包含的关键类有内部静态类Choice，用于表示选择项。该文件与消息工具的调用紧密相关，涉及到ToolCall等类。
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/embedding/EmbeddingPriceInfo.java:定义了嵌入价格信息类EmbeddingPriceInfo，实现了IPriceInfo接口，提供了描述价格信息映射的方法，主要用于嵌入模型的价格计算。
@@ -84,10 +84,10 @@ api/sdk/src/main/java/com/ke/bella/openapi/protocol/embedding/KeEmbeddingRespons
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/embedding/OpenAIProperty.java:这个文件定义了OpenAIProperty类，用于描述OpenAI模型的属性，包括授权信息、部署名称和批处理大小等。
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/files/File.java:File类定义了文件对象的属性，包括id、filename、url等，多与API交互。
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/files/FileUrl.java:这个文件定义了FileUrl类，包含一个属性用于存储文件的URL地址。
-api/sdk/src/main/java/com/ke/bella/openapi/protocol/message/MessageRequest.java:这个文件定义了MessageRequest类，用于构建消息请求，包含模型、消息、参数等信息。支持多种内容类型，包括文本、图像和工具使用。
-api/sdk/src/main/java/com/ke/bella/openapi/protocol/message/MessageResponse.java:MessageResponse类定义了消息响应的结构，包括内容块、模型信息、使用情况等。
-api/sdk/src/main/java/com/ke/bella/openapi/protocol/message/StreamMessageResponse.java:这个文件定义了StreamMessageResponse类，表示流式消息响应结构。包含各种内部类如Delta、TextDelta等，用于处理不同类型的消息增量。提供了多个静态方法创建不同类型的消息响应，如messageStart和contentBlockDelta。
-api/sdk/src/main/java/com/ke/bella/openapi/protocol/message/TransferUtils.java:这个文件提供了TransferUtils工具类，定义了多个静态方法用于在不同消息格式之间进行转换。关键方法包括convertRequest和convertResponse，用于将MessageRequest转换为CompletionRequest，以及将CompletionResponse转换为MessageResponse。
+api/sdk/src/main/java/com/ke/bella/openapi/protocol/message/MessageRequest.java:定义了MessageRequest类及其相关内部类，用于描述消息请求的数据结构。主要功能包括序列化和反序列化JSON数据，支持多种内容类型如文本、图片和工具使用等。与其他文件交互主要在于消息的构建和解析。
+api/sdk/src/main/java/com/ke/bella/openapi/protocol/message/MessageResponse.java:这个文件定义了MessageResponse类，负责描述消息响应的结构。主要包含内容块的不同子类型，如文本块、工具使用块等。它与工具和消息的使用统计有交互。
+api/sdk/src/main/java/com/ke/bella/openapi/protocol/message/StreamMessageResponse.java:定义了StreamMessageResponse类，用于处理流式消息响应的数据结构。支持多种消息增量类型，如文本增量、输入JSON增量等，便于流式数据处理。
+api/sdk/src/main/java/com/ke/bella/openapi/protocol/message/TransferUtils.java:TransferUtils类提供了请求和响应的转换方法，支持各种消息和工具调用的格式转换，包含ContentPart和ImageUrl等静态类。
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/realtime/RealTimeEventType.java:定义实时事件类型的枚举，如转录开始、结束和失败，用于描述事件的名称、来源及成功状态。
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/realtime/RealTimeHeader.java:实时语音识别消息头类。实现Serializable接口，包含识别任务的基本信息，如消息ID和状态。
 api/sdk/src/main/java/com/ke/bella/openapi/protocol/realtime/RealTimeMessage.java:定义了RealTimeMessage类，用于实时语音识别消息的请求和响应处理，包含多个静态方法构建不同类型的响应，与OpenapiResponse和其它类交互。
@@ -249,7 +249,7 @@ api/server/src/main/java/com/ke/bella/openapi/intercept/OpenapiRequestFilter.jav
 api/server/src/main/java/com/ke/bella/openapi/intercept/RequestUserAdvice.java:实现请求用户权限的建议拦截器，根据请求头设置用户数据，通过EndpointContext进行上下文管理。
 api/server/src/main/java/com/ke/bella/openapi/intercept/TestEnvironmentInterceptor.java:定义了TestEnvironmentInterceptor类，一个Spring拦截器，用于在测试环境下进行API请求的前置处理，确保正确的权限验证和配置启用。
 api/server/src/main/java/com/ke/bella/openapi/protocol/AdaptorManager.java:定义了AdaptorManager类，用于管理不同协议适配器的注册和获取操作。通过endpoint和protocol识别适配器，并提供相应的服务支持。
-api/server/src/main/java/com/ke/bella/openapi/protocol/ChannelRouter.java:这个文件实现了ChannelRouter类，用于根据请求路由到适当的通道，涉及安全性检查和限流管理。
+api/server/src/main/java/com/ke/bella/openapi/protocol/ChannelRouter.java:实现了ChannelRouter类，负责根据终端或模型名称路由渠道。包含渠道的筛选、优先级选择和负载均衡逻辑，与ChannelService、ModelService等服务组件交互密切。
 api/server/src/main/java/com/ke/bella/openapi/protocol/IProtocolAdaptor.java:定义协议适配器接口IProtocolAdaptor，主要提供终端信息和授权请求生成方法，支持不同类型的授权请求构建。
 api/server/src/main/java/com/ke/bella/openapi/protocol/asr/AudioTranscriptionRequest.java:这个文件定义了AudioTranscriptionRequest类，包括请求音频转录所需的各种参数和设置。
 api/server/src/main/java/com/ke/bella/openapi/protocol/asr/AudioTranscriptionResponse.java:这个文件定义了语音转录的响应类AudioTranscriptionResponse及其内部类，处理转录任务的结果数据。
@@ -275,14 +275,16 @@ api/server/src/main/java/com/ke/bella/openapi/protocol/completion/AliCompletionR
 api/server/src/main/java/com/ke/bella/openapi/protocol/completion/AliCompletionResponse.java:阿里完成响应类，定义了处理来自阿里的响应信息的结构，支持JSON属性绑定，用于接收完成模型的反馈。
 api/server/src/main/java/com/ke/bella/openapi/protocol/completion/AwsAdaptor.java:这个文件实现了AWS适配器，用于处理亚马逊协议的完成请求。主要类为AwsAdaptor，提供完成和流式完成的方法，与AwsCompletionConverter交互以转换请求和响应。
 api/server/src/main/java/com/ke/bella/openapi/protocol/completion/AwsClientManager.java:这个文件管理AWS客户端的创建和缓存。定义了AwsClientManager类，提供同步和异步的AWS客户端实例，使用了BedrockRuntimeClient和BedrockRuntimeAsyncClient。通过AwsAuthorizationProvider类提供AWS认证凭证。
-api/server/src/main/java/com/ke/bella/openapi/protocol/completion/AwsCompletionConverter.java:这个文件负责转换OpenAI请求和响应为AWS格式。包含关键方法如convert2AwsRequest和convert2OpenAIResponse，与AwsAdaptor紧密协作。
+api/server/src/main/java/com/ke/bella/openapi/protocol/completion/AwsCompletionConverter.java:这个文件实现了将OpenAI请求和响应转换为AWS格式的转换器，包含关键函数如convert2AwsRequest和convert2OpenAIResponse，主要与AWS的Bedrock Runtime服务交互。
 api/server/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionAdaptor.java:定义CompletionAdaptor接口，用于处理补全请求，支持普通和流式补全。关联CompletionProperty类，用于异步或同步数据补全。
 api/server/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionAdaptorDelegator.java:CompletionAdaptorDelegator.java定义了一个接口，用于处理完成请求和流式完成请求，主要提供了completion和streamCompletion方法，处理请求的实际逻辑由实装类提供。
 api/server/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionLogHandler.java:这个文件实现了CompletionLogHandler类，用于处理端点日志。主要功能是计算请求和响应的token使用量，以及处理完成响应的时间度量。与CompletionResponse类交互，处理端点为/v1/chat/completions。
 api/server/src/main/java/com/ke/bella/openapi/protocol/completion/CompletionMetricsResolver.java:该文件实现了CompletionMetricsResolver类，处理Azure实际调用的延迟时间。主要功能包括利用正则表达式解析OpenapiResponse中的等待时间，并返回调整后的禁用时间。与EndpointProcessData和OpenapiResponse等类进行交互。
+api/server/src/main/java/com/ke/bella/openapi/protocol/completion/GoogleAdaptor.java:这个文件实现了GoogleAdaptor类，用于Google扩展OpenAI协议的完成请求处理，包含completion和streamCompletion方法，与OpenAIAdaptor交互。
 api/server/src/main/java/com/ke/bella/openapi/protocol/completion/MockAdaptor.java:这个文件实现了MockAdaptor类，用于模拟协议的适配器。它提供了完成和流式完成的方法，使用线程池执行异步网络请求，与MockNetworkIO类交互来进行HTTP和SSE请求。
 api/server/src/main/java/com/ke/bella/openapi/protocol/completion/OpenAIAdaptor.java:用于适配OpenAI协议完成请求的适配器类，实现了流式及非流式任务请求。
 api/server/src/main/java/com/ke/bella/openapi/protocol/completion/QueueAdaptor.java:jobQueue协议适配器，实现CompletionAdaptor接口，处理实时和流任务的请求。
+api/server/src/main/java/com/ke/bella/openapi/protocol/completion/QwenAdaptor.java:QwenAdaptor类扩展OpenAI协议，支持完成请求的处理和流式完成，通过注入OpenAIAdaptor实现，提供额外的请求体设置。
 api/server/src/main/java/com/ke/bella/openapi/protocol/completion/ResponseHelper.java:这个文件定义了ResponseHelper类，提供了完成响应的数据处理和转换功能。
 api/server/src/main/java/com/ke/bella/openapi/protocol/completion/ToolCallSimulator.java:该文件定义了ToolCallSimulator类，作为CompletionAdaptor接口的实现。它用于处理模拟的功能调用，并在请求过程中可以替代被模拟的请求。
 api/server/src/main/java/com/ke/bella/openapi/protocol/completion/callback/MergeReasoningCallback.java:这个文件定义了MergeReasoningCallback类，用于合并推理内容，处理流式完成响应的回调逻辑。
@@ -308,10 +310,12 @@ api/server/src/main/java/com/ke/bella/openapi/protocol/log/LogEvent.java:LogEven
 api/server/src/main/java/com/ke/bella/openapi/protocol/log/LogExceptionHandler.java:实现一个异常处理器，用于记录日志事件处理中的异常，核心类是LogExceptionHandler。
 api/server/src/main/java/com/ke/bella/openapi/protocol/log/LogRecordHandler.java:日志记录处理器，使用Disruptor框架记录日志事件，处理日志记录的具体实现。
 api/server/src/main/java/com/ke/bella/openapi/protocol/log/MetricsLogHandler.java:实现日志事件处理器，使用MetricsManager记录内部日志数据，通过Disruptor框架管理事件。
-api/server/src/main/java/com/ke/bella/openapi/protocol/message/AwsAdaptor.java:AwsAdaptor类实现了MessageAdaptor接口，适配AWS消息协议，支持本地消息服务。
-api/server/src/main/java/com/ke/bella/openapi/protocol/message/MessageAdaptor.java:MessageAdaptor接口定义了消息适配器的行为，支持消息创建和流式消息处理，与CompletionAdaptor交互。
-api/server/src/main/java/com/ke/bella/openapi/protocol/message/OpenAIAdaptor.java:这个文件实现了OpenAIAdaptor类，作为OpenAI协议的适配器，使用Spring组件管理，提供协议模型服务的描述和本地支持检查。
-api/server/src/main/java/com/ke/bella/openapi/protocol/message/StreamMessagesCallback.java:这个文件定义了StreamMessagesCallback类，用于处理流式消息回调。它继承自StreamCompletionCallback类，负责接收和处理流式消息响应。主要函数有callback和done，涉及与SseEmitter进行通信。
+api/server/src/main/java/com/ke/bella/openapi/protocol/message/AwsAdaptor.java:这个文件实现了AwsAdaptor类，它是一个消息适配器，用于处理AWS协议模型服务。主要依赖CompletionAdaptor接口，并通过Spring的@Autowired注解引入了com.ke.bella.openapi.protocol.completion.AwsAdaptor作为委托者。它提供了是否支持本地功能和获取描述的方法。
+api/server/src/main/java/com/ke/bella/openapi/protocol/message/GoogleAdaptor.java:这个文件定义了GoogleAdaptor类，适配Google扩展OpenAI协议的消息服务，通过delegator与CompletionAdaptor交互。
+api/server/src/main/java/com/ke/bella/openapi/protocol/message/MessageAdaptor.java:MessageAdaptor接口用于处理消息的创建和流式处理，具有装饰器模式的适配器方法，依赖于TransferUtils进行请求转换。
+api/server/src/main/java/com/ke/bella/openapi/protocol/message/OpenAIAdaptor.java:定义了OpenAIAdaptor类，作为OpenAI消息协议的适配器。实现了MessageAdaptor接口，与OpenAICompletionAdaptor类协作处理消息。
+api/server/src/main/java/com/ke/bella/openapi/protocol/message/QwenAdaptor.java:这个文件定义了QwenAdaptor类，适配通义千问扩展OpenAI协议的消息服务，主要通过delegator与CompletionAdaptor交互。
+api/server/src/main/java/com/ke/bella/openapi/protocol/message/StreamMessagesCallback.java:这个文件实现了StreamMessagesCallback类，用于处理流式消息的回调，包含callback和done方法，与SseEmitter和StreamCompletionResponse交互。
 api/server/src/main/java/com/ke/bella/openapi/protocol/metrics/MetricsManager.java:MetricsManager类用于记录和管理API的度量数据。利用LuaScriptExecutor和RedissonClient组件来执行和储存数据。
 api/server/src/main/java/com/ke/bella/openapi/protocol/metrics/MetricsQueryResult.java:此文件定义了MetricsQueryResult类，包含了用于描述API调用的渠道编码、实体编码及端点的字段。同时，还包含一个度量指标的映射，适用于存取API请求返回的各种数据。
 api/server/src/main/java/com/ke/bella/openapi/protocol/metrics/MetricsResolver.java:定义MetricsResolver接口，包含度量数据的处理方法。用于解析与EndpointProcessData相关的度量信息。
