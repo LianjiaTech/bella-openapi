@@ -36,5 +36,10 @@ public interface MessageAdaptor<T extends CompletionProperty> extends IProtocolA
         return adaptor;
     }
 
+    @Override
+    default Class<?> getPropertyClass() {
+        return delegator().getPropertyClass();
+    }
+
     boolean isNativeSupport();
 }

@@ -2,7 +2,9 @@ package com.ke.bella.openapi.protocol.completion;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ke.bella.openapi.protocol.UserRequest;
+import com.ke.bella.openapi.utils.JacksonUtils;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
@@ -42,7 +44,6 @@ public class CompletionRequest implements UserRequest, Serializable {
      * A list of tools the model may call. Currently, only functions are supported as a tool. <br/> Use this to provide a list of functions the model
      * may generate JSON inputs for.
      */
-    @JsonInclude(Include.NON_NULL)
     private List<Message.Tool> tools;
 
     /**
@@ -151,15 +152,14 @@ public class CompletionRequest implements UserRequest, Serializable {
     private Boolean parallel_tool_calls;
 
     /**
-     * 是否开启思考模式
-     */
-    private Boolean enable_thinking;
-
-    /**
      * Constrains effort on reasoning for reasoning models. Currently supported values are low, medium, and high.
      * Reducing reasoning effort can result in faster responses and fewer tokens used on reasoning in a response.
      */
     private Object reasoning_effort;
+
+    private Object extra_body;
+
+    private Boolean enable_thinking;
 
     @Data
     public static class StreamOptions {

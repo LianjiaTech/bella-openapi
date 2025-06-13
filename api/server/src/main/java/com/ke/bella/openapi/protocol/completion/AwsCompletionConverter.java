@@ -17,6 +17,7 @@ import software.amazon.awssdk.core.document.Document;
 import software.amazon.awssdk.core.document.internal.MapDocument;
 import software.amazon.awssdk.services.bedrockruntime.model.AnyToolChoice;
 import software.amazon.awssdk.services.bedrockruntime.model.AutoToolChoice;
+import software.amazon.awssdk.services.bedrockruntime.model.CachePointBlock;
 import software.amazon.awssdk.services.bedrockruntime.model.ContentBlock;
 import software.amazon.awssdk.services.bedrockruntime.model.ContentBlockDelta;
 import software.amazon.awssdk.services.bedrockruntime.model.ContentBlockStart;
@@ -41,7 +42,6 @@ import software.amazon.awssdk.services.bedrockruntime.model.ToolResultContentBlo
 import software.amazon.awssdk.services.bedrockruntime.model.ToolUseBlock;
 import software.amazon.awssdk.services.bedrockruntime.model.ToolUseBlockDelta;
 import software.amazon.awssdk.services.bedrockruntime.model.ToolUseBlockStart;
-import software.amazon.awssdk.services.bedrockruntime.model.CachePointBlock;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -85,14 +85,7 @@ public class AwsCompletionConverter {
                 builder.additionalModelRequestFields(convertObjectToDocument(property.additionalParams));
             }
             if(openAIRequest.getReasoning_effort() != null) {
-                Map<String, Object> thinking = new HashMap<>();
-                if(openAIRequest.getReasoning_effort() instanceof String) {
-                    thinking.put("thinking", new MessageRequest.ThinkingConfigEnabled(2000));
-                    builder.additionalModelRequestFields(convertObjectToDocument(thinking));
-                } else {
-                    thinking.put("thinking", openAIRequest.getResponse_format());
-                    builder.additionalModelRequestFields(convertObjectToDocument(thinking));
-                }
+                builder.additionalModelRequestFields(convertThinking(openAIRequest.getReasoning_effort()));
             }
             return builder.build();
         } catch (Exception e) {
@@ -116,9 +109,23 @@ public class AwsCompletionConverter {
             if(MapUtils.isNotEmpty(property.additionalParams)) {
                 builder.additionalModelRequestFields(convertObjectToDocument(property.additionalParams));
             }
+            if(openAIRequest.getReasoning_effort() != null) {
+                builder.additionalModelRequestFields(convertThinking(openAIRequest.getReasoning_effort()));
+            }
             return builder.build();
         } catch (Exception e) {
             throw new IllegalArgumentException("invalid arguments");
+        }
+    }
+
+    private static Document convertThinking(Object reasoning_effort) {
+        Map<String, Object> thinking = new HashMap<>();
+        if(reasoning_effort instanceof String) {
+            thinking.put("thinking", new MessageRequest.ThinkingConfigEnabled(2000));
+            return convertObjectToDocument(thinking);
+        } else {
+            thinking.put("thinking", reasoning_effort);
+            return convertObjectToDocument(thinking);
         }
     }
 
@@ -138,6 +145,8 @@ public class AwsCompletionConverter {
         openAiMsg.setRole("assistant");
         openAiMsg.setContent(convert2OpenAIContent(message.content()));
         openAiMsg.setReasoning_content(convert2OpenAIReasoningContent(message.content()));
+        openAiMsg.setReasoning_content_signature(convert2ReasoningSignature(message.content()));
+        openAiMsg.setRedacted_reasoning_content(convert2RedactedReasoningContent(message.content()));
         openAiMsg.setTool_calls(convert2OpenAIToolCall(message.content()));
         CompletionResponse.Choice choice = new CompletionResponse.Choice();
         choice.setMessage(openAiMsg);
@@ -191,6 +200,8 @@ public class AwsCompletionConverter {
             openAiMsg.setTool_calls(Lists.newArrayList(toolCall));
         } else if(response.reasoningContent() != null) {
             openAiMsg.setReasoning_content(response.reasoningContent().text());
+            openAiMsg.setReasoning_content(response.reasoningContent().signature());
+            openAiMsg.setRedacted_reasoning_content(new String(response.reasoningContent().redactedContent().asByteArrayUnsafe()));
         }
         StreamCompletionResponse.Choice choice = new StreamCompletionResponse.Choice();
         choice.setDelta(openAiMsg);
@@ -219,6 +230,23 @@ public class AwsCompletionConverter {
                 .map(ReasoningContentBlock::reasoningText)
                 .filter(Objects::nonNull)
                 .map(ReasoningTextBlock::text)
+                .filter(Objects::nonNull)
+                .findAny().orElse(null);
+    }
+
+    private static String convert2RedactedReasoningContent(List<ContentBlock> contentBlocks) {
+        return contentBlocks.stream().map(ContentBlock::reasoningContent).filter(Objects::nonNull)
+                .map(ReasoningContentBlock::redactedContent)
+                .filter(Objects::nonNull)
+                .map(SdkBytes::asUtf8String)
+                .findAny().orElse(null);
+    }
+
+    private static String convert2ReasoningSignature(List<ContentBlock> contentBlocks) {
+        return contentBlocks.stream().map(ContentBlock::reasoningContent).filter(Objects::nonNull)
+                .map(ReasoningContentBlock::reasoningText)
+                .filter(Objects::nonNull)
+                .map(ReasoningTextBlock::signature)
                 .filter(Objects::nonNull)
                 .findAny().orElse(null);
     }
@@ -350,6 +378,22 @@ public class AwsCompletionConverter {
                         String type = contentMap.get("type").toString();
                         if(type.equals("text")) {
                             contentBlocks.addAll(convert2TextBlock(contentMap, property));
+                        } else if(type.equals("thinking")) {
+                            Object thinking = contentMap.get("thinking");
+                            Object signature = contentMap.get("signature");
+                            contentBlocks.add(ContentBlock.fromReasoningContent(ReasoningContentBlock.builder()
+                                    .reasoningText(ReasoningTextBlock.builder()
+                                            .text(thinking == null ? null : (String)thinking)
+                                            .signature(signature == null ? null : (String) signature)
+                                            .build()
+                                    ).build()));
+                        } else if(type.equals("redacted_thinking")) {
+                            Object data = contentMap.get("data");
+                            if(data == null) {
+                                continue;
+                            }
+                            contentBlocks.add(ContentBlock.fromReasoningContent(ReasoningContentBlock.builder()
+                                            .redactedContent(SdkBytes.fromUtf8String((String) data)).build()));
                         } else if(type.equals("image_url")) {
                             String url = ((Map) contentMap.get("image_url")).get("url").toString();
                             Map<String, Object> cacheControl = (Map<String, Object>) contentMap.get("cache_control");

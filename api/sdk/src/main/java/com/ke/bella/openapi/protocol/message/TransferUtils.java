@@ -180,6 +180,9 @@ public class TransferUtils {
                                 toolResultStringContent = JacksonUtils.serialize(toolResultBlock.getContent());
                             }
                             contentParts.add(JacksonUtils.toMap(ContentPart.ofText(toolResultStringContent)));
+                        } else if(nativeSupport) {
+                            //包含thinking block和 redacted_thinking block
+                            contentParts.add(JacksonUtils.toMap(block));
                         }
                     }
                 }
@@ -253,7 +256,6 @@ public class TransferUtils {
                 if(nativeSupport) {
                     builder.reasoning_effort(messageRequest.getThinking());
                 } else {
-                    builder.enable_thinking(true);
                     builder.reasoning_effort("medium");
                 }
             }
@@ -295,6 +297,15 @@ public class TransferUtils {
                 }
             }
         }
+
+        if(assistantMessage.getReasoning_content() != null || assistantMessage.getReasoning_content_signature() != null) {
+            contentBlocks.add(new MessageResponse.ResponseThinkingBlock(assistantMessage.getReasoning_content(), assistantMessage.getReasoning_content_signature()));
+        }
+
+        if(assistantMessage.getRedacted_reasoning_content() != null) {
+            contentBlocks.add(new MessageResponse.ResponseRedactedThinkingBlock(assistantMessage.getRedacted_reasoning_content()));
+        }
+
         responseBuilder.content(contentBlocks);
 
         String finishReason = choice.getFinish_reason();
@@ -314,10 +325,11 @@ public class TransferUtils {
         return responseBuilder.build();
     }
 
-    public static StreamMessageResponse convertStreamResponse(StreamCompletionResponse streamChatResponse, boolean isToolCall) {
+    public static List<StreamMessageResponse> convertStreamResponse(StreamCompletionResponse streamChatResponse, boolean isToolCall) {
         if (streamChatResponse == null) return null;
+        List<StreamMessageResponse> responseList = new ArrayList<>();
         if (streamChatResponse.getError() != null) {
-            return StreamMessageResponse.error(streamChatResponse.getError().getType(), streamChatResponse.getError().getMessage());
+            responseList.add(StreamMessageResponse.error(streamChatResponse.getError().getType(), streamChatResponse.getError().getMessage()));
         }
         if(CollectionUtils.isNotEmpty(streamChatResponse.getChoices())) {
             StreamCompletionResponse.Choice streamChoice = streamChatResponse.getChoices().get(0);
@@ -326,18 +338,33 @@ public class TransferUtils {
             int choiceIndex = streamChoice.getIndex(); // Typically 0 for non-parallel choices
 
             //Thinking content delta
-            if(delta != null && delta.getReasoning_content() != null) {
+            if(delta != null && (delta.getReasoning_content() != null)) {
                 String reasoningContent = delta.getReasoning_content();
                 if(!reasoningContent.isEmpty()) {
-                    return StreamMessageResponse.contentBlockDelta(choiceIndex, new StreamMessageResponse.ThinkingDelta(reasoningContent));
+                    responseList.add(StreamMessageResponse.contentBlockDelta(choiceIndex, new StreamMessageResponse.ThinkingDelta(reasoningContent)));
                 }
             }
+
+            if(delta != null && (delta.getReasoning_content_signature() != null)) {
+                String signature = delta.getReasoning_content_signature();
+                if(!signature.isEmpty()) {
+                    responseList.add(StreamMessageResponse.contentBlockDelta(choiceIndex, new StreamMessageResponse.SignatureDelta(signature)));
+                }
+            }
+
+            if(delta != null && (delta.getRedacted_reasoning_content() != null)) {
+                String redactedReasoningContent = delta.getRedacted_reasoning_content();
+                if(!redactedReasoningContent.isEmpty()) {
+                    responseList.add(StreamMessageResponse.contentBlockDelta(choiceIndex, new StreamMessageResponse.RedactedThinkingDelta(redactedReasoningContent)));
+                }
+            }
+
 
             // Text content delta
             if(delta != null && delta.getContent() != null) {
                 String textContent = (String) delta.getContent();
                 if(!textContent.isEmpty()) {
-                    return StreamMessageResponse.contentBlockDelta(choiceIndex, new StreamMessageResponse.TextDelta(textContent));
+                    responseList.add(StreamMessageResponse.contentBlockDelta(choiceIndex, new StreamMessageResponse.TextDelta(textContent)));
                 }
             }
 
@@ -347,11 +374,12 @@ public class TransferUtils {
                 int toolContentBlockIndex = toolCallChunk.getIndex(); // This is the index for the content block (tool_use)
 
                 if(toolCallChunk.getFunction() != null && toolCallChunk.getFunction().getName() != null) { // Start of a new tool call
-                    return StreamMessageResponse.contentBlockStart(toolContentBlockIndex,
-                            new MessageResponse.ResponseToolUseBlock(toolCallChunk.getId(), toolCallChunk.getFunction().getName(), new HashMap<>()));
-                } else if(toolCallChunk.getFunction() != null && toolCallChunk.getFunction().getArguments() != null) { // Delta for arguments
-                    return StreamMessageResponse.contentBlockDelta(toolContentBlockIndex,
-                            new StreamMessageResponse.InputJsonDelta(toolCallChunk.getFunction().getArguments()));
+                    responseList.add(StreamMessageResponse.contentBlockStart(toolContentBlockIndex,
+                            new MessageResponse.ResponseToolUseBlock(toolCallChunk.getId(), toolCallChunk.getFunction().getName(), new HashMap<>())));
+                }
+                if(toolCallChunk.getFunction() != null && toolCallChunk.getFunction().getArguments() != null) { // Delta for arguments
+                    responseList.add(StreamMessageResponse.contentBlockDelta(toolContentBlockIndex,
+                            new StreamMessageResponse.InputJsonDelta(toolCallChunk.getFunction().getArguments())));
                 }
             }
             // Finish reason
@@ -371,12 +399,9 @@ public class TransferUtils {
                         .stopReason(mappedStopReason)
                         .build();
 
-                return StreamMessageResponse.messageDelta(messageInfo, streamUsage);
+                responseList.add(StreamMessageResponse.messageDelta(messageInfo, streamUsage));
             }
-        }
-
-        //token usage
-        if (streamChatResponse.getUsage() != null) {
+        } else if (streamChatResponse.getUsage() != null) {
             StreamMessageResponse.StreamUsage streamUsage = StreamMessageResponse.StreamUsage.builder()
                     .outputTokens(streamChatResponse.getUsage().getCompletion_tokens())
                     .inputTokens(streamChatResponse.getUsage().getPrompt_tokens())
@@ -384,10 +409,10 @@ public class TransferUtils {
             StreamMessageResponse.MessageDeltaInfo messageInfo = StreamMessageResponse.MessageDeltaInfo.builder()
                     .stopReason(isToolCall ? "tool_use" : "end_turn")
                     .build();
-            return StreamMessageResponse.messageDelta(messageInfo, streamUsage);
+            responseList.add(StreamMessageResponse.messageDelta(messageInfo, streamUsage));
         }
 
-        return null;
+        return responseList;
     }
 
     private static String mapFinishReason(String finishReason) {
