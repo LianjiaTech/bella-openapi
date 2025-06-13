@@ -43,6 +43,13 @@ public class Message {
     @JsonInclude(Include.NON_NULL)
     @Nullable
     private String reasoning_content;
+    @JsonInclude(Include.NON_NULL)
+    @Nullable
+    private String redacted_reasoning_content;
+    @JsonInclude(Include.NON_NULL)
+    @Nullable
+    private String reasoning_content_signature;
+
     /**
      * name is required if role is function, and it should be the name of the
      * function whose response is in the content;
