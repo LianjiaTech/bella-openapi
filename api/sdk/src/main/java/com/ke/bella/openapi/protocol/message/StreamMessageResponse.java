@@ -28,8 +28,8 @@ public class StreamMessageResponse {
     private MessageResponse.ContentBlock contentBlock;
     private Object delta; // Holds specific delta objects or MessageDeltaInfo
     private StreamErrorInfo error;
+    private StreamUsage usage = new StreamUsage();
 
-    // 1. Helper Static Inner Classes
 
     @JsonTypeInfo(
             use = JsonTypeInfo.Id.NAME,
@@ -113,7 +113,6 @@ public class StreamMessageResponse {
         private String stopReason;
         @JsonProperty("stop_sequence")
         private String stopSequence;
-        private StreamUsage usage = new StreamUsage();
     }
 
     @Data
@@ -137,8 +136,6 @@ public class StreamMessageResponse {
         private String type;
         private String message;
     }
-
-    // 3. Static Factory Methods
 
     public static StreamMessageResponse messageStart(MessageResponse initialMessage) {
         return StreamMessageResponse.builder()
@@ -170,9 +167,10 @@ public class StreamMessageResponse {
                 .build();
     }
 
-    public static StreamMessageResponse messageDelta(MessageDeltaInfo messageDeltaInfo) {
+    public static StreamMessageResponse messageDelta(MessageDeltaInfo messageDeltaInfo, StreamUsage usage) {
         return StreamMessageResponse.builder()
                 .type("message_delta")
+                .usage(usage)
                 .delta(messageDeltaInfo)
                 .build();
     }
@@ -191,10 +189,10 @@ public class StreamMessageResponse {
                 .build();
     }
 
-    public static StreamMessageResponse error(StreamErrorInfo errorPayload) {
+    public static StreamMessageResponse error(String type, String message) {
         return StreamMessageResponse.builder()
                 .type("error")
-                .error(errorPayload)
+                .error(StreamErrorInfo.builder().type(type).message(message).build())
                 .build();
     }
 
