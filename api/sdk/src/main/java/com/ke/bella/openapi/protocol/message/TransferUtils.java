@@ -314,9 +314,11 @@ public class TransferUtils {
         return responseBuilder.build();
     }
 
-    public static StreamMessageResponse convertStreamResponse(StreamCompletionResponse streamChatResponse) {
+    public static StreamMessageResponse convertStreamResponse(StreamCompletionResponse streamChatResponse, boolean isToolCall) {
         if (streamChatResponse == null) return null;
-
+        if (streamChatResponse.getError() != null) {
+            return StreamMessageResponse.error(streamChatResponse.getError().getType(), streamChatResponse.getError().getMessage());
+        }
         if(CollectionUtils.isNotEmpty(streamChatResponse.getChoices())) {
             StreamCompletionResponse.Choice streamChoice = streamChatResponse.getChoices().get(0);
             Message delta = streamChoice.getDelta();
@@ -367,10 +369,9 @@ public class TransferUtils {
 
                 StreamMessageResponse.MessageDeltaInfo messageInfo = StreamMessageResponse.MessageDeltaInfo.builder()
                         .stopReason(mappedStopReason)
-                        .usage(streamUsage)
                         .build();
 
-                return StreamMessageResponse.messageDelta(messageInfo);
+                return StreamMessageResponse.messageDelta(messageInfo, streamUsage);
             }
         }
 
@@ -381,10 +382,9 @@ public class TransferUtils {
                     .inputTokens(streamChatResponse.getUsage().getPrompt_tokens())
                     .build();
             StreamMessageResponse.MessageDeltaInfo messageInfo = StreamMessageResponse.MessageDeltaInfo.builder()
-                    .usage(streamUsage)
-                    .stopReason("end_turn")
+                    .stopReason(isToolCall ? "tool_use" : "end_turn")
                     .build();
-            return StreamMessageResponse.messageDelta(messageInfo);
+            return StreamMessageResponse.messageDelta(messageInfo, streamUsage);
         }
 
         return null;

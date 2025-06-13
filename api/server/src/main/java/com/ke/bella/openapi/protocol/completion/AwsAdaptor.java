@@ -1,15 +1,12 @@
 package com.ke.bella.openapi.protocol.completion;
 
-import java.util.function.Consumer;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
-
 import com.ke.bella.openapi.common.exception.ChannelException;
 import com.ke.bella.openapi.protocol.Callbacks;
 import com.ke.bella.openapi.protocol.Callbacks.StreamCompletionCallback;
-
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
 import software.amazon.awssdk.services.bedrockruntime.model.BedrockRuntimeException;
@@ -21,6 +18,9 @@ import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamMetada
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamRequest;
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamResponseHandler;
 
+import java.util.function.Consumer;
+
+@Slf4j
 @Component("AwsCompletion")
 public class AwsAdaptor implements CompletionAdaptor<AwsProperty> {
 
@@ -74,6 +74,7 @@ public class AwsAdaptor implements CompletionAdaptor<AwsProperty> {
 
         private final Callbacks.StreamCompletionCallback callback;
         private volatile boolean isFirst = true;
+
         @Override
         public void visitContentBlockStart(ContentBlockStartEvent event) {
             if(isFirst) {
@@ -94,6 +95,7 @@ public class AwsAdaptor implements CompletionAdaptor<AwsProperty> {
             callback.callback(response);
         }
 
+
         @Override
         public void visitMetadata(ConverseStreamMetadataEvent event) {
             StreamCompletionResponse response = AwsCompletionConverter.convertTo2OpenAIStreamResponse(event.usage());
@@ -108,7 +110,9 @@ public class AwsAdaptor implements CompletionAdaptor<AwsProperty> {
 
         @Override
         public void accept(Throwable throwable) {
+            LOGGER.warn(throwable.getMessage(), throwable);
             if (throwable instanceof BedrockRuntimeException) {
+                LOGGER.warn(throwable.getMessage(), throwable);
                 BedrockRuntimeException bedrockException = (BedrockRuntimeException) throwable;
                 callback.finish(ChannelException.fromResponse(bedrockException.statusCode(), bedrockException.getMessage()));
                 return;

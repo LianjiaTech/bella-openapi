@@ -9,6 +9,7 @@ import com.ke.bella.openapi.utils.JacksonUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.http.HttpStatus;
 import software.amazon.awssdk.core.SdkBytes;
@@ -386,11 +387,12 @@ public class AwsCompletionConverter {
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
     private static ContentBlock convert2ToolUseBlock(String toolUseId, String name, String arguments) {
+        Map argumentMap = StringUtils.isEmpty(arguments) ? new HashMap<>() : JacksonUtils.deserialize(arguments, Map.class);
         return ContentBlock.fromToolUse(ToolUseBlock
                 .builder()
                 .toolUseId(toolUseId)
                 .name(name)
-                .input(convertMapToDocument(JacksonUtils.deserialize(arguments, Map.class)))
+                .input(convertMapToDocument(argumentMap))
                 .build());
     }
 
@@ -598,7 +600,7 @@ public class AwsCompletionConverter {
     private static String convertDocumentToOpenAIArguments(Document document) {
         Object object = convertDocumentToObject(document);
         if(object == null) {
-            return null;
+            return "";
         }
         if(document.isMap() || document.isList()) {
             return JacksonUtils.serialize(object);
