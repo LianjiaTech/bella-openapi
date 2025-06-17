@@ -10,4 +10,5 @@ public class SessionProperty {
     private Integer cookieMaxAge;
     private String cookieDomain;
     private String cookieContextPath;
+    private String managerType = "redis"; // Added: Default to redis
 }

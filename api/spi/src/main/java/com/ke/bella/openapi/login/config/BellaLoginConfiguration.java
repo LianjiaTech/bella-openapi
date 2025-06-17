@@ -30,11 +30,17 @@ import com.ke.bella.openapi.login.oauth.OAuthProperties;
 import com.ke.bella.openapi.login.oauth.OAuthService;
 import com.ke.bella.openapi.login.oauth.providers.GithubOAuthService;
 import com.ke.bella.openapi.login.oauth.providers.GoogleOAuthService;
+import com.ke.bella.openapi.login.session.RedisSessionManager; // Added
+import com.ke.bella.openapi.login.session.HttpSessionManager; // Added
 import com.ke.bella.openapi.login.session.SessionManager;
 import com.ke.bella.openapi.login.session.SessionProperty;
 import com.ke.bella.openapi.login.user.IUserRepo;
+import org.springframework.beans.factory.annotation.Value; // Added
+import org.springframework.web.client.RestTemplate; // Added
+import lombok.extern.slf4j.Slf4j; // Added for logging unrecognized type
 
 @Configuration
+@Slf4j // Added for logging unrecognized type
 public class BellaLoginConfiguration {
 
     public static final String redirectParameter = "redirect";
@@ -77,12 +83,38 @@ public class BellaLoginConfiguration {
     }
 
     @Bean
-    public SessionManager sessionManager(SessionProperty sessionProperty, @Autowired(required = false) IUserRepo userRepo) {
-        SessionManager manager = new SessionManager(sessionProperty, operatorRedisTemplate(redisConnectionFactory), new StringRedisTemplate(redisConnectionFactory));
-        if (userRepo != null) {
-            manager.setUserRepo(userRepo);
+    public RestTemplate bellaLoginRestTemplate() { // Added RestTemplate Bean
+        return new RestTemplate();
+    }
+
+    @Bean
+    public SessionManager sessionManager(
+            SessionProperty sessionProperty,
+            @Autowired(required = false) IUserRepo userRepo,
+            RestTemplate bellaLoginRestTemplate, // Added
+            @Value("${bella.openapi.base-url:#{null}}") String bellaOpenApiBaseUrl // Added
+    ) {
+        String managerType = sessionProperty.getManagerType();
+        if ("http".equalsIgnoreCase(managerType)) {
+            if (bellaOpenApiBaseUrl == null || bellaOpenApiBaseUrl.trim().isEmpty()) {
+                throw new IllegalStateException("Session manager type is 'http', but 'bella.openapi.base-url' is not configured or is empty.");
+            }
+            // Pass sessionProperty to HttpSessionManager as it's needed for cookie name
+            return new HttpSessionManager(bellaLoginRestTemplate, bellaOpenApiBaseUrl, sessionProperty);
+        } else { // "redis" or default
+            if (!"redis".equalsIgnoreCase(managerType)) {
+                log.warn("Unrecognized session manager type '{}', defaulting to 'redis'.", managerType);
+            }
+            RedisSessionManager redisManager = new RedisSessionManager(
+                    sessionProperty,
+                    operatorRedisTemplate(redisConnectionFactory), // This is a private method in the same class
+                    new StringRedisTemplate(redisConnectionFactory)
+            );
+            if (userRepo != null) {
+                redisManager.setUserRepo(userRepo);
+            }
+            return redisManager;
         }
-        return manager;
     }
 
     @Bean
