@@ -1,12 +1,6 @@
 package com.ke.bella.openapi.protocol.completion;
 
-import java.net.URI;
-import java.time.Duration;
-import java.time.temporal.ChronoUnit;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import org.apache.commons.lang3.StringUtils;
-
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
@@ -18,10 +12,17 @@ import software.amazon.awssdk.http.SdkHttpConfigurationOption;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.retries.StandardRetryStrategy;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
 import software.amazon.awssdk.utils.AttributeMap;
 import software.amazon.awssdk.utils.ToString;
+
+import java.net.URI;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class AwsClientManager {
 
@@ -40,9 +41,12 @@ public class AwsClientManager {
                         .httpClient(ApacheHttpClient.builder()
                                 .buildWithDefaults(AttributeMap.builder()
                                         .put(SdkHttpConfigurationOption.PROTOCOL, Protocol.HTTP1_1)
+                                        .put(SdkHttpConfigurationOption.READ_TIMEOUT, Duration.ofSeconds(300))
                                         .build()))
                         .overrideConfiguration(ClientOverrideConfiguration.builder()
-                                .apiCallTimeout(Duration.of(180, ChronoUnit.SECONDS))
+                                .retryStrategy(StandardRetryStrategy.builder().maxAttempts(1).build())
+                                .apiCallTimeout(Duration.of(300, ChronoUnit.SECONDS))
+                                .apiCallAttemptTimeout(Duration.of(300, ChronoUnit.SECONDS))
                                 .build())
                         .build());
     }
@@ -56,9 +60,12 @@ public class AwsClientManager {
                         .httpClient(NettyNioAsyncHttpClient.builder()
                                 .buildWithDefaults(AttributeMap.builder()
                                         .put(SdkHttpConfigurationOption.PROTOCOL, Protocol.HTTP1_1)
+                                        .put(SdkHttpConfigurationOption.READ_TIMEOUT, Duration.ofSeconds(120))
                                         .build()))
                         .overrideConfiguration(ClientOverrideConfiguration.builder()
-                                .apiCallTimeout(Duration.of(180, ChronoUnit.SECONDS))
+                                .retryStrategy(StandardRetryStrategy.builder().maxAttempts(1).build())
+                                .apiCallTimeout(Duration.of(300, ChronoUnit.SECONDS))
+                                .apiCallAttemptTimeout(Duration.of(300, ChronoUnit.SECONDS))
                                 .build())
                         .build());
     }

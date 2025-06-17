@@ -28,8 +28,8 @@ public class StreamMessageResponse {
     private MessageResponse.ContentBlock contentBlock;
     private Object delta; // Holds specific delta objects or MessageDeltaInfo
     private StreamErrorInfo error;
+    private StreamUsage usage = new StreamUsage();
 
-    // 1. Helper Static Inner Classes
 
     @JsonTypeInfo(
             use = JsonTypeInfo.Id.NAME,
@@ -40,7 +40,8 @@ public class StreamMessageResponse {
             @JsonSubTypes.Type(value = TextDelta.class, name = "text_delta"),
             @JsonSubTypes.Type(value = InputJsonDelta.class, name = "input_json_delta"),
             @JsonSubTypes.Type(value = ThinkingDelta.class, name = "thinking_delta"),
-            @JsonSubTypes.Type(value = SignatureDelta.class, name = "signature_delta")
+            @JsonSubTypes.Type(value = SignatureDelta.class, name = "signature_delta"),
+            @JsonSubTypes.Type(value = RedactedThinkingDelta.class, name = "redacted_thinking")
     })
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static abstract class Delta {
@@ -106,6 +107,19 @@ public class StreamMessageResponse {
 
     @Data
     @NoArgsConstructor
+    @EqualsAndHashCode(callSuper = true)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public static class RedactedThinkingDelta extends Delta {
+        private String data;
+
+        public RedactedThinkingDelta(String data) {
+            this.setType("redacted_thinking");
+            this.data = data;
+        }
+    }
+
+    @Data
+    @NoArgsConstructor
     @AllArgsConstructor
     @Builder
     public static class MessageDeltaInfo {
@@ -113,7 +127,6 @@ public class StreamMessageResponse {
         private String stopReason;
         @JsonProperty("stop_sequence")
         private String stopSequence;
-        private StreamUsage usage = new StreamUsage();
     }
 
     @Data
@@ -137,8 +150,6 @@ public class StreamMessageResponse {
         private String type;
         private String message;
     }
-
-    // 3. Static Factory Methods
 
     public static StreamMessageResponse messageStart(MessageResponse initialMessage) {
         return StreamMessageResponse.builder()
@@ -170,9 +181,10 @@ public class StreamMessageResponse {
                 .build();
     }
 
-    public static StreamMessageResponse messageDelta(MessageDeltaInfo messageDeltaInfo) {
+    public static StreamMessageResponse messageDelta(MessageDeltaInfo messageDeltaInfo, StreamUsage usage) {
         return StreamMessageResponse.builder()
                 .type("message_delta")
+                .usage(usage)
                 .delta(messageDeltaInfo)
                 .build();
     }
@@ -191,10 +203,10 @@ public class StreamMessageResponse {
                 .build();
     }
 
-    public static StreamMessageResponse error(StreamErrorInfo errorPayload) {
+    public static StreamMessageResponse error(String type, String message) {
         return StreamMessageResponse.builder()
                 .type("error")
-                .error(errorPayload)
+                .error(StreamErrorInfo.builder().type(type).message(message).build())
                 .build();
     }
 

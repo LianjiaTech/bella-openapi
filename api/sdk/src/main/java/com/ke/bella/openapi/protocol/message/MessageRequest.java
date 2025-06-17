@@ -67,7 +67,9 @@ public class MessageRequest {
             @JsonSubTypes.Type(value = TextContentBlock.class, name = "text"),
             @JsonSubTypes.Type(value = ImageContentBlock.class, name = "image"),
             @JsonSubTypes.Type(value = ToolUseContentBlock.class, name = "tool_use"),
-            @JsonSubTypes.Type(value = ToolResultContentBlock.class, name = "tool_result")
+            @JsonSubTypes.Type(value = ToolResultContentBlock.class, name = "tool_result"),
+            @JsonSubTypes.Type(value = ThinkingContentBlock.class, name = "thinking"),
+            @JsonSubTypes.Type(value = RedactedThinkingContentBlock.class, name = "redacted_thinking")
     })
     @JsonInclude(JsonInclude.Include.NON_NULL)
     @Data
@@ -86,6 +88,30 @@ public class MessageRequest {
             return "text";
         }
     }
+
+    @Data
+    @NoArgsConstructor
+    @EqualsAndHashCode(callSuper = true)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public static class ThinkingContentBlock extends ContentBlock {
+        private String thinking;
+        private String signature;
+        public String getType() {
+            return "thinking";
+        }
+    }
+
+    @Data
+    @NoArgsConstructor
+    @EqualsAndHashCode(callSuper = true)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public static class RedactedThinkingContentBlock extends ContentBlock {
+        private String date;
+        public String getType() {
+            return "redacted_thinking";
+        }
+    }
+
 
     @Data
     @NoArgsConstructor
@@ -187,6 +213,8 @@ public class MessageRequest {
     })
     @JsonInclude(JsonInclude.Include.NON_NULL)
     @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static abstract class ThinkingConfig {
          private String type;
     }
@@ -194,12 +222,14 @@ public class MessageRequest {
     @Data
     @EqualsAndHashCode(callSuper = true)
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    @NoArgsConstructor
-    @AllArgsConstructor
     public static class ThinkingConfigEnabled extends ThinkingConfig {
         private Integer budget_tokens;
-        public String getType() {
-            return "enabled";
+        public ThinkingConfigEnabled() {
+            super("enabled");
+        }
+        public ThinkingConfigEnabled(Integer budget_tokens) {
+            super("enabled");
+            this.budget_tokens = budget_tokens;
         }
     }
 
@@ -207,8 +237,8 @@ public class MessageRequest {
     @EqualsAndHashCode(callSuper = true)
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class ThinkingConfigDisabled extends ThinkingConfig {
-        public String getType() {
-            return "disabled";
+        public ThinkingConfigDisabled() {
+            super("disabled");
         }
     }
 
