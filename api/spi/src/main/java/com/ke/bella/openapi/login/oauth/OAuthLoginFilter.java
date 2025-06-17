@@ -1,11 +1,13 @@
 package com.ke.bella.openapi.login.oauth;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import com.ke.bella.openapi.BellaResponse;
+import com.ke.bella.openapi.Operator;
+import com.ke.bella.openapi.login.session.SessionManager;
+import com.ke.bella.openapi.login.session.TicketManager;
+import com.ke.bella.openapi.utils.JacksonUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -14,32 +16,29 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.util.Assert;
-
-import com.ke.bella.openapi.BellaResponse;
-import com.ke.bella.openapi.Operator;
-import com.ke.bella.openapi.login.session.SessionManager;
-import com.ke.bella.openapi.utils.JacksonUtils;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 public class OAuthLoginFilter implements Filter {
     private static final Logger LOGGER = LoggerFactory.getLogger(OAuthLoginFilter.class);
 
     private final Map<String, OAuthService> oauthServices;
     private final SessionManager sessionManager;
+    private final TicketManager ticketManager;
     private final OAuthProperties properties;
 
-    public OAuthLoginFilter(List<OAuthService> services, SessionManager sessionManager, OAuthProperties properties) {
+    public OAuthLoginFilter(List<OAuthService> services, SessionManager sessionManager, TicketManager ticketManager, OAuthProperties properties) {
+        this.ticketManager = ticketManager;
         this.oauthServices = new HashMap<>();
         for (OAuthService service : services) {
             this.oauthServices.put(service.getProviderType(), service);
         }
         this.sessionManager = sessionManager;
         this.properties = properties;
-        Assert.notNull(properties.getClientIndex(), "主页url不可为空");
     }
 
     @Override
@@ -70,7 +69,7 @@ public class OAuthLoginFilter implements Filter {
         String redirect = request.getParameter("redirect");
         // 将 redirect 参数编码到 state 中
         String state = UUID.randomUUID() + (StringUtils.isNotBlank(redirect) ? ":" + redirect : "");
-        sessionManager.saveTicket(state);
+        ticketManager.saveTicket(state);
 
 
         List<Map<String, Object>> providers = new ArrayList<>();
@@ -109,7 +108,7 @@ public class OAuthLoginFilter implements Filter {
         String state = request.getParameter("state");
 
 
-        if (!sessionManager.isValidTicket(state)) {
+        if (!ticketManager.isValidTicket(state)) {
             LOGGER.error("OAuth validation failed - code: {}, state: {}", code, state);
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid state");
             return;
@@ -127,7 +126,7 @@ public class OAuthLoginFilter implements Filter {
             return;
         }
         sessionManager.create(operator, request, response);
-        sessionManager.removeTicket(state);
+        ticketManager.removeTicket(state);
         response.sendRedirect(StringUtils.isNotBlank(redirect) ? redirect : properties.getClientIndex());
     }
 }
