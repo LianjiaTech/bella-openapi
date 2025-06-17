@@ -2,6 +2,9 @@ package com.ke.bella.openapi.login.config;
 
 import java.util.List;
 
+import com.ke.bella.openapi.login.session.TicketManager;
+import org.apache.commons.lang3.NotImplementedException;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -30,16 +33,22 @@ import com.ke.bella.openapi.login.oauth.OAuthProperties;
 import com.ke.bella.openapi.login.oauth.OAuthService;
 import com.ke.bella.openapi.login.oauth.providers.GithubOAuthService;
 import com.ke.bella.openapi.login.oauth.providers.GoogleOAuthService;
+import com.ke.bella.openapi.login.session.RedisSessionManager; // Added
+import com.ke.bella.openapi.login.session.HttpSessionManager; // Added
 import com.ke.bella.openapi.login.session.SessionManager;
 import com.ke.bella.openapi.login.session.SessionProperty;
 import com.ke.bella.openapi.login.user.IUserRepo;
+import org.springframework.beans.factory.annotation.Value; // Added
+import org.springframework.web.client.RestTemplate; // Added
+import lombok.extern.slf4j.Slf4j; // Added for logging unrecognized type
 
 @Configuration
+@Slf4j // Added for logging unrecognized type
 public class BellaLoginConfiguration {
 
     public static final String redirectParameter = "redirect";
 
-    @Autowired
+    @Autowired(required = false)
     private RedisConnectionFactory redisConnectionFactory;
 
     @Bean
@@ -77,12 +86,36 @@ public class BellaLoginConfiguration {
     }
 
     @Bean
-    public SessionManager sessionManager(SessionProperty sessionProperty, @Autowired(required = false) IUserRepo userRepo) {
-        SessionManager manager = new SessionManager(sessionProperty, operatorRedisTemplate(redisConnectionFactory), new StringRedisTemplate(redisConnectionFactory));
-        if (userRepo != null) {
-            manager.setUserRepo(userRepo);
+    public RestTemplate bellaLoginRestTemplate() { // Added RestTemplate Bean
+        return new RestTemplate();
+    }
+
+    @Bean
+    public SessionManager sessionManager(
+            LoginProperties loginProperties,
+            SessionProperty sessionProperty,
+            @Autowired(required = false) IUserRepo userRepo
+    ) {
+        if ("client".equalsIgnoreCase(loginProperties.getType())) {
+            if (StringUtils.isBlank(loginProperties.getOpenapiBase())) {
+                throw new IllegalStateException("login type is 'client', but 'bella.login.openapi-base' is not configured or is empty.");
+            }
+            // Pass sessionProperty to HttpSessionManager as it's needed for cookie name
+            return new HttpSessionManager(loginProperties.getOpenapiBase(), sessionProperty);
+        } else {
+            if(redisConnectionFactory == null) {
+                throw new IllegalStateException("missing redisConnectionFactory");
+            }
+            RedisSessionManager redisManager = new RedisSessionManager(
+                    sessionProperty,
+                    operatorRedisTemplate(redisConnectionFactory),
+                    new StringRedisTemplate(redisConnectionFactory)
+            );
+            if (userRepo != null) {
+                redisManager.setUserRepo(userRepo);
+            }
+            return redisManager;
         }
-        return manager;
     }
 
     @Bean
@@ -142,12 +175,11 @@ public class BellaLoginConfiguration {
     @Bean
     @ConditionalOnOAuthEnable
     public FilterRegistrationBean<OAuthLoginFilter> oauthLoginFilter(
-            LoginProperties loginProperties,
             List<OAuthService> services,
             SessionManager sessionManager,
             OAuthProperties properties) {
         FilterRegistrationBean<OAuthLoginFilter> registration = new FilterRegistrationBean<>();
-        OAuthLoginFilter filter = new OAuthLoginFilter(services, sessionManager, properties);
+        OAuthLoginFilter filter = new OAuthLoginFilter(services, sessionManager, (TicketManager) sessionManager, properties);
         registration.setFilter(filter);
         registration.setOrder(Ordered.HIGHEST_PRECEDENCE + 51);
         return registration;
