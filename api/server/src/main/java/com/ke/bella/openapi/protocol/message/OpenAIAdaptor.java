@@ -24,9 +24,4 @@ public class OpenAIAdaptor implements MessageAdaptor<OpenAIProperty> {
     public String getDescription() {
         return "Openai协议模型服务适配/v1/message能力点";
     }
-
-    @Override
-    public Class<?> getPropertyClass() {
-        return OpenAIProperty.class;
-    }
 }
