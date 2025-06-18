@@ -6,7 +6,7 @@
         <artifactId>bella-openapi</artifactId>
         <version>1.1.0</version>
     </parent>
-    <artifactId>server</artifactId>
+    <artifactId>openapi-server</artifactId>
     <name>bella-openapi-server</name>
     <packaging>jar</packaging>
 
@@ -30,12 +30,12 @@
         </dependency>
         <dependency>
             <groupId>top.bella</groupId>
-            <artifactId>sdk</artifactId>
+            <artifactId>openapi-sdk</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
         <dependency>
             <groupId>top.bella</groupId>
-            <artifactId>spi</artifactId>
+            <artifactId>openapi-spi</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
         <dependency>
