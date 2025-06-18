@@ -40,7 +40,7 @@ Bella OpenAPI is an API gateway providing rich AI capabilities, comparable to op
 ### AI Capabilities
 
 - **Text Processing**
-  - **Chat Completion**: Provides conversational completion capability
+  - **Chat Completion**: Provides conversational completion capability, both support openai caht completion api and anthropic message api
   - **Text Embedding**: Generates vector representations of text for semantic search and similarity calculations
 
 - **Voice Services**
