@@ -42,7 +42,7 @@ Bella OpenAPI是一个提供了丰富的AI调用能力的API网关，可类比op
 ### AI能力点
 
 - **文本处理**
-  - **聊天补全**：提供对话补全能力
+  - **聊天补全**：提供对话补全能力，同时支持OpenAI的ChatCompletion API和Anthropic的Message API
   - **文本嵌入**：生成文本的向量表示，用于语义搜索和相似度计算
 
 - **语音服务**
