@@ -8,6 +8,7 @@
     </parent>
     <artifactId>spi</artifactId>
     <packaging>jar</packaging>
+    <name>bella-openapi-spi</name>
 
     <dependencies>
         <dependency>
