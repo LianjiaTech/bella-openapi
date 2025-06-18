@@ -33,6 +33,8 @@ public class MetricsManager {
     private List<MetricsResolver> resolvers;
     @Autowired
     private RedissonClient redisson;
+    @Autowired
+    private ChannelIdleDetector channelIdleDetector;
 
     public void record(EndpointProcessData processData) throws IOException {
         String endpoint = processData.getEndpoint();
@@ -76,6 +78,11 @@ public class MetricsManager {
             });
         }
         executor.execute(processData.getEndpoint(), ScriptType.metrics, key, metrics);
+        
+        // 更新实时RPM
+        if (processData.getTotalTime() != null) {
+            channelIdleDetector.updateRealtimeRPM(processData.getChannelCode(), processData.getTotalTime());
+        }
     }
 
     public Set<String> getAllUnavailableChannels(List<String> channelCodes) {

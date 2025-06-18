@@ -101,6 +101,18 @@ local function update_last_timeStamp()
     end
 end
 
+-- 记录渠道不可用时的TPM阈值
+local function record_unavailable_tpm_threshold()
+    local total_key = prefix_key .. ":total"
+    local total_input_tokens = tonumber(redis.call("HGET", total_key, "input_tokens") or 0)
+    local total_output_tokens = tonumber(redis.call("HGET", total_key, "output_tokens") or 0)
+    local total_tpm = total_input_tokens + total_output_tokens
+    
+    -- 记录不可用时的TPM阈值
+    local threshold_key = prefix_key .. ":tpm_threshold"
+    redis.call("SET", threshold_key, total_tpm, "EX", 86400)  -- 24小时过期
+end
+
 -- 更新通道状态
 local function update_channel_status()
     local mark_key = prefix_key .. ":unavailable"
@@ -118,6 +130,8 @@ local function update_channel_status()
         end
     end
     if status ~= "available" and channel_unavailable_expire_time > 0 then
+        -- 记录TPM阈值
+        record_unavailable_tpm_threshold()
         -- 标记为不可用，并记录不可用时间
         redis.call("SET", mark_key, "true", "EX", channel_unavailable_expire_time)
         redis.call("INCRBY", unavailable_time_key, channel_unavailable_expire_time)

@@ -9,10 +9,14 @@ public enum ScriptType {
     metrics("metrics"),
     metricsQuery("metrics/query"),
     limiter("limiter"),
+    custom(""),
     ;
 
     final String path;
     public String getScriptName(String fileName) {
-        return this.path + fileName;
+        if (this == custom) {
+            return fileName;
+        }
+        return this.path + "/" + fileName;
     }
 }

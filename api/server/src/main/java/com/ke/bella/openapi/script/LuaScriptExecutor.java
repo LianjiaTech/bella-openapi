@@ -26,4 +26,18 @@ public class LuaScriptExecutor {
         RScript rScript = redissonClient.getScript();
         return rScript.evalSha(RScript.Mode.READ_WRITE, sha, RScript.ReturnType.VALUE, keys, args.toArray());
     }
+    
+    public Object execute(String fileName, ScriptType scriptType, List<Object> keys, List<Object> args, String customScriptName) throws IOException {
+        if (scriptType == ScriptType.custom) {
+            String scriptName = "metrics/" + customScriptName;
+            String sha = luaScriptManager.getScriptSha(scriptName, null);
+            if(StringUtils.isBlank(sha)) {
+                return null;
+            }
+            RScript rScript = redissonClient.getScript();
+            return rScript.evalSha(RScript.Mode.READ_WRITE, sha, RScript.ReturnType.VALUE, keys, args.toArray());
+        } else {
+            return execute(fileName, scriptType, keys, args);
+        }
+    }
 }

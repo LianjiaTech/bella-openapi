@@ -18,6 +18,7 @@ import com.ke.bella.openapi.protocol.queue.QueueResponse.QueueTaskPutResp;
 import com.ke.bella.openapi.protocol.queue.QueueResponse.TaskGetDetailResp;
 import com.ke.bella.openapi.utils.HttpUtils;
 import com.ke.bella.openapi.utils.JacksonUtils;
+import com.ke.bella.openapi.worker.JobTask;
 
 import okhttp3.MediaType;
 import okhttp3.Request;
@@ -124,5 +125,38 @@ public class JobQueueService implements Callbacks.RealTimeTaskCallback, Callback
         return QueueTaskGetResultResp.builder()
                 .data(result)
                 .build();
+    }
+    
+    /**
+     * 从job queue为指定channel拉取任务
+     * 这是为job queue worker模式新增的方法
+     */
+    public List<JobTask> pullTasksByChannel(String channelCode, int maxTasks) {
+        // 这里需要根据实际的job queue API实现
+        // 目前返回空列表，实际实现需要：
+        // 1. 调用job queue的任务拉取API
+        // 2. 按channelCode过滤任务
+        // 3. 限制返回任务数量为maxTasks
+        // 4. 将返回的任务数据转换为JobTask对象
+        
+        log.debug("Pulling tasks for channel: {}, max tasks: {}", channelCode, maxTasks);
+        
+        // 示例实现（需要根据实际job queue API调整）
+        try {
+            // TODO: 实现实际的任务拉取逻辑
+            // String pullUrl = jobQueuePullUrl + "?channel=" + channelCode + "&limit=" + maxTasks;
+            // Request request = new Request.Builder()
+            //     .url(pullUrl)
+            //     .get()
+            //     .build();
+            // JobQueuePullResponse response = HttpUtils.httpRequest(request, JobQueuePullResponse.class);
+            // return convertToJobTasks(response.getTasks());
+            
+            return new ArrayList<>(); // 暂时返回空列表
+            
+        } catch (Exception e) {
+            log.error("Error pulling tasks for channel: {}", channelCode, e);
+            return new ArrayList<>();
+        }
     }
 }
