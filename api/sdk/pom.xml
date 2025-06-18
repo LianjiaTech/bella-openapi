@@ -10,6 +10,7 @@
 
     <artifactId>sdk</artifactId>
     <packaging>jar</packaging>
+    <name>bella-openapi-sdk</name>
 
     <properties>
         <maven-source-plugin.version>3.0.1</maven-source-plugin.version>
