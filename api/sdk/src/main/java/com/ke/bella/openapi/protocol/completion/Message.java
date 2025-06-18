@@ -1,5 +1,6 @@
 package com.ke.bella.openapi.protocol.completion;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -92,6 +93,8 @@ public class Message {
          * The function that the model called.
          */
         private FunctionCall function;
+
+        private Object cache_control;
 
         @JsonProperty("id")
         public String getId() {
