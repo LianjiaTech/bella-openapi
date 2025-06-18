@@ -9,6 +9,7 @@ import java.util.List;
 public class LoginProperties {
     private String type;
     private String loginPageUrl;
+    private String openapiBase;
     private String authorizationHeader;
     private List<String> validationUrlPatterns = Lists.newArrayList("/console/*");
 }
