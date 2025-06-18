@@ -362,11 +362,31 @@ public class AwsCompletionConverter {
     private static List<ContentBlock> convert2AwsContent(com.ke.bella.openapi.protocol.completion.Message message, AwsProperty property) {
         List<ContentBlock> contentBlocks = new ArrayList<>();
         if(message.getRole().equals("tool")) {
-            contentBlocks.add(ContentBlock.fromToolResult(
-                    ToolResultBlock.builder()
-                            .toolUseId(message.getTool_call_id())
-                            .content(ToolResultContentBlock.fromText(message.getContent().toString()))
-                            .build()));
+            if(message.getContent() instanceof String) {
+                contentBlocks.add(ContentBlock.fromToolResult(
+                        ToolResultBlock.builder()
+                                .toolUseId(message.getTool_call_id())
+                                .content(ToolResultContentBlock.fromText(message.getContent().toString()))
+                                .build()));
+            } else if(message.getContent() instanceof List){
+                List<Object> contentList = (List<Object>) message.getContent();
+                for(Object content : contentList) {
+                    Map contentMap = (Map) content;
+                    contentBlocks.add(ContentBlock.fromToolResult(
+                            ToolResultBlock.builder()
+                                    .toolUseId(message.getTool_call_id())
+                                    .content(ToolResultContentBlock.fromText(contentMap.get("text").toString()))
+                                    .build()));
+                    if(contentMap.containsKey("cache_control") && property.supportCache) {
+                        contentBlocks.add(ContentBlock.builder()
+                                .cachePoint(CachePointBlock.builder()
+                                        .type("default")
+                                        .build())
+                                .build());
+                    }
+                }
+            }
+
         } else {
             if(message.getContent() != null) {
                 if(message.getContent() instanceof String) {
@@ -419,6 +439,13 @@ public class AwsCompletionConverter {
                             toolCall.getId(),
                             toolCall.getFunction().getName(),
                             toolCall.getFunction().getArguments()));
+                    if(toolCall.getCache_control() != null && property.supportCache) {
+                        contentBlocks.add(ContentBlock.builder()
+                                .cachePoint(CachePointBlock.builder()
+                                        .type("default")
+                                        .build())
+                                .build());
+                    }
                 }
             }
         }

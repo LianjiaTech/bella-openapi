@@ -118,22 +118,27 @@ public class TransferUtils {
                 Object contentObj = inputMessage.getContent();
                 List<Map> contentParts = new ArrayList<>();
                 List<Message.ToolCall> toolCalls = new ArrayList<>();
-
                 List<Message.MessageBuilder> messageBuilders = new ArrayList<>();
                 messageBuilders.add(chatMessageBuilder);
 
                 if (contentObj instanceof String) {
                     contentParts.add(JacksonUtils.toMap(ContentPart.ofText((String) contentObj)));
                 } else if (contentObj instanceof List) {
+                    boolean lastToolResult = false;
                     List<MessageRequest.ContentBlock> contentBlocks = (List<MessageRequest.ContentBlock>) contentObj;
                     for (MessageRequest.ContentBlock block : contentBlocks) {
+                        if(lastToolResult) {
+                            messageBuilders.add(Message.builder().role(inputMessage.getRole()));
+                        }
                         if (block instanceof MessageRequest.TextContentBlock) {
+                            lastToolResult = false;
                             ContentPart contentPart = ContentPart.ofText(((MessageRequest.TextContentBlock) block).getText());
                             if(nativeSupport) {
                                 contentPart.setCache_control(block.getCache_control());
                             }
                             contentParts.add(JacksonUtils.toMap(contentPart));
                         } else if (block instanceof MessageRequest.ImageContentBlock) {
+                            lastToolResult = false;
                             MessageRequest.ImageContentBlock imageBlock = (MessageRequest.ImageContentBlock) block;
                             if (imageBlock.getSource() instanceof MessageRequest.Base64ImageSource) {
                                 MessageRequest.Base64ImageSource imageSource = (MessageRequest.Base64ImageSource) imageBlock.getSource();
@@ -145,14 +150,19 @@ public class TransferUtils {
                                 contentParts.add(JacksonUtils.toMap(contentPart));
                             }
                         } else if(block instanceof MessageRequest.ToolUseContentBlock) {
+                            lastToolResult = false;
                             MessageRequest.ToolUseContentBlock toolUseContentBlock = (MessageRequest.ToolUseContentBlock) block;
                             Message.ToolCall toolCall = Message.ToolCall.fromFunctionIdAndName(toolUseContentBlock.getId(), toolUseContentBlock.getName());
                             toolCall.setFunction(Message.FunctionCall.builder()
                                             .name(toolUseContentBlock.getName())
                                             .arguments(JacksonUtils.serialize(toolUseContentBlock.getInput()))
                                             .build());
+                            if(nativeSupport) {
+                                toolCall.setCache_control(toolUseContentBlock.getCache_control());
+                            }
                             toolCalls.add(toolCall);
                         } else if (block instanceof MessageRequest.ToolResultContentBlock) {
+                            lastToolResult = true;
                             // Split tool result to different messages.
                             // Firstly store previous content to current message, and clear the content parts.
                             if(!contentParts.isEmpty() || !toolCalls.isEmpty()) {
@@ -162,10 +172,9 @@ public class TransferUtils {
                                 if (!toolCalls.isEmpty()) {
                                     messageBuilders.get(messageBuilders.size() - 1).tool_calls(toolCalls);
                                 }
-                                Message.MessageBuilder additional = Message.builder();
-                                messageBuilders.add(additional);
-                                contentParts.clear();
-                                toolCalls.clear();
+                                contentParts = new ArrayList<>();
+                                toolCalls = new ArrayList<>();
+                                messageBuilders.add(Message.builder());
                             }
                             Message.MessageBuilder current = messageBuilders.get(messageBuilders.size() - 1);
                             // This assumes ToolResultContentBlock's content should also be part of the main 'content' field
@@ -176,13 +185,30 @@ public class TransferUtils {
                             String toolResultStringContent = "";
                             if (toolResultBlock.getContent() instanceof String) {
                                 toolResultStringContent = (String) toolResultBlock.getContent();
-                            } else if (toolResultBlock.getContent() != null) {
+                            } else {
                                 toolResultStringContent = JacksonUtils.serialize(toolResultBlock.getContent());
                             }
-                            contentParts.add(JacksonUtils.toMap(ContentPart.ofText(toolResultStringContent)));
+                            ContentPart contentPart = ContentPart.ofText(toolResultStringContent);
+                            if(toolResultBlock.getCache_control() != null && nativeSupport) {
+                                contentPart.setCache_control(block.getCache_control());
+                            }
+                            contentParts.add(JacksonUtils.toMap(contentPart));
+                            current.content(contentParts);
+                            contentParts = new ArrayList<>();
                         } else if(nativeSupport) {
+                            lastToolResult = false;
                             //包含thinking block和 redacted_thinking block
-                            contentParts.add(JacksonUtils.toMap(block));
+                            if(contentParts.isEmpty()) {
+                                contentParts.add(JacksonUtils.toMap(block));
+                            } else if(block instanceof MessageRequest.ThinkingContentBlock) {
+                                contentParts.add(0, JacksonUtils.toMap(block));
+                            } else if(block instanceof MessageRequest.RedactedThinkingContentBlock) {
+                                if("thinking".equals(contentParts.get(0).get("type"))) {
+                                    contentParts.add(1, JacksonUtils.toMap(block));
+                                } else {
+                                    contentParts.add(0, JacksonUtils.toMap(block));
+                                }
+                            }
                         }
                     }
                 }
@@ -192,7 +218,6 @@ public class TransferUtils {
                 if (!toolCalls.isEmpty()) {
                     messageBuilders.get(messageBuilders.size() - 1).tool_calls(toolCalls);
                 }
-
                 messageBuilders.forEach(messageBuilder -> chatMessages.add(messageBuilder.build()));
             }
         }
