@@ -7,7 +7,7 @@
         <version>1.1.0</version>
     </parent>
     <artifactId>server</artifactId>
-    <name>server</name>
+    <name>bella-openapi-server</name>
     <packaging>jar</packaging>
 
     <properties>
