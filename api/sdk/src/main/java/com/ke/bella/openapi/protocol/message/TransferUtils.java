@@ -11,6 +11,7 @@ import lombok.Data;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -398,7 +399,7 @@ public class TransferUtils {
                 Message.ToolCall toolCallChunk = delta.getTool_calls().get(0);
                 int toolContentBlockIndex = toolCallChunk.getIndex(); // This is the index for the content block (tool_use)
 
-                if(toolCallChunk.getFunction() != null && toolCallChunk.getFunction().getName() != null) { // Start of a new tool call
+                if(toolCallChunk.getFunction() != null && StringUtils.isNotEmpty(toolCallChunk.getFunction().getName())) { // Start of a new tool call
                     responseList.add(StreamMessageResponse.contentBlockStart(toolContentBlockIndex,
                             new MessageResponse.ResponseToolUseBlock(toolCallChunk.getId(), toolCallChunk.getFunction().getName(), new HashMap<>())));
                 }

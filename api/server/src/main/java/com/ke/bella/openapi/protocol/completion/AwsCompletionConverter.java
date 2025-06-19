@@ -173,6 +173,7 @@ public class AwsCompletionConverter {
             toolCall.setId(toolUseBlock.toolUseId());
             com.ke.bella.openapi.protocol.completion.Message.FunctionCall fc = new com.ke.bella.openapi.protocol.completion.Message.FunctionCall();
             fc.setName(toolUseBlock.name());
+            fc.setArguments("");
             toolCall.setFunction(fc);
             openAiMsg.setTool_calls(Lists.newArrayList(toolCall));
         }
@@ -195,7 +196,7 @@ public class AwsCompletionConverter {
             toolCall.setType("function");
             toolCall.setIndex(index);
             com.ke.bella.openapi.protocol.completion.Message.FunctionCall fc = new com.ke.bella.openapi.protocol.completion.Message.FunctionCall();
-            fc.setArguments(toolUseBlock.input());
+            fc.setArguments(toolUseBlock.input() == null ? "" : toolUseBlock.input());
             toolCall.setFunction(fc);
             openAiMsg.setTool_calls(Lists.newArrayList(toolCall));
         } else if(response.reasoningContent() != null) {
