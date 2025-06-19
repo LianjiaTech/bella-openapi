@@ -121,7 +121,13 @@ public class AwsCompletionConverter {
     private static Document convertThinking(Object reasoning_effort) {
         Map<String, Object> thinking = new HashMap<>();
         if(reasoning_effort instanceof String) {
-            thinking.put("thinking", new MessageRequest.ThinkingConfigEnabled(2000));
+            int thinkingToken = 2000;
+            if(reasoning_effort.equals("medium")) {
+                thinkingToken = 4000;
+            } else if(reasoning_effort.equals("high")) {
+                thinkingToken = 8000;
+            }
+            thinking.put("thinking", new MessageRequest.ThinkingConfigEnabled(thinkingToken));
             return convertObjectToDocument(thinking);
         } else {
             thinking.put("thinking", reasoning_effort);
