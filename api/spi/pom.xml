@@ -6,14 +6,14 @@
         <artifactId>bella-openapi</artifactId>
         <version>1.1.0</version>
     </parent>
-    <artifactId>spi</artifactId>
+    <artifactId>openapi-spi</artifactId>
     <packaging>jar</packaging>
     <name>bella-openapi-spi</name>
 
     <dependencies>
         <dependency>
             <groupId>top.bella</groupId>
-            <artifactId>sdk</artifactId>
+            <artifactId>openapi-sdk</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
         <dependency>

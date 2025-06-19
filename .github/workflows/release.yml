@@ -177,7 +177,7 @@ jobs:
             ```xml
             <dependency>
               <groupId>top.bella</groupId>
-              <artifactId>sdk</artifactId>
+              <artifactId>openapi-sdk</artifactId>
               <version>${{ steps.version-check.outputs.version }}</version>
             </dependency>
             ```
@@ -189,7 +189,7 @@ jobs:
             ```xml
             <dependency>
               <groupId>top.bella</groupId>
-              <artifactId>spi</artifactId>
+              <artifactId>openapi-spi</artifactId>
               <version>${{ steps.version-check.outputs.version }}</version>
             </dependency>
             ```
