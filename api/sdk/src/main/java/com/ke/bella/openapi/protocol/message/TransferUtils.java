@@ -305,6 +305,14 @@ public class TransferUtils {
         Message assistantMessage = choice.getMessage();
         List<MessageResponse.ContentBlock> contentBlocks = new ArrayList<>();
 
+        if(assistantMessage.getReasoning_content() != null || assistantMessage.getReasoning_content_signature() != null) {
+            contentBlocks.add(new MessageResponse.ResponseThinkingBlock(assistantMessage.getReasoning_content(), assistantMessage.getReasoning_content_signature()));
+        }
+
+        if(assistantMessage.getRedacted_reasoning_content() != null) {
+            contentBlocks.add(new MessageResponse.ResponseRedactedThinkingBlock(assistantMessage.getRedacted_reasoning_content()));
+        }
+
         if (assistantMessage.getContent() != null) {
             String textContent = (String) assistantMessage.getContent();
             if (!textContent.isEmpty()) {
@@ -322,14 +330,6 @@ public class TransferUtils {
                     contentBlocks.add(new MessageResponse.ResponseToolUseBlock(toolCall.getId(), toolCall.getFunction().getName(), parsedArgs));
                 }
             }
-        }
-
-        if(assistantMessage.getReasoning_content() != null || assistantMessage.getReasoning_content_signature() != null) {
-            contentBlocks.add(new MessageResponse.ResponseThinkingBlock(assistantMessage.getReasoning_content(), assistantMessage.getReasoning_content_signature()));
-        }
-
-        if(assistantMessage.getRedacted_reasoning_content() != null) {
-            contentBlocks.add(new MessageResponse.ResponseRedactedThinkingBlock(assistantMessage.getRedacted_reasoning_content()));
         }
 
         responseBuilder.content(contentBlocks);

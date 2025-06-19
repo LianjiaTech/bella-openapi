@@ -16,6 +16,7 @@ import com.ke.bella.openapi.tables.pojos.ChannelDB;
 import com.ke.bella.openapi.utils.JacksonUtils;
 import com.ke.bella.openapi.utils.SseHelper;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -27,6 +28,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 @RestController
 @RequestMapping("/v1/messages")
 @Tag(name = "messages")
+@Slf4j
 public class MessageController {
     @Autowired
     private ChannelRouter router;
@@ -42,6 +44,7 @@ public class MessageController {
     @PostMapping
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public Object message(@RequestBody MessageRequest request) {
+        LOGGER.info(JacksonUtils.serialize(JacksonUtils.toMap(EndpointContext.getRequest().getContentAsByteArray())));
         String endpoint = EndpointContext.getRequest().getRequestURI();
         String model = request.getModel();
         EndpointContext.setEndpointData(endpoint, model, request);
