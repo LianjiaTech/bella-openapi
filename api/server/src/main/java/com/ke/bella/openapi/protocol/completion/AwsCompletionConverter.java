@@ -121,7 +121,13 @@ public class AwsCompletionConverter {
     private static Document convertThinking(Object reasoning_effort) {
         Map<String, Object> thinking = new HashMap<>();
         if(reasoning_effort instanceof String) {
-            thinking.put("thinking", new MessageRequest.ThinkingConfigEnabled(2000));
+            int thinkingToken = 2000;
+            if(reasoning_effort.equals("medium")) {
+                thinkingToken = 4000;
+            } else if(reasoning_effort.equals("high")) {
+                thinkingToken = 8000;
+            }
+            thinking.put("thinking", new MessageRequest.ThinkingConfigEnabled(thinkingToken));
             return convertObjectToDocument(thinking);
         } else {
             thinking.put("thinking", reasoning_effort);
@@ -173,6 +179,7 @@ public class AwsCompletionConverter {
             toolCall.setId(toolUseBlock.toolUseId());
             com.ke.bella.openapi.protocol.completion.Message.FunctionCall fc = new com.ke.bella.openapi.protocol.completion.Message.FunctionCall();
             fc.setName(toolUseBlock.name());
+            fc.setArguments("");
             toolCall.setFunction(fc);
             openAiMsg.setTool_calls(Lists.newArrayList(toolCall));
         }
@@ -195,7 +202,7 @@ public class AwsCompletionConverter {
             toolCall.setType("function");
             toolCall.setIndex(index);
             com.ke.bella.openapi.protocol.completion.Message.FunctionCall fc = new com.ke.bella.openapi.protocol.completion.Message.FunctionCall();
-            fc.setArguments(toolUseBlock.input());
+            fc.setArguments(toolUseBlock.input() == null ? "" : toolUseBlock.input());
             toolCall.setFunction(fc);
             openAiMsg.setTool_calls(Lists.newArrayList(toolCall));
         } else if(response.reasoningContent() != null) {
@@ -362,11 +369,31 @@ public class AwsCompletionConverter {
     private static List<ContentBlock> convert2AwsContent(com.ke.bella.openapi.protocol.completion.Message message, AwsProperty property) {
         List<ContentBlock> contentBlocks = new ArrayList<>();
         if(message.getRole().equals("tool")) {
-            contentBlocks.add(ContentBlock.fromToolResult(
-                    ToolResultBlock.builder()
-                            .toolUseId(message.getTool_call_id())
-                            .content(ToolResultContentBlock.fromText(message.getContent().toString()))
-                            .build()));
+            if(message.getContent() instanceof String) {
+                contentBlocks.add(ContentBlock.fromToolResult(
+                        ToolResultBlock.builder()
+                                .toolUseId(message.getTool_call_id())
+                                .content(ToolResultContentBlock.fromText(message.getContent().toString()))
+                                .build()));
+            } else if(message.getContent() instanceof List){
+                List<Object> contentList = (List<Object>) message.getContent();
+                for(Object content : contentList) {
+                    Map contentMap = (Map) content;
+                    contentBlocks.add(ContentBlock.fromToolResult(
+                            ToolResultBlock.builder()
+                                    .toolUseId(message.getTool_call_id())
+                                    .content(ToolResultContentBlock.fromText(contentMap.get("text").toString()))
+                                    .build()));
+                    if(contentMap.containsKey("cache_control") && property.supportCache) {
+                        contentBlocks.add(ContentBlock.builder()
+                                .cachePoint(CachePointBlock.builder()
+                                        .type("default")
+                                        .build())
+                                .build());
+                    }
+                }
+            }
+
         } else {
             if(message.getContent() != null) {
                 if(message.getContent() instanceof String) {
@@ -419,6 +446,13 @@ public class AwsCompletionConverter {
                             toolCall.getId(),
                             toolCall.getFunction().getName(),
                             toolCall.getFunction().getArguments()));
+                    if(toolCall.getCache_control() != null && property.supportCache) {
+                        contentBlocks.add(ContentBlock.builder()
+                                .cachePoint(CachePointBlock.builder()
+                                        .type("default")
+                                        .build())
+                                .build());
+                    }
                 }
             }
         }

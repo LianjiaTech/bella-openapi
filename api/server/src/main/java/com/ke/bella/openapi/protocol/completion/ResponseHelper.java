@@ -103,7 +103,7 @@ public class ResponseHelper {
 
     public static Message.ToolCall copyToolCall(Message.ToolCall toolCall) {
         return new Message.ToolCall(toolCall.getIndex(), toolCall.getId(), toolCall.getType(),
-                Message.FunctionCall.builder().name(toolCall.getFunction().getName()).arguments(toolCall.getFunction().getArguments()).build());
+                Message.FunctionCall.builder().name(toolCall.getFunction().getName()).arguments(toolCall.getFunction().getArguments()).build(), null);
     }
 
 }
