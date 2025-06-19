@@ -2,7 +2,8 @@ name: Auto Review Request
 
 on:
   pull_request:
-    types: [opened, synchronize]
+    types: [opened]
+    branches: [develop]
 
 jobs:
   auto-comment:
