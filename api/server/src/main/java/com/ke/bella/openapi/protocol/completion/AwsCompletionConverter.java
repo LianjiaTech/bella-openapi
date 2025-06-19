@@ -175,7 +175,6 @@ public class AwsCompletionConverter {
             com.ke.bella.openapi.protocol.completion.Message.ToolCall toolCall = new com.ke.bella.openapi.protocol.completion.Message.ToolCall();
             ToolUseBlockStart toolUseBlock = response.toolUse();
             toolCall.setType("function");
-            toolCall.setIndex(index);
             toolCall.setId(toolUseBlock.toolUseId());
             com.ke.bella.openapi.protocol.completion.Message.FunctionCall fc = new com.ke.bella.openapi.protocol.completion.Message.FunctionCall();
             fc.setName(toolUseBlock.name());
@@ -200,7 +199,6 @@ public class AwsCompletionConverter {
             com.ke.bella.openapi.protocol.completion.Message.ToolCall toolCall = new com.ke.bella.openapi.protocol.completion.Message.ToolCall();
             ToolUseBlockDelta toolUseBlock = response.toolUse();
             toolCall.setType("function");
-            toolCall.setIndex(index);
             com.ke.bella.openapi.protocol.completion.Message.FunctionCall fc = new com.ke.bella.openapi.protocol.completion.Message.FunctionCall();
             fc.setArguments(toolUseBlock.input() == null ? "" : toolUseBlock.input());
             toolCall.setFunction(fc);
