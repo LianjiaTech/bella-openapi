@@ -38,7 +38,7 @@ jobs:
           github_token: ${{ secrets.GIT_TOKEN }}
           claude_env: |        
             ANTHROPIC_SMALL_FAST_MODEL: anthropic.claude-3-5-haiku-20241022-v1:0
-            "CLAUDE_CODE_MAX_OUTPUT_TOKENS": 64000
+            CLAUDE_CODE_MAX_OUTPUT_TOKENS: 64000
         env:
           AWS_REGION: "us-west-2"
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
