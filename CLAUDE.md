@@ -120,12 +120,50 @@ The core uses **AdaptorManager** to route requests to different AI providers:
 4. Update frontend components in `web/src/components/` if needed
 
 ### Testing & Quality
+Backend tests need to connect mysql database to run tests, so can't run backend tests in claude.
+```bash
+# Run backend tests
+cd api/
+mvn test                           # Run all tests
+mvn test -pl server               # Run server module tests only
+mvn test -Dtest=ChatControllerTest # Run specific test class
+
+# Run frontend tests
+cd web/
+npm run lint                      # Run ESLint linting
+```
 - API tests in `api/server/src/test/resources/`
+- Test configuration: `api/server/src/test/resources/application-ut.yml`
 - Mock implementations available for each protocol adapter
-- Use system API key generation: `./generate-system-apikey.sh`
-- Admin authorization: `./authorize-admin.sh`
 
 ### Environment Management
 - Supports dev/test/prod environments with profile-specific configs
 - Apollo configuration center integration (optional)
 - Extensive proxy and OAuth configuration options
+
+## Database & Code Generation
+
+### jOOQ Code Generation
+```bash
+cd api/
+mvn jooq:generate -pl server       # Generate jOOQ code from database schema
+```
+- Generated POJOs and Records in `api/server/src/codegen/java/`
+- Database schema initialization scripts in `api/server/sql/`
+- Re-run code generation after database schema changes
+
+## Debugging & Troubleshooting
+
+### Common Issues
+- **Protocol Adapter Problems**: Check `AdaptorManager` registration and provider-specific logs
+- **Rate Limiting Issues**: Examine Redis Lua script execution in `api/server/src/main/resources/lua/`
+- **Database Connection Issues**: Verify Docker MySQL container health and connection settings
+- **Frontend Development Mode**: Use `cd web/ && npm run dev` for hot reload (avoid Docker dev mode)
+
+### Useful Debugging Settings
+```yaml
+# In application.yml for debugging
+logging.level.org.jooq.tools.LoggerListener: DEBUG  # SQL logging
+logging.level.com.ke.bella.openapi.intercept: DEBUG # Request/Response logging
+jetcache.statIntervalMinutes: 1                     # Cache statistics
+```

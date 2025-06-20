@@ -168,7 +168,7 @@ public class AwsCompletionConverter {
                 .usage(tokenUsage).build();
     }
 
-    public static StreamCompletionResponse convert2OpenAIStreamResponse(ContentBlockStart response, int index) {
+    public static StreamCompletionResponse convert2OpenAIStreamResponse(ContentBlockStart response, int toolIndex) {
         com.ke.bella.openapi.protocol.completion.Message openAiMsg = new com.ke.bella.openapi.protocol.completion.Message();
         openAiMsg.setRole("assistant");
         if(response.toolUse() != null) {
@@ -180,18 +180,18 @@ public class AwsCompletionConverter {
             fc.setName(toolUseBlock.name());
             fc.setArguments("");
             toolCall.setFunction(fc);
+            toolCall.setIndex(toolIndex);
             openAiMsg.setTool_calls(Lists.newArrayList(toolCall));
         }
         StreamCompletionResponse.Choice choice = new StreamCompletionResponse.Choice();
         choice.setDelta(openAiMsg);
-        choice.setIndex(index);
         return StreamCompletionResponse.builder()
                 .choices(Lists.newArrayList(choice))
                 .created(DateTimeUtils.getCurrentSeconds())
                 .build();
     }
 
-    public static StreamCompletionResponse convert2OpenAIStreamResponse(ContentBlockDelta response, int index) {
+    public static StreamCompletionResponse convert2OpenAIStreamResponse(ContentBlockDelta response, int toolIndex) {
         com.ke.bella.openapi.protocol.completion.Message openAiMsg = new com.ke.bella.openapi.protocol.completion.Message();
         openAiMsg.setRole("assistant");
         openAiMsg.setContent(response.text());
@@ -202,6 +202,7 @@ public class AwsCompletionConverter {
             com.ke.bella.openapi.protocol.completion.Message.FunctionCall fc = new com.ke.bella.openapi.protocol.completion.Message.FunctionCall();
             fc.setArguments(toolUseBlock.input() == null ? "" : toolUseBlock.input());
             toolCall.setFunction(fc);
+            toolCall.setIndex(toolIndex);
             openAiMsg.setTool_calls(Lists.newArrayList(toolCall));
         } else if(response.reasoningContent() != null) {
             openAiMsg.setReasoning_content(response.reasoningContent().text());
@@ -210,7 +211,6 @@ public class AwsCompletionConverter {
         }
         StreamCompletionResponse.Choice choice = new StreamCompletionResponse.Choice();
         choice.setDelta(openAiMsg);
-        choice.setIndex(index);
         return StreamCompletionResponse.builder().choices(Lists.newArrayList(choice))
                 .created(DateTimeUtils.getCurrentSeconds())
                 .build();

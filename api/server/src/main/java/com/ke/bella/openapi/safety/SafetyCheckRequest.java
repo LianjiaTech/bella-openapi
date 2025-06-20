@@ -98,7 +98,16 @@ public class SafetyCheckRequest {
                 target.setRole(role);
                 if(content instanceof Collection) {
                     List<String> textMessages = new LinkedList<>();
-                    for (Map contentMap : (Collection<Map>) content) {
+                    for (Object contentObj : (Collection) content) {
+                        Map contentMap;
+                        if(contentObj instanceof  Map) {
+                            contentMap = (Map) contentObj;
+                        } else {
+                            contentMap = JacksonUtils.toMap(contentObj);
+                        }
+                        if(contentMap == null) {
+                            continue;
+                        }
                         if(contentMap.containsKey("text")) {
                             textMessages.add((String) contentMap.get("text"));
                         }
