@@ -20,7 +20,6 @@ import lombok.NoArgsConstructor;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 
 @Data
 @NoArgsConstructor
@@ -28,6 +27,7 @@ import java.util.Map;
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class MessageRequest {
+    private String anthropic_version;
     private String model;
     private List<InputMessage> messages;
     @JsonProperty("max_tokens")
@@ -35,10 +35,10 @@ public class MessageRequest {
     private Metadata metadata;
     @JsonProperty("stop_sequences")
     private List<String> stopSequences;
-    private boolean stream;
+    private Boolean stream;
     @JsonDeserialize(using = SystemFieldDeserializer.class)
     private Object system; // String or List<RequestTextBlock>
-    private Double temperature;
+    private Float temperature;
     private ThinkingConfig thinking;
     @JsonProperty("tool_choice")
     private ToolChoice toolChoice;
@@ -46,7 +46,7 @@ public class MessageRequest {
     @JsonProperty("top_k")
     private Integer topK;
     @JsonProperty("top_p")
-    private Double topP;
+    private Float topP;
 
     @Data
     @NoArgsConstructor

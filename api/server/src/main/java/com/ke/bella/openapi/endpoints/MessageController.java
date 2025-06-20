@@ -28,7 +28,6 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 @RestController
 @RequestMapping("/v1/messages")
 @Tag(name = "messages")
-@Slf4j
 public class MessageController {
     @Autowired
     private ChannelRouter router;
@@ -44,7 +43,6 @@ public class MessageController {
     @PostMapping
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public Object message(@RequestBody MessageRequest request) {
-        LOGGER.info(JacksonUtils.serialize(JacksonUtils.toMap(EndpointContext.getRequest().getContentAsByteArray())));
         String endpoint = EndpointContext.getRequest().getRequestURI();
         String model = request.getModel();
         EndpointContext.setEndpointData(endpoint, model, request);
@@ -61,11 +59,11 @@ public class MessageController {
         MessageAdaptor adaptor = adaptorManager.getProtocolAdaptor(endpoint, protocol, MessageAdaptor.class);
         CompletionProperty property = (CompletionProperty) JacksonUtils.deserialize(channelInfo, adaptor.getPropertyClass());
         EndpointContext.setEncodingType(property.getEncodingType());
-        if(request.isStream()) {
+        if(Boolean.TRUE.equals(request.getStream())) {
             SseEmitter sse = SseHelper.createSse(1000L * 60 * 5, EndpointContext.getProcessData().getRequestId());
-            adaptor.streamMessages(request, url, property, processData, StreamCallbackProvider.provideForMessage(sse, processData, EndpointContext.getApikey(), logger, safetyCheckService, property));
+            adaptor.streamMessages(request, url, property, StreamCallbackProvider.provideForMessage(sse, processData, EndpointContext.getApikey(), logger, safetyCheckService, property));
             return sse;
         }
-        return adaptor.createMessages(request, url, property, processData);
+        return adaptor.createMessages(request, url, property);
     }
 }

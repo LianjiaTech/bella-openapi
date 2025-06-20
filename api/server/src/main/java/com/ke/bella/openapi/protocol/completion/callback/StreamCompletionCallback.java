@@ -29,7 +29,7 @@ import java.util.Map;
 public class StreamCompletionCallback implements Callbacks.StreamCompletionCallback {
     @Getter
     protected final SseEmitter sse;
-    private final EndpointProcessData processData;
+    protected final EndpointProcessData processData;
     private final ApikeyInfo apikeyInfo;
     private final EndpointLogger logger;
     private final ISafetyCheckService.IChatSafetyCheckService safetyService;
@@ -67,7 +67,7 @@ public class StreamCompletionCallback implements Callbacks.StreamCompletionCallb
             msg.setRequestRiskData(requestRiskData);
             requestRiskData = null;
         }
-        SseHelper.sendEvent(sse, msg);
+        send(msg);
         updateBuffer(msg.getStandardFormat() == null ? msg : msg.getStandardFormat());
         safetyCheck(false);
     }
@@ -75,7 +75,7 @@ public class StreamCompletionCallback implements Callbacks.StreamCompletionCallb
     @Override
     public void done() {
         safetyCheck(true);
-        SseHelper.sendEvent(sse, "[DONE]");
+        send("[DONE]");
     }
 
     public void finish() {
@@ -96,6 +96,11 @@ public class StreamCompletionCallback implements Callbacks.StreamCompletionCallb
             sse.completeWithError(exception);
             log();
         }
+    }
+
+    @Override
+    public void send(Object data) {
+        SseHelper.sendEvent(sse, data);
     }
 
     protected void updateBuffer(StreamCompletionResponse streamResponse) {
@@ -175,7 +180,7 @@ public class StreamCompletionCallback implements Callbacks.StreamCompletionCallb
             StreamCompletionResponse response = new StreamCompletionResponse();
             response.setSensitives(result);
             response.setCreated(DateTimeUtils.getCurrentSeconds());
-            SseHelper.sendEvent(sse, response);
+            send(response);
         }
         dirtyChoice = false;
     }

@@ -16,10 +16,14 @@ npm run start        # Start production server
 npm run lint         # Run ESLint linting
 ```
 
-### Docker
+### Docker (Multi-stage build with optimizations)
 ```bash
-docker build -t bella-openapi-web .
+# Build with build args for API host
+docker build --build-arg NEXT_PUBLIC_API_HOST=your-api-host -t bella-openapi-web .
 docker run -p 3000:3000 bella-openapi-web
+
+# Development with volume mounting
+docker run -v $(pwd):/app/web -p 3000:3000 bella-openapi-web
 ```
 
 ## Architecture Overview
@@ -64,26 +68,70 @@ docker run -p 3000:3000 bella-openapi-web
 
 ### Configuration & Environment
 The application uses Next.js standalone output mode and requires these environment variables:
+
+**Public (Build-time)**:
 - `NEXT_PUBLIC_API_HOST` - Backend API host
+- `NEXT_PUBLIC_APIKEY_QUOTA_APPLY_URL` - URL for API key quota applications
+- `NEXT_PUBLIC_SAFETY_APPLY_URL` - URL for safety feature applications
+- `NEXT_PUBLIC_AGENT_URL` - Agent service URL
+
+**Server-side (Runtime)**:
 - `WORKFLOW_URL`, `WORKFLOW_API_KEY` - Workflow service configuration
 - `ES_URL`, `ES_API_KEY` - ElasticSearch for logging
 - `TENANT_ID` - Multi-tenant identifier
-- Various workflow IDs for metrics, logs, and services
+- `METRICS_WORKFLOW_ID`, `LOGS_TRACE_WORKFLOW_ID`, `SERVICE_WORKFLOW_ID` - Workflow identifiers
 
 ### Key Patterns
-- **Provider Pattern**: Global state via UserProvider and ThemeProvider
-- **Custom Axios Instance**: Centralized API client with authentication interceptors
-- **Feature-based Components**: Components organized by feature area
+- **Provider Pattern**: Global state via UserProvider and ThemeProvider contexts
+- **Custom Axios Instance**: Centralized API client with authentication and error handling interceptors  
+- **Feature-based Components**: Components organized by feature area (apikey/, meta/, playground/, etc.)
 - **Type-safe APIs**: Comprehensive TypeScript types for all API interactions
-- **shadcn/ui Integration**: Consistent design system with Radix UI primitives
+- **shadcn/ui Integration**: Consistent design system with Radix UI primitives (New York style)
+- **Standalone Output**: Docker-optimized production builds with PM2 process management
+
+### Key Architecture Components
+
+**Authentication Flow**:
+- `src/lib/context/user-context.tsx` - Global user state management
+- `src/lib/api/openapi.ts` - Axios instance with 401 redirect handling
+- `X-BELLA-CONSOLE` header for backend identification
+
+**API Client Structure**:
+- `src/lib/api/openapi.ts` - Main HTTP client with interceptors
+- `src/lib/api/meta.ts` - Metadata and model management APIs
+- `src/lib/api/apikey.ts` - API key management functions
+- `src/lib/api/workflow.ts` - Workflow service integration
+
+**Component Organization**:
+- Feature-based: `components/apikey/`, `components/meta/`, `components/playground/`
+- UI primitives: `components/ui/` (shadcn/ui components)
+- Business logic: Audio processing classes in `components/playground/`
 
 ### Path Aliases
 - `@/*` maps to `./src/*` for clean imports
 
 ## Development Notes
 
-- The main entry point routes to `/meta` which serves as the primary API console interface
-- Audio features support real-time processing and various audio formats
-- All API interactions go through the custom Axios instance with automatic authentication
-- The application uses React Server Components where applicable
-- Dark/light mode support is built-in via next-themes
+### Key Routes & Pages
+- Root (`/`) redirects to `/meta` - the main API console interface
+- `/playground/v1/` - Interactive API testing interfaces (chat, audio, embeddings)  
+- `/apikey/` - API key management and quota tracking
+- `/monitor/` - Real-time metrics and monitoring dashboard
+- `/logs/` - Comprehensive logging interface with trace capabilities
+
+### Audio Processing Architecture
+- Real-time audio processing with WebSocket connections
+- Multiple recorder implementations: `RealtimeAudioRecorder`, `FlashAudioRecorder`
+- PCM audio playback and device selection utilities
+- Voice synthesis and ASR (Automatic Speech Recognition) support
+
+### API Response Handling
+- Standardized response format with `code: 200` success indicator
+- Automatic login redirect on 401 responses via `X-Redirect-Login` header
+- Error boundary handling throughout the application
+
+### Deployment Features
+- Multi-stage Docker build with Chinese mirror optimizations
+- PM2 process management in production
+- Standalone Next.js output for optimized Docker images
+- Timezone configuration (Asia/Shanghai) in containers
