@@ -4,8 +4,6 @@ import com.ke.bella.openapi.common.exception.ChannelException;
 import com.ke.bella.openapi.protocol.Callbacks;
 import com.ke.bella.openapi.protocol.Callbacks.StreamCompletionCallback;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
@@ -23,8 +21,6 @@ import java.util.function.Consumer;
 @Slf4j
 @Component("AwsCompletion")
 public class AwsAdaptor implements CompletionAdaptor<AwsProperty> {
-
-    private static final Logger log = LoggerFactory.getLogger(AwsAdaptor.class);
 
     @Override
     public String getDescription() {
@@ -63,7 +59,7 @@ public class AwsAdaptor implements CompletionAdaptor<AwsProperty> {
                     .onComplete(awsCallBack)
                     .build());
         } catch (Exception bedrockException) {
-            log.info("sse异常,{}", bedrockException.getMessage());
+            LOGGER.info("sse异常,{}", bedrockException.getMessage());
         }
     }
 
@@ -73,7 +69,8 @@ public class AwsAdaptor implements CompletionAdaptor<AwsProperty> {
         }
 
         private final Callbacks.StreamCompletionCallback callback;
-        private volatile boolean isFirst = true;
+        private boolean isFirst = true;
+        private int toolNum = 0;
 
         @Override
         public void visitContentBlockStart(ContentBlockStartEvent event) {
@@ -81,7 +78,10 @@ public class AwsAdaptor implements CompletionAdaptor<AwsProperty> {
                 callback.onOpen();
                 isFirst = false;
             }
-            StreamCompletionResponse response = AwsCompletionConverter.convert2OpenAIStreamResponse(event.start(), event.contentBlockIndex());
+            if(event.start().toolUse() != null) {
+                toolNum += 1;
+            }
+            StreamCompletionResponse response = AwsCompletionConverter.convert2OpenAIStreamResponse(event.start(), Math.max(0, toolNum -1));
             callback.callback(response);
         }
 
@@ -91,7 +91,7 @@ public class AwsAdaptor implements CompletionAdaptor<AwsProperty> {
                 callback.onOpen();
                 isFirst = false;
             }
-            StreamCompletionResponse response = AwsCompletionConverter.convert2OpenAIStreamResponse(event.delta(), event.contentBlockIndex());
+            StreamCompletionResponse response = AwsCompletionConverter.convert2OpenAIStreamResponse(event.delta(), Math.max(0, toolNum -1));
             callback.callback(response);
         }
 
@@ -112,7 +112,6 @@ public class AwsAdaptor implements CompletionAdaptor<AwsProperty> {
         public void accept(Throwable throwable) {
             LOGGER.warn(throwable.getMessage(), throwable);
             if (throwable instanceof BedrockRuntimeException) {
-                LOGGER.warn(throwable.getMessage(), throwable);
                 BedrockRuntimeException bedrockException = (BedrockRuntimeException) throwable;
                 callback.finish(ChannelException.fromResponse(bedrockException.statusCode(), bedrockException.getMessage()));
                 return;

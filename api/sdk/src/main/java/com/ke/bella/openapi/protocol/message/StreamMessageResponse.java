@@ -28,7 +28,7 @@ public class StreamMessageResponse {
     private MessageResponse.ContentBlock contentBlock;
     private Object delta; // Holds specific delta objects or MessageDeltaInfo
     private StreamErrorInfo error;
-    private StreamUsage usage = new StreamUsage();
+    private StreamUsage usage;
 
 
     @JsonTypeInfo(

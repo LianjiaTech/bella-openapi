@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component("OpenAIMessage")
-public class OpenAIAdaptor implements MessageAdaptor<OpenAIProperty> {
+public class OpenAIAdaptor implements MessageDelegatorAdaptor<OpenAIProperty> {
     @Autowired
     private com.ke.bella.openapi.protocol.completion.OpenAIAdaptor delegator;
 

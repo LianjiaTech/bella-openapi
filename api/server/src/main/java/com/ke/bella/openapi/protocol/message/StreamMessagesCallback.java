@@ -2,7 +2,6 @@ package com.ke.bella.openapi.protocol.message;
 
 import com.ke.bella.openapi.EndpointProcessData;
 import com.ke.bella.openapi.apikey.ApikeyInfo;
-import com.ke.bella.openapi.common.exception.ChannelException;
 import com.ke.bella.openapi.protocol.completion.StreamCompletionResponse;
 import com.ke.bella.openapi.protocol.completion.callback.StreamCompletionCallback;
 import com.ke.bella.openapi.protocol.log.EndpointLogger;
@@ -35,6 +34,9 @@ public class StreamMessagesCallback extends StreamCompletionCallback {
 
     @Override
     public void callback(StreamCompletionResponse msg) {
+        if(processData.isNativeSend()) {
+            return;
+        }
         msg.setCreated(DateTimeUtils.getCurrentSeconds());
         if(CollectionUtils.isNotEmpty(msg.getChoices())) {
             StreamCompletionResponse.Choice streamChoice = msg.getChoices().get(0);
@@ -42,7 +44,7 @@ public class StreamMessagesCallback extends StreamCompletionCallback {
                 isToolCall = true;
             }
         }
-        List<StreamMessageResponse> messages = TransferUtils.convertStreamResponse(msg, isToolCall);
+        List<StreamMessageResponse> messages = TransferFromCompletionsUtils.convertStreamResponse(msg, isToolCall);
         if(CollectionUtils.isNotEmpty(messages)) {
             if(first) {
                 send(StreamMessageResponse.messageStart(StreamMessageResponse.initial(msg)));
@@ -66,7 +68,7 @@ public class StreamMessagesCallback extends StreamCompletionCallback {
                     curIndex = streamChoice.getIndex();
                 }
             }
-            if(messages.get(messages.size() - 1).getType().equals("message_delta")) {
+            if(messages.get(messages.size() - 1).getType().equals("message_delta") && !isSendFinish) {
                 isSendFinish = true;
                 messages.add(messages.size() - 1, StreamMessageResponse.contentBlockStop(curIndex));
             }
@@ -77,6 +79,9 @@ public class StreamMessagesCallback extends StreamCompletionCallback {
 
     @Override
     public void done() {
+        if(processData.isNativeSend()) {
+            return;
+        }
         if(!isSendFinish) {
             send(StreamMessageResponse.contentBlockStop(curIndex));
             StreamMessageResponse.StreamUsage streamUsage = StreamMessageResponse.StreamUsage.builder()
@@ -91,8 +96,13 @@ public class StreamMessagesCallback extends StreamCompletionCallback {
         send(StreamMessageResponse.messageStop());
     }
 
-    private void send(StreamMessageResponse data) {
-        SseHelper.sendEvent(sse, data.getType(), data);
+    @Override
+    public void send(Object data) {
+        if(data instanceof StreamMessageResponse) {
+            SseHelper.sendEvent(sse, ((StreamMessageResponse)data).getType(), data);
+        } else {
+            throw new IllegalStateException("Only Support StreamMessageResponse");
+        }
     }
 
 }
