@@ -96,9 +96,28 @@ public class TransferToCompletionsUtils {
             return result;
         }
         
-        for (Message message : messages) {
+        for (int i = 0; i < messages.size(); i++) {
+            Message message = messages.get(i);
             if ("system".equals(message.getRole())) {
                 result.setSystemContent(convertContentToMessageFormat(message.getContent()));
+            } else if ("tool".equals(message.getRole())) {
+                // Tool messages should be merged with the previous user message
+                if (!result.getMessages().isEmpty()) {
+                    MessageRequest.InputMessage lastMessage = result.getMessages().get(result.getMessages().size() - 1);
+                    if ("user".equals(lastMessage.getRole())) {
+                        // Merge tool result into the last user message
+                        MessageRequest.InputMessage mergedMessage = mergeToolResultIntoAssistantMessage(lastMessage, message);
+                        result.getMessages().set(result.getMessages().size() - 1, mergedMessage);
+                    } else {
+                        // If previous message is not user, convert normally (fallback)
+                        MessageRequest.InputMessage convertedMessage = convertSingleMessage(message);
+                        result.addMessage(convertedMessage);
+                    }
+                } else {
+                    // If no previous message, convert normally (fallback)
+                    MessageRequest.InputMessage convertedMessage = convertSingleMessage(message);
+                    result.addMessage(convertedMessage);
+                }
             } else {
                 MessageRequest.InputMessage convertedMessage = convertSingleMessage(message);
                 result.addMessage(convertedMessage);
@@ -108,12 +127,47 @@ public class TransferToCompletionsUtils {
         return result;
     }
 
-    private static MessageRequest.InputMessage convertSingleMessage(Message message) {
-        MessageRequest.InputMessage.InputMessageBuilder messageBuilder = MessageRequest.InputMessage.builder();
-        messageBuilder.role(message.getRole());
-        
+    private static MessageRequest.InputMessage mergeToolResultIntoAssistantMessage(MessageRequest.InputMessage userMessage, Message toolMessage) {
+        // Create a new list of content blocks based on the existing user message
         List<MessageRequest.ContentBlock> contentBlocks = new ArrayList<>();
         
+        // Add existing content from user message
+        if (userMessage.getContent() instanceof String) {
+            MessageRequest.TextContentBlock textBlock = new MessageRequest.TextContentBlock();
+            textBlock.setText((String) userMessage.getContent());
+            contentBlocks.add(textBlock);
+        } else if (userMessage.getContent() instanceof List) {
+            contentBlocks.addAll((List<MessageRequest.ContentBlock>) userMessage.getContent());
+        }
+        
+        // Add tool result content block
+        if (toolMessage.getTool_call_id() != null) {
+            MessageRequest.ToolResultContentBlock toolResultBlock = new MessageRequest.ToolResultContentBlock();
+            toolResultBlock.setToolUseId(toolMessage.getTool_call_id());
+            toolResultBlock.setContent(extractToolResultContent(toolMessage));
+            contentBlocks.add(toolResultBlock);
+        }
+        
+        // Create new message with merged content
+        MessageRequest.InputMessage.InputMessageBuilder messageBuilder = MessageRequest.InputMessage.builder();
+        messageBuilder.role(userMessage.getRole());
+        
+        // Set merged content
+        if (contentBlocks.size() == 1 && contentBlocks.get(0) instanceof MessageRequest.TextContentBlock) {
+            messageBuilder.content(((MessageRequest.TextContentBlock) contentBlocks.get(0)).getText());
+        } else if (!contentBlocks.isEmpty()) {
+            messageBuilder.content(contentBlocks);
+        }
+        
+        return messageBuilder.build();
+    }
+
+    private static MessageRequest.InputMessage convertSingleMessage(Message message) {
+        MessageRequest.InputMessage.InputMessageBuilder messageBuilder = MessageRequest.InputMessage.builder();
+        messageBuilder.role(message.getRole().equals("assistant") ? "assistant" : "user");
+        
+        List<MessageRequest.ContentBlock> contentBlocks = new ArrayList<>();
+
         // 处理文本内容
         processTextContent(message, contentBlocks);
         
@@ -130,7 +184,7 @@ public class TransferToCompletionsUtils {
     }
 
     private static void processTextContent(Message message, List<MessageRequest.ContentBlock> contentBlocks) {
-        if (message.getContent() == null) return;
+        if (message.getContent() == null || "tool".equals(message.getRole())) return;
         
         if (message.getContent() instanceof String) {
             MessageRequest.TextContentBlock textBlock = new MessageRequest.TextContentBlock();
