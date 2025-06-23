@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component("QwenMessage")
-public class QwenAdaptor implements MessageAdaptor<OpenAIProperty>  {
+public class QwenAdaptor implements MessageDelegatorAdaptor<OpenAIProperty>  {
     @Autowired
     private com.ke.bella.openapi.protocol.completion.QwenAdaptor delegator;
     @Override

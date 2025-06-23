@@ -52,6 +52,7 @@ public class EndpointProcessData {
     private BigDecimal cost;
     private boolean innerLog;
     private Integer maxWaitSec;
+    private boolean nativeSend;
 
     public void setApikeyInfo(ApikeyInfo ak) {
         this.setApikey(ak.getApikey());

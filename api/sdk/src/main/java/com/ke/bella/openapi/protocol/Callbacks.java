@@ -53,6 +53,8 @@ public interface Callbacks {
 
         void finish(ChannelException exception);
 
+        void send(Object data);
+
         default boolean support() {
             return true;
         }
@@ -105,6 +107,11 @@ public interface Callbacks {
         @Override
         public void onOpen() {
             next.onOpen();
+        }
+
+        @Override
+        public void send(Object data) {
+            next.send(data);
         }
 
         @Override
