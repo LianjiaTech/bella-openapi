@@ -369,7 +369,7 @@ public class TransferToCompletionsUtils {
         }
 
         if (!textContents.isEmpty()) {
-            messageBuilder.content(textContents);
+            messageBuilder.content(textContents.stream().map(ContentPart::getText).reduce((s1, s2)->s1 + "\n" + s2).get());
         }
         if (!toolCalls.isEmpty()) {
             messageBuilder.tool_calls(toolCalls);
