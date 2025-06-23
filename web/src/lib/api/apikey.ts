@@ -92,6 +92,11 @@ export async function updateSubApikey(request: UpdateSubApikeyRequest): Promise<
     }
 }
 
+export async function bindService(code: string, serviceId: string): Promise<boolean> {
+    const response = await openapi.post<boolean>('/console/apikey/bindService', { code, serviceId });
+    return response.data ?? false;
+}
+
 export async function getApiKeyBalance(akCode: string): Promise<ApiKeyBalance | null> {
     try {
         const response = await openapi.get<ApiKeyBalance>(`/console/apikey/balance/${akCode}`);
