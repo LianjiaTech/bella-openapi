@@ -33,13 +33,12 @@ jobs:
         id: claude
         uses: anthropics/claude-code-action@beta
         with:
-          model: "arn:aws:bedrock:us-west-2:084375560420:application-inference-profile/v58iseahbtkh"
-          use_bedrock: "true"
+          model: "claude-4-sonnet"
           github_token: ${{ secrets.GIT_TOKEN }}
-          claude_env: |        
-            ANTHROPIC_SMALL_FAST_MODEL: anthropic.claude-3-5-haiku-20241022-v1:0
+          anthropic_api_key: ${{ secrets.ANTHROPIC_AUTH_TOKEN }}
+          claude_env: |
+            ANTHROPIC_AUTH_TOKEN: ${{ secrets.ANTHROPIC_AUTH_TOKEN }}
+            ANTHROPIC_SMALL_FAST_MODEL: claude-3-5-haiku
             CLAUDE_CODE_MAX_OUTPUT_TOKENS: 64000
         env:
-          AWS_REGION: "us-west-2"
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          ANTHROPIC_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
