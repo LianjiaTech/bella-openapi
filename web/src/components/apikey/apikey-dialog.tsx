@@ -1,5 +1,5 @@
 import React, {ChangeEvent, useState} from 'react'
-import {deleteApikey, rename, resetApikey, updateCertify} from "@/lib/api/apikey"
+import {bindService, deleteApikey, rename, resetApikey, updateCertify} from "@/lib/api/apikey"
 import {
     Dialog,
     DialogContent,
@@ -314,6 +314,59 @@ export const RenameDialog: React.FC<{
                 value: name,
                 onChange: handleChange,
                 placeholder: "输入名称",
+            }}
+            icon={<SquarePen className="h-4 w-4"/>}
+            isIcon={true}
+            isOpen={isOpen}
+            onClose={onClose}
+        />
+    )
+}
+
+export const ServiceIdDialog: React.FC<{
+    code: string;
+    origin: string;
+    refresh: () => void;
+    isOpen: boolean;
+    onClose: () => void
+}> = ({code, origin, refresh, isOpen, onClose}) => {
+    const [serviceId, setServiceId] = useState(origin)
+    const {toast} = useToast()
+
+    const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value
+        setServiceId(value)
+    }
+
+    const handleConfirm = async () => {
+        if (origin === serviceId) return
+        try {
+            const success = await bindService(code, serviceId)
+            if (success) {
+                refresh()
+                toast({title: "修改成功", description: "服务ID修改为:" + serviceId})
+            } else {
+                setServiceId(origin)
+                toast({title: "修改失败", description: "服务ID修改失败，请稍后重试。", variant: "destructive"})
+            }
+        } catch (error) {
+            setServiceId(origin)
+            // @ts-ignore
+            toast({title: "修改失败", description: error.error, variant: "destructive"})
+        }
+    }
+
+    return (
+        <ActionDialog
+            label="修改服务ID"
+            description="请输入服务ID"
+            onConfirm={handleConfirm}
+            inputLabel="服务ID"
+            inputProps={{
+                id: "serviceId",
+                value: serviceId,
+                onChange: handleChange,
+                placeholder: "输入服务ID",
             }}
             icon={<SquarePen className="h-4 w-4"/>}
             isIcon={true}
