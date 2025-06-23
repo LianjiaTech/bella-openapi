@@ -5,7 +5,7 @@ import {useRouter} from "next/navigation"
 import {ColumnDef} from "@tanstack/react-table"
 import {ApikeyInfo} from "@/lib/types/openapi"
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip"
-import {CertifyDialog, DeleteDialog, QuotaDialog, RenameDialog, ResetDialog} from "./apikey-dialog"
+import {CertifyDialog, DeleteDialog, QuotaDialog, RenameDialog, ResetDialog, ServiceIdDialog} from "./apikey-dialog"
 import {HoverContext} from "@/components/ui/data-table";
 import {Badge} from "@/components/ui/badge"
 import {Button} from "@/components/ui/button"
@@ -175,10 +175,23 @@ export const ApikeyColumns = (refresh: () => void, showApikey: (apikey : string)
     },
     {
         accessorKey: "serviceId",
-        header:
-            "服务名",
-        cell:
-            ({row}) => <div>{row.getValue("serviceId")}</div>,
+        header: "服务名",
+        cell: ({row}) => (
+            <EditableCell
+                content={row.original.serviceId || '/'}
+                dialogComponent={(isOpen, onClose) => (
+                    <ServiceIdDialog
+                        code={row.original.code}
+                        origin={row.original.serviceId || ''}
+                        refresh={refresh}
+                        isOpen={isOpen}
+                        onClose={onClose}
+                    />
+                )}
+                positionCalc="50%"
+                rowId={row.id}
+            />
+        ),
     },
     {
         accessorKey: "safetyLevel",
