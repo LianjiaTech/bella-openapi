@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component("AwsMessage")
-public class AwsAdaptor implements MessageAdaptor<AwsProperty> {
+public class AwsAdaptor implements MessageDelegatorAdaptor<AwsProperty> {
     @Autowired
     private com.ke.bella.openapi.protocol.completion.AwsAdaptor delegator;
     @Override
