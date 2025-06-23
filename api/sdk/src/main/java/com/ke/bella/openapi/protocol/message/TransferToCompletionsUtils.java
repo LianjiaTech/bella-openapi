@@ -123,8 +123,93 @@ public class TransferToCompletionsUtils {
                 result.addMessage(convertedMessage);
             }
         }
-        
+        mergeMessages(result.getMessages());
         return result;
+    }
+
+    private static void mergeMessages(List<MessageRequest.InputMessage> messages) {
+        if (messages == null || messages.size() <= 1) {
+            return;
+        }
+
+        List<MessageRequest.InputMessage> mergedMessages = new ArrayList<>();
+        MessageRequest.InputMessage currentMessage = null;
+
+        for (MessageRequest.InputMessage message : messages) {
+            if (currentMessage == null) {
+                currentMessage = message;
+            } else if ("user".equals(currentMessage.getRole()) && "user".equals(message.getRole())) {
+                // Merge consecutive user messages
+                currentMessage = mergeUserMessages(currentMessage, message);
+            } else {
+                // Different roles or assistant message, add current and start new
+                mergedMessages.add(currentMessage);
+                currentMessage = message;
+            }
+        }
+
+        // Add the last message
+        if (currentMessage != null) {
+            mergedMessages.add(currentMessage);
+        }
+
+        // Replace original messages with merged ones
+        messages.clear();
+        messages.addAll(mergedMessages);
+    }
+
+    private static MessageRequest.InputMessage mergeUserMessages(MessageRequest.InputMessage first, MessageRequest.InputMessage second) {
+        List<MessageRequest.ContentBlock> mergedContentBlocks = new ArrayList<>();
+
+        // Add content from first message
+        addContentToBlocks(first.getContent(), mergedContentBlocks);
+
+        // Add content from second message
+        addContentToBlocks(second.getContent(), mergedContentBlocks);
+
+        // Move all ToolResultContentBlock to the front
+        List<MessageRequest.ContentBlock> toolResultBlocks = new ArrayList<>();
+        List<MessageRequest.ContentBlock> otherBlocks = new ArrayList<>();
+        
+        for (MessageRequest.ContentBlock block : mergedContentBlocks) {
+            if (block instanceof MessageRequest.ToolResultContentBlock) {
+                toolResultBlocks.add(block);
+            } else {
+                otherBlocks.add(block);
+            }
+        }
+        
+        // Combine: tool results first, then other blocks
+        List<MessageRequest.ContentBlock> reorderedBlocks = new ArrayList<>();
+        reorderedBlocks.addAll(toolResultBlocks);
+        reorderedBlocks.addAll(otherBlocks);
+
+        // Create merged message
+        MessageRequest.InputMessage.InputMessageBuilder messageBuilder = MessageRequest.InputMessage.builder();
+        messageBuilder.role("user");
+
+        // Set merged content
+        if (reorderedBlocks.size() == 1 && reorderedBlocks.get(0) instanceof MessageRequest.TextContentBlock) {
+            messageBuilder.content(((MessageRequest.TextContentBlock) reorderedBlocks.get(0)).getText());
+        } else if (!reorderedBlocks.isEmpty()) {
+            messageBuilder.content(reorderedBlocks);
+        }
+
+        return messageBuilder.build();
+    }
+
+    private static void addContentToBlocks(Object content, List<MessageRequest.ContentBlock> contentBlocks) {
+        if (content == null) return;
+
+        if (content instanceof String) {
+            MessageRequest.TextContentBlock textBlock = new MessageRequest.TextContentBlock();
+            textBlock.setText((String) content);
+            contentBlocks.add(textBlock);
+        } else if (content instanceof List) {
+            @SuppressWarnings("unchecked")
+            List<MessageRequest.ContentBlock> blocks = (List<MessageRequest.ContentBlock>) content;
+            contentBlocks.addAll(blocks);
+        }
     }
 
     private static MessageRequest.InputMessage mergeToolResultIntoAssistantMessage(MessageRequest.InputMessage userMessage, Message toolMessage) {
@@ -369,7 +454,7 @@ public class TransferToCompletionsUtils {
         }
 
         if (!textContents.isEmpty()) {
-            messageBuilder.content(textContents);
+            messageBuilder.content(textContents.stream().map(ContentPart::getText).reduce((s1, s2)->s1 + "\n" + s2).get());
         }
         if (!toolCalls.isEmpty()) {
             messageBuilder.tool_calls(toolCalls);
