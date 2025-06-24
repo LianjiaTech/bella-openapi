@@ -140,6 +140,25 @@ public class AudioTranscriptionRequest {
         @JsonProperty("max_end_silence")
         private int maxEndSilence;
 
+        //******************************火山******************************
+        @JsonProperty("enable_itn")
+        private boolean enableItn = true;
+
+        @JsonProperty("enable_ddc")
+        private boolean enableDdc = false;
+
+        @JsonProperty("enable_channel_split")
+        private boolean enableChannelSplit = false;
+
+        @JsonProperty("show_utterances")
+        private boolean showUtterances = true;
+
+        @JsonProperty("vad_segment")
+        private boolean vadSegment = false;
+
+        @JsonProperty("sensitive_words_filter")
+        private String sensitiveWordsFilter;
+
     }
 
     @Data
