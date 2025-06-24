@@ -271,8 +271,9 @@ export const RenameDialog: React.FC<{
     origin: string;
     refresh: () => void;
     isOpen: boolean;
-    onClose: () => void
-}> = ({code, origin, refresh, isOpen, onClose}) => {
+    onClose: () => void;
+    onSuccess?: (newName: string) => void;
+}> = ({code, origin, refresh, isOpen, onClose, onSuccess}) => {
     const [name, setName] = useState(origin)
     const {toast} = useToast()
 
@@ -290,7 +291,11 @@ export const RenameDialog: React.FC<{
         try {
             const success = await rename(code, name)
             if (success) {
-                refresh()
+                if (onSuccess) {
+                    onSuccess(name)
+                } else {
+                    refresh()
+                }
                 toast({title: "修改成功", description: "apikey名称修改为:" + name})
             } else {
                 setName(origin)
@@ -328,8 +333,9 @@ export const ServiceIdDialog: React.FC<{
     origin: string;
     refresh: () => void;
     isOpen: boolean;
-    onClose: () => void
-}> = ({code, origin, refresh, isOpen, onClose}) => {
+    onClose: () => void;
+    onSuccess?: (newServiceId: string) => void;
+}> = ({code, origin, refresh, isOpen, onClose, onSuccess}) => {
     const [serviceId, setServiceId] = useState(origin)
     const {toast} = useToast()
 
@@ -343,7 +349,11 @@ export const ServiceIdDialog: React.FC<{
         try {
             const success = await bindService(code, serviceId)
             if (success) {
-                refresh()
+                if (onSuccess) {
+                    onSuccess(serviceId)
+                } else {
+                    refresh()
+                }
                 toast({title: "修改成功", description: "服务ID修改为:" + serviceId})
             } else {
                 setServiceId(origin)
