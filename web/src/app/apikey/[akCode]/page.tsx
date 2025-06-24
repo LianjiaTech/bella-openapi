@@ -1,6 +1,6 @@
 'use client'
 
-import React, {useEffect, useState} from "react"
+import React, {useEffect, useState, useMemo, useCallback} from "react"
 import {useParams, useRouter} from "next/navigation"
 import {DataTable} from "@/components/ui/data-table"
 import {getApikeyInfos, getApikeyByCode, getSafetyLevel} from "@/lib/api/apikey"
@@ -33,6 +33,16 @@ const SubApikeyPage: React.FC = () => {
     const [showCopyDialog, setShowCopyDialog] = useState<boolean>(false)
     const [copied, setCopied] = useState<boolean>(false)
 
+    // 局部更新函数
+    const updateApiKeyInPlace = useCallback((code: string, updates: Partial<ApikeyInfo>) => {
+        setData(currentData => {
+            if (!currentData) return currentData
+            return currentData.map(item => 
+                item.code === code ? { ...item, ...updates } : item
+            )
+        })
+    }, [])
+
     const handleCopyApiKey = () => {
         if (newApiKey) {
             navigator.clipboard.writeText(newApiKey).then(() => {
@@ -54,7 +64,7 @@ const SubApikeyPage: React.FC = () => {
     }
 
 
-    const refresh = async () => {
+    const refresh = useCallback(async () => {
         setIsLoading(true)
         if (userInfo) {
             try {
@@ -73,9 +83,9 @@ const SubApikeyPage: React.FC = () => {
                 setIsLoading(false)
             }
         }
-    }
+    }, [page, userInfo, searchTerm, akCode])
 
-    const loadParentApikey = async () => {
+    const loadParentApikey = useCallback(async () => {
         try {
             const parent = await getApikeyByCode(akCode)
             setParentApikey(parent)
@@ -87,12 +97,12 @@ const SubApikeyPage: React.FC = () => {
                 variant: "destructive",
             })
         }
-    }
+    }, [akCode, toast])
 
     useEffect(() => {
         loadParentApikey()
         refresh()
-    }, [page, userInfo, akCode])
+    }, [loadParentApikey, refresh])
 
     const handlePageChange = (newPage: number) => {
         setPage(newPage)
@@ -108,29 +118,37 @@ const SubApikeyPage: React.FC = () => {
         refresh()
     }
 
-    const handleCreateSuccess = (apikey: string | null) => {
+    const handleCreateSuccess = useCallback((apikey: string | null, isUpdate?: boolean, updatedData?: ApikeyInfo) => {
         setShowSubApikeyDialog(false)
-        refresh()
+        
+        if (isUpdate && updatedData) {
+            // 局部更新现有项目
+            updateApiKeyInPlace(updatedData.code, updatedData)
+        } else {
+            // 创建新项目，需要刷新列表
+            refresh()
+        }
+        
         if(apikey) {
             handleCopyDialog(apikey)
         }
-    }
+    }, [refresh, updateApiKeyInPlace])
 
-    const handleCopyDialog = (apikey: string) => {
+    const handleCopyDialog = useCallback((apikey: string) => {
         setNewApiKey(apikey)
         setShowCopyDialog(true)
-    }
+    }, [])
 
-    const handleDialogClose = () => {
+    const handleDialogClose = useCallback(() => {
         setShowSubApikeyDialog(false)
         setCurrentSubApikey(null)
-    }
+    }, [])
 
-    const handleBack = () => {
+    const handleBack = useCallback(() => {
         router.push('/apikey')
-    }
+    }, [router])
 
-    const columns = SubApikeyColumns(setCurrentSubApikey, setShowSubApikeyDialog, handleCopyDialog, refresh)
+    const columns = useMemo(() => SubApikeyColumns(setCurrentSubApikey, setShowSubApikeyDialog, handleCopyDialog, refresh, updateApiKeyInPlace), [handleCopyDialog, refresh, updateApiKeyInPlace])
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -161,7 +179,10 @@ const SubApikeyPage: React.FC = () => {
                             </form>
                         </div>
                         <Button
-                            onClick={() => setShowSubApikeyDialog(true)}
+                            onClick={() => {
+                                setCurrentSubApikey(null)
+                                setShowSubApikeyDialog(true)
+                            }}
                             className="bg-gray-700 hover:bg-gray-900 text-white"
                             disabled={!parentApikey}
                         >

@@ -21,7 +21,7 @@ import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/c
 interface SubApikeyDialogProps {
     isOpen: boolean
     onClose: () => void
-    onSuccess: (apikey:string| null) => void
+    onSuccess: (apikey:string| null, isUpdate?: boolean, updatedData?: ApikeyInfo) => void
     parentApikey: ApikeyInfo,
     currentSubApikey: ApikeyInfo | null,
 }
@@ -62,7 +62,7 @@ export const SubApikeyDialog: React.FC<SubApikeyDialogProps> = ({
             monthQuota: currentSubApikey?.monthQuota || 50,
             remark: currentSubApikey?.remark || ''
         });
-    }, [currentSubApikey]);
+    }, [currentSubApikey, isOpen]);
 
     const handleInputChange = (field: keyof FormData, value: string | number) => {
         setFormData(prev => ({
@@ -128,7 +128,16 @@ export const SubApikeyDialog: React.FC<SubApikeyDialogProps> = ({
                         title: "成功",
                         description: "子API Key修改成功",
                     })
-                    onSuccess(null)
+                    // 构造更新后的数据
+                    const updatedData: ApikeyInfo = {
+                        ...currentSubApikey,
+                        name: formData.name.trim(),
+                        outEntityCode: formData.outEntityCode.trim(),
+                        safetyLevel: formData.safetyLevel,
+                        monthQuota: formData.monthQuota,
+                        remark: formData.remark.trim(),
+                    }
+                    onSuccess(null, true, updatedData)
                     // 重置表单
                     setFormData({
                         name: '',
