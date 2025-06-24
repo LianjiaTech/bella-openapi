@@ -90,7 +90,8 @@ export const SubApikeyColumns = (
     setCurrentSubApikey:(apikey:ApikeyInfo|null)=> void,
     setShowUpdateDialog:(open:boolean)=> void,
     handleCopyDialog: (apikey:string) => void,
-    refresh: () => void): ColumnDef<ApikeyInfo>[] => [
+    refresh: () => void,
+    updateApiKeyInPlace?: (code: string, updates: Partial<ApikeyInfo>) => void): ColumnDef<ApikeyInfo>[] => [
     {
         accessorKey: "akDisplay",
         header: "子AK",

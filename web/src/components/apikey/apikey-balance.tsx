@@ -16,7 +16,7 @@ interface ApiKeyBalanceIndicatorProps {
   code: string;
 }
 
-export const ApiKeyBalanceIndicator: React.FC<ApiKeyBalanceIndicatorProps> = ({ code }) => {
+export const ApiKeyBalanceIndicator: React.FC<ApiKeyBalanceIndicatorProps> = React.memo(({ code }) => {
   const [balance, setBalance] = useState<ApiKeyBalance | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<boolean>(false);
@@ -78,7 +78,7 @@ export const ApiKeyBalanceIndicator: React.FC<ApiKeyBalanceIndicatorProps> = ({ 
       <ApiKeyBalanceDialog code={code} isOpen={showDialog} onClose={() => setShowDialog(false)} />
     </>
   );
-};
+});
 
 export const ApiKeyBalanceDialog: React.FC<ApiKeyBalanceDialogProps> = ({
   code,
