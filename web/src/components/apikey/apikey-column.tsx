@@ -143,7 +143,7 @@ const ActionCell = ({code, refresh, showApikey}: { code: string, refresh: () => 
     )
 }
 
-export const ApikeyColumns = (refresh: () => void, showApikey: (apikey : string) => void): ColumnDef<ApikeyInfo>[] => [
+export const ApikeyColumns = (refresh: () => void, showApikey: (apikey : string) => void, updateApiKeyInPlace?: (code: string, updates: Partial<ApikeyInfo>) => void): ColumnDef<ApikeyInfo>[] => [
     {
         accessorKey: "akDisplay",
         header: "AK",
@@ -166,6 +166,7 @@ export const ApikeyColumns = (refresh: () => void, showApikey: (apikey : string)
                         refresh={refresh}
                         isOpen={isOpen}
                         onClose={onClose}
+                        onSuccess={updateApiKeyInPlace ? (newName) => updateApiKeyInPlace(row.original.code, { name: newName }) : undefined}
                     />
                 )}
                 positionCalc="50%"
@@ -186,6 +187,7 @@ export const ApikeyColumns = (refresh: () => void, showApikey: (apikey : string)
                         refresh={refresh}
                         isOpen={isOpen}
                         onClose={onClose}
+                        onSuccess={updateApiKeyInPlace ? (newServiceId) => updateApiKeyInPlace(row.original.code, { serviceId: newServiceId }) : undefined}
                     />
                 )}
                 positionCalc="50%"

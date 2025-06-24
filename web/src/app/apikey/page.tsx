@@ -1,9 +1,9 @@
 'use client'
 
-import React, {useEffect, useState} from "react"
+import React, {useEffect, useState, useMemo, useCallback} from "react"
 import {DataTable} from "@/components/ui/data-table"
 import {applyApikey, getApikeyInfos} from "@/lib/api/apikey"
-import {ApikeyColumns} from "@/components/apikey/apikey-coloumn"
+import {ApikeyColumns} from "@/components/apikey/apikey-column"
 import {ApikeyInfo} from "@/lib/types/openapi"
 import {ClientHeader} from "@/components/user/client-header"
 import {Button} from "@/components/ui/button"
@@ -27,7 +27,17 @@ const ApikeyPage: React.FC = () => {
     const {userInfo} = useUser()
     const {toast} = useToast()
 
-    const refresh = async () => {
+    // 局部更新函数
+    const updateApiKeyInPlace = useCallback((code: string, updates: Partial<ApikeyInfo>) => {
+        setData(currentData => {
+            if (!currentData) return currentData
+            return currentData.map(item =>
+                item.code === code ? { ...item, ...updates } : item
+            )
+        })
+    }, [])
+
+    const refresh = useCallback(async () => {
         setIsLoading(true)
         if (userInfo) {
             try {
@@ -45,18 +55,18 @@ const ApikeyPage: React.FC = () => {
                 setIsLoading(false)
             }
         }
-    }
+    }, [page, userInfo, searchTerm])
 
-    const showApikey = async (apikey: string) => {
+    const showApikey = useCallback(async (apikey: string) => {
         await refresh()
         setNewApiKey(apikey)
         setShowDialog(true)
         setCopied(false)
-    }
+    }, [refresh])
 
     useEffect(() => {
         refresh()
-    }, [page, userInfo])
+    }, [refresh])
 
     const handlePageChange = (newPage: number) => {
         setPage(newPage)
@@ -130,7 +140,7 @@ const ApikeyPage: React.FC = () => {
         setShowSubApikeyTipsDialog(true)
     }
 
-    const columns = ApikeyColumns(refresh, showApikey)
+    const columns = useMemo(() => ApikeyColumns(refresh, showApikey, updateApiKeyInPlace), [refresh, showApikey, updateApiKeyInPlace])
 
     return (
         <div className="min-h-screen bg-gray-50">
