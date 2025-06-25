@@ -127,6 +127,7 @@ public class Message {
     public static class Tool {
         private String type;
         private Function function;
+        private Object cache_control;
     }
 
     @Data
