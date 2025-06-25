@@ -161,6 +161,8 @@ public class CompletionRequest implements UserRequest, Serializable {
 
     private Boolean enable_thinking;
 
+    private Object thinking;
+
     @Data
     public static class StreamOptions {
         /**
