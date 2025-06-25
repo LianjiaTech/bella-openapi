@@ -359,7 +359,8 @@ public class TransferToCompletionsUtils {
     private static MessageRequest.Tool createMessageTool(Message.Tool tool) {
         MessageRequest.Tool.ToolBuilder toolBuilder = MessageRequest.Tool.builder()
                 .name(tool.getFunction().getName())
-                .description(tool.getFunction().getDescription());
+                .description(tool.getFunction().getDescription())
+                .cache_control(tool.getCache_control());
         
         if (tool.getFunction().getParameters() != null) {
             Message.Function.FunctionParameter params = tool.getFunction().getParameters();
