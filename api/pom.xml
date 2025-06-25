@@ -17,7 +17,7 @@
 
   <groupId>top.bella</groupId>
   <artifactId>bella-openapi</artifactId>
-  <version>1.1.1</version>
+  <version>1.1.8</version>
   <name>bella-openapi</name>
   <description>Bella OpenAPI SDK</description>
   <url>https://github.com/LianjiaTech/bella-openapi</url>
