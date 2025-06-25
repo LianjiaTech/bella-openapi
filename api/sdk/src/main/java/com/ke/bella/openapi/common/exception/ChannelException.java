@@ -162,4 +162,25 @@ public abstract class ChannelException extends RuntimeException {
             }
         }
     }
+
+    @Getter
+    public static class ClientNotLoginException extends ChannelException {
+
+        private final String redirectUrl;
+
+        public ClientNotLoginException(String redirectUrl) {
+            super("Need to login");
+            this.redirectUrl = redirectUrl;
+        }
+
+        @Override
+        public Integer getHttpCode() {
+            return 401;
+        }
+
+        @Override
+        public String getType() {
+            return "No Login";
+        }
+    }
 }

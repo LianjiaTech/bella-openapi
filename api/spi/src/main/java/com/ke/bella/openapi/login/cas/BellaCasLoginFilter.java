@@ -12,11 +12,14 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.ke.bella.openapi.login.LoginFilter;
 import org.apache.commons.lang3.StringUtils;
 
 import com.ke.bella.openapi.Operator;
 import com.ke.bella.openapi.login.config.BellaLoginConfiguration;
 import com.ke.bella.openapi.login.session.SessionManager;
+
+import static com.ke.bella.openapi.login.LoginFilter.CONSOLE_HEADER;
 
 public class BellaCasLoginFilter implements Filter {
     private final String loginUrl;
@@ -52,6 +55,10 @@ public class BellaCasLoginFilter implements Filter {
                 return;
             }
         }
+        if(!"true".equals(httpRequest.getHeader(CONSOLE_HEADER))) {
+            chain.doFilter(request, response);
+            return;
+        }
         Operator operator = sessionManager.getSession(httpRequest);
         if(operator == null) {
             HttpServletResponse httpResponse = (HttpServletResponse) response;
@@ -66,7 +73,7 @@ public class BellaCasLoginFilter implements Filter {
             loginBuilder.append(encodedService);
             if(clientSupport) {
                 httpResponse.setStatus(401);
-                httpResponse.setHeader("X-Redirect-Login", loginBuilder.toString());
+                httpResponse.setHeader(LoginFilter.REDIRECT_HEADER, loginBuilder.toString());
             } else {
                 httpResponse.sendRedirect(loginBuilder.toString());
             }

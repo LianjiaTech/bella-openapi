@@ -4,15 +4,23 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.ke.bella.openapi.BellaResponse;
 import com.ke.bella.openapi.Operator;
 import com.ke.bella.openapi.common.exception.ChannelException;
+import com.ke.bella.openapi.login.LoginFilter;
 import com.ke.bella.openapi.utils.HttpUtils;
+import com.ke.bella.openapi.utils.JacksonUtils;
 import okhttp3.Request;
+import okhttp3.Response;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.util.Optional;
+
+import static com.ke.bella.openapi.login.LoginFilter.CONSOLE_HEADER;
+import static com.ke.bella.openapi.login.LoginFilter.REDIRECT_HEADER;
 
 public class HttpSessionManager implements SessionManager {
 
@@ -46,10 +54,28 @@ public class HttpSessionManager implements SessionManager {
 
     @Override
     public Operator getSession(HttpServletRequest request) {
-        return Optional.ofNullable(HttpUtils.httpRequest(new Request.Builder().url(bellaOpenApiBaseUrl + "/openapi/userInfo")
-                .header("Cookie", extractCookie(request)).build(), new TypeReference<BellaResponse<Operator>>(){}))
-                .orElseThrow(() -> new ChannelException.AuthorizationException("Authorization Failed"))
-                .getData();
+        try {
+            Request.Builder builder = new Request.Builder().url(bellaOpenApiBaseUrl + "/openapi/userInfo")
+                    .header("Cookie", extractCookie(request));
+            if("true".equals(request.getHeader(CONSOLE_HEADER))) {
+                builder.header(CONSOLE_HEADER, "true");
+            }
+            Response response = HttpUtils.httpRequest(builder.build(), 10, 30);
+            if(response.code() != 200) {
+                String redirectUrl = response.header(REDIRECT_HEADER);
+                if(response.code() == 401 && StringUtils.isNotEmpty(redirectUrl)) {
+                    throw new ChannelException.ClientNotLoginException(redirectUrl);
+                }
+                throw ChannelException.fromResponse(response.code(), response.message());
+            }
+            if(response.body() == null) {
+                throw new ChannelException.AuthorizationException("Authorization Failed");
+            }
+            return Optional.ofNullable(JacksonUtils.deserialize(response.body().bytes(), new TypeReference<BellaResponse<Operator>>(){}))
+                    .orElseThrow(() -> new ChannelException.AuthorizationException("Authorization Failed")).getData();
+        } catch (IOException e) {
+            throw ChannelException.fromResponse(502, e.getMessage());
+        }
     }
 
     @Override
