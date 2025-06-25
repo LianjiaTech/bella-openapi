@@ -1,26 +1,7 @@
 package com.ke.bella.openapi.login.config;
 
-import java.util.List;
-
-import com.ke.bella.openapi.login.session.TicketManager;
-import org.apache.commons.lang3.NotImplementedException;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.web.servlet.FilterRegistrationBean;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.core.Ordered;
-import org.springframework.data.redis.connection.RedisConnectionFactory;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
-import org.springframework.data.redis.serializer.StringRedisSerializer;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.web.filter.CorsFilter;
-
 import com.ke.bella.openapi.Operator;
+import com.ke.bella.openapi.login.ClientLoginFilter;
 import com.ke.bella.openapi.login.LoginFilter;
 import com.ke.bella.openapi.login.LoginProperties;
 import com.ke.bella.openapi.login.cas.BellaCasClient;
@@ -33,14 +14,31 @@ import com.ke.bella.openapi.login.oauth.OAuthProperties;
 import com.ke.bella.openapi.login.oauth.OAuthService;
 import com.ke.bella.openapi.login.oauth.providers.GithubOAuthService;
 import com.ke.bella.openapi.login.oauth.providers.GoogleOAuthService;
-import com.ke.bella.openapi.login.session.RedisSessionManager; // Added
-import com.ke.bella.openapi.login.session.HttpSessionManager; // Added
+import com.ke.bella.openapi.login.session.HttpSessionManager;
+import com.ke.bella.openapi.login.session.RedisSessionManager;
 import com.ke.bella.openapi.login.session.SessionManager;
 import com.ke.bella.openapi.login.session.SessionProperty;
+import com.ke.bella.openapi.login.session.TicketManager;
 import com.ke.bella.openapi.login.user.IUserRepo;
-import org.springframework.beans.factory.annotation.Value; // Added
-import org.springframework.web.client.RestTemplate; // Added
-import lombok.extern.slf4j.Slf4j; // Added for logging unrecognized type
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.core.Ordered;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
+import org.springframework.data.redis.serializer.StringRedisSerializer;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.CorsFilter;
+
+import java.util.List;
 
 @Configuration
 @Slf4j // Added for logging unrecognized type
@@ -119,6 +117,30 @@ public class BellaLoginConfiguration {
     }
 
     @Bean
+    @ConfigurationProperties(value = "bella.oauth")
+    public OAuthProperties oauthProperties() {
+        return new OAuthProperties();
+    }
+
+    @Bean
+    @ConfigurationProperties(value = "bella.login")
+    public LoginProperties loginProperties() {
+        return new LoginProperties();
+    }
+
+    @Bean
+    @ProviderConditional.ConditionalOnGoogleAuthEnable
+    public GoogleOAuthService googleOAuthService(OAuthProperties properties) {
+        return new GoogleOAuthService(properties);
+    }
+
+    @Bean
+    @ProviderConditional.ConditionalOnGithubAuthEnable
+    public GithubOAuthService githubOAuthService(OAuthProperties properties) {
+        return new GithubOAuthService(properties);
+    }
+
+    @Bean
     @ConfigurationProperties(value = "bella.cas")
     public CasProperties casProperties() {
         return new CasProperties();
@@ -149,30 +171,6 @@ public class BellaLoginConfiguration {
     }
 
     @Bean
-    @ConfigurationProperties(value = "bella.oauth")
-    public OAuthProperties oauthProperties() {
-        return new OAuthProperties();
-    }
-
-    @Bean
-    @ConfigurationProperties(value = "bella.login")
-    public LoginProperties loginProperties() {
-        return new LoginProperties();
-    }
-
-    @Bean
-    @ProviderConditional.ConditionalOnGoogleAuthEnable
-    public GoogleOAuthService googleOAuthService(OAuthProperties properties) {
-        return new GoogleOAuthService(properties);
-    }
-
-    @Bean
-    @ProviderConditional.ConditionalOnGithubAuthEnable
-    public GithubOAuthService githubOAuthService(OAuthProperties properties) {
-        return new GithubOAuthService(properties);
-    }
-
-    @Bean
     @ConditionalOnOAuthEnable
     public FilterRegistrationBean<OAuthLoginFilter> oauthLoginFilter(
             List<OAuthService> services,
@@ -182,6 +180,16 @@ public class BellaLoginConfiguration {
         OAuthLoginFilter filter = new OAuthLoginFilter(services, sessionManager, (TicketManager) sessionManager, properties);
         registration.setFilter(filter);
         registration.setOrder(Ordered.HIGHEST_PRECEDENCE + 51);
+        return registration;
+    }
+
+    @Bean
+    @ConditionalOnClientEnable
+    public FilterRegistrationBean<ClientLoginFilter> clientLoginFilter() {
+        FilterRegistrationBean<ClientLoginFilter> registration = new FilterRegistrationBean<>();
+        ClientLoginFilter filter = new ClientLoginFilter();
+        registration.setFilter(filter);
+        registration.setOrder(Ordered.HIGHEST_PRECEDENCE);
         return registration;
     }
 
