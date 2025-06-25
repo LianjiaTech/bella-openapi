@@ -57,9 +57,6 @@ bella:
   login:
     authorization-header: Authorization
     login-page-url: http://localhost:3000/login
-    validation-url-patterns:
-      - /console/*
-      - /v1/meta/*
   session:
     cookie-name: bella_openapi_sessionId
     max-inactive-interval: 60

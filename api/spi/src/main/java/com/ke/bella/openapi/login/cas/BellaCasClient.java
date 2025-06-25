@@ -37,7 +37,6 @@ public class BellaCasClient {
         initParams.put(ConfigurationKeys.SERVER_NAME.getName(), casProperties.getClientHost());
         initParams.put(ConfigurationKeys.REDIRECT_AFTER_VALIDATION.getName(), String.valueOf(Boolean.FALSE));
         filterRegistrationBean.setInitParameters(initParams);
-        filterRegistrationBean.setUrlPatterns(loginProperties.getValidationUrlPatterns());
         filterRegistrationBean.getInitParameters().put(ConfigurationKeys.USE_SESSION.getName(), String.valueOf(Boolean.TRUE));
         return filterRegistrationBean;
     }
@@ -47,7 +46,6 @@ public class BellaCasClient {
         BellaRedirectFilter targetCasAuthFilter = new BellaRedirectFilter();
         filterRegistrationBean.setFilter(targetCasAuthFilter);
         filterRegistrationBean.setOrder(CAS_STEP_TWO);
-        filterRegistrationBean.setUrlPatterns(loginProperties.getValidationUrlPatterns());
         return filterRegistrationBean;
     }
 
@@ -58,7 +56,6 @@ public class BellaCasClient {
                 casProperties.getClientIndexUrl(), sessionManager);
         filterRegistrationBean.setOrder(CAS_STEP_THREE);
         filterRegistrationBean.setFilter(filter);
-        filterRegistrationBean.setUrlPatterns(loginProperties.getValidationUrlPatterns());
         return filterRegistrationBean;
     }
 }
