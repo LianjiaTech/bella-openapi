@@ -307,6 +307,7 @@ public class MessageRequest {
         private String description;
         @JsonProperty("input_schema")
         private InputSchema inputSchema;
+        private Object cache_control;
     }
 
     @Data
