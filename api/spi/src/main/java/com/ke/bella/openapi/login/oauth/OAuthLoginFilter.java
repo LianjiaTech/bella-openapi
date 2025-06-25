@@ -83,7 +83,7 @@ public class OAuthLoginFilter implements Filter {
             providers.add(provider);
         }
 
-        BellaResponse<List<Map<String, Object>>> bellaResponse = new BellaResponse();
+        BellaResponse<List<Map<String, Object>>> bellaResponse = new BellaResponse<>();
         bellaResponse.setCode(200);
         bellaResponse.setData(providers);
         response.setContentType("application/json");

@@ -30,8 +30,8 @@ import static com.ke.bella.openapi.login.config.BellaLoginConfiguration.redirect
 public class LoginFilter implements Filter {
     private final LoginProperties properties;
     private final SessionManager sessionManager;
-    private static final String REDIRECT_HEADER = "X-Redirect-Login";
-    private static final String CONSOLE_HEADER = "X-BELLA-CONSOLE";
+    public static final String REDIRECT_HEADER = "X-Redirect-Login";
+    public static final String CONSOLE_HEADER = "X-BELLA-CONSOLE";
 
     public LoginFilter(LoginProperties properties, SessionManager sessionManager) {
         this.properties = properties;
@@ -112,7 +112,7 @@ public class LoginFilter implements Filter {
                 chain.doFilter(request, response);
                 return;
             }
-            if("true".equals(httpRequest.getHeader(CONSOLE_HEADER))) {
+            if("true".equals(httpRequest.getHeader(CONSOLE_HEADER)) && StringUtils.isNotBlank(properties.getLoginPageUrl())) {
                 httpResponse.setHeader(REDIRECT_HEADER, properties.getLoginPageUrl() + "?" + redirectParameter + "=");
                 httpResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 return;
