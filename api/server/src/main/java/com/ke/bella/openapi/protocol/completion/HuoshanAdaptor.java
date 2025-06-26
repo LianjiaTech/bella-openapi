@@ -8,30 +8,20 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component("HuoshanCompletion")
-public class HuoshanAdaptor implements CompletionAdaptorDelegator<OpenAIProperty> {
+public class HuoshanAdaptor implements CompletionAdaptor<OpenAIProperty> {
     @Autowired
     private OpenAIAdaptor openAIAdaptor;
-    @Override
-    public CompletionResponse completion(CompletionRequest request, String url, OpenAIProperty property, Callbacks.HttpDelegator delegator) {
-        fillThinking(request);
-        return openAIAdaptor.completion(request, url, property, delegator);
-    }
-
-    @Override
-    public void streamCompletion(CompletionRequest request, String url, OpenAIProperty property, Callbacks.StreamCompletionCallback callback,
-            Callbacks.StreamDelegator delegator) {
-        fillThinking(request);
-        openAIAdaptor.streamCompletion(request, url, property, callback, delegator);
-    }
 
     @Override
     public CompletionResponse completion(CompletionRequest request, String url, OpenAIProperty property) {
-        return completion(request, url, property, null);
+        fillThinking(request);
+        return openAIAdaptor.completion(request, url, property);
     }
 
     @Override
     public void streamCompletion(CompletionRequest request, String url, OpenAIProperty property, Callbacks.StreamCompletionCallback callback) {
-        streamCompletion(request, url, property, callback, null);
+        fillThinking(request);
+        openAIAdaptor.streamCompletion(request, url, property, callback);
     }
 
     @Override
