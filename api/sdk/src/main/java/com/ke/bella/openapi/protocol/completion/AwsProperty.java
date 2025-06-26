@@ -7,9 +7,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.SortedMap;
-import java.util.TreeMap;
 
 @Data
 @NoArgsConstructor
@@ -25,7 +24,7 @@ public class AwsProperty extends CompletionProperty {
 
     @Override
     public Map<String, String> description() {
-        SortedMap<String, String> map = new TreeMap<>();
+        Map<String, String> map = new LinkedHashMap<>();
         map.put("auth", "鉴权配置");
         map.put("region", "部署区域");
         map.put("deployName", "部署名称");
