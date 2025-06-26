@@ -48,7 +48,7 @@ public class LoginFilter implements Filter {
                 BellaResponse<Boolean> bellaResponse = new BellaResponse<>();
                 bellaResponse.setCode(503);
                 bellaResponse.setMessage("未实现密钥登录功能");
-                response.setContentType("application/json");
+                response.setContentType("application/json; charset=utf-8");
                 response.getWriter().write(JacksonUtils.serialize(bellaResponse));
                 return;
             }
@@ -61,7 +61,7 @@ public class LoginFilter implements Filter {
                         BellaResponse<Boolean> bellaResponse = new BellaResponse<>();
                         bellaResponse.setCode(200);
                         bellaResponse.setData(true);
-                        response.setContentType("application/json");
+                        response.setContentType("application/json; charset=utf-8");
                         response.getWriter().write(JacksonUtils.serialize(bellaResponse));
                         return;
                     }
@@ -70,7 +70,7 @@ public class LoginFilter implements Filter {
             BellaResponse<Boolean> bellaResponse = new BellaResponse<>();
             bellaResponse.setCode(400);
             bellaResponse.setMessage("登录密钥错误");
-            response.setContentType("application/json");
+            response.setContentType("application/json; charset=utf-8");
             response.getWriter().write(JacksonUtils.serialize(bellaResponse));
             return;
         }
@@ -84,7 +84,7 @@ public class LoginFilter implements Filter {
             BellaResponse<Operator> bellaResponse = new BellaResponse<>();
             bellaResponse.setCode(operator == null ? 401 : 200);
             bellaResponse.setData(operator);
-            response.setContentType("application/json");
+            response.setContentType("application/json; charset=utf-8");
             response.getWriter().write(JacksonUtils.serialize(bellaResponse));
             return;
         }
@@ -93,7 +93,7 @@ public class LoginFilter implements Filter {
             BellaResponse<?> bellaResponse = new BellaResponse<>();
             bellaResponse.setCode(404);
             bellaResponse.setMessage("Not Found");
-            response.setContentType("application/json");
+            response.setContentType("application/json; charset=utf-8");
             response.getWriter().write(JacksonUtils.serialize(bellaResponse));
             return;
         }
