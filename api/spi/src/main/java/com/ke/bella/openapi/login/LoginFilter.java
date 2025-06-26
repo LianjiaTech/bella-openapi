@@ -1,5 +1,7 @@
 package com.ke.bella.openapi.login;
 
+import static com.ke.bella.openapi.login.config.BellaLoginConfiguration.redirectParameter;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -15,23 +17,25 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import com.ke.bella.openapi.BellaContext;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 
+import com.ke.bella.openapi.BellaContext;
 import com.ke.bella.openapi.BellaResponse;
 import com.ke.bella.openapi.Operator;
 import com.ke.bella.openapi.login.session.SessionManager;
 import com.ke.bella.openapi.utils.JacksonUtils;
-
-import static com.ke.bella.openapi.login.config.BellaLoginConfiguration.redirectParameter;
 
 public class LoginFilter implements Filter {
     private final LoginProperties properties;
     private final SessionManager sessionManager;
     public static final String REDIRECT_HEADER = "X-Redirect-Login";
     public static final String CONSOLE_HEADER = "X-BELLA-CONSOLE";
+
+    public static final String OPERATOR_HEADER = "X-BELLA-OPERATOR-NAME";
+    public static final String OPERATOR_ID_HEADER = "X-BELLA-OPERATOR-ID";
+    public static final String SPACE_CODE_HEADER = "X-BELLA-SPACE-CODE";
 
     public LoginFilter(LoginProperties properties, SessionManager sessionManager) {
         this.properties = properties;
@@ -108,6 +112,15 @@ public class LoginFilter implements Filter {
             }
             Operator operator = sessionManager.getSession(httpRequest);
             if(operator != null) {
+                if(StringUtils.isNotEmpty(httpRequest.getHeader(OPERATOR_ID_HEADER))) {
+                    operator.setUserId(Long.valueOf(httpRequest.getHeader(OPERATOR_ID_HEADER)));
+                }
+                if(StringUtils.isNotEmpty(httpRequest.getHeader(OPERATOR_HEADER))) {
+                    operator.setUserName(httpRequest.getHeader(OPERATOR_HEADER));
+                }
+                if(StringUtils.isNotEmpty(httpRequest.getHeader(SPACE_CODE_HEADER))) {
+                    operator.setSpaceCode(httpRequest.getHeader(SPACE_CODE_HEADER));
+                }
                 BellaContext.setOperator(operator);
                 chain.doFilter(request, response);
                 return;
