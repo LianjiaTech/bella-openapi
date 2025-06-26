@@ -4,9 +4,8 @@ import com.ke.bella.openapi.protocol.IProtocolProperty;
 import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.SortedMap;
-import java.util.TreeMap;
 
 @Data
 public class CompletionProperty implements IProtocolProperty {
@@ -19,7 +18,7 @@ public class CompletionProperty implements IProtocolProperty {
 
     @Override
     public Map<String, String> description() {
-        SortedMap<String, String> map = new TreeMap<>();
+        Map<String, String> map = new LinkedHashMap<>();
         map.put("encodingType", "编码类型");
         map.put("mergeReasoningContent", "是否合并推理内容");
         map.put("splitReasoningFromContent", "是否需要拆分推理内容");

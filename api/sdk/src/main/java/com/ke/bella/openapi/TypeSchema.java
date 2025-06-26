@@ -37,6 +37,7 @@ public class TypeSchema implements Serializable {
         return this.code.hashCode();
     }
 
+    @SuppressWarnings({"unchecked", "rawType"})
     public static TypeSchema toSchema(Field field, Map<String, String> desc) {
         if(!desc.isEmpty() && !desc.containsKey(field.getName())) {
             return null;
@@ -62,6 +63,13 @@ public class TypeSchema implements Serializable {
                 // 简单类型： 基本类型、String、BigDecimal
                 schema.setValueType(fieldType == boolean.class || fieldType == Boolean.class ? "bool" :
                         fieldType == char.class || fieldType == String.class || fieldType == Character.class ? "string" : "number");
+            } else if(ComponentList.class.isAssignableFrom(fieldType)) {
+                schema.setValueType("array");
+                ComponentList<?> componentList = ((Class<? extends ComponentList<?>>)fieldType).newInstance();
+                Class<?> componentType = componentList.getComponentType();
+                if(IDescription.class.isAssignableFrom(componentType)) {
+                    schema.setChild(JsonSchema.toSchema(componentType));
+                }
             } else if(fieldType.isArray()) {
                 // 数组类型
                 schema.setValueType("array");
@@ -80,6 +88,8 @@ public class TypeSchema implements Serializable {
         } catch (NoSuchMethodException e) {
             LOGGER.warn(e.getMessage(), e);
             throw ChannelException.fromException(e);
+        } catch (InstantiationException | IllegalAccessException e) {
+            throw new RuntimeException(e);
         }
     }
 
