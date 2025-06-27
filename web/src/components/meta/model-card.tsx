@@ -92,9 +92,11 @@ export function ModelCard({ model, update }: ModelCardProps) {
                         <h3 className="text-sm font-medium text-gray-600 mb-2">费用</h3>
                         <div className="bg-gray-50 rounded-lg p-3">
                             {Object.entries(model.priceDetails.displayPrice).map(([key, value]) => (
-                                <div key={key} className="flex justify-between items-center mb-1">
+                                <div key={key} className="flex justify-between items-start mb-1">
                                     <span className="text-xs text-gray-600">{key}</span>
-                                    <span className="text-sm font-semibold text-gray-800">{value}</span>
+                                    <span className="text-sm font-semibold text-gray-800 text-right whitespace-pre-line">
+                                        {value}
+                                    </span>
                                 </div>
                             ))}
                             <div className="text-xs text-gray-500 mt-2 text-right">

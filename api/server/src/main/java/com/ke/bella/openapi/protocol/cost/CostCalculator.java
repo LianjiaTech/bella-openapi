@@ -7,15 +7,20 @@ import com.ke.bella.openapi.protocol.completion.CompletionPriceInfo;
 import com.ke.bella.openapi.protocol.completion.CompletionResponse;
 import com.ke.bella.openapi.protocol.embedding.EmbeddingPriceInfo;
 import com.ke.bella.openapi.protocol.embedding.EmbeddingResponse;
+import com.ke.bella.openapi.protocol.images.ImagesPriceInfo;
+import com.ke.bella.openapi.protocol.images.ImagesResponse;
 import com.ke.bella.openapi.protocol.tts.TtsPriceInfo;
 import com.ke.bella.openapi.utils.JacksonUtils;
 import com.ke.bella.openapi.utils.MatchUtils;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
+import java.util.Optional;
 
 @Slf4j
 public class CostCalculator  {
@@ -49,7 +54,8 @@ public class CostCalculator  {
         ASR_FLASH("/v*/audio/asr/flash", asr_flash),
         ASR_STREAM("/v*/audio/asr/stream", realtime),
         REAL_TIME("/v*/audio/realtime", realtime),
-        ASR_TRANSCRIPTIONS("/v*/audio/transcriptions", asr_transcriptions)
+        ASR_TRANSCRIPTIONS("/v*/audio/transcriptions", asr_transcriptions),
+        IMAGES("/v*/images/generations", images)
         ;
         final String endpoint;
         final EndpointCostCalculator calculator;
@@ -141,6 +147,70 @@ public class CostCalculator  {
         public boolean checkPriceInfo(String priceInfo) {
             TranscriptionsAsrPriceInfo price = JacksonUtils.deserialize(priceInfo, TranscriptionsAsrPriceInfo.class);
             return price != null && price.getPrice() != null;
+        }
+    };
+
+    static EndpointCostCalculator images = new EndpointCostCalculator() {
+        @Override
+        public BigDecimal calculate(String priceInfo, Object usage) {
+            ImagesPriceInfo price = JacksonUtils.deserialize(priceInfo, ImagesPriceInfo.class);
+            ImagesResponse imagesResponse = (ImagesResponse) usage;
+            BigDecimal imageCost = BigDecimal.ZERO;
+            // 获取质量和尺寸信息
+            String quality = getQualityFromResponse(imagesResponse);
+            String size = getSizeFromResponse(imagesResponse);
+            int imageCount = imagesResponse.getData() != null ? imagesResponse.getData().size() : 1;
+            if(price != null && CollectionUtils.isNotEmpty(price.getDetails())) {
+                ImagesPriceInfo.ImagesPriceInfoDetails details = price.getDetails().
+                        stream().filter(d -> d.getSize().equals(size)).findAny().orElse(price.getDetails().get(0));
+
+                if (imagesResponse.getUsage() != null && (details.getImageTokenPrice() != null || details.getTextTokenPrice() != null)) {
+                    ImagesResponse.Usage tokenUsage = imagesResponse.getUsage();
+                    if (tokenUsage.getInput_tokens_details() != null) {
+                        BigDecimal textTokenCost = Optional.ofNullable(details.getTextTokenPrice()).orElse(BigDecimal.ZERO)
+                                .multiply(BigDecimal.valueOf(Optional.of(tokenUsage.getInput_tokens_details().getText_tokens()).orElse(0) / 1000.0));
+                        BigDecimal imageTokenCost = Optional.ofNullable(details.getImageTokenPrice()).orElse(BigDecimal.ZERO)
+                                .multiply(BigDecimal.valueOf(Optional.of(tokenUsage.getInput_tokens_details().getImage_tokens()).orElse(0) / 1000.0));
+                        imageCost = imageCost.add(textTokenCost).add(imageTokenCost);
+                    }
+                }
+                if(quality.equals("low")) {
+                    imageCost = imageCost.add(details.getLdPricePerImage().multiply(BigDecimal.valueOf(imageCount)));
+                } else if(quality.equals("medium")) {
+                    imageCost = imageCost.add(details.getMdPricePerImage().multiply(BigDecimal.valueOf(imageCount)));
+                } else {
+                    imageCost = imageCost.add(details.getHdPricePerImage().multiply(BigDecimal.valueOf(imageCount)));
+                }
+            }
+            return imageCost;
+        }
+
+        
+        private String getQualityFromResponse(ImagesResponse response) {
+            // 从响应的 ImageData 中获取质量信息
+            if (response.getData() != null && !response.getData().isEmpty()) {
+                String quality = response.getData().get(0).getQuality();
+                return quality != null ? quality : "high";
+            }
+            return "high";
+        }
+        
+        private String getSizeFromResponse(ImagesResponse response) {
+            // 从响应的 ImageData 中获取尺寸信息
+            if (response.getData() != null && !response.getData().isEmpty()) {
+                String size = response.getData().get(0).getSize();
+                return size != null ? size : "1024x1024";
+            }
+            return "1024x1024";
+        }
+
+        @Override
+        public boolean checkPriceInfo(String priceInfo) {
+            ImagesPriceInfo price = JacksonUtils.deserialize(priceInfo, ImagesPriceInfo.class);
+
+            return price != null && CollectionUtils.isNotEmpty(price.getDetails())
+                    && price.getDetails().stream().allMatch(d -> StringUtils.isNotBlank(d.getSize()) &&
+                    d.getHdPricePerImage() != null && d.getMdPricePerImage() != null && d.getLdPricePerImage() != null);
         }
     };
 
