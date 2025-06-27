@@ -50,8 +50,8 @@ Bella OpenAPI is an API gateway providing rich AI capabilities, comparable to op
   - **Real-time Conversation**: Supports users' real-time voice input via microphone, automatically recognizes speech content, calls the large model to generate replies, and converts the reply content to speech output
 
 - **Image Services**
-  - **Image-to-Image**: Edits images to create new images
-  - **Text-to-Image**: Generates images from text descriptions (coming soon)
+  - **Image-to-Image**: Edits images to create new images (coming soon)
+  - **Text-to-Image**: Generates images from text descriptions
 
 ### Metadata Management
 
