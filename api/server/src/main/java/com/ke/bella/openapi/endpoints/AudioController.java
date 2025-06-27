@@ -1,36 +1,15 @@
 package com.ke.bella.openapi.endpoints;
 
-import static com.ke.bella.openapi.common.AudioFormat.getContentType;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.List;
-
-import javax.servlet.AsyncContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import com.ke.bella.openapi.protocol.realtime.RealTimeAdaptor;
-import com.ke.bella.openapi.protocol.realtime.RealTimeHandler;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.util.StreamUtils;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-
+import com.ke.bella.job.queue.JobQueueClient;
+import com.ke.bella.job.queue.api.entity.param.TaskParam;
+import com.ke.bella.job.queue.api.entity.response.TaskResp;
+import com.ke.bella.job.queue.config.JobQueueProperties;
 import com.ke.bella.openapi.EndpointContext;
 import com.ke.bella.openapi.EndpointProcessData;
 import com.ke.bella.openapi.annotations.EndpointAPI;
 import com.ke.bella.openapi.protocol.AdaptorManager;
 import com.ke.bella.openapi.protocol.ChannelRouter;
 import com.ke.bella.openapi.protocol.StreamByteSender;
-import com.ke.bella.openapi.protocol.asr.flash.FlashAsrResponse;
 import com.ke.bella.openapi.protocol.asr.AsrProperty;
 import com.ke.bella.openapi.protocol.asr.AsrRequest;
 import com.ke.bella.openapi.protocol.asr.AudioTranscriptionRequest.AudioTranscriptionReq;
@@ -38,18 +17,47 @@ import com.ke.bella.openapi.protocol.asr.AudioTranscriptionRequest.AudioTranscri
 import com.ke.bella.openapi.protocol.asr.AudioTranscriptionResponse.AudioTranscriptionResp;
 import com.ke.bella.openapi.protocol.asr.AudioTranscriptionResponse.AudioTranscriptionResultResp;
 import com.ke.bella.openapi.protocol.asr.flash.FlashAsrAdaptor;
+import com.ke.bella.openapi.protocol.asr.flash.FlashAsrResponse;
 import com.ke.bella.openapi.protocol.limiter.LimiterManager;
 import com.ke.bella.openapi.protocol.log.EndpointLogger;
+import com.ke.bella.openapi.protocol.realtime.RealTimeAdaptor;
+import com.ke.bella.openapi.protocol.realtime.RealTimeHandler;
 import com.ke.bella.openapi.protocol.tts.TtsAdaptor;
 import com.ke.bella.openapi.protocol.tts.TtsProperty;
 import com.ke.bella.openapi.protocol.tts.TtsRequest;
-import com.ke.bella.openapi.service.JobQueueService;
 import com.ke.bella.openapi.tables.pojos.ChannelDB;
+import com.ke.bella.openapi.utils.HttpUtils;
 import com.ke.bella.openapi.utils.JacksonUtils;
-
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.Request;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.util.StreamUtils;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.socket.server.support.WebSocketHttpRequestHandler;
+
+import javax.servlet.AsyncContext;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.List;
+
+import static com.ke.bella.openapi.common.AudioFormat.getContentType;
 
 @EndpointAPI
 @RestController
@@ -66,7 +74,9 @@ public class AudioController {
     @Autowired
     private EndpointLogger logger;
     @Autowired
-    private JobQueueService jobQueueService;
+    private JobQueueProperties jobQueueProperties;
+    @Value("bella.file-api.url")
+    private String fileUrl;
 
     /**
      * 实时语音识别WebSocket接口
@@ -151,8 +161,8 @@ public class AudioController {
     public AudioTranscriptionResp transcribeAudio(@RequestBody AudioTranscriptionReq audioTranscriptionReq) {
         validateRequestParams(audioTranscriptionReq);
         String endpoint = EndpointContext.getRequest().getRequestURI();
-        String taskId = jobQueueService
-                .putTask(audioTranscriptionReq, endpoint, audioTranscriptionReq.getModel(), EndpointContext.getProcessData().getApikey())
+        JobQueueClient client = JobQueueClient.getInstance(jobQueueProperties.getUrl());
+        String taskId = client.put(client.buildTaskPutRequest(audioTranscriptionReq, null, endpoint, audioTranscriptionReq.getModel()), EndpointContext.getProcessData().getApikey(), TaskResp.TaskPutResp.class)
                 .getTaskId();
         return AudioTranscriptionResp.builder()
                 .taskId(taskId)
@@ -161,10 +171,49 @@ public class AudioController {
 
     @PostMapping("/transcriptions/file/result")
     public AudioTranscriptionResultResp getTranscriptionResult(@RequestBody AudioTranscriptionResultReq audioTranscriptionResultReq) {
-        List<Object> data = jobQueueService.getTaskResult(audioTranscriptionResultReq.getTaskId(), EndpointContext.getProcessData().getApikey()).getData();
+        List<Object> data = getTaskResult(audioTranscriptionResultReq.getTaskId(), EndpointContext.getProcessData().getApikey(), fileUrl).getData();
         return AudioTranscriptionResultResp.builder()
                 .data(data)
                 .build();
+    }
+
+    private QueueTaskGetResultResp getTaskResult(List<String> taskIds, String apikey, String fileUrl) {
+        JobQueueClient client = JobQueueClient.getInstance(jobQueueProperties.getUrl());
+        List<Object> result = new ArrayList<>();
+        for (String taskId : taskIds) {
+            TaskResp.DetailData data = client.getTaskDetail(taskId, apikey).getData();
+            if (data == null) {
+                continue;
+            }
+            Object outputData = data.getOutputData();
+            String outputFileId = data.getOutputFileId();
+            if (outputData != null) {
+                result.add(outputData);
+            } else if (fileUrl != null && outputFileId != null && !outputFileId.isEmpty()) {
+                //todo 使用file-api的client
+                Request requestFile = new Request.Builder()
+                        .url(fileUrl + "/" + outputFileId + "/content")
+                        .addHeader("Authorization", "Bearer " + apikey)
+                        .get()
+                        .build();
+                outputData = HttpUtils.httpRequest(requestFile, Object.class);
+                result.add(outputData);
+            }
+        }
+
+        return QueueTaskGetResultResp.builder()
+                .data(result)
+                .build();
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class QueueTaskGetResultResp {
+
+        private List<Object> data;
+
     }
 
     private void validateRequestParams(AudioTranscriptionReq audioTranscriptionReq) {
