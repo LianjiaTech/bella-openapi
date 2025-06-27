@@ -34,6 +34,9 @@ public class StreamMessagesCallback extends StreamCompletionCallback {
 
     @Override
     public void callback(StreamCompletionResponse msg) {
+        if(firstPackageTime == null) {
+            firstPackageTime = DateTimeUtils.getCurrentMills();
+        }
         if(processData.isNativeSend()) {
             return;
         }

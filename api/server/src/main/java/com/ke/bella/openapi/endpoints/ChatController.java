@@ -1,5 +1,7 @@
 package com.ke.bella.openapi.endpoints;
 
+import com.ke.bella.job.queue.JobQueueClient;
+import com.ke.bella.job.queue.config.JobQueueProperties;
 import com.ke.bella.openapi.BellaContext;
 import com.ke.bella.openapi.EndpointContext;
 import com.ke.bella.openapi.EndpointProcessData;
@@ -20,7 +22,6 @@ import com.ke.bella.openapi.protocol.limiter.LimiterManager;
 import com.ke.bella.openapi.protocol.log.EndpointLogger;
 import com.ke.bella.openapi.safety.ISafetyCheckService;
 import com.ke.bella.openapi.safety.SafetyCheckRequest;
-import com.ke.bella.openapi.service.JobQueueService;
 import com.ke.bella.openapi.tables.pojos.ChannelDB;
 import com.ke.bella.openapi.utils.JacksonUtils;
 import com.ke.bella.openapi.utils.SseHelper;
@@ -36,7 +37,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.Map;
-import java.util.logging.Logger;
 
 @EndpointAPI
 @RestController
@@ -55,7 +55,7 @@ public class ChatController {
     @Autowired
     private ISafetyCheckService.IChatSafetyCheckService safetyCheckService;
     @Autowired
-    private JobQueueService jobQueueService;
+    private JobQueueProperties jobQueueProperties;
     @Value("${bella.openapi.max-models-per-request:3}")
     private Integer maxModelsPerRequest;
 
@@ -154,7 +154,9 @@ public class ChatController {
     private CompletionAdaptor<?> decorateAdaptor(CompletionAdaptor<?> adaptor, CompletionProperty property, EndpointProcessData processData) {
         if(StringUtils.isNotBlank(property.getQueueName())) {
             if(adaptor instanceof CompletionAdaptorDelegator) {
-                adaptor = new QueueAdaptor<>((CompletionAdaptorDelegator<?>)adaptor, jobQueueService, jobQueueService, processData);
+                JobQueueClient jobQueueClient = JobQueueClient.getInstance(jobQueueProperties.getUrl());
+                adaptor = new QueueAdaptor<>((CompletionAdaptorDelegator<?>)adaptor, jobQueueClient, processData,
+                        jobQueueProperties.getDefaultTimeout());
             } else {
                 throw new IllegalStateException(adaptor.getClass().getSimpleName() + "不支持请求代理");
             }

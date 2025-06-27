@@ -39,7 +39,7 @@ const getChannelColors = (channels: string[]) => {
   if (!Array.isArray(channels) || channels.length === 0) {
     return {};
   }
-  
+
   const colorMap: { [key: string]: string } = {};
   // 对 channels 进行排序，确保相同的 channel 总是获得相同的颜色
   const sortedChannels = [...channels].sort();
@@ -55,7 +55,7 @@ const transformData = (data: MonitorData[], metricType: keyof MonitorData['metri
   if (!Array.isArray(data) || data.length === 0) {
     return [];
   }
-  
+
   // 按时间分组
   const timeGroups = data.reduce((acc, item) => {
     // 确保时间格式为 YYYYMMDDHHMM
@@ -161,7 +161,7 @@ function MonitorPageContent({ params }: { params: { model: string } }) {
           end: format(endDate, "yyyyMMddHHmm")
         }));
         const data = await response.json();
-        
+
         if (!response.ok) {
           if (data.error === '功能暂未开放') {
             setIsServiceUnavailable(true);
@@ -172,7 +172,7 @@ function MonitorPageContent({ params }: { params: { model: string } }) {
             throw new Error('Failed to fetch metrics data');
           }
         }
-        
+
         setCurrentData(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch metrics data');
@@ -446,7 +446,18 @@ function MonitorPageContent({ params }: { params: { model: string } }) {
                   intervalMinutes={intervalMinutes}
                 />
               </Suspense>
-              {/* <Suspense fallback={<div className="bg-white p-4 rounded-lg shadow-sm">Loading chart...</div>}>
+              <Suspense fallback={<div className="bg-white p-4 rounded-lg shadow-sm">Loading chart...</div>}>
+                <MetricsLineChart
+                    title="首包响应时间 (ms)"
+                    data={metrics.ttft}
+                    channels={selectedChannels.length > 0 ? selectedChannels : channels}
+                    channelColors={channelColors}
+                    valueFormatter={(value: number) => `${Math.round(value)}ms`}
+                    aggregationType="average"
+                    intervalMinutes={intervalMinutes}
+                />
+              </Suspense>
+              <Suspense fallback={<div className="bg-white p-4 rounded-lg shadow-sm">Loading chart...</div>}>
                 <MetricsLineChart
                   title="响应时间 (s)"
                   data={metrics.ttlt}
@@ -456,7 +467,7 @@ function MonitorPageContent({ params }: { params: { model: string } }) {
                   aggregationType="average"
                   intervalMinutes={intervalMinutes}
                 />
-              </Suspense> */}
+              </Suspense>
             </div>
           </div>
         </main>
