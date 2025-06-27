@@ -117,7 +117,7 @@ public class JobQueueClient {
 
 
     public Request getPostRequest(String url, String apikey, String json) {
-        RequestBody requestBody = RequestBody.create(json, MediaType.parse("application/json; charset=utf-8"));
+        RequestBody requestBody = RequestBody.create(MediaType.parse("application/json; charset=utf-8"), json);
         Request.Builder builder = new Request.Builder()
                 .url(url)
                 .post(requestBody);
