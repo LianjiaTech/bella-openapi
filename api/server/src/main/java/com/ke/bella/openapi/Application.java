@@ -1,5 +1,6 @@
 package com.ke.bella.openapi;
 
+import com.ke.bella.job.queue.config.EnableJobQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
@@ -13,6 +14,7 @@ import com.alicp.jetcache.anno.config.EnableMethodCache;
 @SpringBootApplication
 @EnableMethodCache(basePackages = "com.ke.bella.openapi")
 @EnableScheduling
+@EnableJobQueue
 public class Application {
     private static final Logger LOGGER = LoggerFactory.getLogger(Application.class);
 
