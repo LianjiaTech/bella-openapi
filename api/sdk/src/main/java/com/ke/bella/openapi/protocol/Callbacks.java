@@ -1,15 +1,13 @@
 package com.ke.bella.openapi.protocol;
 
-import org.springframework.util.Assert;
-
 import com.ke.bella.openapi.common.exception.ChannelException;
 import com.ke.bella.openapi.protocol.completion.StreamCompletionResponse;
 import com.ke.bella.openapi.utils.DateTimeUtils;
 import com.ke.bella.openapi.utils.JacksonUtils;
-
 import okhttp3.Response;
 import okhttp3.WebSocket;
 import okio.ByteString;
+import org.springframework.util.Assert;
 
 public interface Callbacks {
 
@@ -161,17 +159,6 @@ public interface Callbacks {
                 ((StreamCompletionCallbackNode) next).addLast(callback);
             }
         }
-    }
-
-    interface RealTimeTaskCallback {
-        <T> T putRealTimeTask(Object task, String endpoint, String queueName, String apikey, int timeout, Class<T> clazz, Callbacks.ChannelErrorCallback<T> errorCallback);
-        int defaultTimeout();
-    }
-
-    interface StreamTaskCallback {
-        void putStreamTask(Object task, String endpoint, String queueName, String apikey, int timeout, BellaEventSourceListener listener);
-        void putStreamTask(Object task, String endpoint, String queueName, String apikey, int timeout, BellaStreamCallback listener);
-        int defaultTimeout();
     }
 
 }

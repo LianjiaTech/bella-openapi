@@ -30,16 +30,16 @@ public class StreamCompletionCallback implements Callbacks.StreamCompletionCallb
     @Getter
     protected final SseEmitter sse;
     protected final EndpointProcessData processData;
-    private final ApikeyInfo apikeyInfo;
-    private final EndpointLogger logger;
-    private final ISafetyCheckService.IChatSafetyCheckService safetyService;
-    private final CompletionResponse responseBuffer;
-    private final Map<Integer, CompletionResponse.Choice> choiceBuffer;
-    private boolean dirtyChoice;
-    private Long firstPackageTime;
-    private Object requestRiskData;
-    private Integer safetyCheckIndex;
-    private Integer thinkStage = 0; // 0: 推理未开始; 1: 推理开始; 2: 推理进行中；3:推理完成；-1:推理已结束
+    protected final ApikeyInfo apikeyInfo;
+    protected final EndpointLogger logger;
+    protected final ISafetyCheckService.IChatSafetyCheckService safetyService;
+    protected final CompletionResponse responseBuffer;
+    protected final Map<Integer, CompletionResponse.Choice> choiceBuffer;
+    protected boolean dirtyChoice;
+    protected Long firstPackageTime;
+    protected Object requestRiskData;
+    protected Integer safetyCheckIndex;
+    protected Integer thinkStage = 0; // 0: 推理未开始; 1: 推理开始; 2: 推理进行中；3:推理完成；-1:推理已结束
 
     public StreamCompletionCallback(SseEmitter sse, EndpointProcessData processData, ApikeyInfo apikeyInfo,
             EndpointLogger logger, ISafetyCheckService.IChatSafetyCheckService safetyService) {
@@ -63,6 +63,9 @@ public class StreamCompletionCallback implements Callbacks.StreamCompletionCallb
     @Override
     public void callback(StreamCompletionResponse msg) {
         msg.setCreated(DateTimeUtils.getCurrentSeconds());
+        if(firstPackageTime == null) {
+            firstPackageTime = DateTimeUtils.getCurrentMills();
+        }
         if(requestRiskData != null) {
             msg.setRequestRiskData(requestRiskData);
             requestRiskData = null;
@@ -111,9 +114,6 @@ public class StreamCompletionCallback implements Callbacks.StreamCompletionCallb
         thinkStage = getThinkStage(streamResponse, thinkStage);
         if(thinkStage == 1 || thinkStage == 3) {
             safetyCheckIndex = 0;
-        }
-        if(firstPackageTime == null) {
-            firstPackageTime = DateTimeUtils.getCurrentMills();
         }
         StreamCompletionResponse.Choice choice = streamResponse.getChoices().get(0);
         Integer choiceIndex = choice.getIndex();
