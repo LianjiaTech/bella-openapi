@@ -16,7 +16,7 @@ public class TaskResp {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class TaskPutResp {
-
+        @JsonProperty("task_id")
         private String taskId;
 
     }
