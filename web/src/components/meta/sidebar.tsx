@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { CategoryTree } from '@/lib/types/openapi';
+import { useRouter, usePathname } from 'next/navigation';
 
 interface SidebarProps {
     categoryTrees: CategoryTree[];
@@ -8,13 +9,18 @@ interface SidebarProps {
 }
 
 export function Sidebar({categoryTrees, onEndpointSelect, defaultEndpoint }: SidebarProps) {
-    const [activeEndpoint, setActiveEndpoint] = useState<string | null>(null);
-    if(activeEndpoint == null) {
-        setActiveEndpoint(defaultEndpoint)
-    }
+    const [activeEndpoint, setActiveEndpoint] = useState<string | null>(defaultEndpoint);
+    const router = useRouter();
+    const pathname = usePathname();
+    
     const handleEndpointClick = (endpoint: string) => {
         setActiveEndpoint(endpoint);
         onEndpointSelect(endpoint);
+        
+        // Update URL with endpoint parameter
+        const url = new URL(window.location.href);
+        url.searchParams.set('endpoint', endpoint);
+        router.push(url.pathname + url.search);
     };
 
     const renderCategoryTree = (tree: CategoryTree) => (
