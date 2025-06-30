@@ -9,6 +9,7 @@ import {format, subDays, subMinutes} from 'date-fns';
 import {Sidebar} from '@/components/meta/sidebar';
 import {getAllCategoryTrees, listModels} from '@/lib/api/meta';
 import {CategoryTree, Model, MonitorData} from "@/lib/types/openapi";
+import { useSearchParams } from 'next/navigation';
 
 // 预定义的颜色数组
 const colors = [
@@ -95,7 +96,9 @@ const getUniqueChannels = (data: MonitorData[]) => {
 };
 
 function MonitorPageContent({ params }: { params: { model: string } }) {
-  const [selectedEndpoint, setSelectedEndpoint] = useState<string>('/v1/chat/completions');
+  const searchParams = useSearchParams();
+  const endpointParam = searchParams.get('endpoint');
+  const [selectedEndpoint, setSelectedEndpoint] = useState<string>(endpointParam || '/v1/chat/completions');
   const [models, setModels] = useState<Model[]>([]);
   const [filteredModels, setFilteredModels] = useState<Model[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -266,7 +269,7 @@ function MonitorPageContent({ params }: { params: { model: string } }) {
         <Sidebar
           categoryTrees={categoryTrees}
           onEndpointSelect={setSelectedEndpoint}
-          defaultEndpoint={selectedEndpoint}
+          defaultEndpoint={endpointParam || '/v1/chat/completions'}
         />
         <main className="flex-1">
           <div className="p-6">
