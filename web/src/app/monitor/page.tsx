@@ -480,5 +480,9 @@ function MonitorPageContent({ params }: { params: { model: string } }) {
 }
 
 export default function MonitorPage(props: { params: { model: string } }) {
-  return <MonitorPageContent {...props} />;
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <MonitorPageContent {...props} />
+    </Suspense>
+  );
 }
