@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const TARGET_REPO = 'LianjiaTech/bella-openapi';
 
+// 强制动态渲染
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
