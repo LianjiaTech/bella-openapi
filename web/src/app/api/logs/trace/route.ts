@@ -8,6 +8,8 @@ import {
 } from "@/app/api/config";
 import {callWorkflow} from '@/lib/api/workflow';
 
+export const dynamic = 'force-dynamic';
+
 const WORKFLOW_API_URL = workflow_url;
 const API_KEY = workflow_apikey;
 const TENANT_ID = tenant_id;
