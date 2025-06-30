@@ -7,6 +7,7 @@ import { useUser } from "@/lib/context/user-context"
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { hasPermission } from "@/lib/api/userInfo"
+import GitHubStarButton from "@/components/ui/github-star-button"
 
 interface Props {
     title?: string
@@ -86,7 +87,10 @@ const SessionHeader: React.FC<Props & { userInfo: any }> = ({ title, userInfo })
                     </div>
                     <MainNav userInfo={userInfo} />
                 </div>
-                <UserNav user={userInfo} />
+                <div className="flex items-center gap-4">
+                    <GitHubStarButton />
+                    <UserNav user={userInfo} />
+                </div>
             </div>
         </div>
     </header>
