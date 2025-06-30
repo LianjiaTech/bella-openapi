@@ -10,6 +10,8 @@ const nextConfig = {
         METRICS_WORKFLOW_ID: process.env.METRICS_WORKFLOW_ID,
         LOGS_TRACE_WORKFLOW_ID: process.env.LOGS_TRACE_WORKFLOW_ID,
         SERVICE_WORKFLOW_ID: process.env.SERVICE_WORKFLOW_ID,
+        GITHUB_CLIENT_ID: process.env.GITHUB_CLIENT_ID,
+        GITHUB_CLIENT_SECRET: process.env.GITHUB_CLIENT_SECRET
     },
 };
 
