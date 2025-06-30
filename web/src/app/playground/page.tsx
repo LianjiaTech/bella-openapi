@@ -6,10 +6,13 @@ import {ModelSelect} from "@/components/ui/model-select";
 import {Sidebar} from '@/components/meta/sidebar';
 import {getAllCategoryTrees, getEndpointDetails} from '@/lib/api/meta';
 import {CategoryTree, Model} from "@/lib/types/openapi";
+import { useSearchParams } from 'next/navigation';
 
 
 function Playground() {
-    const [selectedEndpoint, setSelectedEndpoint] = useState<string>('/v1/chat/completions');
+    const searchParams = useSearchParams();
+    const endpointParam = searchParams.get('endpoint');
+    const [selectedEndpoint, setSelectedEndpoint] = useState<string>(endpointParam || '/v1/chat/completions');
     const [models, setModels] = useState<Model[]>([]);
     const [loading, setLoading] = useState(true);
     const [filteredModels, setFilteredModels] = useState<Model[]>([]);
@@ -61,7 +64,7 @@ function Playground() {
                 <Sidebar
                     categoryTrees={categoryTrees}
                     onEndpointSelect={setSelectedEndpoint}
-                    defaultEndpoint={selectedEndpoint}
+                    defaultEndpoint={endpointParam || '/v1/chat/completions'}
                 />
                 <main className="flex-1 flex flex-col overflow-hidden">
                     {models.length > 0 &&  (
