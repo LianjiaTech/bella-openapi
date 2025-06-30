@@ -1,6 +1,6 @@
 'use client';
 
-import {useEffect, useState} from 'react';
+import {useEffect, useState, Suspense} from 'react';
 import {ClientHeader} from "@/components/user/client-header";
 import {ModelSelect} from "@/components/ui/model-select";
 import {Sidebar} from '@/components/meta/sidebar';
@@ -9,7 +9,7 @@ import {CategoryTree, Model} from "@/lib/types/openapi";
 import { useSearchParams } from 'next/navigation';
 
 
-function Playground() {
+function PlaygroundContent() {
     const searchParams = useSearchParams();
     const endpointParam = searchParams.get('endpoint');
     const [selectedEndpoint, setSelectedEndpoint] = useState<string>(endpointParam || '/v1/chat/completions');
@@ -94,6 +94,14 @@ function Playground() {
                 </main>
             </div>
         </div>
+    );
+}
+
+function Playground() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <PlaygroundContent />
+        </Suspense>
     );
 }
 

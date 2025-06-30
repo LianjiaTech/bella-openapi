@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { Sidebar } from '@/components/meta/sidebar';
 import { EndpointDisplay } from '@/components/meta/endpoint-details';
 import { getAllCategoryTrees } from '@/lib/api/meta';
@@ -8,7 +8,7 @@ import { CategoryTree } from '@/lib/types/openapi';
 import {ClientHeader} from "@/components/user/client-header";
 import { useSearchParams } from 'next/navigation';
 
-export default function MetaPage() {
+function MetaPageContent() {
     const [categoryTrees, setCategoryTrees] = useState<CategoryTree[]>([]);
     const [selectedEndpoint, setSelectedEndpoint] = useState<string | null>(null);
     const searchParams = useSearchParams();
@@ -37,5 +37,13 @@ export default function MetaPage() {
                 </main>
             </div>
         </div>
+    );
+}
+
+export default function MetaPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <MetaPageContent />
+        </Suspense>
     );
 }
