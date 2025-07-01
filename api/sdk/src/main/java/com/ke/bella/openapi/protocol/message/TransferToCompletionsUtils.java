@@ -533,7 +533,7 @@ public class TransferToCompletionsUtils {
             } else if (delta instanceof StreamMessageResponse.InputJsonDelta) {
                 StreamMessageResponse.InputJsonDelta jsonDelta = (StreamMessageResponse.InputJsonDelta) delta;
                 Message.ToolCall toolCall = Message.ToolCall.builder()
-                        .index(Math.max(0, toolNum.get()))
+                        .index(Math.max(0, toolNum.get() - 1))
                         .function(Message.FunctionCall.builder()
                                 .arguments(jsonDelta.getPartialJson())
                                 .build())
@@ -555,7 +555,7 @@ public class TransferToCompletionsUtils {
                 toolNum.incrementAndGet();
                 MessageResponse.ResponseToolUseBlock toolBlock = (MessageResponse.ResponseToolUseBlock) streamMessageResponse.getContentBlock();
                 Message.ToolCall toolCall = Message.ToolCall.builder()
-                        .index(Math.max(0, toolNum.get()))
+                        .index(Math.max(0, toolNum.get() - 1))
                         .id(toolBlock.getId())
                         .type("function")
                         .function(Message.FunctionCall.builder()
