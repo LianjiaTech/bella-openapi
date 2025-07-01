@@ -80,6 +80,9 @@ public class ImagesResponse extends OpenapiResponse {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class Usage {
+        private Integer num;
+        private String size;
+        private String quality;
         /**
          * The number of tokens (images and text) in the input prompt.
          */

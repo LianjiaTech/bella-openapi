@@ -2,13 +2,13 @@ package com.ke.bella.openapi.protocol.cost;
 
 import com.ke.bella.openapi.protocol.asr.flash.FlashAsrPriceInfo;
 import com.ke.bella.openapi.protocol.asr.transcription.TranscriptionsAsrPriceInfo;
-import com.ke.bella.openapi.protocol.realtime.RealTimePriceInfo;
 import com.ke.bella.openapi.protocol.completion.CompletionPriceInfo;
 import com.ke.bella.openapi.protocol.completion.CompletionResponse;
 import com.ke.bella.openapi.protocol.embedding.EmbeddingPriceInfo;
 import com.ke.bella.openapi.protocol.embedding.EmbeddingResponse;
 import com.ke.bella.openapi.protocol.images.ImagesPriceInfo;
 import com.ke.bella.openapi.protocol.images.ImagesResponse;
+import com.ke.bella.openapi.protocol.realtime.RealTimePriceInfo;
 import com.ke.bella.openapi.protocol.tts.TtsPriceInfo;
 import com.ke.bella.openapi.utils.JacksonUtils;
 import com.ke.bella.openapi.utils.MatchUtils;
@@ -154,23 +154,22 @@ public class CostCalculator  {
         @Override
         public BigDecimal calculate(String priceInfo, Object usage) {
             ImagesPriceInfo price = JacksonUtils.deserialize(priceInfo, ImagesPriceInfo.class);
-            ImagesResponse imagesResponse = (ImagesResponse) usage;
+            ImagesResponse.Usage imageUsage = (ImagesResponse.Usage) usage;
             BigDecimal imageCost = BigDecimal.ZERO;
             // 获取质量和尺寸信息
-            String quality = getQualityFromResponse(imagesResponse);
-            String size = getSizeFromResponse(imagesResponse);
-            int imageCount = imagesResponse.getData() != null ? imagesResponse.getData().size() : 1;
+            String quality = imageUsage.getQuality();
+            String size = imageUsage.getSize();
+            int imageCount = imageUsage.getNum();
             if(price != null && CollectionUtils.isNotEmpty(price.getDetails())) {
                 ImagesPriceInfo.ImagesPriceInfoDetails details = price.getDetails().
                         stream().filter(d -> d.getSize().equals(size)).findAny().orElse(price.getDetails().get(0));
 
-                if (imagesResponse.getUsage() != null && (details.getImageTokenPrice() != null || details.getTextTokenPrice() != null)) {
-                    ImagesResponse.Usage tokenUsage = imagesResponse.getUsage();
-                    if (tokenUsage.getInput_tokens_details() != null) {
+                if (details.getImageTokenPrice() != null || details.getTextTokenPrice() != null) {
+                    if (imageUsage.getInput_tokens_details() != null) {
                         BigDecimal textTokenCost = Optional.ofNullable(details.getTextTokenPrice()).orElse(BigDecimal.ZERO)
-                                .multiply(BigDecimal.valueOf(Optional.of(tokenUsage.getInput_tokens_details().getText_tokens()).orElse(0) / 1000.0));
+                                .multiply(BigDecimal.valueOf(Optional.of(imageUsage.getInput_tokens_details().getText_tokens()).orElse(0) / 1000.0));
                         BigDecimal imageTokenCost = Optional.ofNullable(details.getImageTokenPrice()).orElse(BigDecimal.ZERO)
-                                .multiply(BigDecimal.valueOf(Optional.of(tokenUsage.getInput_tokens_details().getImage_tokens()).orElse(0) / 1000.0));
+                                .multiply(BigDecimal.valueOf(Optional.of(imageUsage.getInput_tokens_details().getImage_tokens()).orElse(0) / 1000.0));
                         imageCost = imageCost.add(textTokenCost).add(imageTokenCost);
                     }
                 }
@@ -186,23 +185,7 @@ public class CostCalculator  {
         }
 
         
-        private String getQualityFromResponse(ImagesResponse response) {
-            // 从响应的 ImageData 中获取质量信息
-            if (response.getData() != null && !response.getData().isEmpty()) {
-                String quality = response.getData().get(0).getQuality();
-                return quality != null ? quality : "high";
-            }
-            return "high";
-        }
-        
-        private String getSizeFromResponse(ImagesResponse response) {
-            // 从响应的 ImageData 中获取尺寸信息
-            if (response.getData() != null && !response.getData().isEmpty()) {
-                String size = response.getData().get(0).getSize();
-                return size != null ? size : "1024x1024";
-            }
-            return "1024x1024";
-        }
+
 
         @Override
         public boolean checkPriceInfo(String priceInfo) {
