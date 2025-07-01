@@ -17,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -316,6 +317,9 @@ public class TransferToCompletionsUtils {
                 toolCall.getFunction().getArguments(), 
                 new TypeReference<Map<String, Object>>() {}
             );
+            if(args == null) {
+                args = new HashMap<>();
+            }
             toolUseBlock.setInput(args);
         }
         
@@ -437,10 +441,11 @@ public class TransferToCompletionsUtils {
                     }
                 } else if (block instanceof MessageResponse.ResponseToolUseBlock) {
                     MessageResponse.ResponseToolUseBlock toolBlock = (MessageResponse.ResponseToolUseBlock) block;
+                    String args = JacksonUtils.serialize(toolBlock.getInput());
                     Message.ToolCall toolCall = Message.ToolCall.fromFunctionIdAndName(toolBlock.getId(), toolBlock.getName());
                     toolCall.setFunction(Message.FunctionCall.builder()
                             .name(toolBlock.getName())
-                            .arguments(JacksonUtils.serialize(toolBlock.getInput()))
+                            .arguments(args == null ? "" : args)
                             .build());
                     toolCalls.add(toolCall);
                 } else if (block instanceof MessageResponse.ResponseThinkingBlock) {
@@ -535,7 +540,7 @@ public class TransferToCompletionsUtils {
                 Message.ToolCall toolCall = Message.ToolCall.builder()
                         .index(Math.max(0, toolNum.get() - 1))
                         .function(Message.FunctionCall.builder()
-                                .arguments(jsonDelta.getPartialJson())
+                                .arguments(jsonDelta.getPartialJson() == null ? "" : jsonDelta.getPartialJson())
                                 .build())
                         .build();
                 deltaBuilder.tool_calls(Collections.singletonList(toolCall));
