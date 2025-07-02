@@ -18,7 +18,14 @@ import okhttp3.WebSocket;
 import okhttp3.internal.Util;
 import okhttp3.sse.EventSources;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
+import java.nio.channels.ReadableByteChannel;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -187,6 +194,42 @@ public class HttpUtils {
                 return bodyBytes;
             }
 
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
+        } finally {
+            if(response != null) {
+                response.close();
+            }
+            if(body != null) {
+                body.close();
+            }
+        }
+    }
+
+    public static void doHttpRequest(Request request, File output) {
+        Response response = null;
+        ResponseBody body = null;
+        try {
+            response = HttpUtils.httpRequest(request);
+
+            if(!response.isSuccessful()) {
+                throw new IllegalStateException(String.format("failed to do http request, code: %s", response.code()));
+            }
+            body = response.body();
+
+            if(body != null) {
+                InputStream stream = body.byteStream();
+                try (FileOutputStream fos = new FileOutputStream(output);
+                        ReadableByteChannel inputChannel = Channels.newChannel(stream);
+                        FileChannel outputChannel = fos.getChannel()) {
+                    ByteBuffer buffer = ByteBuffer.allocateDirect(8192);
+                    while (inputChannel.read(buffer) != -1) {
+                        buffer.flip();
+                        outputChannel.write(buffer);
+                        buffer.clear();
+                    }
+                }
+            }
         } catch (IOException e) {
             throw new IllegalStateException(e);
         } finally {

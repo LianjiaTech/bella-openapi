@@ -1,13 +1,11 @@
 package com.ke.bella.job.queue;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.ke.bella.job.queue.api.entity.param.TaskParam;
 import com.ke.bella.job.queue.api.entity.response.TaskResp;
 import com.ke.bella.job.queue.api.enums.ResponseModeEnum;
 import com.ke.bella.job.queue.api.enums.TaskStatusEnum;
 import com.ke.bella.openapi.common.exception.BizParamCheckException;
 import com.ke.bella.openapi.protocol.BellaEventSourceListener;
-import com.ke.bella.openapi.protocol.BellaStreamCallback;
 import com.ke.bella.openapi.protocol.Callbacks;
 import com.ke.bella.openapi.utils.HttpUtils;
 import com.ke.bella.openapi.utils.JacksonUtils;
@@ -15,12 +13,11 @@ import lombok.extern.slf4j.Slf4j;
 import okhttp3.MediaType;
 import okhttp3.Request;
 import okhttp3.RequestBody;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.Assert;
-import org.springframework.util.StringUtils;
 
 import java.util.Collections;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 public class JobQueueClient {
@@ -31,13 +28,17 @@ public class JobQueueClient {
 
     public static JobQueueClient getInstance(String url) {
         if(INSTANCE == null) {
-            INSTANCE = new JobQueueClient(url);
+            synchronized(JobQueueClient.class) {
+                if(INSTANCE == null) {
+                    INSTANCE = new JobQueueClient(url);
+                }
+            }
         }
         return INSTANCE;
     }
 
-    public JobQueueClient(String url) {
-        if (url == null) {
+    private JobQueueClient(String url) {
+        if (StringUtils.isBlank(url)) {
             throw new IllegalStateException("Queue Service URL is not configured.");
         }
         this.url = url;
