@@ -17,6 +17,8 @@ import com.lark.oapi.service.docx.v1.model.TableMergeInfo;
 import com.lark.oapi.service.docx.v1.model.TextElement;
 import com.lark.oapi.service.drive.v1.model.CreateImportTaskReq;
 import com.lark.oapi.service.drive.v1.model.CreateImportTaskResp;
+import com.lark.oapi.service.drive.v1.model.DeleteFileReq;
+import com.lark.oapi.service.drive.v1.model.DeleteFileResp;
 import com.lark.oapi.service.drive.v1.model.DownloadMediaReq;
 import com.lark.oapi.service.drive.v1.model.DownloadMediaResp;
 import com.lark.oapi.service.drive.v1.model.GetImportTaskReq;
@@ -49,6 +51,9 @@ public class LarkAdaptor implements DocParseAdaptor<LarkProperty> {
     @Autowired
     private FileApiProperties fileApiProperties;
 
+    @Autowired
+    private LarkFileCleanupService cleanupService;
+
     @Override
     public DocParseTaskInfo parse(DocParseRequest request, String url, String channelCode, LarkProperty property) {
         try {
@@ -63,6 +68,10 @@ public class LarkAdaptor implements DocParseAdaptor<LarkProperty> {
             Client client = LarkClientProvider.client(property.getClientId(), property.getClientSecret());
             String fileToken = uploadFile(client, sourceFile.getName(), property.getUploadDirToken(), tempFile);
             String ticket = importTask(client, fileToken, property.getCloudDirToken(), sourceFile.getName(), fileType);
+            
+            // 注册文件清理任务
+            cleanupService.addCleanupTask(fileToken, ticket, fileType, property);
+            
             return DocParseTaskInfo.builder()
                     .taskId(TaskIdUtils.buildTaskId(channelCode, ticket))
                     .build();
@@ -74,7 +83,7 @@ public class LarkAdaptor implements DocParseAdaptor<LarkProperty> {
     @Override
     public DocParseResponse queryResult(String taskId, String url, LarkProperty property) {
         Client client = LarkClientProvider.client(property.getClientId(), property.getClientSecret());
-        DocParseResponse response = queryResult(client, taskId);
+        DocParseResponse response = queryTaskResult(client, taskId);
         if("success".equals(response.getStatus())) {
             DocParseResult result = getDocParseResult(client, response.getToken());
             response.setResult(result);
@@ -137,7 +146,34 @@ public class LarkAdaptor implements DocParseAdaptor<LarkProperty> {
         }
     }
 
-    private static DocParseResponse queryResult(Client client, String ticket) {
+    /**
+     * 删除文件
+     * @param client Lark客户端
+     * @param fileToken 文件token
+     * @param fileType 文件类型
+     * @return 删除是否成功
+     */
+    public static boolean deleteFile(Client client, String fileToken, String fileType) {
+        try {
+            DeleteFileReq req = DeleteFileReq.newBuilder()
+                    .fileToken(fileToken)
+                    .type(fileType)
+                    .build();
+
+            DeleteFileResp resp = client.drive().v1().file().delete(req);
+            if (resp.getCode() != 0) {
+                log.error("Failed to delete file {}: {}", fileToken, resp.getMsg());
+                return false;
+            }
+            log.info("Successfully deleted file: {}", fileToken);
+            return true;
+        } catch (Exception e) {
+            log.error("Exception when deleting file {}: {}", fileToken, e.getMessage(), e);
+            return false;
+        }
+    }
+
+    public static DocParseResponse queryTaskResult(Client client, String ticket) {
         GetImportTaskReq req = GetImportTaskReq.newBuilder()
                 .ticket(ticket)
                 .build();
