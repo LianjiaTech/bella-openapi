@@ -1,7 +1,7 @@
 package com.ke.bella.openapi.endpoints;
 
+import com.ke.bella.file.api.FileApiClient;
 import com.ke.bella.job.queue.JobQueueClient;
-import com.ke.bella.job.queue.api.entity.param.TaskParam;
 import com.ke.bella.job.queue.api.entity.response.TaskResp;
 import com.ke.bella.job.queue.config.JobQueueProperties;
 import com.ke.bella.openapi.EndpointContext;
@@ -26,7 +26,6 @@ import com.ke.bella.openapi.protocol.tts.TtsAdaptor;
 import com.ke.bella.openapi.protocol.tts.TtsProperty;
 import com.ke.bella.openapi.protocol.tts.TtsRequest;
 import com.ke.bella.openapi.tables.pojos.ChannelDB;
-import com.ke.bella.openapi.utils.HttpUtils;
 import com.ke.bella.openapi.utils.JacksonUtils;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
@@ -34,10 +33,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import okhttp3.Request;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.StreamUtils;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -55,7 +52,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static com.ke.bella.openapi.common.AudioFormat.getContentType;
 
@@ -75,8 +74,6 @@ public class AudioController {
     private EndpointLogger logger;
     @Autowired
     private JobQueueProperties jobQueueProperties;
-    @Value("bella.file-api.url")
-    private String fileUrl;
 
     /**
      * 实时语音识别WebSocket接口
@@ -171,13 +168,13 @@ public class AudioController {
 
     @PostMapping("/transcriptions/file/result")
     public AudioTranscriptionResultResp getTranscriptionResult(@RequestBody AudioTranscriptionResultReq audioTranscriptionResultReq) {
-        List<Object> data = getTaskResult(audioTranscriptionResultReq.getTaskId(), EndpointContext.getProcessData().getApikey(), fileUrl).getData();
+        List<Object> data = getTaskResult(audioTranscriptionResultReq.getTaskId(), EndpointContext.getProcessData().getApikey()).getData();
         return AudioTranscriptionResultResp.builder()
                 .data(data)
                 .build();
     }
 
-    private QueueTaskGetResultResp getTaskResult(List<String> taskIds, String apikey, String fileUrl) {
+    private QueueTaskGetResultResp getTaskResult(List<String> taskIds, String apikey) {
         JobQueueClient client = JobQueueClient.getInstance(jobQueueProperties.getUrl());
         List<Object> result = new ArrayList<>();
         for (String taskId : taskIds) {
@@ -189,15 +186,10 @@ public class AudioController {
             String outputFileId = data.getOutputFileId();
             if (outputData != null) {
                 result.add(outputData);
-            } else if (fileUrl != null && outputFileId != null && !outputFileId.isEmpty()) {
-                //todo 使用file-api的client
-                Request requestFile = new Request.Builder()
-                        .url(fileUrl + "/" + outputFileId + "/content")
-                        .addHeader("Authorization", "Bearer " + apikey)
-                        .get()
-                        .build();
-                outputData = HttpUtils.httpRequest(requestFile, Object.class);
-                result.add(outputData);
+            } else if (outputFileId != null && !outputFileId.isEmpty()) {
+                Map<String, String> map = new HashMap<>();
+                map.put("file_id", outputFileId);
+                result.add(map);
             }
         }
 

@@ -69,6 +69,14 @@ public class ChannelRouter {
         return isMock ? mockChannel(channel) : channel;
     }
 
+    public ChannelDB route(String channelCode) {
+        ChannelDB channelDB = channelService.getOne(channelCode);
+        if(channelDB == null) {
+            throw new BizParamCheckException("channelCode不存在");
+        }
+        return channelDB;
+    }
+
     /**
      * 1、筛选账户支持的数据流向（风控） 2、筛选可用的渠道
      *
