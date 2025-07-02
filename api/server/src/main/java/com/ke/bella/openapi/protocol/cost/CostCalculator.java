@@ -55,7 +55,9 @@ public class CostCalculator  {
         ASR_STREAM("/v*/audio/asr/stream", realtime),
         REAL_TIME("/v*/audio/realtime", realtime),
         ASR_TRANSCRIPTIONS("/v*/audio/transcriptions", asr_transcriptions),
-        IMAGES("/v*/images/generations", images)
+        IMAGES("/v*/images/generations", images),
+        IMAGES_EDITS("/v*/images/edits", images),
+        IMAGES_VARIATIONS("/v*/images/variations", images)
         ;
         final String endpoint;
         final EndpointCostCalculator calculator;

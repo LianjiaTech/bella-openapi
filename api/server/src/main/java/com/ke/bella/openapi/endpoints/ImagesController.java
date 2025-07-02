@@ -6,8 +6,13 @@ import com.ke.bella.openapi.annotations.EndpointAPI;
 import com.ke.bella.openapi.protocol.AdaptorManager;
 import com.ke.bella.openapi.protocol.ChannelRouter;
 import com.ke.bella.openapi.protocol.images.generator.ImagesGeneratorAdaptor;
+import com.ke.bella.openapi.protocol.images.editor.ImagesEditorAdaptor;
+import com.ke.bella.openapi.protocol.images.variation.ImagesVariationAdaptor;
 import com.ke.bella.openapi.protocol.images.ImagesProperty;
+import com.ke.bella.openapi.protocol.images.ImagesEditorProperty;
 import com.ke.bella.openapi.protocol.images.ImagesRequest;
+import com.ke.bella.openapi.protocol.images.ImagesEditRequest;
+import com.ke.bella.openapi.protocol.images.ImagesVariationRequest;
 import com.ke.bella.openapi.protocol.images.ImagesResponse;
 import com.ke.bella.openapi.protocol.limiter.LimiterManager;
 import com.ke.bella.openapi.tables.pojos.ChannelDB;
@@ -52,6 +57,58 @@ public class ImagesController {
         ImagesGeneratorAdaptor adaptor = adaptorManager.getProtocolAdaptor(endpoint, protocol, ImagesGeneratorAdaptor.class);
         ImagesProperty property = (ImagesProperty) JacksonUtils.deserialize(channelInfo, adaptor.getPropertyClass());
         return adaptor.generateImages(request, url, property);
+    }
+    
+    /**
+     * 图片编辑接口
+     * @param request 图片编辑请求参数
+     * @return 编辑后的图片响应
+     */
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @PostMapping("/edits")
+    public ImagesResponse editImages(ImagesEditRequest request) {
+        String endpoint = EndpointContext.getRequest().getRequestURI();
+        String model = request.getModel();
+        EndpointContext.setEndpointData(endpoint, model, request);
+        boolean isMock = EndpointContext.getProcessData().isMock();
+        ChannelDB channel = router.route(endpoint, model, EndpointContext.getApikey(), isMock);
+        EndpointContext.setEndpointData(channel);
+        if(!EndpointContext.getProcessData().isPrivate()) {
+            limiterManager.incrementConcurrentCount(EndpointContext.getProcessData().getAkCode(), model);
+        }
+        EndpointProcessData processData = EndpointContext.getProcessData();
+        String protocol = processData.getProtocol();
+        String url = processData.getForwardUrl();
+        String channelInfo = channel.getChannelInfo();
+        ImagesEditorAdaptor adaptor = adaptorManager.getProtocolAdaptor(endpoint, protocol, ImagesEditorAdaptor.class);
+        ImagesEditorProperty property = (ImagesEditorProperty) JacksonUtils.deserialize(channelInfo, adaptor.getPropertyClass());
+        return adaptor.editImages(request, url, property);
+    }
+    
+    /**
+     * 图片变化接口
+     * @param request 图片变化请求参数
+     * @return 变化后的图片响应
+     */
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @PostMapping("/variations")
+    public ImagesResponse createVariations(ImagesVariationRequest request) {
+        String endpoint = EndpointContext.getRequest().getRequestURI();
+        String model = request.getModel();
+        EndpointContext.setEndpointData(endpoint, model, request);
+        boolean isMock = EndpointContext.getProcessData().isMock();
+        ChannelDB channel = router.route(endpoint, model, EndpointContext.getApikey(), isMock);
+        EndpointContext.setEndpointData(channel);
+        if(!EndpointContext.getProcessData().isPrivate()) {
+            limiterManager.incrementConcurrentCount(EndpointContext.getProcessData().getAkCode(), model);
+        }
+        EndpointProcessData processData = EndpointContext.getProcessData();
+        String protocol = processData.getProtocol();
+        String url = processData.getForwardUrl();
+        String channelInfo = channel.getChannelInfo();
+        ImagesVariationAdaptor adaptor = adaptorManager.getProtocolAdaptor(endpoint, protocol, ImagesVariationAdaptor.class);
+        ImagesProperty property = (ImagesProperty) JacksonUtils.deserialize(channelInfo, adaptor.getPropertyClass());
+        return adaptor.createVariations(request, url, property);
     }
 
 }
