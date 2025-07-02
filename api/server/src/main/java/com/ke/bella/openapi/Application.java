@@ -1,5 +1,6 @@
 package com.ke.bella.openapi;
 
+import com.ke.bella.file.api.config.EnableFileApi;
 import com.ke.bella.job.queue.config.EnableJobQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,6 +16,7 @@ import com.alicp.jetcache.anno.config.EnableMethodCache;
 @EnableMethodCache(basePackages = "com.ke.bella.openapi")
 @EnableScheduling
 @EnableJobQueue
+@EnableFileApi
 public class Application {
     private static final Logger LOGGER = LoggerFactory.getLogger(Application.class);
 
