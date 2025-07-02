@@ -46,10 +46,10 @@ public class OpenAIAdaptor implements ImagesEditorAdaptor<ImagesEditorProperty> 
                         RequestBody.create(MediaType.parse("image/png"), imageFile.getBytes()));
             } else if (property.isSupportUrl() && request.getImage_url() != null && !request.getImage_url().isEmpty()) {
                 // 仅在配置支持时才允许URL输入
-                multipartBuilder.addFormDataPart("image", request.getImage_url());
+                multipartBuilder.addFormDataPart("image_url", request.getImage_url());
             } else if (property.isSupportBase64() && request.getImage_b64_json() != null && !request.getImage_b64_json().isEmpty()) {
                 // 仅在配置支持时才允许Base64输入
-                multipartBuilder.addFormDataPart("image", request.getImage_b64_json());
+                multipartBuilder.addFormDataPart("image_b64_json", request.getImage_b64_json());
             } else {
                 throw new RuntimeException("支持的格式 " + (property.isSupportFile() ? "文件上传 " : "") + (property.isSupportUrl() ? "URL " : "") + (property.isSupportBase64() ? "Base64" : ""));
             }
