@@ -433,7 +433,7 @@ const LogsPage = () => {
                         请复制异常响应内容，前往以下链接进行咨询：
                       </p>
                       <a
-                        href={`${agent_url}`}
+                        href={decodeURIComponent(agent_url || '')}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-blue-600 hover:text-blue-800 underline"
