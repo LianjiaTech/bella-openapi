@@ -126,7 +126,7 @@ public class FileUtils {
         } else if(t.startsWith("text")) {
             return "text";
         } else {
-            return "binary";
+            return MIME_TO_EXTENSION.getOrDefault(t, "binary");
         }
     }
 
