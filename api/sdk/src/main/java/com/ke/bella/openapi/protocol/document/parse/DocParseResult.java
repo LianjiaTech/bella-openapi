@@ -141,7 +141,7 @@ public class DocParseResult {
     @Data
     public static class Cell {
         /**
-         * 单元格路径
+         * 单元格路径，单元格的path只在表格内部相对编号
          */
         private Object path;
         
@@ -149,5 +149,10 @@ public class DocParseResult {
          * 文本内容
          */
         private String text;
+
+        /**
+         * 单元格式复杂元素时使用，node内的path从头开始编号
+         */
+        private List<DocParseResult> nodes;
     }
 }
