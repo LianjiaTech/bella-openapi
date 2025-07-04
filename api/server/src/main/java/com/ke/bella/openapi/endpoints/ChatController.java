@@ -22,6 +22,7 @@ import com.ke.bella.openapi.protocol.limiter.LimiterManager;
 import com.ke.bella.openapi.protocol.log.EndpointLogger;
 import com.ke.bella.openapi.safety.ISafetyCheckService;
 import com.ke.bella.openapi.safety.SafetyCheckRequest;
+import com.ke.bella.openapi.service.ChannelIdleDetector;
 import com.ke.bella.openapi.tables.pojos.ChannelDB;
 import com.ke.bella.openapi.utils.JacksonUtils;
 import com.ke.bella.openapi.utils.SseHelper;
@@ -56,6 +57,8 @@ public class ChatController {
     private ISafetyCheckService.IChatSafetyCheckService safetyCheckService;
     @Autowired
     private JobQueueProperties jobQueueProperties;
+    @Autowired
+    private ChannelIdleDetector channelIdleDetector;
     @Value("${bella.openapi.max-models-per-request:3}")
     private Integer maxModelsPerRequest;
 
@@ -110,6 +113,9 @@ public class ChatController {
         boolean isMock = EndpointContext.getProcessData().isMock();
         ChannelDB channel = router.route(endpoint, model, EndpointContext.getApikey(), isMock);
         EndpointContext.setEndpointData(channel);
+        
+        // 在请求开始时更新实时RPM
+        channelIdleDetector.updateRealtimeRPM(EndpointContext.getProcessData());
         if(!EndpointContext.getProcessData().isPrivate()) {
             limiterManager.incrementConcurrentCount(EndpointContext.getProcessData().getAkCode(), model);
         }
