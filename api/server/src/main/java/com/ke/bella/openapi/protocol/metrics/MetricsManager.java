@@ -13,6 +13,7 @@ import com.ke.bella.openapi.utils.MatchUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -33,6 +34,10 @@ public class MetricsManager {
     private List<MetricsResolver> resolvers;
     @Autowired
     private RedissonClient redisson;
+    
+    @Lazy
+    @Autowired(required = false)
+    private com.ke.bella.openapi.service.ChannelIdleDetector channelIdleDetector;
 
     public void record(EndpointProcessData processData) throws IOException {
         String endpoint = processData.getEndpoint();
@@ -76,12 +81,32 @@ public class MetricsManager {
             });
         }
         executor.execute(processData.getEndpoint(), ScriptType.metrics, key, metrics);
+        
+        // 更新实时RPM（如果ChannelIdleDetector可用）
+        if (channelIdleDetector != null && processData.getStartTime() != null && processData.getEndTime() != null) {
+            long responseTime = processData.getEndTime() - processData.getStartTime();
+            channelIdleDetector.updateRealtimeRPM(processData.getChannelCode(), responseTime);
+        }
     }
 
     public Set<String> getAllUnavailableChannels(List<String> channelCodes) {
         Map<String, String> map = redisson.getBuckets().get(channelCodes.stream()
                 .map(c -> String.format(unavailable_mark_key, c)).toArray(String[]::new));
         return map.keySet().stream().map(s -> s.split(":")[1]).collect(Collectors.toSet());
+    }
+    
+    public Set<String> getAllUnavailableChannels() {
+        // 获取所有不可用的channels的key pattern
+        String pattern = "bella-openapi-channel-metrics:*:unavailable";
+        Set<String> keys = redisson.getKeys().getKeysByPattern(pattern);
+        
+        return keys.stream()
+            .map(key -> {
+                String[] parts = key.split(":");
+                return parts.length >= 2 ? parts[1] : null;
+            })
+            .filter(channelId -> channelId != null)
+            .collect(Collectors.toSet());
     }
 
     public Map<String, Map<String, Object>> queryMetrics(String endpoint, Collection<String> channelCodes) throws IOException {

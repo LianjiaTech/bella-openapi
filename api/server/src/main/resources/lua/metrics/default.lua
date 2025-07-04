@@ -101,27 +101,51 @@ local function update_last_timeStamp()
     end
 end
 
+-- 记录TPM阈值
+local function record_tpm_threshold()
+    local total_key = prefix_key .. ":total"
+    local input_tokens = tonumber(redis.call("HGET", total_key, "input_tokens") or 0)
+    local output_tokens = tonumber(redis.call("HGET", total_key, "output_tokens") or 0)
+    local total_tpm = input_tokens + output_tokens
+    
+    if total_tpm > 0 then
+        local tpm_threshold_key = prefix_key .. ":tpm_threshold"
+        -- 记录当前TPM作为阈值，过期时间24小时
+        redis.call("SET", tpm_threshold_key, total_tpm, "EX", 86400)
+    end
+end
+
 -- 更新通道状态
 local function update_channel_status()
     local mark_key = prefix_key .. ":unavailable"
     local current_status_key = prefix_key .. ":status"
     local unavailable_time_key = prefix_key .. ":unavailable_time"
     local status = "available"
+    local should_record_tpm = false
+    
     if http_code == 429 then
         status = "temporarily_unavailable"
+        should_record_tpm = true
     else
         local total_key = prefix_key .. ":total"
         local total_errors = tonumber(redis.call("HGET", total_key, "errors") or 0)
         local total_completed = tonumber(redis.call("HGET", total_key, "completed") or 0)
         if total_completed >= min_completed_threshold and total_errors * 100 > total_completed * error_rate_threshold then
             status = "temporarily_unavailable"
+            should_record_tpm = true
         end
     end
+    
     if status ~= "available" and channel_unavailable_expire_time > 0 then
         -- 标记为不可用，并记录不可用时间
         redis.call("SET", mark_key, "true", "EX", channel_unavailable_expire_time)
         redis.call("INCRBY", unavailable_time_key, channel_unavailable_expire_time)
         redis.call("EXPIRE", unavailable_time_key, UNAVAILABLE_EXPIRY_TIME)
+        
+        -- 渠道不可用时记录TPM阈值
+        if should_record_tpm then
+            record_tpm_threshold()
+        end
     end
     redis.call("HSET", current_status_key, current_timestamp, status)
 end

@@ -65,6 +65,20 @@ bella:
     cookie-context-path: /
   openapi:
     max-models-per-request: 3
+  job-queue:
+    url: http://localhost:8080/job-queue
+    defaultTimeout: 300
+    worker:
+      enabled: false              # 默认关闭worker，需要时手动开启
+      pollInterval: 5000          # 轮询间隔5秒
+      pollSize: 10               # 每次拉取10个任务
+      retryQueueSize: 1000       # 重试队列大小
+      threadPoolSize: 2          # 线程池大小
+  channel:
+    idle:
+      threshold:
+        ratio: 0.7               # 空闲阈值比例70%
+      avg-tokens-per-request: 100  # 平均每请求token数
 
 app:
   id: bella-openapi

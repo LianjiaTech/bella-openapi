@@ -46,7 +46,7 @@ public class JobQueueWorker {
             try {
                 pollAndExecute();
             } catch (Exception e) {
-                LOGGER.error("execute job-queue task occur error", e);
+                log.error("execute job-queue task occur error", e);
             }
         }, 0, 5, TimeUnit.SECONDS);
     }
@@ -58,12 +58,30 @@ public class JobQueueWorker {
     private void pollAndExecute() {
         TaskResp.TaskGetResp pollResponse;
         do {
+            // 优先处理重试队列
             while (!retryQueue.isEmpty()) {
                 execute(retryQueue.poll());
             }
-            pollResponse = jobQueueClient.poll(pollSize, endpoint, queueName);
-            Optional.ofNullable(pollResponse.getData()).ifPresent(tasks -> tasks.forEach(task -> execute(Task.of(task, this))));
+            
+            // 检查是否应该继续拉取新任务
+            if (shouldPollNewTasks()) {
+                pollResponse = jobQueueClient.poll(pollSize, endpoint, queueName);
+                Optional.ofNullable(pollResponse.getData()).ifPresent(tasks -> tasks.forEach(task -> execute(Task.of(task, this))));
+            } else {
+                // 如果不应该拉取新任务，则跳过本次轮询
+                pollResponse = new TaskResp.TaskGetResp();
+                pollResponse.setData(java.util.Collections.emptyList());
+                log.debug("Skipping task polling for endpoint {} - conditions not met", endpoint);
+            }
         } while (!pollResponse.isEmpty());
+    }
+    
+    /**
+     * 检查是否应该拉取新任务
+     * 子类可以重写此方法来实现自定义的拉取逻辑（如基于channel空闲状态）
+     */
+    protected boolean shouldPollNewTasks() {
+        return true; // 默认总是拉取
     }
 
     private void execute(Task task) {
