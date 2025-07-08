@@ -26,6 +26,7 @@ public enum MetadataFeatures {
     STREAM_FUNCTION_CALL("stream_function_call", "流式工具调用", ImmutableSet.of("/v1/chat/completions")),
     VISION("vision", "视觉", ImmutableSet.of("/v1/chat/completions")),
     JSON_FORMAT("json_format", "json格式", ImmutableSet.of("/v1/chat/completions")),
+    PROMPT_CACHE("prompt_cache", "提示词缓存", ImmutableSet.of("/v1/chat/completions")),
     HIGH_QUALITY("highQuality", "高质量生成", ImmutableSet.of("/v1/images/generations")),
     MULTIPLE_STYLES("multipleStyles", "多种风格", ImmutableSet.of("/v1/images/generations")),
     CUSTOM_SIZE("customSize", "自定义尺寸", ImmutableSet.of("/v1/images/generations")),
