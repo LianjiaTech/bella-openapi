@@ -16,6 +16,7 @@ public class CompletionModelFeatures implements IModelFeatures {
     private boolean json_format;
     private boolean json_schema;
     private boolean reason_content;
+    private boolean prompt_cache;
 
     @Override
     public Map<String, String> description() {
@@ -28,6 +29,7 @@ public class CompletionModelFeatures implements IModelFeatures {
         desc.put("json_format", "是否支持JSON格式的输出");
         desc.put("json_schema", "是否支持JSON Schema的输出");
         desc.put("reason_content", "是否支持思考过程的输出");
+        desc.put("prompt_cache", "是否支持提示词缓存");
         return desc;
     }
 }
