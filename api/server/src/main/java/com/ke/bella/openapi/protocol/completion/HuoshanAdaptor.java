@@ -38,7 +38,9 @@ public class HuoshanAdaptor implements CompletionAdaptor<OpenAIProperty> {
         if(request.getReasoning_effort() != null) {
             request.setThinking(ThinkingConfig.enable());
         } else {
-            request.setThinking(ThinkingConfig.disable());
+            if(request.getThinking() == null) {
+                request.setThinking(ThinkingConfig.disable());
+            }
         }
     }
 
