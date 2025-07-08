@@ -392,11 +392,20 @@ public class TransferToCompletionsUtils {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private static void setThinkingConfig(MessageRequest.MessageRequestBuilder builder, CompletionRequest request) {
         if (request.getReasoning_effort() != null) {
-            if ("medium".equals(request.getReasoning_effort()) || 
-                request.getReasoning_effort() instanceof MessageRequest.ThinkingConfigEnabled) {
-                builder.thinking(new MessageRequest.ThinkingConfigEnabled());
+            if(request.getReasoning_effort() instanceof Map)  {
+                Map<String, Object> map = (Map<String, Object>) request.getReasoning_effort();
+                if(map.containsKey("budget_tokens") && map.get("budget_tokens") instanceof Integer) {
+                    builder.thinking(new MessageRequest.ThinkingConfigEnabled((Integer) map.get("budget_tokens")));
+                }
+            } else if ("low".equals(request.getReasoning_effort())) {
+                builder.thinking(new MessageRequest.ThinkingConfigEnabled(4000));
+            } else if("medium".equals(request.getReasoning_effort())) {
+                builder.thinking(new MessageRequest.ThinkingConfigEnabled(2000));
+            } else if("high".equals(request.getReasoning_effort())) {
+                builder.thinking(new MessageRequest.ThinkingConfigEnabled(8000));
             }
         }
     }

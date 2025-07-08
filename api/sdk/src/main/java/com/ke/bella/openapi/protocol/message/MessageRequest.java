@@ -224,9 +224,6 @@ public class MessageRequest {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class ThinkingConfigEnabled extends ThinkingConfig {
         private Integer budget_tokens;
-        public ThinkingConfigEnabled() {
-            super("enabled");
-        }
         public ThinkingConfigEnabled(Integer budget_tokens) {
             super("enabled");
             this.budget_tokens = budget_tokens;
