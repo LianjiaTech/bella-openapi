@@ -69,7 +69,7 @@ services:
       MYSQL_USER: bella_user
       MYSQL_PASSWORD: 123456
     ports:
-      - "3306:3306"
+      - "127.0.0.1:3306:3306"
     volumes:
       - ./mysql/data:/var/lib/mysql
       - ./api/server/sql:/docker-entrypoint-initdb.d
@@ -85,7 +85,7 @@ services:
     container_name: bella-openapi-redis
     command: redis-server --requirepass 123456
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - ./redis/data:/data
     privileged: true
