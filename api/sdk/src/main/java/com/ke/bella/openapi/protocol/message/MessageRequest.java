@@ -222,6 +222,7 @@ public class MessageRequest {
     @Data
     @EqualsAndHashCode(callSuper = true)
     @JsonInclude(JsonInclude.Include.NON_NULL)
+    @NoArgsConstructor
     public static class ThinkingConfigEnabled extends ThinkingConfig {
         private Integer budget_tokens;
         public ThinkingConfigEnabled(Integer budget_tokens) {
