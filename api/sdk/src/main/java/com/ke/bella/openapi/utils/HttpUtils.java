@@ -59,8 +59,7 @@ public class HttpUtils {
         return new OkHttpClient.Builder()
                 .proxySelector(ProxyUtils.getProxySelector())
                 .connectionPool(connectionPool)
-                .dispatcher(dispatcher)
-                .pingInterval(30, TimeUnit.SECONDS);
+                .dispatcher(dispatcher);
     }
 
     public static Response httpRequest(Request request, int connectionTimeout, int readTimeout) throws IOException {
