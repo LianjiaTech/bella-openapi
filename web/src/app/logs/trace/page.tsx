@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { DateTimeRangePicker } from "@/components/ui/date-time-range-picker"
 import { ClientHeader } from "@/components/user/client-header"
 import { LogsSidebar } from '@/components/logs/sidebar'
@@ -20,12 +20,13 @@ interface ServiceConfig {
 
 
 export default function TraceLogsPage() {
-  const [startDate, setStartDate] = useState<Date>(() => {
+  const [currentStartDate, setCurrentStartDate] = useState<Date>(() => {
     const date = new Date()
     date.setHours(date.getHours() - 1)
     return date
   })
-  const [endDate, setEndDate] = useState<Date>(new Date())
+  const [currentEndDate, setCurrentEndDate] = useState<Date>(new Date())
+  const getTimeRangeRef = useRef<(() => { startDate: Date; endDate: Date }) | null>(null)
   const [bellaTraceId, setBellaTraceId] = useState('')
   const [akCode, setAkCode] = useState('')
   const [searchType, setSearchType] = useState<'bellaTraceId' | 'akCode'>('bellaTraceId')
@@ -79,10 +80,12 @@ export default function TraceLogsPage() {
     }
   }, [selectedServiceId]);
 
-  const handleTimeRangeChange = (start: Date, end: Date) => {
-    setStartDate(start)
-    setEndDate(end)
-  }
+  const handleTimeRangeChange = useCallback((getTimeRangeFunc: () => { startDate: Date; endDate: Date }, isRelative: boolean) => {
+    const { startDate, endDate } = getTimeRangeFunc();
+    setCurrentStartDate(startDate);
+    setCurrentEndDate(endDate);
+    getTimeRangeRef.current = getTimeRangeFunc;
+  }, [])
 
   const handleSearch = async () => {
     if (!bellaTraceId && !akCode) {
@@ -98,8 +101,8 @@ export default function TraceLogsPage() {
     setErrorMessage('');
     try {
       const searchParams = new URLSearchParams({
-        start: startDate.getTime().toString(),
-        end: endDate.getTime().toString(),
+        start: (getTimeRangeRef.current ? getTimeRangeRef.current().startDate : currentStartDate).getTime().toString(),
+        end: (getTimeRangeRef.current ? getTimeRangeRef.current().endDate : currentEndDate).getTime().toString(),
       });
 
       if (searchType === 'bellaTraceId') {
@@ -316,8 +319,6 @@ export default function TraceLogsPage() {
 
                 <div className="space-y-2">
                   <DateTimeRangePicker
-                    startDate={startDate}
-                    endDate={endDate}
                     onChange={handleTimeRangeChange}
                   />
                 </div>

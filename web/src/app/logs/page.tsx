@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { DateTimeRangePicker } from "@/components/ui/date-time-range-picker"
 import { ModelSelect } from "@/components/ui/model-select"
 import { EndpointSelect } from "@/components/ui/endpoint-select"
@@ -19,12 +19,13 @@ import { LogsSidebar } from '@/components/logs/sidebar'
 import { agent_url } from '@/config'
 
 const LogsPage = () => {
-  const [startDate, setStartDate] = useState<Date>(() => {
+  const [currentStartDate, setCurrentStartDate] = useState<Date>(() => {
     const date = new Date()
     date.setHours(date.getHours() - 1)
     return date
   })
-  const [endDate, setEndDate] = useState<Date>(new Date())
+  const [currentEndDate, setCurrentEndDate] = useState<Date>(new Date())
+  const getTimeRangeRef = useRef<(() => { startDate: Date; endDate: Date }) | null>(null)
   const [akCode, setAkCode] = useState('')
   const [httpCode, setHttpCode] = useState('')
   const [model, setModel] = useState('')
@@ -152,8 +153,8 @@ const LogsPage = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          startTime: startDate.getTime(),
-          endTime: endDate.getTime(),
+          startTime: getTimeRangeRef.current ? getTimeRangeRef.current().startDate.getTime() : currentStartDate.getTime(),
+          endTime: getTimeRangeRef.current ? getTimeRangeRef.current().endDate.getTime() : currentEndDate.getTime(),
           query: queryString,
           limit,
         }),
@@ -250,12 +251,12 @@ const LogsPage = () => {
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700">时间范围</label>
                   <DateTimeRangePicker
-                    startDate={startDate}
-                    endDate={endDate}
-                    onChange={(start, end) => {
-                      setStartDate(start)
-                      setEndDate(end)
-                    }}
+                    onChange={useCallback((getTimeRangeFunc, isRelative) => {
+                      const { startDate, endDate } = getTimeRangeFunc();
+                      setCurrentStartDate(startDate);
+                      setCurrentEndDate(endDate);
+                      getTimeRangeRef.current = getTimeRangeFunc;
+                    }, [])}
                   />
                 </div>
 
