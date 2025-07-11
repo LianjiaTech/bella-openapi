@@ -38,6 +38,7 @@ public class StreamMessagesCallback extends StreamCompletionCallback {
             firstPackageTime = DateTimeUtils.getCurrentMills();
         }
         if(processData.isNativeSend()) {
+            updateBuffer(msg.getStandardFormat() == null ? msg : msg.getStandardFormat());
             return;
         }
         msg.setCreated(DateTimeUtils.getCurrentSeconds());

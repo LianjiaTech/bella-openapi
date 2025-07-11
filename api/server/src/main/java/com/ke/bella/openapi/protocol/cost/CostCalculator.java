@@ -49,6 +49,7 @@ public class CostCalculator  {
     @Getter
     enum CostCalculators {
         COMPLETION("/v*/chat/completions", completion),
+        MESSAGES("/v*/messages", completion),
         EMBEDDING("/v*/embeddings", embedding),
         TTS("/v*/audio/speech", tts),
         ASR_FLASH("/v*/audio/asr/flash", asr_flash),
