@@ -30,7 +30,10 @@ public class CompletionLogHandler implements EndpointLogHandler {
         }
         long created = response == null || response.getCreated() <= 0 ? DateTimeUtils.getCurrentSeconds() : response.getCreated();
         long firstPackageTime = processData.getFirstPackageTime();
-        CompletionRequest request = (CompletionRequest) processData.getRequest();
+        CompletionRequest request = null;
+        if(processData.getRequest() instanceof CompletionRequest) {
+            request = (CompletionRequest) processData.getRequest();
+        }
         String encodingType = processData.getEncodingType();
         CompletionResponse.TokenUsage usage = countTokenUsage(request, processData.getResponse(), encodingType);
         processData.setUsage(usage);
@@ -77,7 +80,7 @@ public class CompletionLogHandler implements EndpointLogHandler {
         int requestToken = 0;
         List<String> textMessage = new LinkedList<>();
         List<Pair<String, Boolean>> imgMessage = new LinkedList<>();
-        if(request.getMessages() != null) {
+        if(request != null && request.getMessages() != null) {
             for (Message message : request.getMessages()) {
                 if(CollectionUtils.isNotEmpty(message.getTool_calls())) {
                     textMessage.addAll(getToolCallStr(message.getTool_calls()));
