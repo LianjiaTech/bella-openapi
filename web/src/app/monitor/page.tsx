@@ -1,9 +1,9 @@
 'use client';
 
-import {Suspense, useEffect, useState} from 'react';
+import {Suspense, useEffect, useState, useRef, useCallback} from 'react';
 import {MetricsLineChart} from '@/components/ui/metrics-line-chart';
 import {ClientHeader} from "@/components/user/client-header";
-import {DateTimeRangePicker} from "@/components/ui/date-time-range-picker";
+import {DateTimeRangePicker, DateTimeRangePickerRef} from "@/components/ui/date-time-range-picker";
 import {ModelSelect} from "@/components/ui/model-select";
 import {format, subDays, subMinutes} from 'date-fns';
 import {Sidebar} from '@/components/meta/sidebar';
@@ -105,8 +105,8 @@ function MonitorPageContent({ params }: { params: { model: string } }) {
   const [selectedModel, setSelectedModel] = useState<string>(params.model);
   const [selectedDisplayModel, setSelectedDisplayModel] = useState<string>(params.model);
   const [categoryTrees, setCategoryTrees] = useState<CategoryTree[]>([]);
-  const [startDate, setStartDate] = useState(subMinutes(new Date(), 30));
-  const [endDate, setEndDate] = useState(new Date());
+  const [currentStartDate, setCurrentStartDate] = useState(subMinutes(new Date(), 30));
+  const [currentEndDate, setCurrentEndDate] = useState(new Date());
   const [currentData, setCurrentData] = useState<MonitorData[]>([]);
   const [channels, setChannels] = useState<string[]>([]);
   const [selectedChannels, setSelectedChannels] = useState<string[]>([]);
@@ -115,6 +115,9 @@ function MonitorPageContent({ params }: { params: { model: string } }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isServiceUnavailable, setIsServiceUnavailable] = useState(false);
+  const [isRelativeTime, setIsRelativeTime] = useState<boolean>(false);
+  const getTimeRangeRef = useRef<(() => { startDate: Date; endDate: Date }) | null>(null);
+  const dateTimePickerRef = useRef<DateTimeRangePickerRef>(null);
 
   useEffect(() => {
     async function fetchCategoryTrees() {
@@ -157,11 +160,20 @@ function MonitorPageContent({ params }: { params: { model: string } }) {
       setError(null);
       setIsServiceUnavailable(false);
       try {
+        // 如果是相对时间，使用函数获取最新时间范围
+        let actualStartDate = currentStartDate;
+        let actualEndDate = currentEndDate;
+        if (isRelativeTime && getTimeRangeRef.current) {
+          const timeRange = getTimeRangeRef.current();
+          actualStartDate = timeRange.startDate;
+          actualEndDate = timeRange.endDate;
+        }
+
         const response = await fetch('/api/metrics?' + new URLSearchParams({
           model: selectedModel,
           endpoint: selectedEndpoint,
-          start: format(startDate, "yyyyMMddHHmm"),
-          end: format(endDate, "yyyyMMddHHmm")
+          start: format(actualStartDate, "yyyyMMddHHmm"),
+          end: format(actualEndDate, "yyyyMMddHHmm")
         }));
         const data = await response.json();
 
@@ -185,7 +197,7 @@ function MonitorPageContent({ params }: { params: { model: string } }) {
       }
     }
     fetchData();
-  }, [selectedModel, selectedEndpoint, startDate, endDate]);
+  }, [selectedModel, selectedEndpoint, currentStartDate, currentEndDate, isRelativeTime]);
 
   useEffect(() => {
     const uniqueChannels = getUniqueChannels(currentData || []);
@@ -194,7 +206,10 @@ function MonitorPageContent({ params }: { params: { model: string } }) {
     setChannelColors(getChannelColors(uniqueChannels || []));
   }, [currentData]);
 
-  const handleDateRangeChange = (newStartDate: Date, newEndDate: Date) => {
+  const handleDateRangeChange = useCallback((getTimeRangeFunc: () => { startDate: Date; endDate: Date }, isRelative: boolean) => {
+    // 获取当前时间范围
+    const { startDate: newStartDate, endDate: newEndDate } = getTimeRangeFunc();
+    
     // 确保结束时间不早于开始时间
     if (newEndDate < newStartDate) {
       return;
@@ -208,12 +223,13 @@ function MonitorPageContent({ params }: { params: { model: string } }) {
 
     // 确保结束时间不晚于当前时间
     const now = new Date();
+    let adjustedEndDate = newEndDate;
     if (newEndDate > now) {
-      newEndDate = now;
+      adjustedEndDate = now;
     }
 
     // 计算新的时间范围（分钟）
-    const minutesDiff = (newEndDate.getTime() - newStartDate.getTime()) / (1000 * 60);
+    const minutesDiff = (adjustedEndDate.getTime() - newStartDate.getTime()) / (1000 * 60);
 
     // 检查时间范围/时间间隔是否大于60
     if (minutesDiff / intervalMinutes > 60 && intervalMinutes < 720) {
@@ -222,9 +238,11 @@ function MonitorPageContent({ params }: { params: { model: string } }) {
       setIntervalMinutes(newIntervalMinutes);
     }
 
-    setStartDate(newStartDate);
-    setEndDate(newEndDate);
-  };
+    setCurrentStartDate(newStartDate);
+    setCurrentEndDate(adjustedEndDate);
+    setIsRelativeTime(isRelative);
+    getTimeRangeRef.current = getTimeRangeFunc;
+  }, [intervalMinutes]);
 
   // 时间间隔选项
   const intervalOptions = [
@@ -241,7 +259,7 @@ function MonitorPageContent({ params }: { params: { model: string } }) {
 
   // 处理时间间隔变化
   const handleIntervalChange = (newInterval: number) => {
-    const minutesDiff = (endDate.getTime() - startDate.getTime()) / (1000 * 60);
+    const minutesDiff = (currentEndDate.getTime() - currentStartDate.getTime()) / (1000 * 60);
 
     // 如果新的时间间隔会导致时间范围/时间间隔大于60，且不是12小时或1天，则不允许更改
     if (minutesDiff / newInterval > 60 && newInterval < 720) {
@@ -250,6 +268,22 @@ function MonitorPageContent({ params }: { params: { model: string } }) {
 
     setIntervalMinutes(newInterval);
   };
+
+  // 自动刷新逻辑 - 当使用相对时间时每30秒刷新一次
+  useEffect(() => {
+    if (!isRelativeTime || !getTimeRangeRef.current) return;
+
+    const intervalId = setInterval(() => {
+      // 触发数据重新获取（通过更新依赖项）
+      if (getTimeRangeRef.current) {
+        const timeRange = getTimeRangeRef.current();
+        setCurrentStartDate(timeRange.startDate);
+        setCurrentEndDate(timeRange.endDate);
+      }
+    }, 30000); // 30秒刷新一次
+
+    return () => clearInterval(intervalId);
+  }, [isRelativeTime]);
 
   const metrics: any = {
     completed: transformData(currentData || [], 'completed'),
@@ -323,8 +357,7 @@ function MonitorPageContent({ params }: { params: { model: string } }) {
                 <div className="flex items-center space-x-4">
                   <span className="text-sm font-medium text-gray-700">时间范围:</span>
                   <DateTimeRangePicker
-                    startDate={startDate}
-                    endDate={endDate}
+                    ref={dateTimePickerRef}
                     onChange={handleDateRangeChange}
                     maxDate={new Date()}
                     minDate={subDays(new Date(), 30)}
@@ -340,7 +373,7 @@ function MonitorPageContent({ params }: { params: { model: string } }) {
                   >
                     {intervalOptions
                       .filter(option => {
-                        const minutesDiff = (endDate.getTime() - startDate.getTime()) / (1000 * 60);
+                        const minutesDiff = (currentEndDate.getTime() - currentStartDate.getTime()) / (1000 * 60);
                         // 如果时间间隔小于12小时，只显示不会导致时间范围/时间间隔大于60的选项
                         // 12小时和1天的选项始终显示
                         return (minutesDiff / option.value <= 60) || option.value >= 720;
