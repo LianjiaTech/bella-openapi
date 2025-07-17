@@ -139,6 +139,10 @@ public class StreamMessageResponse {
         private int inputTokens;
         @JsonProperty("output_tokens")
         private int outputTokens;
+        @JsonProperty("cache_creation_input_tokens")
+        private Integer cacheCreationInputTokens; // Nullable
+        @JsonProperty("cache_read_input_tokens")
+        private Integer cacheReadInputTokens;
     }
 
     @Data
