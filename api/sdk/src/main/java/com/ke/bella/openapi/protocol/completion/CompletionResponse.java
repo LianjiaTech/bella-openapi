@@ -155,7 +155,9 @@ public class CompletionResponse extends OpenapiResponse {
         private int completion_tokens;
         private int prompt_tokens;
         private int total_tokens;
-        private TokenTokensDetail completion_tokens_details;
+        private int cache_creation_tokens;
+        private int cache_read_tokens;
+        private TokensDetail completion_tokens_details;
 
         public TokenUsage add(TokenUsage u) {
             this.completion_tokens += u.completion_tokens;
@@ -174,7 +176,7 @@ public class CompletionResponse extends OpenapiResponse {
     }
 
     @Data
-    public static class TokenTokensDetail {
+    public static class TokensDetail {
         private int reasoning_tokens;
     }
 
