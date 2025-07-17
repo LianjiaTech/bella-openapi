@@ -242,9 +242,9 @@ public class MessageResponse {
         @JsonProperty("cache_creation")
         private CacheCreation cacheCreation; // Nullable
         @JsonProperty("cache_creation_input_tokens")
-        private Integer cacheCreationInputTokens; // Nullable
+        private int cacheCreationInputTokens; // Nullable
         @JsonProperty("cache_read_input_tokens")
-        private Integer cacheReadInputTokens; // Nullable
+        private int cacheReadInputTokens; // Nullable
         @JsonProperty("server_tool_use")
         private ServerToolUsage serverToolUse; // Nullable
         @JsonProperty("service_tier")
@@ -258,9 +258,9 @@ public class MessageResponse {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class CacheCreation {
         @JsonProperty("ephemeral_1h_input_tokens")
-        private Integer ephemeral1hInputTokens; // Using Integer for potential nullability
+        private int ephemeral1hInputTokens; // Using Integer for potential nullability
         @JsonProperty("ephemeral_5m_input_tokens")
-        private Integer ephemeral5mInputTokens; // Using Integer for potential nullability
+        private int ephemeral5mInputTokens; // Using Integer for potential nullability
     }
 
     @Data
