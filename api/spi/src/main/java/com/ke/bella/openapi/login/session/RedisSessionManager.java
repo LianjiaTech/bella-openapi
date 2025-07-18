@@ -151,7 +151,10 @@ public class RedisSessionManager implements SessionManager, TicketManager { // C
         if(request != null && response != null) {
             Cookie cookie = new Cookie(sessionProperty.getCookieName(), id);
             cookie.setMaxAge(sessionProperty.getCookieMaxAge());
-            cookie.setSecure(request.isSecure());
+
+            String redirectUrl = request.getParameter("redirect");
+            cookie.setSecure(!(StringUtils.isNotBlank(redirectUrl) && redirectUrl.startsWith("http://")));
+
             if(StringUtils.isBlank(sessionProperty.getCookieContextPath())) {
                 cookie.setPath("/");
             } else {
