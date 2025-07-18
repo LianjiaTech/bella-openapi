@@ -13,6 +13,7 @@ import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.net.URL;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -165,6 +166,17 @@ public class RedisSessionManager implements SessionManager, TicketManager { // C
                 cookie.setDomain(sessionProperty.getCookieDomain());
             }
             cookie.setHttpOnly(true);
+            try {
+                if(StringUtils.isNotBlank(redirectUrl)) {
+                    String host = new URL(redirectUrl).getHost();
+                    if("localhost".equals(host)) {
+                        cookie.setDomain(host);
+                    }
+                }
+            } catch (Exception e) {
+                // ignore domain setting error
+            }
+
             response.addCookie(cookie);
         }
     }
@@ -172,4 +184,5 @@ public class RedisSessionManager implements SessionManager, TicketManager { // C
     private String getTicketKey(String ticket) {
         return ticketPrefix + ticket;
     }
+
 }
