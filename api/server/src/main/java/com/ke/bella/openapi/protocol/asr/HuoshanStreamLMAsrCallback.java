@@ -7,18 +7,22 @@ import com.ke.bella.openapi.protocol.Callbacks;
 import com.ke.bella.openapi.protocol.log.EndpointLogger;
 import com.ke.bella.openapi.utils.DateTimeUtils;
 import com.ke.bella.openapi.utils.JacksonUtils;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.Response;
 import okhttp3.WebSocket;
 import okhttp3.WebSocketListener;
 import okio.ByteString;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -108,6 +112,7 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
         private Integer vad_segment_duration;
         private Integer end_window_size;
         private Integer force_to_speech_time;
+        private Corpus corpus;
     }
 
     @Data
@@ -118,6 +123,13 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
         private Integer bits;
         private Integer channel;
     }
+    
+    @Data
+    private static class Corpus {
+        private String boosting_table_id;
+        private String context;
+    }
+    
 
     @Override
     public void onOpen(WebSocket webSocket, Response response) {
@@ -252,6 +264,17 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
         modelRequest.setEnable_punc(true); // 启用标点
         modelRequest.setEnable_itn(false); // 是否启用ITN
         modelRequest.setEnable_ddc(false); // 是否启用顺滑
+        
+        // 设置corpus和热词
+        Corpus corpus = new Corpus();
+        if (StringUtils.isNotBlank(request.getHotWords())) {
+            corpus.setContext(buildHotWords(request.getHotWords()));
+        }
+        if (StringUtils.isNotBlank(request.getHotWordsTableId())) {
+            corpus.setBoosting_table_id(request.getHotWordsTableId());
+        }
+        modelRequest.setCorpus(corpus);
+        
         clientRequest.setRequest(modelRequest);
 
         // 设置音频信息
@@ -584,5 +607,41 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
             }
         }
         return out.toByteArray();
+    }
+    
+    /**
+     * 将逗号分隔的热词字符串转换为JSON格式
+     * 输入: "热词1号,热词2号"
+     * 输出: {"hotwords":[{"word":"热词1号"}, {"word":"热词2号"}]}
+     */
+    private String buildHotWords(String hotWords) {
+        if (StringUtils.isBlank(hotWords)) {
+            return null;
+        }
+        
+        // 使用Stream API简化处理
+        List<HotWord> hotWordList = Arrays.stream(hotWords.split(","))
+                .map(String::trim)
+                .filter(StringUtils::isNotBlank)
+                .map(HotWord::new)
+                .collect(Collectors.toList());
+        
+        if (hotWordList.isEmpty()) {
+            return null;
+        }
+        
+        return JacksonUtils.serialize(new HotWordsWrapper(hotWordList));
+    }
+    
+    @Data
+    @AllArgsConstructor
+    private static class HotWordsWrapper {
+        private final List<HotWord> hotwords;
+    }
+    
+    @Data
+    @AllArgsConstructor
+    private static class HotWord {
+        private final String word;
     }
 }
