@@ -16,6 +16,8 @@ public class HuoshanRealTimeAsrRequest {
     private int chunkSize;
     private int intervalMs;
     private String resultType; //full single
+    private String hotWords; // 热词字符串
+    private String hotWordsTableId; // 热词表id
 
     public HuoshanRealTimeAsrRequest(AsrRequest request, HuoshanProperty property) {
         this.async = false;
@@ -29,6 +31,8 @@ public class HuoshanRealTimeAsrRequest {
         this.chunkSize = property.getChunkSize();
         this.intervalMs = property.getIntervalMs();
         this.resultType = "full";
+        this.hotWords = request.getHotWords();
+        this.hotWordsTableId = request.getHotWordsTableId();
     }
 
     public HuoshanRealTimeAsrRequest(RealTimeMessage request, HuoshanProperty property) {
@@ -42,5 +46,7 @@ public class HuoshanRealTimeAsrRequest {
         this.chunkSize = property.getChunkSize();
         this.intervalMs = property.getIntervalMs();
         this.resultType = "single";
+        this.hotWords = null; // 实时消息暂不支持热词
+        this.hotWordsTableId = null;
     }
 }
