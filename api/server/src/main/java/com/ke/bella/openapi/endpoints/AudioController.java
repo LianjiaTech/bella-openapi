@@ -51,6 +51,8 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -232,12 +234,23 @@ public class AudioController {
             @RequestHeader(value = "hot_words_table_id", defaultValue = "") String hotWordsTableId,
             InputStream inputStream) throws IOException {
         String endpoint = EndpointContext.getRequest().getRequestURI();
+        // 手动解码hot_words中的中文字符
+        String decodedHotWords = hotWords;
+        if (StringUtils.isNotBlank(hotWords)) {
+            try {
+                decodedHotWords = URLDecoder.decode(hotWords, StandardCharsets.UTF_8.name());
+            } catch (Exception e) {
+                // 解码失败时使用原始字符串
+                decodedHotWords = hotWords;
+            }
+        }
+        
         AsrRequest request = AsrRequest.builder()
                 .model(model)
                 .format(format)
                 .maxSentenceSilence(maxSentenceSilence)
                 .sampleRate(sampleRate)
-                .hotWords(hotWords)
+                .hotWords(decodedHotWords)
                 .hotWordsTableId(hotWordsTableId)
                 .content(StreamUtils.copyToByteArray(inputStream))
                 .build();
