@@ -18,4 +18,6 @@ public class AsrRequest {
     String format;
     Integer maxSentenceSilence;
     Integer sampleRate;
+    String hotWords;
+    String hotWordsTableId;
 }

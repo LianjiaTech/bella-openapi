@@ -227,13 +227,18 @@ public class AudioController {
     public FlashAsrResponse flashAsr(@RequestHeader(value = "format", defaultValue = "wav") String format,
             @RequestHeader(value = "sample_rate",defaultValue = "16000") int sampleRate,
             @RequestHeader(value = "max_sentence_silence", defaultValue = "3000") int maxSentenceSilence,
-            @RequestHeader(value = "model", required = false) String model, InputStream inputStream) throws IOException {
+            @RequestHeader(value = "model", required = false) String model,
+            @RequestHeader(value = "hot_words", defaultValue = "") String hotWords,
+            @RequestHeader(value = "hot_words_table_id", defaultValue = "") String hotWordsTableId,
+            InputStream inputStream) throws IOException {
         String endpoint = EndpointContext.getRequest().getRequestURI();
         AsrRequest request = AsrRequest.builder()
                 .model(model)
                 .format(format)
                 .maxSentenceSilence(maxSentenceSilence)
                 .sampleRate(sampleRate)
+                .hotWords(hotWords)
+                .hotWordsTableId(hotWordsTableId)
                 .content(StreamUtils.copyToByteArray(inputStream))
                 .build();
         EndpointContext.setEndpointData(endpoint, model, request);
