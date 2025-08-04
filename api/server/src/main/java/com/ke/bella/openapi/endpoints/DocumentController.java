@@ -6,6 +6,7 @@ import com.ke.bella.openapi.annotations.EndpointAPI;
 import com.ke.bella.openapi.protocol.AdaptorManager;
 import com.ke.bella.openapi.protocol.ChannelRouter;
 import com.ke.bella.openapi.protocol.document.parse.DocParseAdaptor;
+import com.ke.bella.openapi.protocol.document.parse.DocParseCallbackService;
 import com.ke.bella.openapi.protocol.document.parse.DocParseProperty;
 import com.ke.bella.openapi.protocol.document.parse.DocParseRequest;
 import com.ke.bella.openapi.protocol.document.parse.DocParseResponse;
@@ -37,10 +38,12 @@ public class DocumentController {
     private AdaptorManager adaptorManager;
     @Autowired
     private LimiterManager limiterManager;
+    @Autowired
+    private DocParseCallbackService docParseCallbackService;
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @PostMapping("/parse")
-    public DocParseTaskInfo parse(@RequestBody DocParseRequest request) {
+    public Object parse(@RequestBody DocParseRequest request) {
         String endpoint = EndpointContext.getRequest().getRequestURI();
         String model = request.getModel();
         EndpointContext.setEndpointData(endpoint, model, request);
@@ -55,7 +58,7 @@ public class DocumentController {
         String channelInfo = channel.getChannelInfo();
         DocParseAdaptor adaptor = adaptorManager.getProtocolAdaptor(endpoint, protocol, DocParseAdaptor.class);
         DocParseProperty property = (DocParseProperty) JacksonUtils.deserialize(channelInfo, adaptor.getPropertyClass());
-        return adaptor.parse(request, url, channel.getChannelCode(), property);
+        return adaptor.parse(request, url, channel.getChannelCode(), property, docParseCallbackService);
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })

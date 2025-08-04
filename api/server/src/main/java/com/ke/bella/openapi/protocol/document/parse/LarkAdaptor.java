@@ -42,7 +42,7 @@ public class LarkAdaptor implements DocParseAdaptor<LarkProperty> {
     private LarkFileCleanupService cleanupService;
 
     @Override
-    public DocParseTaskInfo parse(DocParseRequest request, String url, String channelCode, LarkProperty property) {
+    public DocParseTaskInfo doParse(DocParseRequest request, String url, String channelCode, LarkProperty property) {
         try {
             SourceFile sourceFile = request.getFile();
             String fileType = FileUtils.getFileExtension(sourceFile.getName());
@@ -76,6 +76,13 @@ public class LarkAdaptor implements DocParseAdaptor<LarkProperty> {
             response.setResult(result);
         }
         return response;
+    }
+
+    @Override
+    public boolean isCompletion(String taskId, String url, LarkProperty property) {
+        Client client = LarkClientProvider.client(property.getClientId(), property.getClientSecret());
+        DocParseResponse response = queryTaskResult(client, taskId);
+        return "success".equals(response.getStatus()) || "failed".equals(response.getStatus());
     }
 
     @Override
