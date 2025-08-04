@@ -243,7 +243,18 @@
                     <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-starter-logging</artifactId>
                 </exclusion>
+                <!-- 排除不兼容的Redisson Spring Data适配器 -->
+                <exclusion>
+                    <groupId>org.redisson</groupId>
+                    <artifactId>redisson-spring-data-27</artifactId>
+                </exclusion>
             </exclusions>
+        </dependency>
+        <!-- 显式添加兼容的Redisson Spring Data适配器 -->
+        <dependency>
+            <groupId>org.redisson</groupId>
+            <artifactId>redisson-spring-data-23</artifactId>
+            <version>3.17.7</version>
         </dependency>
         <dependency>
             <groupId>com.lmax</groupId>
@@ -270,11 +281,6 @@
             <groupId>org.jasig.cas.client</groupId>
             <artifactId>cas-client-core</artifactId>
             <version>3.6.4</version>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.data</groupId>
-            <artifactId>spring-data-redis</artifactId>
-            <version>2.2.0.RELEASE</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
