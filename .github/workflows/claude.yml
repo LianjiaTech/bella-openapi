@@ -58,6 +58,6 @@ jobs:
           claude_env: |
             ANTHROPIC_AUTH_TOKEN: ${{ secrets.ANTHROPIC_AUTH_TOKEN }}
             ANTHROPIC_SMALL_FAST_MODEL: claude-3-5-haiku
-            CLAUDE_CODE_MAX_OUTPUT_TOKENS: 64000
+            CLAUDE_CODE_MAX_OUTPUT_TOKENS: 32000
         env:
           ANTHROPIC_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
