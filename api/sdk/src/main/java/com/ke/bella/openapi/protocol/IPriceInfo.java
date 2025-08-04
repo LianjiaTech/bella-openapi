@@ -6,6 +6,7 @@ import com.ke.bella.openapi.protocol.asr.transcription.TranscriptionsAsrPriceInf
 import com.ke.bella.openapi.protocol.realtime.RealTimePriceInfo;
 import com.ke.bella.openapi.protocol.completion.CompletionPriceInfo;
 import com.ke.bella.openapi.protocol.embedding.EmbeddingPriceInfo;
+import com.ke.bella.openapi.protocol.speaker.SpeakerEmbeddingPriceInfo;
 import com.ke.bella.openapi.protocol.tts.TtsPriceInfo;
 import com.ke.bella.openapi.protocol.images.ImagesPriceInfo;
 import lombok.AllArgsConstructor;
@@ -24,6 +25,7 @@ public interface IPriceInfo extends IDescription {
         REALTIME_ASR("/v1/audio/asr/stream", RealTimePriceInfo.class),
         REALTIME("/v1/audio/realtime", RealTimePriceInfo.class),
         TRANSCRIPTION_ASR("/v1/audio/transcriptions", TranscriptionsAsrPriceInfo.class),
+        SPEAKER_EMBEDDING("/v1/audio/speaker/embedding", SpeakerEmbeddingPriceInfo.class),
         IMAGES("/v1/images/generations", ImagesPriceInfo.class),
         ;
 

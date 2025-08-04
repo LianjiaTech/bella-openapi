@@ -22,6 +22,10 @@ import com.ke.bella.openapi.protocol.limiter.LimiterManager;
 import com.ke.bella.openapi.protocol.log.EndpointLogger;
 import com.ke.bella.openapi.protocol.realtime.RealTimeAdaptor;
 import com.ke.bella.openapi.protocol.realtime.RealTimeHandler;
+import com.ke.bella.openapi.protocol.speaker.SpeakerEmbeddingAdaptor;
+import com.ke.bella.openapi.protocol.speaker.SpeakerEmbeddingProperty;
+import com.ke.bella.openapi.protocol.speaker.SpeakerEmbeddingRequest;
+import com.ke.bella.openapi.protocol.speaker.SpeakerEmbeddingResponse;
 import com.ke.bella.openapi.protocol.tts.TtsAdaptor;
 import com.ke.bella.openapi.protocol.tts.TtsProperty;
 import com.ke.bella.openapi.protocol.tts.TtsRequest;
@@ -267,6 +271,27 @@ public class AudioController {
         FlashAsrAdaptor adaptor = adaptorManager.getProtocolAdaptor(endpoint, protocol, FlashAsrAdaptor.class);
         AsrProperty property = (AsrProperty) JacksonUtils.deserialize(channelInfo, adaptor.getPropertyClass());
         return adaptor.asr(request, url, property, processData);
+    }
+
+    @PostMapping("/speaker/embedding")
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public SpeakerEmbeddingResponse speakerEmbedding(@RequestBody SpeakerEmbeddingRequest request) {
+        String endpoint = EndpointContext.getRequest().getRequestURI();
+        String model = request.getModel();
+        EndpointContext.setEndpointData(endpoint, model, request);
+        EndpointProcessData processData = EndpointContext.getProcessData();
+        ChannelDB channel = router.route(endpoint, model, EndpointContext.getApikey(), processData.isMock());
+        EndpointContext.setEndpointData(channel);
+        if(!EndpointContext.getProcessData().isPrivate()) {
+            limiterManager.incrementConcurrentCount(EndpointContext.getProcessData().getAkCode(), model);
+        }
+        String protocol = processData.getProtocol();
+        String url = processData.getForwardUrl();
+        String channelInfo = channel.getChannelInfo();
+        SpeakerEmbeddingAdaptor adaptor = adaptorManager.getProtocolAdaptor(endpoint, protocol, SpeakerEmbeddingAdaptor.class);
+        SpeakerEmbeddingProperty property = (SpeakerEmbeddingProperty) JacksonUtils.deserialize(channelInfo, adaptor.getPropertyClass());
+        EndpointContext.setEncodingType(property.getEncodingType());
+        return adaptor.speakerEmbedding(request, url, property);
     }
 
 }
