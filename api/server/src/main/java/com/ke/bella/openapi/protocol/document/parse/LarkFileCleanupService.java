@@ -1,34 +1,29 @@
 package com.ke.bella.openapi.protocol.document.parse;
 
-import com.ke.bella.openapi.utils.JacksonUtils;
+import com.ke.bella.openapi.task.CallbackTaskService;
+import com.ke.bella.openapi.task.TaskCompletionCallback;
+import com.ke.bella.openapi.task.TaskData;
 import com.lark.oapi.Client;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
 import java.util.Objects;
-import org.redisson.api.RScoredSortedSet;
-import org.redisson.api.RedissonClient;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Service;
 
 import static com.ke.bella.openapi.protocol.document.parse.LarkClientUtils.deleteFile;
 import static com.ke.bella.openapi.protocol.document.parse.LarkClientUtils.queryTaskResult;
 
 /**
  * Lark文件清理服务
- * 简单的定时任务，定期检查任务状态并清理已完成任务的文件
+ * 基于CallbackTaskService实现的定时任务，定期检查任务状态并清理已完成任务的文件
  */
 @Slf4j
 @Service
-public class LarkFileCleanupService {
+public class LarkFileCleanupService extends CallbackTaskService<LarkFileCleanupService.LarkCleanupTaskData> {
 
     private static final String CLEANUP_ZSET_KEY = "lark:file:cleanup:zset";
-    
-    @Autowired
-    private RedissonClient redissonClient;
 
     /**
      * 添加清理任务
@@ -37,112 +32,87 @@ public class LarkFileCleanupService {
      * @param property Lark配置属性
      */
     public void addCleanupTask(String fileToken, String ticket, LarkProperty property) {
-        long executeTime = System.currentTimeMillis() + 30000;
-        CleanupTask task = new CleanupTask(fileToken, ticket, "file", property.getClientId(), property.getClientSecret(), executeTime);
-        String taskJson = JacksonUtils.serialize(task);
-
-        RScoredSortedSet<String> zset = redissonClient.getScoredSortedSet(CLEANUP_ZSET_KEY);
-        zset.add(executeTime, taskJson);
-
+        LarkCleanupTaskData task = new LarkCleanupTaskData(fileToken, ticket, "file", 
+            property.getClientId(), property.getClientSecret(), 0, 0);
+        addTask(task);
         LOGGER.info("Added cleanup task for file: {}, ticket: {}", fileToken, ticket);
     }
 
-    /**
-     * 定时清理任务，每分钟执行一次
-     */
-    @Scheduled(fixedRate = 10000) // 每10s执行一次
-    public void cleanupCompletedTasks() {
-        RScoredSortedSet<String> zset = redissonClient.getScoredSortedSet(CLEANUP_ZSET_KEY);
-        
-        long currentTime = System.currentTimeMillis();
-        
-        while (!zset.isEmpty()) {
-            // 原子操作取出并删除最小score的任务
-            String taskJson = zset.pollFirst();
-            if (taskJson == null) {
-                break; // 队列为空
-            }
-            
-            try {
-                CleanupTask task = JacksonUtils.deserialize(taskJson, CleanupTask.class);
+    @Override
+    protected String getZSetKey() {
+        return CLEANUP_ZSET_KEY;
+    }
 
-                if(task == null) {
-                    continue;
-                }
+    @Override
+    protected Class<LarkCleanupTaskData> getTaskDataClass() {
+        return LarkCleanupTaskData.class;
+    }
 
-                // 检查任务执行时间是否到了
-                if (task.getTimestamp() > currentTime) {
-                    // 任务还没到执行时间，重新放回去并退出
-                    zset.add(task.getTimestamp(), taskJson);
-                    break;
-                }
-                
-                // 使用ticket查询任务状态
-                Client client = LarkClientProvider.client(task.getClientId(), task.getClientSecret());
-                DocParseResponse response = queryTaskResult(client, task.getTicket());
-                
-                if ("success".equals(response.getStatus()) || "failed".equals(response.getStatus())) {
-                    // 任务已完成（成功或失败），删除文件
-                    boolean deleted = deleteFile(client, task.getFileToken(), task.getFileType());
-                    if (deleted) {
-                        // 任务已成功处理
-                        LOGGER.info("Successfully cleaned up file for completed task - fileToken: {}, ticket: {}",
-                                task.getFileToken(), task.getTicket());
-                    } else {
-                        // 删除文件失败，10s后重试
-                        task.setTimestamp(currentTime + 10000);
-                        String newTaskJson = JacksonUtils.serialize(task);
-                        zset.add(task.getTimestamp(), newTaskJson);
-                        LOGGER.warn("Failed to delete file for completed task, will retry in 10s - fileToken: {}, ticket: {}",
-                                task.getFileToken(), task.getTicket());
-                    }
-                } else {
-                    // 任务仍在处理中，10s后重新检查
-                    task.setTimestamp(currentTime + 10000);
-                    String newTaskJson = JacksonUtils.serialize(task);
-                    zset.add(task.getTimestamp(), newTaskJson);
-                    LOGGER.debug("Task still processing, will retry in 10s - fileToken: {}, ticket: {}",
-                            task.getFileToken(), task.getTicket());
-                }
-                
-            } catch (Exception e) {
-                // 查询失败，10s后重试
-                CleanupTask task = JacksonUtils.deserialize(taskJson, CleanupTask.class);
-                if(task != null) {
-                    task.setTimestamp(currentTime + 10000);
-                    String newTaskJson = JacksonUtils.serialize(task);
-                    zset.add(task.getTimestamp(), newTaskJson);
-                }
-                LOGGER.error("Failed to query task status for cleanup, will retry in 10s - error: {}", e.getMessage());
-            }
-        }
+    @Override
+    protected TaskCompletionCallback<LarkCleanupTaskData> getTaskCompletionCallback() {
+        return new LarkFileCleanupCallback();
     }
 
     /**
-     * 清理任务数据结构
+     * Lark清理任务数据结构
      */
     @Data
     @AllArgsConstructor
     @NoArgsConstructor
-    private static class CleanupTask {
+    public static class LarkCleanupTaskData implements TaskData {
         private String fileToken;
         private String ticket;
         private String fileType;
         private String clientId;
         private String clientSecret;
         private long timestamp;
+        private int remainingRetries;
+        
+        @Override
+        public String getTaskId() {
+            return ticket;
+        }
         
         @Override
         public boolean equals(Object obj) {
             if (this == obj) return true;
             if (obj == null || getClass() != obj.getClass()) return false;
-            CleanupTask task = (CleanupTask) obj;
+            LarkCleanupTaskData task = (LarkCleanupTaskData) obj;
             return Objects.equals(ticket, task.ticket);
         }
         
         @Override
         public int hashCode() {
             return ticket != null ? ticket.hashCode() : 0;
+        }
+    }
+
+    /**
+     * Lark文件清理回调处理器
+     */
+    private static class LarkFileCleanupCallback implements TaskCompletionCallback<LarkCleanupTaskData> {
+        
+        private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(LarkFileCleanupCallback.class);
+        
+        @Override
+        public boolean isTaskCompleted(LarkCleanupTaskData taskData) {
+            Client client = LarkClientProvider.client(taskData.getClientId(), taskData.getClientSecret());
+            DocParseResponse response = queryTaskResult(client, taskData.getTicket());
+            return "success".equals(response.getStatus()) || "failed".equals(response.getStatus());
+        }
+        
+        @Override
+        public boolean onTaskCompleted(LarkCleanupTaskData taskData) {
+            Client client = LarkClientProvider.client(taskData.getClientId(), taskData.getClientSecret());
+            boolean deleted = deleteFile(client, taskData.getFileToken(), taskData.getFileType());
+            if (deleted) {
+                logger.info("Successfully cleaned up file for completed task - fileToken: {}, ticket: {}",
+                        taskData.getFileToken(), taskData.getTicket());
+            } else {
+                logger.warn("Failed to delete file for completed task - fileToken: {}, ticket: {}",
+                        taskData.getFileToken(), taskData.getTicket());
+            }
+            return deleted;
         }
     }
 }

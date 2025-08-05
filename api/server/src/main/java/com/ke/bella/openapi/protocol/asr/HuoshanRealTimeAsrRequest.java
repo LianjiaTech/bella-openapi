@@ -46,7 +46,7 @@ public class HuoshanRealTimeAsrRequest {
         this.chunkSize = property.getChunkSize();
         this.intervalMs = property.getIntervalMs();
         this.resultType = "single";
-        this.hotWords = null; // 实时消息暂不支持热词
-        this.hotWordsTableId = null;
+        this.hotWords = request.getPayload().getHotWords();
+        this.hotWordsTableId = request.getPayload().getHotWordsTableId();
     }
 }

@@ -9,6 +9,8 @@ import com.ke.bella.openapi.protocol.embedding.EmbeddingResponse;
 import com.ke.bella.openapi.protocol.images.ImagesPriceInfo;
 import com.ke.bella.openapi.protocol.images.ImagesResponse;
 import com.ke.bella.openapi.protocol.realtime.RealTimePriceInfo;
+import com.ke.bella.openapi.protocol.speaker.SpeakerEmbeddingLogHandler;
+import com.ke.bella.openapi.protocol.speaker.SpeakerEmbeddingPriceInfo;
 import com.ke.bella.openapi.protocol.tts.TtsPriceInfo;
 import com.ke.bella.openapi.utils.JacksonUtils;
 import com.ke.bella.openapi.utils.MatchUtils;
@@ -58,7 +60,8 @@ public class CostCalculator  {
         ASR_TRANSCRIPTIONS("/v*/audio/transcriptions", asr_transcriptions),
         IMAGES("/v*/images/generations", images),
         IMAGES_EDITS("/v*/images/edits", images),
-        IMAGES_VARIATIONS("/v*/images/variations", images)
+        IMAGES_VARIATIONS("/v*/images/variations", images),
+        SPEAKER_EMBEDDING("/v*/audio/speaker/embedding", speakerEmbedding)
         ;
         final String endpoint;
         final EndpointCostCalculator calculator;
@@ -197,6 +200,45 @@ public class CostCalculator  {
             return price != null && CollectionUtils.isNotEmpty(price.getDetails())
                     && price.getDetails().stream().allMatch(d -> StringUtils.isNotBlank(d.getSize()) &&
                     d.getHdPricePerImage() != null && d.getMdPricePerImage() != null && d.getLdPricePerImage() != null);
+        }
+    };
+
+    static EndpointCostCalculator speakerEmbedding = new EndpointCostCalculator() {
+        @Override
+        public BigDecimal calculate(String priceInfo, Object usage) {
+            SpeakerEmbeddingPriceInfo priceConfig = JacksonUtils.deserialize(priceInfo, SpeakerEmbeddingPriceInfo.class);
+            if (priceConfig.getPrice() == null) {
+                return BigDecimal.ZERO;
+            }
+            
+            // usage可能是Double类型(duration秒数)或者SpeakerEmbeddingUsage类型
+            double durationSeconds = 0.0;
+            if (usage instanceof Double) {
+                durationSeconds = (Double) usage;
+            } else if (usage instanceof SpeakerEmbeddingLogHandler.SpeakerEmbeddingUsage) {
+                SpeakerEmbeddingLogHandler.SpeakerEmbeddingUsage speakerUsage = 
+                    (SpeakerEmbeddingLogHandler.SpeakerEmbeddingUsage) usage;
+                durationSeconds = speakerUsage.getDurationSeconds();
+            } else if (usage != null) {
+                // 尝试解析为数字
+                try {
+                    durationSeconds = Double.valueOf(usage.toString());
+                } catch (NumberFormatException e) {
+                    return BigDecimal.ZERO;
+                }
+            }
+            
+            // 基于时长计算成本：price（元/小时） × duration（小时）
+            // 将秒转换为小时：durationSeconds / 3600
+            double durationHours = durationSeconds / 3600.0;
+            return priceConfig.getPrice().multiply(BigDecimal.valueOf(durationHours));
+        }
+
+        @Override
+        public boolean checkPriceInfo(String priceInfo) {
+            SpeakerEmbeddingPriceInfo priceConfig = JacksonUtils.deserialize(priceInfo, SpeakerEmbeddingPriceInfo.class);
+            return priceConfig != null && priceConfig.getPrice() != null && 
+                   priceConfig.getPrice().compareTo(BigDecimal.ZERO) >= 0;
         }
     };
 
