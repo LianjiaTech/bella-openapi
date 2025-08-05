@@ -269,6 +269,20 @@ public class RealTimeMessage extends OpenapiResponse {
          * 变量配置
          */
         private Map<String, Object> variables;
+        
+        /**
+         * 热词字符串
+         * 用于语音识别热词配置
+         */
+        @JsonProperty("hot_words")
+        private String hotWords;
+        
+        /**
+         * 热词表ID
+         * 用于语音识别热词表配置
+         */
+        @JsonProperty("hot_words_table_id")
+        private String hotWordsTableId;
     }
     
     /**
