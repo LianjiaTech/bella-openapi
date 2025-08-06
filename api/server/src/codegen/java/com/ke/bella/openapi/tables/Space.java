@@ -85,19 +85,19 @@ public class Space extends TableImpl<SpaceRecord> {
     public final TableField<SpaceRecord, LocalDateTime> MTIME = createField(DSL.name("mtime"), SQLDataType.LOCALDATETIME(0).nullable(false).defaultValue(DSL.field("CURRENT_TIMESTAMP", SQLDataType.LOCALDATETIME)), this, "最后一次更新时间");
 
     /**
-     * The column <code>space.owner_uid</code>. 空间拥有人id
+     * The column <code>space.owner_uid</code>. 空间拥有人系统号
      */
-    public final TableField<SpaceRecord, String> OWNER_UID = createField(DSL.name("owner_uid"), SQLDataType.VARCHAR(64).nullable(false).defaultValue(DSL.inline("", SQLDataType.VARCHAR)), this, "空间拥有人id");
+    public final TableField<SpaceRecord, String> OWNER_UID = createField(DSL.name("owner_uid"), SQLDataType.VARCHAR(64).nullable(false).defaultValue(DSL.inline("", SQLDataType.VARCHAR)), this, "空间拥有人系统号");
 
     /**
-     * The column <code>space.cuid</code>. 空间创建人id
+     * The column <code>space.cuid</code>. 空间创建人系统号
      */
-    public final TableField<SpaceRecord, Long> CUID = createField(DSL.name("cuid"), SQLDataType.BIGINT.nullable(false).defaultValue(DSL.inline("0", SQLDataType.BIGINT)), this, "空间创建人id");
+    public final TableField<SpaceRecord, Long> CUID = createField(DSL.name("cuid"), SQLDataType.BIGINT.nullable(false).defaultValue(DSL.inline("0", SQLDataType.BIGINT)), this, "空间创建人系统号");
 
     /**
-     * The column <code>space.muid</code>. 空间最后一次更新人id
+     * The column <code>space.muid</code>. 空间最后一次更新人系统号
      */
-    public final TableField<SpaceRecord, Long> MUID = createField(DSL.name("muid"), SQLDataType.BIGINT.nullable(false).defaultValue(DSL.inline("0", SQLDataType.BIGINT)), this, "空间最后一次更新人id");
+    public final TableField<SpaceRecord, Long> MUID = createField(DSL.name("muid"), SQLDataType.BIGINT.nullable(false).defaultValue(DSL.inline("0", SQLDataType.BIGINT)), this, "空间最后一次更新人系统号");
 
     private Space(Name alias, Table<SpaceRecord> aliased) {
         this(alias, aliased, null);

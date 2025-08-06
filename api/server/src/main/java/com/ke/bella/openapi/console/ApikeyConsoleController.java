@@ -1,8 +1,12 @@
 package com.ke.bella.openapi.console;
 
+import com.ke.bella.openapi.BellaContext;
+import com.ke.bella.openapi.Operator;
 import com.ke.bella.openapi.annotations.BellaAPI;
 import com.ke.bella.openapi.apikey.ApikeyInfo;
 import com.ke.bella.openapi.apikey.ApikeyOps;
+import com.ke.bella.openapi.apikey.ApikeyTransferLog;
+import com.ke.bella.openapi.apikey.TransferApikeyOwnerOp;
 import com.ke.bella.openapi.db.repo.Page;
 import com.ke.bella.openapi.service.ApikeyService;
 import com.ke.bella.openapi.tables.pojos.ApikeyDB;
@@ -12,6 +16,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -135,5 +140,32 @@ public class ApikeyConsoleController {
     @GetMapping("/page")
     public Page<ApikeyDB> pageApikey(ApikeyOps.ApikeyCondition condition) {
         return apikeyService.pageApikey(condition);
+    }
+
+
+    @PostMapping("/owner/transfer")
+    public Boolean transferApikeyOwner(@RequestBody @Validated TransferApikeyOwnerOp op) {
+        // 基本参数验证
+        Assert.hasText(op.getAkCode(), "API Key编码不能为空");
+
+        // 检查是否提供了足够的目标用户信息
+        boolean hasUserId = op.getTargetUserId() != null && op.getTargetUserId() > 0;
+        boolean hasSourceAndSourceId = StringUtils.isNotEmpty(op.getTargetUserSource()) && StringUtils.isNotEmpty(op.getTargetUserSourceId());
+        boolean hasSourceAndEmail = StringUtils.isNotEmpty(op.getTargetUserSource()) && StringUtils.isNotEmpty(op.getTargetUserEmail());
+
+        Assert.isTrue(hasUserId || hasSourceAndSourceId || hasSourceAndEmail,
+                "必须指定目标用户信息：可使用用户ID、source+sourceId或source+email");
+
+        // 获取当前操作者信息
+        Operator currentOperator = BellaContext.getOperator();
+        Assert.notNull(currentOperator, "无法获取当前操作者信息");
+
+        return apikeyService.transferApikeyOwner(op, currentOperator);
+    }
+
+    @GetMapping("/transfer/history")
+    public List<ApikeyTransferLog> getTransferHistory(@RequestParam String akCode) {
+        Assert.hasText(akCode, "API Key编码不能为空");
+        return apikeyService.getTransferHistory(akCode);
     }
 }
