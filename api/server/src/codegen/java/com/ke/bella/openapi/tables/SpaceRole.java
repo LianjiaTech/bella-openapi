@@ -29,7 +29,7 @@ import org.jooq.impl.TableImpl;
 
 
 /**
- * 空间角色
+ * 空间角色表
  */
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class SpaceRole extends TableImpl<SpaceRoleRecord> {
@@ -95,21 +95,21 @@ public class SpaceRole extends TableImpl<SpaceRoleRecord> {
     public final TableField<SpaceRoleRecord, LocalDateTime> MTIME = createField(DSL.name("mtime"), SQLDataType.LOCALDATETIME(0).nullable(false).defaultValue(DSL.field("CURRENT_TIMESTAMP", SQLDataType.LOCALDATETIME)), this, "最后一次更新时间");
 
     /**
-     * The column <code>space_role.cuid</code>. 创建人id
+     * The column <code>space_role.cuid</code>. 创建人系统号
      */
-    public final TableField<SpaceRoleRecord, Long> CUID = createField(DSL.name("cuid"), SQLDataType.BIGINT.nullable(false).defaultValue(DSL.inline("0", SQLDataType.BIGINT)), this, "创建人id");
+    public final TableField<SpaceRoleRecord, Long> CUID = createField(DSL.name("cuid"), SQLDataType.BIGINT.nullable(false).defaultValue(DSL.inline("0", SQLDataType.BIGINT)), this, "创建人系统号");
 
     /**
-     * The column <code>space_role.muid</code>. 最后一次更新人id
+     * The column <code>space_role.muid</code>. 最后一次更新人系统号
      */
-    public final TableField<SpaceRoleRecord, Long> MUID = createField(DSL.name("muid"), SQLDataType.BIGINT.nullable(false).defaultValue(DSL.inline("0", SQLDataType.BIGINT)), this, "最后一次更新人id");
+    public final TableField<SpaceRoleRecord, Long> MUID = createField(DSL.name("muid"), SQLDataType.BIGINT.nullable(false).defaultValue(DSL.inline("0", SQLDataType.BIGINT)), this, "最后一次更新人系统号");
 
     private SpaceRole(Name alias, Table<SpaceRoleRecord> aliased) {
         this(alias, aliased, null);
     }
 
     private SpaceRole(Name alias, Table<SpaceRoleRecord> aliased, Field<?>[] parameters) {
-        super(alias, null, aliased, parameters, DSL.comment("空间角色"), TableOptions.table());
+        super(alias, null, aliased, parameters, DSL.comment("空间角色表"), TableOptions.table());
     }
 
     /**
@@ -154,7 +154,7 @@ public class SpaceRole extends TableImpl<SpaceRoleRecord> {
 
     @Override
     public List<UniqueKey<SpaceRoleRecord>> getKeys() {
-        return Arrays.<UniqueKey<SpaceRoleRecord>>asList(Keys.KEY_SPACE_ROLE_PRIMARY, Keys.KEY_SPACE_ROLE_UNIQ_IDX_SPACE_ROLE_CODE);
+        return Arrays.<UniqueKey<SpaceRoleRecord>>asList(Keys.KEY_SPACE_ROLE_PRIMARY, Keys.KEY_SPACE_ROLE_UNIQ_IDX_SPACE_CODE_ROLE_CODE);
     }
 
     @Override

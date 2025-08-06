@@ -192,3 +192,39 @@ export interface UpdateSubApikeyRequest {
     remark: string;
     roleCode: string;
 }
+
+// 用户搜索相关类型
+export interface UserSearchResult {
+    id: number;
+    userName: string;
+    email: string;
+    source: string;
+    sourceId: string;
+}
+
+// API Key转交相关类型
+export interface TransferApikeyRequest {
+    akCode: string;
+    targetUserId?: number;
+    targetUserSource?: string;
+    targetUserSourceId?: string;
+    targetUserEmail?: string;
+    transferReason: string;
+}
+
+export interface ApikeyTransferLog {
+    id: number;
+    akCode: string;
+    fromOwnerType: string;
+    fromOwnerCode: string;
+    fromOwnerName: string;
+    toOwnerType: string;
+    toOwnerCode: string;
+    toOwnerName: string;
+    transferReason: string;
+    status: string;
+    operatorUid: number;
+    operatorName: string;
+    ctime: string;
+    mtime: string;
+}

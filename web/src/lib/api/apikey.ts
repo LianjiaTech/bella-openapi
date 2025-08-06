@@ -1,4 +1,4 @@
-import {ApikeyInfo, CreateSubApikeyRequest, Page, UpdateSubApikeyRequest} from "@/lib/types/openapi";
+import {ApikeyInfo, CreateSubApikeyRequest, Page, UpdateSubApikeyRequest, TransferApikeyRequest, ApikeyTransferLog} from "@/lib/types/openapi";
 import { openapi } from '@/lib/api/openapi';
 import { ApiKeyBalance } from "@/lib/types/openapi";
 
@@ -102,7 +102,31 @@ export async function getApiKeyBalance(akCode: string): Promise<ApiKeyBalance | 
         const response = await openapi.get<ApiKeyBalance>(`/console/apikey/balance/${akCode}`);
         return response.data;
     } catch (error) {
-        console.error('Error fetching api key balance:', error);
+        console.error('Error fetching API key balance:', error);
+        return null;
+    }
+}
+
+// 转交apikey
+export async function transferApikey(request: TransferApikeyRequest): Promise<boolean> {
+    try {
+        const response = await openapi.post<boolean>('/console/apikey/owner/transfer', request);
+        return response.data ?? false;
+    } catch (error) {
+        console.error('Error transferring apikey:', error);
+        throw error;
+    }
+}
+
+// 获取转交历史
+export async function getTransferHistory(akCode: string): Promise<ApikeyTransferLog[]> {
+    try {
+        const response = await openapi.get<ApikeyTransferLog[]>('/console/apikey/transfer/history', {
+            params: { akCode }
+        });
+        return response.data || [];
+    } catch (error) {
+        console.error('Error fetching transfer history:', error);
         throw error;
     }
 }

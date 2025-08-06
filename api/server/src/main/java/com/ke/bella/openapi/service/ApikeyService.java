@@ -1,6 +1,7 @@
 package com.ke.bella.openapi.service;
 
 import com.alicp.jetcache.CacheManager;
+import com.alicp.jetcache.anno.CacheInvalidate;
 import com.alicp.jetcache.anno.CachePenetrationProtect;
 import com.alicp.jetcache.anno.CacheType;
 import com.alicp.jetcache.anno.CacheUpdate;
@@ -14,24 +15,33 @@ import com.ke.bella.openapi.PermissionCondition;
 import com.ke.bella.openapi.apikey.ApikeyCreateOp;
 import com.ke.bella.openapi.apikey.ApikeyInfo;
 import com.ke.bella.openapi.apikey.ApikeyOps;
+import com.ke.bella.openapi.apikey.ApikeyTransferLog;
 import com.ke.bella.openapi.apikey.SubApikeyUpdateOp;
+import com.ke.bella.openapi.apikey.TransferApikeyOwnerOp;
+import com.ke.bella.openapi.common.EntityConstants;
+import com.ke.bella.openapi.event.ApiKeyTransferEvent;
 import com.ke.bella.openapi.common.exception.ChannelException;
 import com.ke.bella.openapi.db.repo.ApikeyCostRepo;
 import com.ke.bella.openapi.db.repo.ApikeyRepo;
 import com.ke.bella.openapi.db.repo.ApikeyRoleRepo;
+import com.ke.bella.openapi.db.repo.ApikeyTransferLogRepo;
+import com.ke.bella.openapi.db.repo.UserRepo;
 import com.ke.bella.openapi.db.repo.Page;
 import com.ke.bella.openapi.safety.ISafetyAuditService;
 import com.ke.bella.openapi.tables.pojos.ApikeyDB;
 import com.ke.bella.openapi.tables.pojos.ApikeyMonthCostDB;
 import com.ke.bella.openapi.tables.pojos.ApikeyRoleDB;
+import com.ke.bella.openapi.tables.pojos.UserDB;
 import com.ke.bella.openapi.utils.EncryptUtils;
 import com.ke.bella.openapi.utils.JacksonUtils;
 import com.ke.bella.openapi.utils.MatchUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
@@ -51,6 +61,7 @@ import static com.ke.bella.openapi.common.EntityConstants.ORG;
 import static com.ke.bella.openapi.common.EntityConstants.PERSON;
 import static com.ke.bella.openapi.common.EntityConstants.SYSTEM;
 
+@Slf4j
 @Component
 public class ApikeyService {
     @Autowired
@@ -61,6 +72,12 @@ public class ApikeyService {
 
     @Autowired
     private ApikeyCostRepo apikeyCostRepo;
+
+    @Autowired
+    private ApikeyTransferLogRepo apikeyTransferLogRepo;
+
+    @Autowired
+    private UserRepo userRepo;
 
     @Value("${apikey.basic.monthQuota:200}")
     private int basicMonthQuota;
@@ -79,6 +96,8 @@ public class ApikeyService {
     private CacheManager cacheManager;
     @Autowired
     private ApplicationContext applicationContext;
+    @Autowired
+    private ApplicationEventPublisher eventPublisher;
     @Autowired
     private ISafetyAuditService safetyAuditService;
     private static final String apikeyCacheKey = "apikey:sha:";
@@ -409,4 +428,163 @@ public class ApikeyService {
         }
         return apikeyInfo;
     }
+
+    /**
+     * 转移API Key所有者
+     * 注意：缓存清理操作在事务外执行，避免影响事务
+     * 
+     * @param op 转移操作参数
+     * @param currentOperator 当前操作者
+     * @return 是否成功
+     */
+    @Transactional
+    public boolean transferApikeyOwner(TransferApikeyOwnerOp op, Operator currentOperator) {
+        // 1. 验证API Key是否存在且为主API Key
+        ApikeyInfo apikeyInfo = apikeyRepo.queryByCode(op.getAkCode());
+        if (apikeyInfo == null) {
+            throw new ChannelException.AuthorizationException("API Key不存在");
+        }
+        
+        if (StringUtils.isNotEmpty(apikeyInfo.getParentCode())) {
+            throw new ChannelException.AuthorizationException("子API Key不允许转移，只能转移主API Key");
+        }
+        
+        if (!ACTIVE.equals(apikeyInfo.getStatus())) {
+            throw new ChannelException.AuthorizationException("API Key状态不允许转移");
+        }
+
+        // 只有个人类型的API Key才能转移
+        if (!PERSON.equals(apikeyInfo.getOwnerType())) {
+            throw new ChannelException.AuthorizationException("只有个人类型的API Key才能转移");
+        }
+
+        // 2. 验证当前用户权限 (只有当前所有者可以转移)
+        if (!apikeyInfo.getOwnerCode().equals(currentOperator.getUserId().toString())) {
+            throw new ChannelException.AuthorizationException("只有API Key所有者才能执行转移操作");
+        }
+
+        // 3. 查找并验证目标用户
+        UserDB targetUser = findAndValidateTargetUser(op);
+
+        // 4. 新的owner_code保持与当前操作者相同的规则
+        String newOwnerCode;
+        if (StringUtils.equals(currentOperator.getSourceId(), String.valueOf(currentOperator.getUserId()))) {
+            // 如果操作者使用sourceId规则，目标用户也使用sourceId
+            newOwnerCode = targetUser.getSourceId();
+        } else {
+            // 如果操作者使用userId规则，目标用户也使用userId
+            newOwnerCode = targetUser.getId().toString();
+        }
+
+        Assert.isTrue(!currentOperator.getUserId().toString().equals(newOwnerCode), "不能将ak转交给自己");
+
+        // 5. 记录转移前的状态用于审计
+        String fromOwnerType = apikeyInfo.getOwnerType();
+        String fromOwnerCode = apikeyInfo.getOwnerCode();
+        String fromOwnerName = apikeyInfo.getOwnerName();
+
+        // 6. 更新主API Key和所有子API Key的所有者信息
+        ApikeyDB updateDB = new ApikeyDB();
+        updateDB.setOwnerType(PERSON);
+        updateDB.setOwnerCode(newOwnerCode);
+        updateDB.setOwnerName(StringUtils.defaultIfEmpty(targetUser.getUserName(), "用户" + targetUser.getId()));
+        updateDB.setMuid(currentOperator.getUserId());
+        updateDB.setMuName(currentOperator.getUserName());
+        
+        // 更新主API Key
+        apikeyRepo.update(updateDB, op.getAkCode());
+        
+        // 批量更新所有子API Key
+        apikeyRepo.batchUpdateByParentCode(updateDB, op.getAkCode());
+
+        // 7. 记录转移日志
+        ApikeyTransferLog transferLog = ApikeyTransferLog.builder()
+                .akCode(op.getAkCode())
+                .fromOwnerType(fromOwnerType)
+                .fromOwnerCode(fromOwnerCode)
+                .fromOwnerName(fromOwnerName)
+                .toOwnerType(PERSON)
+                .toOwnerCode(newOwnerCode)
+                .toOwnerName(StringUtils.defaultIfEmpty(targetUser.getUserName(), "用户" + targetUser.getId()))
+                .transferReason(StringUtils.defaultString(op.getTransferReason(), ""))
+                .status("completed")
+                .operatorUid(currentOperator.getUserId())
+                .operatorName(currentOperator.getUserName())
+                .build();
+                
+        apikeyTransferLogRepo.insertTransferLog(transferLog);
+        
+        // 8. 发布API Key转移事件（事务提交后自动处理）
+        ApiKeyTransferEvent event = ApiKeyTransferEvent.of(op.getAkCode(), fromOwnerCode, fromOwnerName,
+                                                          newOwnerCode, updateDB.getOwnerName(), 
+                                                          StringUtils.defaultString(op.getTransferReason(), ""),
+                                                          currentOperator.getUserId(), currentOperator.getUserName());
+        eventPublisher.publishEvent(event);
+        
+        return true;
+    }
+    
+
+    /**
+     * 获取API Key转移历史
+     *
+     * @param akCode API Key编码
+     * @return 转移历史列表
+     */
+    public List<ApikeyTransferLog> getTransferHistory(String akCode) {
+        // 验证权限：只有API Key所有者或系统管理员可以查看转移历史
+        ApikeyInfo apikeyInfo = apikeyRepo.queryByCode(akCode);
+        if (apikeyInfo == null) {
+            throw new ChannelException.AuthorizationException("API Key不存在");
+        }
+
+        ApikeyInfo currentApikey = EndpointContext.getApikey();
+        if (!apikeyInfo.getOwnerCode().equals(currentApikey.getOwnerCode())
+            && !SYSTEM.equals(currentApikey.getOwnerType())) {
+            throw new ChannelException.AuthorizationException("没有权限查看转移历史");
+        }
+
+        return apikeyTransferLogRepo.queryByAkCode(akCode);
+    }
+
+    /**
+     * 清除API Key相关缓存
+     */
+    @CacheInvalidate(name = apikeyCacheKey, key = "#sha")
+    public void clearApikeyCache(String sha) {
+        // 方法体为空，注解会处理缓存更新
+    }
+
+    /**
+     * 查找并验证目标用户
+     *
+     * @param op 转移操作请求
+     * @return 目标用户信息
+     */
+    private UserDB findAndValidateTargetUser(TransferApikeyOwnerOp op) {
+        UserDB targetUser;
+        
+        // 方式1: 通过用户ID查找
+        if (op.getTargetUserId() != null && op.getTargetUserId() > 0) {
+            targetUser = userRepo.queryById(op.getTargetUserId());
+        }
+        // 方式2: 通过source + sourceId查找 
+        else if (StringUtils.isNotEmpty(op.getTargetUserSource()) && StringUtils.isNotEmpty(op.getTargetUserSourceId())) {
+            targetUser = userRepo.queryBySourceAndSourceId(op.getTargetUserSource(), op.getTargetUserSourceId());
+        }
+        // 方式3: 通过source + email查找
+        else if (StringUtils.isNotEmpty(op.getTargetUserSource()) && StringUtils.isNotEmpty(op.getTargetUserEmail())) {
+            targetUser = userRepo.queryBySourceAndEmail(op.getTargetUserSource(), op.getTargetUserEmail());
+        }
+        else {
+            throw new ChannelException.AuthorizationException("必须指定目标用户：可使用用户ID、source+sourceId或source+email");
+        }
+
+        if (targetUser == null) {
+            throw new ChannelException.AuthorizationException("目标用户不存在");
+        }
+
+        return targetUser;
+    }
+
 }
