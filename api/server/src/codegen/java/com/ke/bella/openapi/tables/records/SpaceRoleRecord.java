@@ -17,7 +17,7 @@ import org.jooq.impl.UpdatableRecordImpl;
 
 
 /**
- * 空间角色
+ * 空间角色表
  */
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class SpaceRoleRecord extends UpdatableRecordImpl<SpaceRoleRecord> implements Timed, Record11<Long, String, String, String, String, Byte, Byte, LocalDateTime, LocalDateTime, Long, Long> {
@@ -151,28 +151,28 @@ public class SpaceRoleRecord extends UpdatableRecordImpl<SpaceRoleRecord> implem
     }
 
     /**
-     * Setter for <code>space_role.cuid</code>. 创建人id
+     * Setter for <code>space_role.cuid</code>. 创建人系统号
      */
     public void setCuid(Long value) {
         set(9, value);
     }
 
     /**
-     * Getter for <code>space_role.cuid</code>. 创建人id
+     * Getter for <code>space_role.cuid</code>. 创建人系统号
      */
     public Long getCuid() {
         return (Long) get(9);
     }
 
     /**
-     * Setter for <code>space_role.muid</code>. 最后一次更新人id
+     * Setter for <code>space_role.muid</code>. 最后一次更新人系统号
      */
     public void setMuid(Long value) {
         set(10, value);
     }
 
     /**
-     * Getter for <code>space_role.muid</code>. 最后一次更新人id
+     * Getter for <code>space_role.muid</code>. 最后一次更新人系统号
      */
     public Long getMuid() {
         return (Long) get(10);

@@ -6,6 +6,7 @@ package com.ke.bella.openapi;
 
 import com.ke.bella.openapi.tables.Apikey;
 import com.ke.bella.openapi.tables.ApikeyMonthCost;
+import com.ke.bella.openapi.tables.ApikeyTransferLog;
 import com.ke.bella.openapi.tables.Category;
 import com.ke.bella.openapi.tables.Channel;
 import com.ke.bella.openapi.tables.Endpoint;
@@ -31,10 +32,13 @@ public class Indexes {
     // INDEX definitions
     // -------------------------------------------------------------------------
 
+    public static final Index APIKEY_TRANSFER_LOG_IDX_AK_CODE = Internal.createIndex(DSL.name("idx_ak_code"), ApikeyTransferLog.APIKEY_TRANSFER_LOG, new OrderField[] { ApikeyTransferLog.APIKEY_TRANSFER_LOG.AK_CODE }, false);
     public static final Index MODEL_AUTHORIZER_REL_IDX_AUTHORIZER_CODE = Internal.createIndex(DSL.name("idx_authorizer_code"), ModelAuthorizerRel.MODEL_AUTHORIZER_REL, new OrderField[] { ModelAuthorizerRel.MODEL_AUTHORIZER_REL.AUTHORIZER_CODE }, false);
     public static final Index ENDPOINT_CATEGORY_REL_IDX_CATEGORY_CODE = Internal.createIndex(DSL.name("idx_category_code"), EndpointCategoryRel.ENDPOINT_CATEGORY_REL, new OrderField[] { EndpointCategoryRel.ENDPOINT_CATEGORY_REL.CATEGORY_CODE }, false);
     public static final Index CATEGORY_IDX_CATEGORY_NAME = Internal.createIndex(DSL.name("idx_category_name"), Category.CATEGORY, new OrderField[] { Category.CATEGORY.CATEGORY_NAME }, false);
+    public static final Index APIKEY_TRANSFER_LOG_IDX_CTIME = Internal.createIndex(DSL.name("idx_ctime"), ApikeyTransferLog.APIKEY_TRANSFER_LOG, new OrderField[] { ApikeyTransferLog.APIKEY_TRANSFER_LOG.CTIME }, false);
     public static final Index CHANNEL_IDX_ENTITY_TYPE_CODE = Internal.createIndex(DSL.name("idx_entity_type_code"), Channel.CHANNEL, new OrderField[] { Channel.CHANNEL.ENTITY_TYPE, Channel.CHANNEL.ENTITY_CODE }, false);
+    public static final Index APIKEY_TRANSFER_LOG_IDX_FROM_OWNER = Internal.createIndex(DSL.name("idx_from_owner"), ApikeyTransferLog.APIKEY_TRANSFER_LOG, new OrderField[] { ApikeyTransferLog.APIKEY_TRANSFER_LOG.FROM_OWNER_TYPE, ApikeyTransferLog.APIKEY_TRANSFER_LOG.FROM_OWNER_CODE }, false);
     public static final Index SPACE_MEMBER_IDX_MEMBER_UID = Internal.createIndex(DSL.name("idx_member_uid"), SpaceMember.SPACE_MEMBER, new OrderField[] { SpaceMember.SPACE_MEMBER.MEMBER_UID }, false);
     public static final Index MODEL_ENDPOINT_REL_IDX_MODEL_NAME = Internal.createIndex(DSL.name("idx_model_name"), ModelEndpointRel.MODEL_ENDPOINT_REL, new OrderField[] { ModelEndpointRel.MODEL_ENDPOINT_REL.MODEL_NAME }, false);
     public static final Index APIKEY_MONTH_COST_IDX_MONTH = Internal.createIndex(DSL.name("idx_month"), ApikeyMonthCost.APIKEY_MONTH_COST, new OrderField[] { ApikeyMonthCost.APIKEY_MONTH_COST.MONTH }, false);
@@ -45,5 +49,6 @@ public class Indexes {
     public static final Index CHANNEL_IDX_PROTOCOL = Internal.createIndex(DSL.name("idx_protocol"), Channel.CHANNEL, new OrderField[] { Channel.CHANNEL.PROTOCOL }, false);
     public static final Index ENDPOINT_CATEGORY_REL_IDX_SORT = Internal.createIndex(DSL.name("idx_sort"), EndpointCategoryRel.ENDPOINT_CATEGORY_REL, new OrderField[] { EndpointCategoryRel.ENDPOINT_CATEGORY_REL.SORT }, false);
     public static final Index CHANNEL_IDX_SUPPLIER = Internal.createIndex(DSL.name("idx_supplier"), Channel.CHANNEL, new OrderField[] { Channel.CHANNEL.SUPPLIER }, false);
+    public static final Index APIKEY_TRANSFER_LOG_IDX_TO_OWNER = Internal.createIndex(DSL.name("idx_to_owner"), ApikeyTransferLog.APIKEY_TRANSFER_LOG, new OrderField[] { ApikeyTransferLog.APIKEY_TRANSFER_LOG.TO_OWNER_TYPE, ApikeyTransferLog.APIKEY_TRANSFER_LOG.TO_OWNER_CODE }, false);
     public static final Index ENDPOINT_UNIQ_IDX_UNI_ENDPOINT_NAME = Internal.createIndex(DSL.name("uniq_idx_uni_endpoint_name"), Endpoint.ENDPOINT, new OrderField[] { Endpoint.ENDPOINT.ENDPOINT_NAME }, false);
 }

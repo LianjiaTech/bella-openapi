@@ -167,42 +167,42 @@ public class SpaceDB implements Timed, Serializable {
     }
 
     /**
-     * Getter for <code>space.owner_uid</code>. 空间拥有人id
+     * Getter for <code>space.owner_uid</code>. 空间拥有人系统号
      */
     public String getOwnerUid() {
         return this.ownerUid;
     }
 
     /**
-     * Setter for <code>space.owner_uid</code>. 空间拥有人id
+     * Setter for <code>space.owner_uid</code>. 空间拥有人系统号
      */
     public void setOwnerUid(String ownerUid) {
         this.ownerUid = ownerUid;
     }
 
     /**
-     * Getter for <code>space.cuid</code>. 空间创建人id
+     * Getter for <code>space.cuid</code>. 空间创建人系统号
      */
     public Long getCuid() {
         return this.cuid;
     }
 
     /**
-     * Setter for <code>space.cuid</code>. 空间创建人id
+     * Setter for <code>space.cuid</code>. 空间创建人系统号
      */
     public void setCuid(Long cuid) {
         this.cuid = cuid;
     }
 
     /**
-     * Getter for <code>space.muid</code>. 空间最后一次更新人id
+     * Getter for <code>space.muid</code>. 空间最后一次更新人系统号
      */
     public Long getMuid() {
         return this.muid;
     }
 
     /**
-     * Setter for <code>space.muid</code>. 空间最后一次更新人id
+     * Setter for <code>space.muid</code>. 空间最后一次更新人系统号
      */
     public void setMuid(Long muid) {
         this.muid = muid;

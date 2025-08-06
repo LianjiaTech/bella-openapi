@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 
 
 /**
- * 空间角色
+ * 空间角色表
  */
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class SpaceRoleDB implements Timed, Serializable {
@@ -199,28 +199,28 @@ public class SpaceRoleDB implements Timed, Serializable {
     }
 
     /**
-     * Getter for <code>space_role.cuid</code>. 创建人id
+     * Getter for <code>space_role.cuid</code>. 创建人系统号
      */
     public Long getCuid() {
         return this.cuid;
     }
 
     /**
-     * Setter for <code>space_role.cuid</code>. 创建人id
+     * Setter for <code>space_role.cuid</code>. 创建人系统号
      */
     public void setCuid(Long cuid) {
         this.cuid = cuid;
     }
 
     /**
-     * Getter for <code>space_role.muid</code>. 最后一次更新人id
+     * Getter for <code>space_role.muid</code>. 最后一次更新人系统号
      */
     public Long getMuid() {
         return this.muid;
     }
 
     /**
-     * Setter for <code>space_role.muid</code>. 最后一次更新人id
+     * Setter for <code>space_role.muid</code>. 最后一次更新人系统号
      */
     public void setMuid(Long muid) {
         this.muid = muid;
