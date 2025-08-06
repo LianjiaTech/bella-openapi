@@ -81,14 +81,14 @@ public class SpaceMemberRecord extends UpdatableRecordImpl<SpaceMemberRecord> im
     }
 
     /**
-     * Setter for <code>space_member.member_uid</code>. 成员id
+     * Setter for <code>space_member.member_uid</code>. 成员系统号
      */
     public void setMemberUid(String value) {
         set(4, value);
     }
 
     /**
-     * Getter for <code>space_member.member_uid</code>. 成员id
+     * Getter for <code>space_member.member_uid</code>. 成员系统号
      */
     public String getMemberUid() {
         return (String) get(4);
@@ -137,28 +137,28 @@ public class SpaceMemberRecord extends UpdatableRecordImpl<SpaceMemberRecord> im
     }
 
     /**
-     * Setter for <code>space_member.cuid</code>. 创建人id
+     * Setter for <code>space_member.cuid</code>. 创建人系统号
      */
     public void setCuid(Long value) {
         set(8, value);
     }
 
     /**
-     * Getter for <code>space_member.cuid</code>. 创建人id
+     * Getter for <code>space_member.cuid</code>. 创建人系统号
      */
     public Long getCuid() {
         return (Long) get(8);
     }
 
     /**
-     * Setter for <code>space_member.muid</code>. 最后一次更新人id
+     * Setter for <code>space_member.muid</code>. 最后一次更新人系统号
      */
     public void setMuid(Long value) {
         set(9, value);
     }
 
     /**
-     * Getter for <code>space_member.muid</code>. 最后一次更新人id
+     * Getter for <code>space_member.muid</code>. 最后一次更新人系统号
      */
     public Long getMuid() {
         return (Long) get(9);

@@ -11,6 +11,7 @@ import org.jooq.TableField;
 import org.jooq.impl.DSL;
 import org.jooq.impl.TableImpl;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -57,12 +58,11 @@ public class ApikeyRepo extends StatusRepo<ApikeyDB, ApikeyRecord, String> imple
                 .and(StringUtils.isEmpty(op.getOwnerCode()) ? DSL.noCondition() : APIKEY.OWNER_CODE.eq(op.getOwnerCode()))
                 .and(StringUtils.isEmpty(op.getParentCode()) ? DSL.noCondition() : APIKEY.PARENT_CODE.eq(op.getParentCode()))
                 .and(StringUtils.isEmpty(op.getName()) ? DSL.noCondition() : APIKEY.NAME.eq(op.getName()))
-                .and(StringUtils.isEmpty(op.getParentCode()) ? DSL.noCondition() : APIKEY.PARENT_CODE.eq(op.getParentCode()))
                 .and(StringUtils.isEmpty(op.getServiceId()) ? DSL.noCondition() : APIKEY.SERVICE_ID.eq(op.getServiceId()))
                 .and(StringUtils.isEmpty(op.getOutEntityCode()) ? DSL.noCondition() : APIKEY.OUT_ENTITY_CODE.eq(op.getOutEntityCode()))
                 .and(StringUtils.isEmpty(op.getSearchParam()) ? DSL.noCondition() : APIKEY.NAME.like(op.getSearchParam() + "%")
                         .or(APIKEY.SERVICE_ID.like(op.getSearchParam() + "%")))
-                .and(op.isIncludeChild() ? DSL.noCondition() : APIKEY.PARENT_CODE.eq(StringUtils.EMPTY))
+                .and(op.isIncludeChild() || StringUtils.isNotEmpty(op.getParentCode()) ? DSL.noCondition() : APIKEY.PARENT_CODE.eq(StringUtils.EMPTY))
                 .and(StringUtils.isEmpty(op.getStatus()) ? DSL.noCondition() : APIKEY.STATUS.eq(op.getStatus()))
                 .and(StringUtils.isEmpty(op.getPersonalCode()) ? DSL.noCondition() :
                                 APIKEY.OWNER_TYPE.eq(EntityConstants.PERSON).and(APIKEY.OWNER_CODE.eq(op.getPersonalCode())))
@@ -92,5 +92,23 @@ public class ApikeyRepo extends StatusRepo<ApikeyDB, ApikeyRecord, String> imple
     @Override
     protected TableField<ApikeyRecord, String> uniqueKey() {
         return APIKEY.CODE;
+    }
+    
+    /**
+     * 批量更新子API Key的所有者信息
+     * @param updateDB 更新的字段信息
+     * @param parentCode 父API Key的code
+     * @return 更新的记录数
+     */
+    @Transactional
+    public int batchUpdateByParentCode(ApikeyDB updateDB, String parentCode) {
+        return db.update(APIKEY)
+                .set(APIKEY.OWNER_TYPE, updateDB.getOwnerType())
+                .set(APIKEY.OWNER_CODE, updateDB.getOwnerCode())
+                .set(APIKEY.OWNER_NAME, updateDB.getOwnerName())
+                .set(APIKEY.MUID, updateDB.getMuid())
+                .set(APIKEY.MU_NAME, updateDB.getMuName())
+                .where(APIKEY.PARENT_CODE.eq(parentCode))
+                .execute();
     }
 }

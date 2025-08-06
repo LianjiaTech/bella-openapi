@@ -7,6 +7,7 @@ package com.ke.bella.openapi;
 import com.ke.bella.openapi.tables.Apikey;
 import com.ke.bella.openapi.tables.ApikeyMonthCost;
 import com.ke.bella.openapi.tables.ApikeyRole;
+import com.ke.bella.openapi.tables.ApikeyTransferLog;
 import com.ke.bella.openapi.tables.Category;
 import com.ke.bella.openapi.tables.Channel;
 import com.ke.bella.openapi.tables.Endpoint;
@@ -40,6 +41,11 @@ public class Tables {
      * ak角色
      */
     public static final ApikeyRole APIKEY_ROLE = ApikeyRole.APIKEY_ROLE;
+
+    /**
+     * API Key所有权转移审计日志表
+     */
+    public static final ApikeyTransferLog APIKEY_TRANSFER_LOG = ApikeyTransferLog.APIKEY_TRANSFER_LOG;
 
     /**
      * 类目
@@ -87,7 +93,7 @@ public class Tables {
     public static final SpaceMember SPACE_MEMBER = SpaceMember.SPACE_MEMBER;
 
     /**
-     * 空间角色
+     * 空间角色表
      */
     public static final SpaceRole SPACE_ROLE = SpaceRole.SPACE_ROLE;
 

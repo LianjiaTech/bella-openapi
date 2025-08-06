@@ -19,9 +19,12 @@ import com.ke.bella.openapi.common.EntityConstants;
 import com.ke.bella.openapi.login.user.IUserRepo;
 import com.ke.bella.openapi.tables.pojos.UserDB;
 import com.ke.bella.openapi.tables.records.UserRecord;
+import com.ke.bella.openapi.user.UserSearchResult;
 import com.ke.bella.openapi.utils.EncryptUtils;
 import com.ke.bella.openapi.utils.JacksonUtils;
 import org.springframework.util.Assert;
+
+import java.util.List;
 
 @Component
 public class UserRepo implements IUserRepo {
@@ -141,5 +144,81 @@ public class UserRepo implements IUserRepo {
     private void updateApikeyRoles(String apikey) {
         String sha = EncryptUtils.sha256(apikey);
         apikeyRepo.updateRoleBySha(sha, EntityConstants.MANAGER_ROLE);
+    }
+
+    /**
+     * 根据用户ID查询用户
+     *
+     * @param id 用户ID
+     * @return 用户信息
+     */
+    public UserDB queryById(Long id) {
+        return dsl.selectFrom(USER).where(USER.ID.eq(id)).fetchOneInto(UserDB.class);
+    }
+
+    /**
+     * 根据来源和来源ID查询用户
+     *
+     * @param source 用户来源
+     * @param sourceId 来源ID
+     * @return 用户信息
+     */
+    public UserDB queryBySourceAndSourceId(String source, String sourceId) {
+        return dsl.selectFrom(USER)
+                .where(USER.SOURCE.eq(source).and(USER.SOURCE_ID.eq(sourceId)))
+                .fetchOneInto(UserDB.class);
+    }
+
+    /**
+     * 根据来源和邮箱查询用户
+     *
+     * @param source 用户来源
+     * @param email 邮箱
+     * @return 用户信息
+     */
+    public UserDB queryBySourceAndEmail(String source, String email) {
+        return dsl.selectFrom(USER)
+                .where(USER.SOURCE.eq(source).and(USER.EMAIL.eq(email)))
+                .fetchOneInto(UserDB.class);
+    }
+
+    /**
+     * 模糊搜索用户
+     * @param keyword 搜索关键词
+     * @param limit 返回数量限制
+     * @return 用户搜索结果列表
+     */
+    public List<UserSearchResult> searchUsers(String keyword, int limit) {
+        return searchUsers(keyword, limit, null, null);
+    }
+    
+    /**
+     * 模糊搜索用户（支持排除指定用户）
+     * @param keyword 搜索关键词
+     * @param limit 返回数量限制
+     * @param excludeUserId 排除的用户ID，为null则不排除
+     * @param excludeSourceUserId 排除的用户ID，为null则不排除
+     * @return 用户搜索结果列表
+     */
+    public List<UserSearchResult> searchUsers(String keyword, int limit, Long excludeUserId, String excludeSourceUserId) {
+        String likeKeyword = "%" + keyword + "%";
+        
+        org.jooq.Condition condition = USER.USER_NAME.like(likeKeyword)
+                .or(USER.SOURCE_ID.like(likeKeyword))
+                .or(USER.EMAIL.like(likeKeyword));
+        
+        if (excludeUserId != null) {
+            condition = condition.and(USER.ID.ne(excludeUserId));
+        }
+
+        if (excludeSourceUserId != null) {
+            condition = condition.and(USER.SOURCE_ID.ne(excludeSourceUserId));
+        }
+        
+        return dsl.select(USER.ID, USER.USER_NAME, USER.EMAIL, USER.SOURCE, USER.SOURCE_ID)
+                .from(USER)
+                .where(condition)
+                .limit(limit)
+                .fetchInto(UserSearchResult.class);
     }
 }

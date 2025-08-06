@@ -7,6 +7,7 @@ package com.ke.bella.openapi;
 import com.ke.bella.openapi.tables.Apikey;
 import com.ke.bella.openapi.tables.ApikeyMonthCost;
 import com.ke.bella.openapi.tables.ApikeyRole;
+import com.ke.bella.openapi.tables.ApikeyTransferLog;
 import com.ke.bella.openapi.tables.Category;
 import com.ke.bella.openapi.tables.Channel;
 import com.ke.bella.openapi.tables.Endpoint;
@@ -21,6 +22,7 @@ import com.ke.bella.openapi.tables.User;
 import com.ke.bella.openapi.tables.records.ApikeyMonthCostRecord;
 import com.ke.bella.openapi.tables.records.ApikeyRecord;
 import com.ke.bella.openapi.tables.records.ApikeyRoleRecord;
+import com.ke.bella.openapi.tables.records.ApikeyTransferLogRecord;
 import com.ke.bella.openapi.tables.records.CategoryRecord;
 import com.ke.bella.openapi.tables.records.ChannelRecord;
 import com.ke.bella.openapi.tables.records.EndpointCategoryRelRecord;
@@ -57,6 +59,7 @@ public class Keys {
     public static final UniqueKey<ApikeyMonthCostRecord> KEY_APIKEY_MONTH_COST_UNIQ_IDX_AK_CODE_MONTH = Internal.createUniqueKey(ApikeyMonthCost.APIKEY_MONTH_COST, DSL.name("KEY_apikey_month_cost_uniq_idx_ak_code_month"), new TableField[] { ApikeyMonthCost.APIKEY_MONTH_COST.AK_CODE, ApikeyMonthCost.APIKEY_MONTH_COST.MONTH }, true);
     public static final UniqueKey<ApikeyRoleRecord> KEY_APIKEY_ROLE_PRIMARY = Internal.createUniqueKey(ApikeyRole.APIKEY_ROLE, DSL.name("KEY_apikey_role_PRIMARY"), new TableField[] { ApikeyRole.APIKEY_ROLE.ID }, true);
     public static final UniqueKey<ApikeyRoleRecord> KEY_APIKEY_ROLE_UNIQ_IDX_ROLE_CODE = Internal.createUniqueKey(ApikeyRole.APIKEY_ROLE, DSL.name("KEY_apikey_role_uniq_idx_role_code"), new TableField[] { ApikeyRole.APIKEY_ROLE.ROLE_CODE }, true);
+    public static final UniqueKey<ApikeyTransferLogRecord> KEY_APIKEY_TRANSFER_LOG_PRIMARY = Internal.createUniqueKey(ApikeyTransferLog.APIKEY_TRANSFER_LOG, DSL.name("KEY_apikey_transfer_log_PRIMARY"), new TableField[] { ApikeyTransferLog.APIKEY_TRANSFER_LOG.ID }, true);
     public static final UniqueKey<CategoryRecord> KEY_CATEGORY_PRIMARY = Internal.createUniqueKey(Category.CATEGORY, DSL.name("KEY_category_PRIMARY"), new TableField[] { Category.CATEGORY.ID }, true);
     public static final UniqueKey<CategoryRecord> KEY_CATEGORY_UNIQ_IDX_PARENT_CODE_CATEGORY_NAME = Internal.createUniqueKey(Category.CATEGORY, DSL.name("KEY_category_uniq_idx_parent_code_category_name"), new TableField[] { Category.CATEGORY.PARENT_CODE, Category.CATEGORY.CATEGORY_NAME }, true);
     public static final UniqueKey<CategoryRecord> KEY_CATEGORY_UNIQ_IDX_UNI_CATEGORY_CODE = Internal.createUniqueKey(Category.CATEGORY, DSL.name("KEY_category_uniq_idx_uni_category_code"), new TableField[] { Category.CATEGORY.CATEGORY_CODE }, true);
@@ -77,7 +80,7 @@ public class Keys {
     public static final UniqueKey<SpaceRecord> KEY_SPACE_UNIQ_IDX_SPACE_CODE = Internal.createUniqueKey(Space.SPACE, DSL.name("KEY_space_uniq_idx_space_code"), new TableField[] { Space.SPACE.SPACE_CODE }, true);
     public static final UniqueKey<SpaceMemberRecord> KEY_SPACE_MEMBER_PRIMARY = Internal.createUniqueKey(SpaceMember.SPACE_MEMBER, DSL.name("KEY_space_member_PRIMARY"), new TableField[] { SpaceMember.SPACE_MEMBER.ID }, true);
     public static final UniqueKey<SpaceRoleRecord> KEY_SPACE_ROLE_PRIMARY = Internal.createUniqueKey(SpaceRole.SPACE_ROLE, DSL.name("KEY_space_role_PRIMARY"), new TableField[] { SpaceRole.SPACE_ROLE.ID }, true);
-    public static final UniqueKey<SpaceRoleRecord> KEY_SPACE_ROLE_UNIQ_IDX_SPACE_ROLE_CODE = Internal.createUniqueKey(SpaceRole.SPACE_ROLE, DSL.name("KEY_space_role_uniq_idx_space_role_code"), new TableField[] { SpaceRole.SPACE_ROLE.SPACE_CODE, SpaceRole.SPACE_ROLE.ROLE_CODE }, true);
+    public static final UniqueKey<SpaceRoleRecord> KEY_SPACE_ROLE_UNIQ_IDX_SPACE_CODE_ROLE_CODE = Internal.createUniqueKey(SpaceRole.SPACE_ROLE, DSL.name("KEY_space_role_uniq_idx_space_code_role_code"), new TableField[] { SpaceRole.SPACE_ROLE.SPACE_CODE, SpaceRole.SPACE_ROLE.ROLE_CODE }, true);
     public static final UniqueKey<UserRecord> KEY_USER_PRIMARY = Internal.createUniqueKey(User.USER, DSL.name("KEY_user_PRIMARY"), new TableField[] { User.USER.ID }, true);
     public static final UniqueKey<UserRecord> KEY_USER_UK_SOURCE_SOURCE_ID = Internal.createUniqueKey(User.USER, DSL.name("KEY_user_uk_source_source_id"), new TableField[] { User.USER.SOURCE, User.USER.SOURCE_ID }, true);
 }
