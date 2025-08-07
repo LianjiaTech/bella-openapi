@@ -81,7 +81,7 @@ public class ApikeyOps {
     }
 
     @Data
-    public class ApikeyCondition extends PermissionCondition {
+    public static class ApikeyCondition extends PermissionCondition {
         private String ownerType;
         private String ownerCode;
         private String parentCode;

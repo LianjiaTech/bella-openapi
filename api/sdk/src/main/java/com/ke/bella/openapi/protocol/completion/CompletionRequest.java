@@ -1,16 +1,16 @@
 package com.ke.bella.openapi.protocol.completion;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.ke.bella.openapi.protocol.UserRequest;
-import com.ke.bella.openapi.utils.JacksonUtils;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
 import javax.annotation.Nullable;
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -157,11 +157,49 @@ public class CompletionRequest implements UserRequest, Serializable {
      */
     private Object reasoning_effort;
 
-    private Object extra_body;
+    @JsonIgnore
+    private Map<String, Object> extra_body;
+
+    /**
+     * Specific extra body field, serialized as extra_body
+     */
+    @JsonIgnore
+    private Object realExtraBody;
 
     private Boolean enable_thinking;
 
     private Object thinking;
+
+    /**
+     * Flatten extra_body fields to the outer JSON during serialization
+     */
+    @JsonAnyGetter
+    public Map<String, Object> getExtraBodyFields() {
+        Map<String, Object> result = new java.util.HashMap<>();
+        
+        // Add regular extra_body fields
+        if (extra_body != null) {
+            result.putAll(extra_body);
+        }
+        
+        // Add realExtraBody as extra_body field
+        if (realExtraBody != null) {
+            result.put("extra_body", realExtraBody);
+        }
+        
+        return result.isEmpty() ? null : result;
+    }
+
+    /**
+     * Handle unknown properties during deserialization and store them in extra_body
+     */
+    @JsonAnySetter
+    public void setExtraBodyField(String key, Object value) {
+        if (extra_body == null) {
+            extra_body = new HashMap<>();
+        }
+        extra_body.put(key, value);
+    }
 
     @Data
     public static class StreamOptions {

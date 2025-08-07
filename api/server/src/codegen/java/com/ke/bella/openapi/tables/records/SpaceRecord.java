@@ -123,42 +123,42 @@ public class SpaceRecord extends UpdatableRecordImpl<SpaceRecord> implements Tim
     }
 
     /**
-     * Setter for <code>space.owner_uid</code>. 空间拥有人id
+     * Setter for <code>space.owner_uid</code>. 空间拥有人系统号
      */
     public void setOwnerUid(String value) {
         set(7, value);
     }
 
     /**
-     * Getter for <code>space.owner_uid</code>. 空间拥有人id
+     * Getter for <code>space.owner_uid</code>. 空间拥有人系统号
      */
     public String getOwnerUid() {
         return (String) get(7);
     }
 
     /**
-     * Setter for <code>space.cuid</code>. 空间创建人id
+     * Setter for <code>space.cuid</code>. 空间创建人系统号
      */
     public void setCuid(Long value) {
         set(8, value);
     }
 
     /**
-     * Getter for <code>space.cuid</code>. 空间创建人id
+     * Getter for <code>space.cuid</code>. 空间创建人系统号
      */
     public Long getCuid() {
         return (Long) get(8);
     }
 
     /**
-     * Setter for <code>space.muid</code>. 空间最后一次更新人id
+     * Setter for <code>space.muid</code>. 空间最后一次更新人系统号
      */
     public void setMuid(Long value) {
         set(9, value);
     }
 
     /**
-     * Getter for <code>space.muid</code>. 空间最后一次更新人id
+     * Getter for <code>space.muid</code>. 空间最后一次更新人系统号
      */
     public Long getMuid() {
         return (Long) get(9);

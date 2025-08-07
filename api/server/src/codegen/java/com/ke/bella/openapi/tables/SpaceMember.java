@@ -72,9 +72,9 @@ public class SpaceMember extends TableImpl<SpaceMemberRecord> {
     public final TableField<SpaceMemberRecord, String> MEMBER_NAME = createField(DSL.name("member_name"), SQLDataType.VARCHAR(64).nullable(false).defaultValue(DSL.inline("", SQLDataType.VARCHAR)), this, "成员姓名");
 
     /**
-     * The column <code>space_member.member_uid</code>. 成员id
+     * The column <code>space_member.member_uid</code>. 成员系统号
      */
-    public final TableField<SpaceMemberRecord, String> MEMBER_UID = createField(DSL.name("member_uid"), SQLDataType.VARCHAR(64).nullable(false).defaultValue(DSL.inline("", SQLDataType.VARCHAR)), this, "成员id");
+    public final TableField<SpaceMemberRecord, String> MEMBER_UID = createField(DSL.name("member_uid"), SQLDataType.VARCHAR(64).nullable(false).defaultValue(DSL.inline("", SQLDataType.VARCHAR)), this, "成员系统号");
 
     /**
      * The column <code>space_member.status</code>. 删除状态(0未删除，-1已删除)
@@ -92,14 +92,14 @@ public class SpaceMember extends TableImpl<SpaceMemberRecord> {
     public final TableField<SpaceMemberRecord, LocalDateTime> MTIME = createField(DSL.name("mtime"), SQLDataType.LOCALDATETIME(0).nullable(false).defaultValue(DSL.field("CURRENT_TIMESTAMP", SQLDataType.LOCALDATETIME)), this, "最后一次修改时间");
 
     /**
-     * The column <code>space_member.cuid</code>. 创建人id
+     * The column <code>space_member.cuid</code>. 创建人系统号
      */
-    public final TableField<SpaceMemberRecord, Long> CUID = createField(DSL.name("cuid"), SQLDataType.BIGINT.nullable(false).defaultValue(DSL.inline("0", SQLDataType.BIGINT)), this, "创建人id");
+    public final TableField<SpaceMemberRecord, Long> CUID = createField(DSL.name("cuid"), SQLDataType.BIGINT.nullable(false).defaultValue(DSL.inline("0", SQLDataType.BIGINT)), this, "创建人系统号");
 
     /**
-     * The column <code>space_member.muid</code>. 最后一次更新人id
+     * The column <code>space_member.muid</code>. 最后一次更新人系统号
      */
-    public final TableField<SpaceMemberRecord, Long> MUID = createField(DSL.name("muid"), SQLDataType.BIGINT.nullable(false).defaultValue(DSL.inline("0", SQLDataType.BIGINT)), this, "最后一次更新人id");
+    public final TableField<SpaceMemberRecord, Long> MUID = createField(DSL.name("muid"), SQLDataType.BIGINT.nullable(false).defaultValue(DSL.inline("0", SQLDataType.BIGINT)), this, "最后一次更新人系统号");
 
     private SpaceMember(Name alias, Table<SpaceMemberRecord> aliased) {
         this(alias, aliased, null);

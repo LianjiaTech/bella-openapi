@@ -1,5 +1,6 @@
 package com.ke.bella.openapi.protocol.completion;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
@@ -13,6 +14,8 @@ import com.ke.bella.openapi.utils.JacksonUtils;
 import okhttp3.MediaType;
 import okhttp3.Request;
 import okhttp3.RequestBody;
+
+import java.util.Arrays;
 
 @Component("OpenAICompletion")
 public class OpenAIAdaptor implements CompletionAdaptorDelegator<OpenAIProperty> {
@@ -63,6 +66,9 @@ public class OpenAIAdaptor implements CompletionAdaptorDelegator<OpenAIProperty>
     private Request buildRequest(CompletionRequest request, String url, OpenAIProperty property) {
         if(property.supportStreamOptions && request.isStream()) {
             request.setStream_options(new CompletionRequest.StreamOptions());
+        }
+        if(MapUtils.isNotEmpty(request.getExtra_body()) && property.getAbandonFields() != null) {
+             Arrays.stream(property.getAbandonFields()).forEach(f -> request.getExtra_body().remove(f));
         }
         request.setModel(property.getDeployName());
         if(StringUtils.isNotEmpty(property.getApiVersion())) {

@@ -1,27 +1,27 @@
 package com.ke.bella.openapi.endpoints;
 
 import com.ke.bella.openapi.BellaContext;
-import com.ke.bella.openapi.EndpointContext;
 import com.ke.bella.openapi.Operator;
 import com.ke.bella.openapi.annotations.BellaAPI;
-import com.ke.bella.openapi.common.exception.BizParamCheckException;
 import com.ke.bella.openapi.db.repo.UserRepo;
-import com.ke.bella.openapi.tables.pojos.UserDB;
+import com.ke.bella.openapi.user.UserSearchResult;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
-import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @BellaAPI
 @RestController
-@RequestMapping("/console/userInfo")
-@Tag(name = "用户信息管理")
+@RequestMapping("/v1/userInfo")
+@Tag(name = "用户信息查询")
 public class UserInfoController {
+
     @Autowired
     private UserRepo userRepo;
 
@@ -30,21 +30,26 @@ public class UserInfoController {
         return BellaContext.getOperator();
     }
 
-    @PostMapping("/manager")
-    public UserDB addManager(@RequestBody Operator op) {
-        Assert.isTrue((op.getUserId() != null && op.getUserId() > 0) ||(StringUtils.hasText(op.getSource()) && (StringUtils.hasText(op.getEmail()) || StringUtils.hasText(op.getSourceId()))),
-                "invalid params");
-        UserDB user;
-        if(op.getUserId() != null && op.getUserId() > 0) {
-            user = userRepo.addManagerById(op.getUserId());
-        } else if(StringUtils.hasText(op.getSourceId())) {
-            user = userRepo.addManagerBySourceAndSourceId(op.getSource(), op.getSourceId());
-        } else {
-            user = userRepo.addManagerBySourceAndEmail(op.getSource(), op.getEmail());
+    @GetMapping("/search")
+    public List<UserSearchResult> searchUsers(
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "20") int limit,
+            @RequestParam(defaultValue = "false") boolean excludeSelf) {
+        
+        Assert.isTrue(StringUtils.isNotBlank(keyword), "搜索关键词不能为空");
+        Assert.isTrue(limit > 0 && limit <= 100, "返回数量必须在1-100之间");
+
+        Operator operator = BellaContext.getOperator();
+
+        if(!excludeSelf) {
+            return userRepo.searchUsers(keyword.trim(), limit);
         }
-        if(user == null) {
-            throw new BizParamCheckException("用户不存在");
+
+        Long currentUserId = operator.getUserId();
+
+        if(currentUserId.toString().equals(operator.getSourceId())) {
+            return userRepo.searchUsers(keyword.trim(), limit, null, currentUserId.toString());
         }
-        return user;
+        return userRepo.searchUsers(keyword.trim(), limit, currentUserId, null);
     }
 }
