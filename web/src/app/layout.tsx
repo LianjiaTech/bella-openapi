@@ -29,10 +29,10 @@ export default function RootLayout({
             <ThemeProvider
                 attribute="class"
                 defaultTheme="light"
-                enableSystem
+                enableSystem={false}
                 disableTransitionOnChange
             >
-                <main className="min-h-screen bg-white text-foreground">
+                <main className="min-h-screen bg-white text-gray-900">
                     <Toaster />
                     {children}
                 </main>
