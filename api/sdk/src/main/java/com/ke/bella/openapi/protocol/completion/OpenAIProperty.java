@@ -8,6 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
 
@@ -20,6 +21,7 @@ public class OpenAIProperty extends CompletionProperty {
     String deployName;
     String apiVersion;
     boolean supportStreamOptions = true;
+    String[] abandonFields;
 
     @Override
     public Map<String, String> description() {
@@ -28,6 +30,7 @@ public class OpenAIProperty extends CompletionProperty {
         map.put("deployName", "部署名称");
         map.put("apiVersion", "API版本(url中需要拼接时填写)");
         map.put("supportStreamOptions", "是否支持StreamOptions参数");
+        map.put("abandonFields", "禁用参数");
         return map;
     }
 }

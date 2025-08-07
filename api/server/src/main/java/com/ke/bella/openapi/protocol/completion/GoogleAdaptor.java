@@ -38,7 +38,7 @@ public class GoogleAdaptor implements CompletionAdaptor<OpenAIProperty> {
 
     private void fillExtraBody(CompletionRequest request) {
         if(request.getReasoning_effort() != null) {
-            request.setExtra_body(new ExtraBody.ExtraBodyBuilder().google(new GoogleExtraBody(true)).build());
+            request.setRealExtraBody(new ExtraBody.ExtraBodyBuilder().google(new GoogleExtraBody(true)).build());
             request.setReasoning_effort(null);
         }
     }
