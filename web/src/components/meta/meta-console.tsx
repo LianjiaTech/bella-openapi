@@ -74,7 +74,7 @@ export function MetaConsoleDisplay({ endpoint, suppliers }: MetaConsoleProps) {
                 </div>
             </div>
             <div className="flex justify-between items-center mb-8">
-                <h2 className="text-xl font-bold">模型列表</h2>
+                <h2 className="text-xl font-bold text-gray-900">模型列表</h2>
                 <Link href="/meta/console/model/create">
                     <Button
                         className="bg-purple-100 hover:bg-purple-200 text-gray-800 font-bold py-2 px-4 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105">
