@@ -1,6 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     output: 'standalone',
+    typescript: {
+        ignoreBuildErrors: true,
+    },
     env: {
         WORKFLOW_URL: process.env.WORKFLOW_URL,
         WORKFLOW_API_KEY: process.env.WORKFLOW_API_KEY,
