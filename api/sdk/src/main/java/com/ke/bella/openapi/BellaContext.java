@@ -2,6 +2,7 @@ package com.ke.bella.openapi;
 
 import com.ke.bella.openapi.apikey.ApikeyInfo;
 import com.ke.bella.openapi.utils.JacksonUtils;
+import org.springframework.beans.BeanUtils;
 import org.springframework.util.Assert;
 
 import java.util.HashMap;
@@ -75,15 +76,18 @@ public class BellaContext {
     }
 
     private static Operator getPureOper(Operator oper) {
-        return Operator.builder()
-                .userId(oper.getUserId())
-                .userName(oper.getUserName())
-                .email(oper.getEmail())
-                .tenantId(oper.getTenantId())
-                .spaceCode(oper.getSpaceCode())
-                .managerAk(oper.getManagerAk())
-                .optionalInfo(oper.getOptionalInfo() == null ? new HashMap<>() : oper.getOptionalInfo())
-                .build();
+        // 使用Spring BeanUtils进行属性拷贝，自动复制所有字段，降低维护成本
+        Operator copy = new Operator();
+        BeanUtils.copyProperties(oper, copy);
+        
+        // 确保optionalInfo不为null并进行浅拷贝
+        if (copy.getOptionalInfo() == null) {
+            copy.setOptionalInfo(new HashMap<>());
+        } else {
+            copy.setOptionalInfo(new HashMap<>(copy.getOptionalInfo()));
+        }
+        
+        return copy;
     }
 
     public static Map<String, Object> snapshot() {
