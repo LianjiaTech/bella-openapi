@@ -83,13 +83,7 @@ public class ResponsesApiSseConverter implements Callbacks.SseEventConverter<Str
             this.model = response.getModel();
         }
         
-        return StreamCompletionResponse.builder()
-                .id(responseId)
-                .object("chat.completion.chunk")
-                .created(created)
-                .model(model)
-                .choices(Collections.emptyList())
-                .build();
+        return null;
     }
 
     /**
