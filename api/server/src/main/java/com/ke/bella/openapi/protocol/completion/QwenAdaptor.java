@@ -36,6 +36,8 @@ public class QwenAdaptor implements CompletionAdaptor<OpenAIProperty> {
         if(request.getReasoning_effort() != null) {
             request.setEnable_thinking(true);
             request.setReasoning_effort(null);
+        } else if(request.getEnable_thinking() == null) {
+            request.setEnable_thinking(false);
         }
     }
 
