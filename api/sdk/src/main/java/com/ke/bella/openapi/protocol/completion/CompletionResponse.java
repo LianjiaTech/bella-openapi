@@ -2,6 +2,7 @@ package com.ke.bella.openapi.protocol.completion;
 
 import java.util.List;
 
+import lombok.Builder;
 import org.apache.commons.collections4.CollectionUtils;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -151,6 +152,9 @@ public class CompletionResponse extends OpenapiResponse {
 
     @Data
     @JsonInclude(Include.NON_NULL)
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
     public static class TokenUsage {
         private int completion_tokens;
         private int prompt_tokens;
