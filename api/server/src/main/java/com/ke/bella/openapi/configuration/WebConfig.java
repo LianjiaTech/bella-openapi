@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.ke.bella.openapi.intercept.AuthorizationInterceptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -13,8 +14,8 @@ import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import com.ke.bella.openapi.common.EntityConstants;
-import com.ke.bella.openapi.intercept.AuthorizationInterceptor;
-import com.ke.bella.openapi.intercept.ConcurrentStartInterceptor;
+
+import com.ke.bella.openapi.server.intercept.ConcurrentStartInterceptor;
 import com.ke.bella.openapi.intercept.MonthQuotaInterceptor;
 import org.springframework.web.socket.server.standard.ServletServerContainerFactoryBean;
 
@@ -55,5 +56,10 @@ public class WebConfig implements WebMvcConfigurer {
         container.setMaxTextMessageBufferSize(256 * 1024);
         container.setMaxBinaryMessageBufferSize(256 * 1024);
         return container;
+    }
+
+    @Bean
+    public ConcurrentStartInterceptor concurrentStartInterceptor() {
+        return new ConcurrentStartInterceptor();
     }
 }
