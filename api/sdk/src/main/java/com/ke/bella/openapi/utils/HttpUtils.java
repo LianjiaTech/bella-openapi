@@ -8,10 +8,9 @@ import com.ke.bella.openapi.protocol.BellaWebSocketListener;
 import com.ke.bella.openapi.protocol.Callbacks;
 import okhttp3.ConnectionPool;
 import okhttp3.Dispatcher;
-import okhttp3.MediaType;
+import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
-import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 import okhttp3.WebSocket;
@@ -26,7 +25,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -40,31 +40,54 @@ import java.util.function.Function;
  * Author: Stan Sai Date: 2024/8/14 12:09 description:
  */
 public class HttpUtils {
+
     private static final ConnectionPool connectionPool = new ConnectionPool(1500, 5, TimeUnit.MINUTES);
+
     private static final ExecutorService executorService = new ThreadPoolExecutor(0, Integer.MAX_VALUE, 60, TimeUnit.SECONDS,
             new SynchronousQueue<>(), Util.threadFactory("OkHttp Dispatcher", false));
+
     private static final int defaultConnectionTimeout = 120;
     private static final int defaultReadTimeout = 300;
-    private static final OkHttpClient.Builder clientBuilder = clientBuilder();
+
+    private static final List<Interceptor> interceptors = new ArrayList<>();
+
     public static OkHttpClient defaultOkhttpClient() {
         OkHttpClient.Builder builder = clientBuilder()
                 .connectTimeout(defaultConnectionTimeout, TimeUnit.SECONDS)
                 .readTimeout(defaultReadTimeout, TimeUnit.SECONDS);
         return builder.build();
     }
+
     private static OkHttpClient.Builder clientBuilder() {
         Dispatcher dispatcher = new Dispatcher(executorService);
         dispatcher.setMaxRequests(2000);
         dispatcher.setMaxRequestsPerHost(500);
-        return new OkHttpClient.Builder()
+        OkHttpClient.Builder builder = new OkHttpClient.Builder()
                 .proxySelector(ProxyUtils.getProxySelector())
                 .connectionPool(connectionPool)
                 .dispatcher(dispatcher);
+        interceptors.forEach(builder::addInterceptor);
+        return builder;
+    }
+
+    public static void addInterceptor(Interceptor interceptor) {
+        interceptors.add(interceptor);
     }
 
     public static Response httpRequest(Request request, int connectionTimeout, int readTimeout) throws IOException {
-        return clientBuilder.connectTimeout(connectionTimeout, TimeUnit.SECONDS).readTimeout(readTimeout, TimeUnit.SECONDS)
-                .build().newCall(request).execute();
+        return httpRequest(request, connectionTimeout, readTimeout, null);
+    }
+
+    public static Response httpRequest(Request request, int connectionTimeout, int readTimeout, Interceptor interceptor) throws IOException {
+        OkHttpClient.Builder builder = clientBuilder()
+                .connectTimeout(connectionTimeout, TimeUnit.SECONDS)
+                .readTimeout(readTimeout, TimeUnit.SECONDS);
+        
+        if (interceptor != null) {
+            builder.addInterceptor(interceptor);
+        }
+        
+        return builder.build().newCall(request).execute();
     }
 
     public static Response httpRequest(Request request) throws IOException {
@@ -72,18 +95,44 @@ public class HttpUtils {
     }
 
     public static void streamRequest(Request request, BellaStreamCallback callback) {
-        streamRequest(request, callback, defaultConnectionTimeout, defaultReadTimeout);
+        streamRequest(request, callback, defaultConnectionTimeout, defaultReadTimeout, null);
     }
 
     public static void streamRequest(Request request, BellaEventSourceListener listener) {
-        streamRequest(request, listener, defaultConnectionTimeout, defaultReadTimeout);
+        streamRequest(request, listener, defaultConnectionTimeout, defaultReadTimeout, null);
     }
 
     public static void streamRequest(Request request, BellaStreamCallback callback, int connectionTimeout, int readTimeout) {
+        streamRequest(request, callback, connectionTimeout, readTimeout, null);
+    }
+
+    public static void streamRequest(Request request, BellaEventSourceListener listener, int connectionTimeout, int readTimeout) {
+        streamRequest(request, listener, connectionTimeout, readTimeout, null);
+    }
+
+    // Stream request methods with optional Interceptor support
+    public static void streamRequest(Request request, BellaStreamCallback callback, Interceptor interceptor) {
+        streamRequest(request, callback, defaultConnectionTimeout, defaultReadTimeout, interceptor);
+    }
+
+    public static void streamRequest(Request request, BellaEventSourceListener listener, Interceptor interceptor) {
+        streamRequest(request, listener, defaultConnectionTimeout, defaultReadTimeout, interceptor);
+    }
+
+    // Core implementation methods with optional Interceptor
+    public static void streamRequest(Request request, BellaStreamCallback callback, int connectionTimeout, int readTimeout, Interceptor interceptor) {
         CompletableFuture<?> future = new CompletableFuture<>();
         callback.setConnectionInitFuture(future);
-        clientBuilder.connectTimeout(connectionTimeout, TimeUnit.SECONDS)
-                .readTimeout(readTimeout, TimeUnit.SECONDS).build().newCall(request).enqueue(callback);
+        
+        OkHttpClient.Builder builder = clientBuilder()
+                .connectTimeout(connectionTimeout, TimeUnit.SECONDS)
+                .readTimeout(readTimeout, TimeUnit.SECONDS);
+        
+        if (interceptor != null) {
+            builder.addInterceptor(interceptor);
+        }
+        
+        builder.build().newCall(request).enqueue(callback);
         try {
             future.get();
         } catch (InterruptedException interruptedException) {
@@ -97,11 +146,19 @@ public class HttpUtils {
         }
     }
 
-    public static void streamRequest(Request request, BellaEventSourceListener listener, int connectionTimeout, int readTimeout) {
+    public static void streamRequest(Request request, BellaEventSourceListener listener, int connectionTimeout, int readTimeout, Interceptor interceptor) {
         CompletableFuture<?> future = new CompletableFuture<>();
         listener.setConnectionInitFuture(future);
-        EventSources.createFactory(clientBuilder.connectTimeout(connectionTimeout, TimeUnit.SECONDS)
-                .readTimeout(readTimeout, TimeUnit.SECONDS).build()).newEventSource(request, listener);
+        
+        OkHttpClient.Builder builder = clientBuilder()
+                .connectTimeout(connectionTimeout, TimeUnit.SECONDS)
+                .readTimeout(readTimeout, TimeUnit.SECONDS);
+        
+        if (interceptor != null) {
+            builder.addInterceptor(interceptor);
+        }
+        
+        EventSources.createFactory(builder.build()).newEventSource(request, listener);
         try {
             future.get();
         } catch (InterruptedException interruptedException) {
@@ -116,41 +173,68 @@ public class HttpUtils {
     }
 
     public static <T> T httpRequest(Request request, Class<T> clazz) {
-        return doHttpRequest(request, bytes -> JacksonUtils.deserialize(bytes, clazz), null, defaultConnectionTimeout, defaultReadTimeout);
+        return httpRequest(request, clazz, null, defaultConnectionTimeout, defaultReadTimeout, null);
     }
 
     public static <T> T httpRequest(Request request, TypeReference<T> typeReference) {
-        return doHttpRequest(request, bytes -> JacksonUtils.deserialize(bytes, typeReference), null, defaultConnectionTimeout, defaultReadTimeout);
+        return httpRequest(request, typeReference, null, defaultConnectionTimeout, defaultReadTimeout, null);
     }
 
     public static <T> T httpRequest(Request request, Class<T> clazz, Callbacks.ChannelErrorCallback<T> errorCallback) {
-        return doHttpRequest(request, bytes -> JacksonUtils.deserialize(bytes, clazz), errorCallback, defaultConnectionTimeout, defaultReadTimeout);
+        return httpRequest(request, clazz, errorCallback, defaultConnectionTimeout, defaultReadTimeout, null);
     }
 
     public static <T> T httpRequest(Request request, TypeReference<T> typeReference, Callbacks.ChannelErrorCallback<T> errorCallback) {
-        return doHttpRequest(request, bytes -> JacksonUtils.deserialize(bytes, typeReference), errorCallback, defaultConnectionTimeout, defaultReadTimeout);
+        return httpRequest(request, typeReference, errorCallback, defaultConnectionTimeout, defaultReadTimeout, null);
     }
 
     public static <T> T httpRequest(Request request, Class<T> clazz, int connectionTimeout, int readTimeout) {
-        return doHttpRequest(request, bytes -> JacksonUtils.deserialize(bytes, clazz), null, connectionTimeout, readTimeout);
+        return httpRequest(request, clazz, null, connectionTimeout, readTimeout, null);
     }
 
     public static <T> T httpRequest(Request request, TypeReference<T> typeReference, int connectionTimeout, int readTimeout) {
-        return doHttpRequest(request, bytes -> JacksonUtils.deserialize(bytes, typeReference), null, connectionTimeout, readTimeout);
+        return httpRequest(request, typeReference, null, connectionTimeout, readTimeout, null);
     }
 
     public static <T> T httpRequest(Request request, Class<T> clazz, Callbacks.ChannelErrorCallback<T> errorCallback, int connectionTimeout, int readTimeout) {
-        return doHttpRequest(request, bytes -> JacksonUtils.deserialize(bytes, clazz), errorCallback, connectionTimeout, readTimeout);
+        return httpRequest(request, clazz, errorCallback, connectionTimeout, readTimeout, null);
     }
 
     public static <T> T httpRequest(Request request, TypeReference<T> typeReference, Callbacks.ChannelErrorCallback<T> errorCallback, int connectionTimeout, int readTimeout) {
-        return doHttpRequest(request, bytes -> JacksonUtils.deserialize(bytes, typeReference), errorCallback, connectionTimeout, readTimeout);
+        return httpRequest(request, typeReference, errorCallback, connectionTimeout, readTimeout, null);
     }
 
-    private static  <T> T doHttpRequest(Request request, Function<byte[], T> responseConvert, Callbacks.ChannelErrorCallback<T> errorCallback, int connectionTimeout, int readTimeout) {
+    // Methods with optional Interceptor support
+    public static <T> T httpRequest(Request request, Class<T> clazz, Interceptor interceptor) {
+        return httpRequest(request, clazz, null, defaultConnectionTimeout, defaultReadTimeout, interceptor);
+    }
+
+    public static <T> T httpRequest(Request request, TypeReference<T> typeReference, Interceptor interceptor) {
+        return httpRequest(request, typeReference, null, defaultConnectionTimeout, defaultReadTimeout, interceptor);
+    }
+
+    public static <T> T httpRequest(Request request, Class<T> clazz, Callbacks.ChannelErrorCallback<T> errorCallback, Interceptor interceptor) {
+        return httpRequest(request, clazz, errorCallback, defaultConnectionTimeout, defaultReadTimeout, interceptor);
+    }
+
+    public static <T> T httpRequest(Request request, TypeReference<T> typeReference, Callbacks.ChannelErrorCallback<T> errorCallback, Interceptor interceptor) {
+        return httpRequest(request, typeReference, errorCallback, defaultConnectionTimeout, defaultReadTimeout, interceptor);
+    }
+
+    // Core implementation methods with optional Interceptor
+    public static <T> T httpRequest(Request request, Class<T> clazz, Callbacks.ChannelErrorCallback<T> errorCallback, int connectionTimeout, int readTimeout, Interceptor interceptor) {
+        return doHttpRequest(request, bytes -> JacksonUtils.deserialize(bytes, clazz), errorCallback, connectionTimeout, readTimeout, interceptor);
+    }
+
+    public static <T> T httpRequest(Request request, TypeReference<T> typeReference, Callbacks.ChannelErrorCallback<T> errorCallback, int connectionTimeout, int readTimeout, Interceptor interceptor) {
+        return doHttpRequest(request, bytes -> JacksonUtils.deserialize(bytes, typeReference), errorCallback, connectionTimeout, readTimeout, interceptor);
+    }
+
+    private static <T> T doHttpRequest(Request request, Function<byte[], T> responseConvert, Callbacks.ChannelErrorCallback<T> errorCallback, int connectionTimeout, int readTimeout, Interceptor interceptor) {
         T result = null;
         try {
-            Response response = HttpUtils.httpRequest(request, connectionTimeout, readTimeout);
+            Response response = HttpUtils.httpRequest(request, connectionTimeout, readTimeout, interceptor);
+            
             if(response.body() != null) {
                 result = responseConvert.apply(response.body().bytes());
             }
