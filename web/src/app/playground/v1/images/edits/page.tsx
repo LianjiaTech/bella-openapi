@@ -80,19 +80,14 @@ export default function ImageGenerationsPlayground() {
     try {
       const protocol = typeof window !== 'undefined' ? window.location.protocol : 'http:';
       const host = api_host || window.location.host;
-      console.log(model)
-      console.log(prompt)
+      const formData = new FormData();
+      formData.append('prompt', prompt);
+      formData.append('model', model);
+      formData.append('user', userInfo.userId);
+      formData.append('image_b64_json', sourceImageBase64);
       const result = await fetch(`${protocol}//${host}/v1/images/edits`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          prompt: prompt,
-          model: model,
-          image: sourceImageBase64,
-          user: userInfo?.userId
-        }),
+        body: formData,
         credentials: 'include'
       });
       
