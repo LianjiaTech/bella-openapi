@@ -1,12 +1,10 @@
-package com.ke.bella.openapi.intercept;
+package com.ke.bella.openapi.server.intercept;
 
-import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-@Component
 public class ConcurrentStartInterceptor extends HandlerInterceptorAdapter {
     public static final String ASYNC_REQUEST_MARKER = "ASYNC_REQUEST_MARKER";
     @Override
