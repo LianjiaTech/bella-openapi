@@ -66,7 +66,7 @@ public class ImagesController {
      */
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @PostMapping("/edits")
-    public ImagesResponse editImages(ImagesEditRequest request) {
+    public ImagesResponse editImages(@RequestBody ImagesEditRequest request) {
         String endpoint = EndpointContext.getRequest().getRequestURI();
         String model = request.getModel();
         EndpointContext.setEndpointData(endpoint, model, request);

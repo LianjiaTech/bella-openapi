@@ -4,6 +4,7 @@ import com.ke.bella.openapi.protocol.images.ImagesEditRequest;
 import com.ke.bella.openapi.protocol.images.ImagesEditorProperty;
 import com.ke.bella.openapi.protocol.images.ImagesResponse;
 import com.ke.bella.openapi.utils.HttpUtils;
+import com.ke.bella.openapi.utils.JacksonUtils;
 import okhttp3.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
@@ -34,12 +35,23 @@ public class OpenAIAdaptor implements ImagesEditorAdaptor<ImagesEditorProperty> 
     @Override
     public ImagesResponse editImages(ImagesEditRequest request, String url, ImagesEditorProperty property) {
         try {
+			if (request.getImage() != null && request.getImageF() == null) {
+				request.setModel(property.getDeployName());
+				Request.Builder requestBuilder = authorizationRequestBuilder(property.getAuth());
+
+				requestBuilder.url(url)
+					.post(RequestBody.create(MediaType.get("application/json; charset=utf-8"),
+						JacksonUtils.serialize(request)));
+
+				Request httpRequest = requestBuilder.build();
+				return HttpUtils.httpRequest(httpRequest, ImagesResponse.class);
+			}
             // 构建multipart请求
             MultipartBody.Builder multipartBuilder = new MultipartBody.Builder()
                     .setType(MultipartBody.FORM);
 
             // 添加图片数据（根据配置支持不同的输入方式）
-            MultipartFile imageFile = request.getImage();
+            MultipartFile imageFile = request.getImageF();
             if (property.isSupportFile() && imageFile != null && !imageFile.isEmpty()) {
                 // 仅在配置支持时才允许文件上传
                 multipartBuilder.addFormDataPart("image", imageFile.getOriginalFilename(),
