@@ -159,6 +159,9 @@ public class AudioTranscriptionRequest {
         @JsonProperty("sensitive_words_filter")
         private String sensitiveWordsFilter;
 
+        @JsonProperty("boosting_table_name")
+        private String boostingTableName;
+
     }
 
     @Data

@@ -7,11 +7,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 import com.alicp.jetcache.anno.config.EnableMethodCache;
 
-@ComponentScan(basePackages = { "com.ke.bella.openapi" })
+@ComponentScan(basePackages = { "com.ke.bella.openapi" }, 
+    excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, 
+    classes = com.ke.bella.openapi.server.BellaServiceConfiguration.class))
 @SpringBootApplication
 @EnableMethodCache(basePackages = "com.ke.bella.openapi")
 @EnableScheduling

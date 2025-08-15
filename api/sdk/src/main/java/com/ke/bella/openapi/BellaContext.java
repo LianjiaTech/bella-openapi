@@ -90,6 +90,15 @@ public class BellaContext {
         return copy;
     }
 
+    public static String getOwnerCode() {
+        Operator op = getOperatorIgnoreNull();
+        if(op != null) {
+            return op.getUserId() == null || op.getUserId() <= 0? op.getSourceId() : op.getUserId().toString();
+        }
+        ApikeyInfo apikeyInfo = getApikeyIgnoreNull();
+        return apikeyInfo == null ? null : apikeyInfo.getOwnerCode();
+    }
+
     public static Map<String, Object> snapshot() {
         Map<String, Object> map = new HashMap<>();
         map.put("oper", operatorLocal.get());
