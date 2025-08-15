@@ -20,6 +20,7 @@ export default function ImageGenerationsPlayground() {
   const [sourceImage, setSourceImage] = useState(null);
   const [sourceImageBase64, setSourceImageBase64] = useState(null); 
   const [selectedImage, setSelectedImage] = useState(null);
+  const [imageUrl, setImageUrl] = useState('');
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -28,39 +29,18 @@ export default function ImageGenerationsPlayground() {
       setModel(modelParam);
     }
   }, []);
-  
+
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    
-    if (!['image/jpeg', 'image/png'].includes(file.type)) {
-      setError('只支持 JPEG 和 PNG 格式的图片');
-      return;
-    }
-    
-    if (file.size > 10 * 1024 * 1024) { // 10MB
-      setError('图片大小不能超过 10MB');
-      return;
-    }
     
     const reader = new FileReader();
     reader.onload = (event) => {
       const img = new Image();
       img.onload = () => {
-        const ratio = img.width / img.height;
-        if (ratio <= 1/3 || ratio >= 3) {
-          setError('图片宽高比必须在 1:3 到 3:1 之间');
-          return;
-        }
-        
-        if (img.width <= 14 || img.height <= 14) {
-          setError('图片尺寸太小');
-          return;
-        }
-        
+
         setSourceImage(event.target.result);
         setSourceImageBase64(event.target.result);
-
         setError('');
       };
       img.src = event.target.result;
@@ -69,7 +49,7 @@ export default function ImageGenerationsPlayground() {
   };
   
   const generateImages = async () => {
-    if (!prompt.trim() || !sourceImageBase64) {
+    if (!prompt.trim() || (!sourceImageBase64 && !imageUrl)) {
       setError('请上传图片并输入描述文字');
       return;
     }
@@ -84,7 +64,12 @@ export default function ImageGenerationsPlayground() {
       formData.append('prompt', prompt);
       formData.append('model', model);
       formData.append('user', userInfo.userId);
-      formData.append('image_b64_json', sourceImageBase64);
+      if (sourceImageBase64) {
+        formData.append('image_b64_json', sourceImageBase64);
+      }
+      if (imageUrl) {
+        formData.append('image_url', imageUrl);
+      }
       const result = await fetch(`${protocol}//${host}/v1/images/edits`, {
         method: 'POST',
         body: formData,
@@ -157,7 +142,7 @@ export default function ImageGenerationsPlayground() {
       <div className="flex flex-col md:flex-row gap-4 h-full">
         <div className="w-full md:w-1/2 h-full">
           <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 flex flex-col justify-center h-full">
-            <div className="flex flex-col items-center justify-center relative h-full">
+            <div className="flex flex-col items-center justify-center h-full">
               {sourceImage ? (
                 <div className="relative w-full h-full flex items-center justify-center">
                   <img 
@@ -176,19 +161,33 @@ export default function ImageGenerationsPlayground() {
                   </Button>
                 </div>
               ) : (
-                <>
-                  <div className="flex flex-col items-center justify-center">
-                    <Upload className="h-10 w-10 text-gray-400 mb-2" />
-                    <p className="text-sm text-gray-500 mb-1">点击上传需要编辑的图片</p>
-                    <p className="text-xs text-gray-400">支持 JPEG、PNG 格式，大小不超过 10MB</p>
+                <div className="flex flex-col items-center justify-center w-full">
+                  <Upload className="h-10 w-10 text-gray-400 mb-2" />
+                  <p className="text-sm text-gray-500 mb-3">上传图片或输入图片URL</p>
+                  
+                  <div className="w-full max-w-xs mb-4 z-10 relative">
+                    <div className="flex">
+                      <input
+                        type="text"
+                        placeholder="输入图片URL..."
+                        className="flex-grow px-3 py-1 text-sm border border-gray-300 rounded-l-md focus:outline-none focus:ring-1 focus:ring-gray-400"
+                        value={imageUrl || ''}
+                        onChange={(e) => setImageUrl(e.target.value)}
+                      />
+                    </div>
                   </div>
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png"
-                    onChange={handleImageUpload}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  />
-                </>
+                  
+                  <div className="text-xs text-gray-500 mb-2">或</div>
+                  
+                  <label className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-4 rounded-md text-sm transition-colors">
+                    选择本地图片
+                    <input
+                      type="file"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
               )}
             </div>
           </div>
@@ -218,7 +217,7 @@ export default function ImageGenerationsPlayground() {
                 size="sm"
                 onClick={generateImages}
                 className="text-gray-600 hover:bg-gray-100"
-                disabled={isLoading || !prompt.trim() || !sourceImage}
+                disabled={isLoading || !prompt.trim() || (!sourceImage && !imageUrl)}
               >
                 {isLoading ? '生成中...' : '编辑图像'}
               </Button>
