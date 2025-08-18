@@ -36,21 +36,16 @@ public class HuoshanAdaptor implements ImagesEditorAdaptor<ImagesEditorProperty>
 	@Override
 	public ImagesResponse editImages(ImagesEditRequest request, String url, ImagesEditorProperty property) {
 
-		if (request.getImage_url() == null && request.getImage_b64_json() == null)
-		{
-            throw new BizParamCheckException("图像信息缺失，仅支持输入图片的 Base64 编码或可访问的 URL");
-		}
 		Map<String, Object> newRequestMap = new HashMap<>();
 		newRequestMap.put("prompt", request.getPrompt());
 		newRequestMap.put("model", property.getDeployName());
 		newRequestMap.put("user", request.getUser());
-		if (request.getImage_url() != null)
-        {
+		if (property.isSupportUrl() && request.getImage_url() != null && !request.getImage_url().isEmpty()) {
             newRequestMap.put("image", request.getImage_url());
-        }
-		if (request.getImage_b64_json() != null)
-        {
+        } else if (property.isSupportBase64() && request.getImage_b64_json() != null && !request.getImage_b64_json().isEmpty()) {
             newRequestMap.put("image", request.getImage_b64_json());
+        } else {
+			throw new BizParamCheckException("支持的格式 "  + (property.isSupportUrl() ? "URL " : "") + (property.isSupportBase64() ? "Base64" : ""));
         }
 
 		Request.Builder requestBuilder = authorizationRequestBuilder(property.getAuth());
