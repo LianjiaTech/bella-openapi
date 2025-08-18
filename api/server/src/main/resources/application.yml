@@ -18,6 +18,10 @@ spring:
         singleServerConfig:
           address: "redis://localhost:6379"
         codec: !<org.redisson.client.codec.StringCodec> {}
+  servlet:
+    multipart:
+      max-file-size: 4MB
+      max-request-size: 4MB
 
 jetcache:
   statIntervalMinutes: 0
