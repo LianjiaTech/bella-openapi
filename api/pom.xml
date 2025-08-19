@@ -17,7 +17,7 @@
 
   <groupId>top.bella</groupId>
   <artifactId>bella-openapi</artifactId>
-  <version>1.1.47</version>
+  <version>1.1.48</version>
   <name>bella-openapi</name>
   <description>Bella OpenAPI SDK</description>
   <url>https://github.com/LianjiaTech/bella-openapi</url>
@@ -32,6 +32,7 @@
     <redisson.version>3.9.1</redisson.version>
     <apollo.version>2.1.0</apollo.version>
     <awssdk.version>2.31.65</awssdk.version>
+    <bella-openai.version>0.23.2</bella-openai.version>
   </properties>
 
   <licenses>
@@ -113,6 +114,11 @@
         <groupId>com.ctrip.framework.apollo</groupId>
         <artifactId>apollo-client</artifactId>
         <version>${apollo.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>top.bella</groupId>
+        <artifactId>openai-service</artifactId>
+        <version>${bella-openai.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

@@ -1,18 +1,24 @@
 package com.ke.bella.openapi.server;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ke.bella.openapi.client.OpenapiClient;
 import com.ke.bella.openapi.request.BellaInterceptor;
 import com.ke.bella.openapi.request.BellaRequestFilter;
 import com.ke.bella.openapi.server.intercept.AuthorizationInterceptor;
 import com.ke.bella.openapi.server.intercept.ConcurrentStartInterceptor;
 import com.ke.bella.openapi.utils.HttpUtils;
+import com.theokanning.openai.client.OpenAiApi;
+import com.theokanning.openai.service.OpenAiService;
+import okhttp3.OkHttpClient;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
+import retrofit2.Retrofit;
 
 import javax.annotation.PostConstruct;
+import java.util.concurrent.ExecutorService;
 
 @EnableConfigurationProperties(OpenapiProperties.class)
 @Configuration
@@ -46,5 +52,18 @@ public class BellaServiceConfiguration {
     @Bean
     public AuthorizationInterceptor authorizationInterceptor() {
         return new AuthorizationInterceptor();
+    }
+
+    @Bean
+    public OpenAiService openAiService(OpenapiProperties openapiProperties) {
+        ObjectMapper mapper = OpenAiService.defaultObjectMapper();
+
+        OkHttpClient client = HttpUtils.defaultOkhttpClient();
+
+        Retrofit retrofit = OpenAiService.defaultRetrofit(client, mapper, openapiProperties.getHost() + "/v1/");
+        OpenAiApi openAiApi = retrofit.create(OpenAiApi.class);
+
+        ExecutorService executorService = client.dispatcher().executorService();
+        return new OpenAiService(openAiApi, executorService);
     }
 }
