@@ -9,6 +9,7 @@ import com.ke.bella.openapi.protocol.embedding.EmbeddingPriceInfo;
 import com.ke.bella.openapi.protocol.speaker.SpeakerEmbeddingPriceInfo;
 import com.ke.bella.openapi.protocol.tts.TtsPriceInfo;
 import com.ke.bella.openapi.protocol.images.ImagesPriceInfo;
+import com.ke.bella.openapi.protocol.images.ImagesEditsPriceInfo;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -27,6 +28,7 @@ public interface IPriceInfo extends IDescription {
         TRANSCRIPTION_ASR("/v1/audio/transcriptions", TranscriptionsAsrPriceInfo.class),
         SPEAKER_EMBEDDING("/v1/audio/speaker/embedding", SpeakerEmbeddingPriceInfo.class),
         IMAGES("/v1/images/generations", ImagesPriceInfo.class),
+		IMAGES_EDIT("/v1/images/edits", ImagesEditsPriceInfo.class)
         ;
 
         private final String endpoint;
