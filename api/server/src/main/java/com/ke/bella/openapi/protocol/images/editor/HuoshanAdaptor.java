@@ -40,6 +40,7 @@ public class HuoshanAdaptor implements ImagesEditorAdaptor<ImagesEditorProperty>
 		newRequestMap.put("prompt", request.getPrompt());
 		newRequestMap.put("model", property.getDeployName());
 		newRequestMap.put("user", request.getUser());
+		newRequestMap.put("watermark", false);
 		if (property.isSupportUrl() && request.getImage_url() != null && !request.getImage_url().isEmpty()) {
             newRequestMap.put("image", request.getImage_url());
         } else if (property.isSupportBase64() && request.getImage_b64_json() != null && !request.getImage_b64_json().isEmpty()) {
