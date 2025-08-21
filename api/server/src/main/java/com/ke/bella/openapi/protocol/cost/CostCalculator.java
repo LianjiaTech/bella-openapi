@@ -6,6 +6,7 @@ import com.ke.bella.openapi.protocol.completion.CompletionPriceInfo;
 import com.ke.bella.openapi.protocol.completion.CompletionResponse;
 import com.ke.bella.openapi.protocol.embedding.EmbeddingPriceInfo;
 import com.ke.bella.openapi.protocol.embedding.EmbeddingResponse;
+import com.ke.bella.openapi.protocol.images.ImagesEditsPriceInfo;
 import com.ke.bella.openapi.protocol.images.ImagesPriceInfo;
 import com.ke.bella.openapi.protocol.images.ImagesResponse;
 import com.ke.bella.openapi.protocol.realtime.RealTimePriceInfo;
@@ -59,7 +60,7 @@ public class CostCalculator  {
         REAL_TIME("/v*/audio/realtime", realtime),
         ASR_TRANSCRIPTIONS("/v*/audio/transcriptions", asr_transcriptions),
         IMAGES("/v*/images/generations", images),
-        IMAGES_EDITS("/v*/images/edits", images),
+        IMAGES_EDITS("/v*/images/edits", images_edits),
         IMAGES_VARIATIONS("/v*/images/variations", images),
         SPEAKER_EMBEDDING("/v*/audio/speaker/embedding", speakerEmbedding)
         ;
@@ -200,6 +201,39 @@ public class CostCalculator  {
             return price != null && CollectionUtils.isNotEmpty(price.getDetails())
                     && price.getDetails().stream().allMatch(d -> StringUtils.isNotBlank(d.getSize()) &&
                     d.getHdPricePerImage() != null && d.getMdPricePerImage() != null && d.getLdPricePerImage() != null);
+        }
+    };
+
+	static EndpointCostCalculator images_edits = new EndpointCostCalculator() {
+		@Override
+		public BigDecimal calculate(String priceInfo, Object usage) {
+			ImagesEditsPriceInfo price = JacksonUtils.deserialize(priceInfo, ImagesEditsPriceInfo.class);
+			ImagesResponse.Usage imageEditsUsage = (ImagesResponse.Usage) usage;
+			BigDecimal editCost = BigDecimal.ZERO;
+
+			if (price != null) {
+
+				int editCount = imageEditsUsage.getNum();
+				if (price.getPricePerEdit() != null) {
+					editCost = editCost.add(price.getPricePerEdit().multiply(BigDecimal.valueOf(editCount)));
+				}
+
+
+				if (price.getImageTokenPrice() != null && imageEditsUsage.getTotal_tokens() != null) {
+					BigDecimal imageTokenCost = price.getImageTokenPrice()
+						.multiply(BigDecimal.valueOf(imageEditsUsage.getTotal_tokens() / 1000.0));
+					editCost = editCost.add(imageTokenCost);
+				}
+			}
+
+			return editCost;
+		}
+
+		@Override
+		public boolean checkPriceInfo(String priceInfo) {
+
+			ImagesEditsPriceInfo price = JacksonUtils.deserialize(priceInfo, ImagesEditsPriceInfo.class);
+			return price != null && price.getPricePerEdit() != null;
         }
     };
 
