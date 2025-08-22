@@ -2,6 +2,7 @@ package com.ke.bella.openapi.protocol.images.editor;
 
 import com.ke.bella.openapi.common.exception.BizParamCheckException;
 import com.ke.bella.openapi.protocol.images.ImagesEditRequest;
+import org.springframework.web.multipart.MultipartFile;
 import com.ke.bella.openapi.protocol.images.ImagesEditorProperty;
 import com.ke.bella.openapi.protocol.images.ImagesResponse;
 import com.ke.bella.openapi.utils.HttpUtils;
@@ -9,6 +10,8 @@ import com.ke.bella.openapi.utils.JacksonUtils;
 import okhttp3.*;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -41,13 +44,22 @@ public class HuoshanAdaptor implements ImagesEditorAdaptor<ImagesEditorProperty>
 		newRequestMap.put("model", property.getDeployName());
 		newRequestMap.put("user", request.getUser());
 		newRequestMap.put("watermark", false);
-		if (property.isSupportUrl() && request.getImage_url() != null && !request.getImage_url().isEmpty()) {
-            newRequestMap.put("image", request.getImage_url());
-        } else if (property.isSupportBase64() && request.getImage_b64_json() != null && !request.getImage_b64_json().isEmpty()) {
-            newRequestMap.put("image", request.getImage_b64_json());
-        } else {
-			throw new BizParamCheckException("支持的格式 "  + (property.isSupportUrl() ? "URL " : "") + (property.isSupportBase64() ? "Base64" : ""));
-        }
+		MultipartFile imageFile = request.getImage();
+		try {
+			if (property.isSupportBase64() && request.getImage_b64_json() != null && !request.getImage_b64_json().isEmpty()) {
+				newRequestMap.put("image", request.getImage_b64_json());
+			} else if (property.isSupportBase64() && imageFile != null && !imageFile.isEmpty() && request.getImage_b64_json() == null) {
+				byte[] imageBytes = imageFile.getBytes();
+				String base64Image = Base64.getEncoder().encodeToString(imageBytes);
+				newRequestMap.put("image", base64Image);
+			} else if (property.isSupportUrl() && request.getImage_url() != null && !request.getImage_url().isEmpty()) {
+				newRequestMap.put("image", request.getImage_url());
+			} else {
+				throw new BizParamCheckException("支持的格式 "  + (property.isSupportUrl() ? "URL " : "") + (property.isSupportBase64() ? "Base64" : ""));
+			}
+		} catch (IOException e) {
+			throw new BizParamCheckException("文件读取异常:"+ e );
+		}
 
 		if (request.getResponse_format() != null) {
 			newRequestMap.put("response_format", request.getResponse_format());
