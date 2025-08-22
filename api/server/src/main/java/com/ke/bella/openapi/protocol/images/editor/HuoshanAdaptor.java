@@ -58,7 +58,7 @@ public class HuoshanAdaptor implements ImagesEditorAdaptor<ImagesEditorProperty>
 				throw new BizParamCheckException("支持的格式 "  + (property.isSupportUrl() ? "URL " : "") + (property.isSupportBase64() ? "Base64" : ""));
 			}
 		} catch (IOException e) {
-			throw new BizParamCheckException("文件读取异常:"+ e );
+			throw new BizParamCheckException("文件读取异常:" + e.getMessage() );
 		}
 
 		if (request.getResponse_format() != null) {
