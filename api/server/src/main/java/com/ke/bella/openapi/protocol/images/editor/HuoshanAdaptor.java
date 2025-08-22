@@ -49,6 +49,12 @@ public class HuoshanAdaptor implements ImagesEditorAdaptor<ImagesEditorProperty>
 			throw new BizParamCheckException("支持的格式 "  + (property.isSupportUrl() ? "URL " : "") + (property.isSupportBase64() ? "Base64" : ""));
         }
 
+		if (request.getResponse_format() != null) {
+			newRequestMap.put("response_format", request.getResponse_format());
+		}
+		if (request.getSize() != null) {
+			newRequestMap.put("size", request.getSize());
+		}
 		Request.Builder requestBuilder = authorizationRequestBuilder(property.getAuth());
 		requestBuilder.url(url)
 			.post(RequestBody.create(MediaType.get("application/json; charset=utf-8"),
