@@ -51,7 +51,15 @@ public class HuoshanAdaptor implements ImagesEditorAdaptor<ImagesEditorProperty>
 			} else if (property.isSupportBase64() && imageFile != null && !imageFile.isEmpty() && request.getImage_b64_json() == null) {
 				byte[] imageBytes = imageFile.getBytes();
 				String base64Image = Base64.getEncoder().encodeToString(imageBytes);
-				newRequestMap.put("image", base64Image);
+				String contentType = imageFile.getContentType();
+				String imageFormat = "png";
+				if (contentType != null) {
+					if (contentType.startsWith("image/")) {
+						imageFormat = contentType.substring("image/".length());
+					}
+				}
+				String formattedBase64 = String.format("data:image/%s;base64,%s", imageFormat, base64Image);
+				newRequestMap.put("image", formattedBase64);
 			} else if (property.isSupportUrl() && request.getImage_url() != null && !request.getImage_url().isEmpty()) {
 				newRequestMap.put("image", request.getImage_url());
 			} else {
