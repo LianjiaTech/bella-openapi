@@ -38,6 +38,9 @@ public class RealTimeHandler extends TextWebSocketHandler {
     // 与ASR服务的WebSocket连接
     private WebSocket ws;
     private WebSocketCallback callback;
+    // 音频发送失败计数器
+    private int audioSendFailureCount = 0;
+    private static final int MAX_AUDIO_SEND_FAILURES = 3;
 
     public RealTimeHandler(String url, AsrProperty property, EndpointProcessData processData, EndpointLogger logger, RealTimeAdaptor<AsrProperty> adaptor) {
         this.url = url;
@@ -105,7 +108,23 @@ public class RealTimeHandler extends TextWebSocketHandler {
             // 发送音频数据到第三方服务
             boolean success = adaptor.sendAudioData(ws, audioData, callback);
             if (!success) {
+                audioSendFailureCount++;
+                LOGGER.warn("音频数据发送失败，失败次数: {}/{}", audioSendFailureCount, MAX_AUDIO_SEND_FAILURES);
+                
                 sendErrorResponse(session, 50000000,"发送音频数据失败");
+                
+                // 如果连续失败次数达到阈值，主动断开连接
+                if (audioSendFailureCount >= MAX_AUDIO_SEND_FAILURES) {
+                    LOGGER.warn("音频数据连续发送失败达到上限({})，主动断开WebSocket连接", MAX_AUDIO_SEND_FAILURES);
+                    closeConnectionAndCleanup(session);
+                    return;
+                }
+            } else {
+                // 发送成功时重置失败计数器
+                if (audioSendFailureCount > 0) {
+                    LOGGER.info("音频数据发送恢复成功，重置失败计数器");
+                    audioSendFailureCount = 0;
+                }
             }
             
         } catch (Exception e) {
@@ -117,27 +136,13 @@ public class RealTimeHandler extends TextWebSocketHandler {
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
         LOGGER.info("客户端WebSocket连接已关闭, status: {}", status);
-        
-        // 关闭与第三方ws服务的连接
-        if (ws != null) {
-            adaptor.closeConnection(ws);
-            ws = null;
-        }
-        
-        taskId = null;
+        cleanupResources();
     }
     
     @Override
     public void handleTransportError(WebSocketSession session, Throwable exception) {
         LOGGER.warn("WebSocket传输错误: {}", exception.getMessage());
-        
-        // 关闭与第三方服务的连接
-        if (ws != null) {
-            adaptor.closeConnection(ws);
-            ws = null;
-        }
-        
-        taskId = null;
+        cleanupResources();
     }
 
     private void handleStartTranscription(WebSocketSession session, RealTimeMessage request) throws IOException {
@@ -151,6 +156,9 @@ public class RealTimeHandler extends TextWebSocketHandler {
         if (taskId == null) {
             taskId = UUID.randomUUID().toString();
         }
+        
+        // 重置失败计数器
+        audioSendFailureCount = 0;
         
         // 创建回调处理器
         callback = adaptor.createCallback(webSocketSender(session, processData), processData, logger, taskId, request, property);
@@ -258,5 +266,48 @@ public class RealTimeHandler extends TextWebSocketHandler {
                 }
             }
         };
+    }
+
+    /**
+     * 关闭连接并清理资源
+     */
+    private void closeConnectionAndCleanup(WebSocketSession session) {
+        try {
+            // 发送TaskFailed消息通知客户端连接即将关闭
+            RealTimeMessage taskFailedMessage = RealTimeMessage.taskFailedResponse(
+                taskId, 50000000, "音频数据连续发送失败，连接已断开"
+            );
+            if (session.isOpen()) {
+                session.sendMessage(new TextMessage(JacksonUtils.serialize(taskFailedMessage)));
+            }
+            
+            // 主动关闭客户端连接
+            if (session.isOpen()) {
+                session.close(CloseStatus.SERVER_ERROR.withReason("音频数据发送失败次数过多"));
+            }
+        } catch (IOException e) {
+            LOGGER.warn("关闭WebSocket连接时出错: {}", e.getMessage());
+        } finally {
+            cleanupResources();
+        }
+    }
+
+    /**
+     * 清理资源
+     */
+    private void cleanupResources() {
+        // 关闭与第三方ws服务的连接
+        if (ws != null) {
+            try {
+                adaptor.closeConnection(ws);
+            } catch (Exception e) {
+                LOGGER.warn("关闭第三方WebSocket连接时出错: {}", e.getMessage());
+            }
+            ws = null;
+        }
+        
+        taskId = null;
+        audioSendFailureCount = 0;
+        callback = null;
     }
 }

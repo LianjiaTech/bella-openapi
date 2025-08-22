@@ -42,4 +42,14 @@ public class RealTimeHeader implements Serializable {
         header.setStatusMessage(errorMessage);
         return header;
     }
+
+    public static RealTimeHeader taskFailedHeader(int status, String errorMessage, String taskId) {
+        RealTimeHeader header = new RealTimeHeader();
+        header.setName(RealTimeEventType.TASK_FAILED.getValue());
+        header.setMessageId(UUID.randomUUID().toString());
+        header.setTaskId(taskId != null ? taskId : "");
+        header.setStatus(status);
+        header.setStatusMessage(errorMessage);
+        return header;
+    }
 }

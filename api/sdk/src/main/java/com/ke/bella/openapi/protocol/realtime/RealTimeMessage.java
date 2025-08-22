@@ -73,6 +73,12 @@ public class RealTimeMessage extends OpenapiResponse {
         response.setHeader(RealTimeHeader.header(RealTimeEventType.TRANSCRIPTION_COMPLETED, taskId));
         return response;
     }
+
+    public static RealTimeMessage taskFailedResponse(String taskId, int status, String errorMessage) {
+        RealTimeMessage response = new RealTimeMessage();
+        response.setHeader(RealTimeHeader.taskFailedHeader(status, errorMessage, taskId));
+        return response;
+    }
     
     /**
      * 消息负载
