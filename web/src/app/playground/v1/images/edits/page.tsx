@@ -21,7 +21,6 @@ export default function ImageGenerationsPlayground() {
   
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [imageBase64, setImageBase64] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [isUrlLoading, setIsUrlLoading] = useState(false);
   
@@ -47,7 +46,6 @@ export default function ImageGenerationsPlayground() {
     reader.onload = (event) => {
       const dataUrl = event.target?.result as string;
       setImagePreview(dataUrl);
-      setImageBase64(dataUrl);
       setImageUrl('');
     };
     reader.readAsDataURL(file);
@@ -60,7 +58,6 @@ export default function ImageGenerationsPlayground() {
   const clearImage = () => {
     setImageFile(null);
     setImagePreview(null);
-    setImageBase64('');
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -93,12 +90,11 @@ export default function ImageGenerationsPlayground() {
       
       if (data.success) {
         setImagePreview(data.imageData);
-        setImageBase64(data.imageData);
         
         const base64Response = await fetch(data.imageData);
         const blob = await base64Response.blob();
         
-        const fileName = imageUrl.split('/').pop() || 'image.jpg';
+        const fileName = imageUrl.split('/').pop() || 'image.png';
         const file = new File([blob], fileName, { type: blob.type });
         
         setImageFile(file);
@@ -108,7 +104,6 @@ export default function ImageGenerationsPlayground() {
     } catch (err) {
       setError(err instanceof Error ? err.message : '获取图像失败');
       setImagePreview(null);
-      setImageBase64('');
       setImageFile(null);
     } finally {
       setIsUrlLoading(false);
@@ -121,7 +116,7 @@ export default function ImageGenerationsPlayground() {
       return;
     }
     
-    if (!imageBase64 && !imageUrl && !imageFile) {
+    if (!imageUrl && !imageFile) {
       setError('请上传图片或提供图片URL');
       return;
     }
@@ -137,10 +132,6 @@ export default function ImageGenerationsPlayground() {
       formData.append('prompt', prompt);
       if (model) formData.append('model', model);
       if (userInfo?.userId) formData.append('user', userInfo.userId);
-      
-      if (imageBase64) {
-        formData.append('image_b64_json', imageBase64);
-      }
       
       if (imageUrl) {
         formData.append('image_url', imageUrl);
@@ -178,7 +169,7 @@ export default function ImageGenerationsPlayground() {
   };
   
   const hasValidInput = () => {
-    return prompt.trim() && (imageBase64 || imageUrl || imageFile);
+    return prompt.trim() && ( imageUrl || imageFile );
   };
 
   return (
