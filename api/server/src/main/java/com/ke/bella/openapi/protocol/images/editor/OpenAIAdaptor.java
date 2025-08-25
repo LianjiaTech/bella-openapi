@@ -1,8 +1,11 @@
 package com.ke.bella.openapi.protocol.images.editor;
 
+import com.ke.bella.openapi.protocol.images.ImageDataType;
 import com.ke.bella.openapi.protocol.images.ImagesEditRequest;
 import com.ke.bella.openapi.protocol.images.ImagesEditorProperty;
-import com.ke.bella.openapi.common.exception.BizParamCheckException;
+import com.ke.bella.openapi.protocol.images.ImagesResponse;
+import com.ke.bella.openapi.utils.HttpUtils;
+
 import okhttp3.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
@@ -13,7 +16,7 @@ import java.io.IOException;
  * OpenAI图片编辑适配器
  */
 @Component("OpenAIImagesEditor")
-public class OpenAIAdaptor extends AbstractImagesEditorAdaptor {
+public class OpenAIAdaptor implements ImagesEditorAdaptor<ImagesEditorProperty> {
 
     @Override
     public String endpoint() {
@@ -26,25 +29,39 @@ public class OpenAIAdaptor extends AbstractImagesEditorAdaptor {
     }
 
     @Override
-    public Request buildRequest(ImagesEditRequest request, String url, ImagesEditorProperty property) throws IOException {
+    public Class<?> getPropertyClass() {
+        return ImagesEditorProperty.class;
+    }
+
+    @Override
+    public ImagesResponse doEditImages(ImagesEditRequest request, String url, ImagesEditorProperty property, ImageDataType dataType) throws IOException {
+        Request httpRequest = buildRequest(request, url, property, dataType);
+        return HttpUtils.httpRequest(httpRequest, ImagesResponse.class);
+    }
+
+    /**
+     * 构建HTTP请求
+     */
+    protected Request buildRequest(ImagesEditRequest request, String url, ImagesEditorProperty property, ImageDataType dataType) throws IOException {
         // 构建multipart请求
         MultipartBody.Builder multipartBuilder = new MultipartBody.Builder()
-                .setType(MultipartBody.FORM);
+            .setType(MultipartBody.FORM);
 
-        // 添加图片数据（根据配置支持不同的输入方式）
-        MultipartFile imageFile = request.getImage();
-        if (property.isSupportFile() && imageFile != null && !imageFile.isEmpty()) {
-            // 仅在配置支持时才允许文件上传
-            multipartBuilder.addFormDataPart("image", imageFile.getOriginalFilename(),
-                 RequestBody.create(MediaType.parse("image/png"), imageFile.getBytes()));
-        } else if (property.isSupportUrl() && request.getImage_url() != null && !request.getImage_url().isEmpty()) {
-            // 仅在配置支持时才允许URL输入
-            multipartBuilder.addFormDataPart("image_url", request.getImage_url());
-        } else if (property.isSupportBase64() && request.getImage_b64_json() != null && !request.getImage_b64_json().isEmpty()) {
-            // 仅在配置支持时才允许Base64输入
-            multipartBuilder.addFormDataPart("image_b64_json", request.getImage_b64_json());
-        } else {
-            throw new BizParamCheckException("支持的格式 " + (property.isSupportFile() ? "文件上传 " : "") + (property.isSupportUrl() ? "URL " : "") + (property.isSupportBase64() ? "Base64" : ""));
+        // 根据数据类型添加图片数据
+        switch (dataType) {
+            case FILE:
+                MultipartFile imageFile = request.getImage();
+                if (imageFile != null && !imageFile.isEmpty()) {
+                    multipartBuilder.addFormDataPart("image", imageFile.getOriginalFilename(),
+                        RequestBody.create(MediaType.parse("image/png"), imageFile.getBytes()));
+                }
+                break;
+            case URL:
+                multipartBuilder.addFormDataPart("image_url", request.getImage_url());
+                break;
+            case BASE64:
+                multipartBuilder.addFormDataPart("image_b64_json", request.getImage_b64_json());
+                break;
         }
 
         // 添加可选的遮罩文件
