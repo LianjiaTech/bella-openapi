@@ -17,4 +17,6 @@ public class RouteResult {
     private String url;
     private Object channelInfo;
     private String priceInfo;
+    private Integer queueMode;
+    private String queueName;
 }
