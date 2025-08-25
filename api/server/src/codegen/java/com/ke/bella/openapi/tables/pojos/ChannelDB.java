@@ -35,6 +35,8 @@ public class ChannelDB implements Operator, Serializable {
     private String        url;
     private String        channelInfo;
     private String        priceInfo;
+    private Byte          queueMode;
+    private String        queueName;
     private Long          cuid;
     private String        cuName;
     private Long          muid;
@@ -62,6 +64,8 @@ public class ChannelDB implements Operator, Serializable {
         this.url = value.url;
         this.channelInfo = value.channelInfo;
         this.priceInfo = value.priceInfo;
+        this.queueMode = value.queueMode;
+        this.queueName = value.queueName;
         this.cuid = value.cuid;
         this.cuName = value.cuName;
         this.muid = value.muid;
@@ -88,6 +92,8 @@ public class ChannelDB implements Operator, Serializable {
         String        url,
         String        channelInfo,
         String        priceInfo,
+        Byte          queueMode,
+        String        queueName,
         Long          cuid,
         String        cuName,
         Long          muid,
@@ -112,6 +118,8 @@ public class ChannelDB implements Operator, Serializable {
         this.url = url;
         this.channelInfo = channelInfo;
         this.priceInfo = priceInfo;
+        this.queueMode = queueMode;
+        this.queueName = queueName;
         this.cuid = cuid;
         this.cuName = cuName;
         this.muid = muid;
@@ -359,6 +367,34 @@ public class ChannelDB implements Operator, Serializable {
     }
 
     /**
+     * Getter for <code>channel.queue_mode</code>. 队列模式(0:无队列;1:pull模式;2:route模式;3:pull+route模式)
+     */
+    public Byte getQueueMode() {
+        return this.queueMode;
+    }
+
+    /**
+     * Setter for <code>channel.queue_mode</code>. 队列模式(0:无队列;1:pull模式;2:route模式;3:pull+route模式)
+     */
+    public void setQueueMode(Byte queueMode) {
+        this.queueMode = queueMode;
+    }
+
+    /**
+     * Getter for <code>channel.queue_name</code>. 队列名称
+     */
+    public String getQueueName() {
+        return this.queueName;
+    }
+
+    /**
+     * Setter for <code>channel.queue_name</code>. 队列名称
+     */
+    public void setQueueName(String queueName) {
+        this.queueName = queueName;
+    }
+
+    /**
      * Getter for <code>channel.cuid</code>. 创建人id
      */
     public Long getCuid() {
@@ -463,6 +499,8 @@ public class ChannelDB implements Operator, Serializable {
         sb.append(", ").append(url);
         sb.append(", ").append(channelInfo);
         sb.append(", ").append(priceInfo);
+        sb.append(", ").append(queueMode);
+        sb.append(", ").append(queueName);
         sb.append(", ").append(cuid);
         sb.append(", ").append(cuName);
         sb.append(", ").append(muid);
