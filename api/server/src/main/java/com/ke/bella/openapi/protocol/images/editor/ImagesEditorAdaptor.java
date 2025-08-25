@@ -71,17 +71,17 @@ public interface ImagesEditorAdaptor<T extends ImagesEditorProperty> extends IPr
 		}
 
 
-		StringBuilder supportedFormats = new StringBuilder("支持的格式 ");
+		StringBuilder errorMessage = new StringBuilder("请求参数格式错误，请使用以下支持的图像上传方式");
 		if (property.isSupportFile()) {
-			supportedFormats.append("文件上传 ");
+			errorMessage.append("文件上传 ");
 		}
 		if (property.isSupportUrl()) {
-			supportedFormats.append("URL ");
+			errorMessage.append("URL链接 ");
 		}
 		if (property.isSupportBase64()) {
-			supportedFormats.append("Base64");
+			errorMessage.append("Base64编码");
 		}
 
-		throw new BizParamCheckException(supportedFormats.toString());
+        throw new BizParamCheckException(errorMessage.toString());
 	}
 }
