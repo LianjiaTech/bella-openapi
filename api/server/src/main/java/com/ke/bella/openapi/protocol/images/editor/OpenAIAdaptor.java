@@ -2,6 +2,7 @@ package com.ke.bella.openapi.protocol.images.editor;
 
 import com.ke.bella.openapi.protocol.images.ImagesEditRequest;
 import com.ke.bella.openapi.protocol.images.ImagesEditorProperty;
+import com.ke.bella.openapi.common.exception.BizParamCheckException;
 import okhttp3.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
@@ -43,7 +44,7 @@ public class OpenAIAdaptor extends AbstractImagesEditorAdaptor {
             // 仅在配置支持时才允许Base64输入
             multipartBuilder.addFormDataPart("image_b64_json", request.getImage_b64_json());
         } else {
-            throw new RuntimeException("支持的格式 " + (property.isSupportFile() ? "文件上传 " : "") + (property.isSupportUrl() ? "URL " : "") + (property.isSupportBase64() ? "Base64" : ""));
+            throw new BizParamCheckException("支持的格式 " + (property.isSupportFile() ? "文件上传 " : "") + (property.isSupportUrl() ? "URL " : "") + (property.isSupportBase64() ? "Base64" : ""));
         }
 
         // 添加可选的遮罩文件
