@@ -5,7 +5,6 @@ import com.ke.bella.openapi.protocol.images.ImagesEditRequest;
 import com.ke.bella.openapi.protocol.images.ImagesEditorProperty;
 import com.ke.bella.openapi.protocol.images.ImagesResponse;
 import com.ke.bella.openapi.utils.HttpUtils;
-
 import okhttp3.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
@@ -17,22 +16,22 @@ import java.io.IOException;
  */
 @Component("OpenAIImagesEditor")
 public class OpenAIAdaptor implements ImagesEditorAdaptor<ImagesEditorProperty> {
-
+    
     @Override
     public String endpoint() {
         return "/v1/images/edits";
     }
-
+    
     @Override
     public String getDescription() {
         return "OpenAI图片编辑协议";
     }
-
+    
     @Override
     public Class<?> getPropertyClass() {
         return ImagesEditorProperty.class;
     }
-
+    
     @Override
     public ImagesResponse doEditImages(ImagesEditRequest request, String url, ImagesEditorProperty property, ImageDataType dataType) throws IOException {
         Request httpRequest = buildRequest(request, url, property, dataType);
