@@ -1,4 +1,4 @@
-package com.ke.bella.queue;
+package com.ke.bella.queue.remote;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
