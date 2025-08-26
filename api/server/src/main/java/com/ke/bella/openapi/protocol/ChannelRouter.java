@@ -10,6 +10,7 @@ import com.ke.bella.openapi.protocol.metrics.MetricsManager;
 import com.ke.bella.openapi.service.ChannelService;
 import com.ke.bella.openapi.service.ModelService;
 import com.ke.bella.openapi.tables.pojos.ChannelDB;
+import com.ke.bella.queue.QueueMode;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +18,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -202,4 +206,39 @@ public class ChannelRouter {
         return channel;
     }
 
+    public ChannelDB route(String endpoint, String model, ApikeyInfo apikey, Integer queueMode) {
+        if(StringUtils.isBlank(endpoint) || StringUtils.isBlank(model)) {
+            throw new BizParamCheckException("endpoint和model不能为空");
+        }
+
+        String terminalName = modelService.fetchTerminalModelName(model);
+        List<ChannelDB> channels = channelService.listActives(EntityConstants.MODEL, terminalName);
+
+        List<ChannelDB> filteredChannels = Optional.ofNullable(channels)
+                .orElse(Collections.emptyList())
+                .stream()
+                .filter(channel -> queueMode == null
+                        || QueueMode.of(channel.getQueueMode()).supports(queueMode))
+                .filter(channel -> isAccessible(channel, apikey))
+                .filter(channel -> isSafetyCompliant(channel, apikey))
+                .collect(Collectors.toList());
+
+        if(CollectionUtils.isEmpty(filteredChannels)) {
+            throw new BizParamCheckException("没有可用通道");
+        }
+
+        return pickMaxPriority(filteredChannels).get(0);
+    }
+
+    private boolean isAccessible(ChannelDB channel, ApikeyInfo apikeyInfo) {
+        if(!EntityConstants.PRIVATE.equals(channel.getVisibility())) {
+            return true;
+        }
+        return apikeyInfo.getOwnerType().equals(channel.getOwnerType())
+                && apikeyInfo.getOwnerCode().equals(channel.getOwnerCode());
+    }
+
+    private boolean isSafetyCompliant(ChannelDB channel, ApikeyInfo apikeyInfo) {
+        return getSafetyLevelLimit(channel.getDataDestination()) <= apikeyInfo.getSafetyLevel();
+    }
 }

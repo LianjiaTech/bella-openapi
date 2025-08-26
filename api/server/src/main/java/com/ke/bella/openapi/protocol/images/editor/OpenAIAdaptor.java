@@ -1,5 +1,6 @@
 package com.ke.bella.openapi.protocol.images.editor;
 
+import com.ke.bella.openapi.protocol.images.ImageDataType;
 import com.ke.bella.openapi.protocol.images.ImagesEditRequest;
 import com.ke.bella.openapi.protocol.images.ImagesEditorProperty;
 import com.ke.bella.openapi.protocol.images.ImagesResponse;
@@ -32,75 +33,78 @@ public class OpenAIAdaptor implements ImagesEditorAdaptor<ImagesEditorProperty> 
     }
     
     @Override
-    public ImagesResponse editImages(ImagesEditRequest request, String url, ImagesEditorProperty property) {
-        try {
-            // 构建multipart请求
-            MultipartBody.Builder multipartBuilder = new MultipartBody.Builder()
-                    .setType(MultipartBody.FORM);
+    public ImagesResponse doEditImages(ImagesEditRequest request, String url, ImagesEditorProperty property, ImageDataType dataType) throws IOException {
+        Request httpRequest = buildRequest(request, url, property, dataType);
+        return HttpUtils.httpRequest(httpRequest, ImagesResponse.class);
+    }
 
-            // 添加图片数据（根据配置支持不同的输入方式）
-            MultipartFile imageFile = request.getImage();
-            if (property.isSupportFile() && imageFile != null && !imageFile.isEmpty()) {
-                // 仅在配置支持时才允许文件上传
-                multipartBuilder.addFormDataPart("image", imageFile.getOriginalFilename(),
+    /**
+     * 构建HTTP请求
+     */
+    protected Request buildRequest(ImagesEditRequest request, String url, ImagesEditorProperty property, ImageDataType dataType) throws IOException {
+        // 构建multipart请求
+        MultipartBody.Builder multipartBuilder = new MultipartBody.Builder()
+            .setType(MultipartBody.FORM);
+
+        // 根据数据类型添加图片数据
+        switch (dataType) {
+            case FILE:
+                MultipartFile imageFile = request.getImage();
+                if (imageFile != null && !imageFile.isEmpty()) {
+                    multipartBuilder.addFormDataPart("image", imageFile.getOriginalFilename(),
                         RequestBody.create(MediaType.parse("image/png"), imageFile.getBytes()));
-            } else if (property.isSupportUrl() && request.getImage_url() != null && !request.getImage_url().isEmpty()) {
-                // 仅在配置支持时才允许URL输入
+                }
+                break;
+            case URL:
                 multipartBuilder.addFormDataPart("image_url", request.getImage_url());
-            } else if (property.isSupportBase64() && request.getImage_b64_json() != null && !request.getImage_b64_json().isEmpty()) {
-                // 仅在配置支持时才允许Base64输入
+                break;
+            case BASE64:
                 multipartBuilder.addFormDataPart("image_b64_json", request.getImage_b64_json());
-            } else {
-                throw new RuntimeException("支持的格式 " + (property.isSupportFile() ? "文件上传 " : "") + (property.isSupportUrl() ? "URL " : "") + (property.isSupportBase64() ? "Base64" : ""));
-            }
-            
-            // 添加可选的遮罩文件
-            MultipartFile maskFile = request.getMask();
-            if (maskFile != null && !maskFile.isEmpty()) {
-                multipartBuilder.addFormDataPart("mask", maskFile.getOriginalFilename(),
-                        RequestBody.create(MediaType.parse("image/png"), maskFile.getBytes()));
-            }
-            
-            // 添加必需的提示词
-            if (request.getPrompt() != null) {
-                multipartBuilder.addFormDataPart("prompt", request.getPrompt());
-            }
-            
-            // 设置模型（如果未指定则使用默认模型）
-            String model = request.getModel();
-            if (model == null || model.isEmpty()) {
-                model = property.getDeployName();
-            }
-            multipartBuilder.addFormDataPart("model", model);
-            
-            // 添加可选参数
-            if (request.getN() != null) {
-                multipartBuilder.addFormDataPart("n", request.getN().toString());
-            }
-            
-            if (request.getSize() != null) {
-                multipartBuilder.addFormDataPart("size", request.getSize());
-            }
-            
-            if (request.getResponse_format() != null) {
-                multipartBuilder.addFormDataPart("response_format", request.getResponse_format());
-            }
-            
-            if (request.getUser() != null) {
-                multipartBuilder.addFormDataPart("user", request.getUser());
-            }
-            
-            RequestBody requestBody = multipartBuilder.build();
-            
-            // 构建HTTP请求
-            Request.Builder requestBuilder = authorizationRequestBuilder(property.getAuth());
-            requestBuilder.url(url).post(requestBody);
-            
-            Request httpRequest = requestBuilder.build();
-            return HttpUtils.httpRequest(httpRequest, ImagesResponse.class);
-            
-        } catch (IOException e) {
-            throw new RuntimeException("图片编辑请求处理失败: " + e.getMessage(), e);
+                break;
         }
+
+        // 添加可选的遮罩文件
+        MultipartFile maskFile = request.getMask();
+        if (maskFile != null && !maskFile.isEmpty()) {
+            multipartBuilder.addFormDataPart("mask", maskFile.getOriginalFilename(),
+                RequestBody.create(MediaType.parse("image/png"), maskFile.getBytes()));
+        }
+
+        // 添加必需的提示词
+        if (request.getPrompt() != null) {
+            multipartBuilder.addFormDataPart("prompt", request.getPrompt());
+        }
+
+        // 设置模型（如果未指定则使用默认模型）
+        String model = request.getModel();
+        if (model == null || model.isEmpty()) {
+            model = property.getDeployName();
+        }
+        multipartBuilder.addFormDataPart("model", model);
+
+        // 添加可选参数
+        if (request.getN() != null) {
+            multipartBuilder.addFormDataPart("n", request.getN().toString());
+        }
+
+        if (request.getSize() != null) {
+            multipartBuilder.addFormDataPart("size", request.getSize());
+        }
+
+        if (request.getResponse_format() != null) {
+            multipartBuilder.addFormDataPart("response_format", request.getResponse_format());
+        }
+
+        if (request.getUser() != null) {
+            multipartBuilder.addFormDataPart("user", request.getUser());
+        }
+
+        RequestBody requestBody = multipartBuilder.build();
+
+        // 构建HTTP请求
+        Request.Builder requestBuilder = authorizationRequestBuilder(property.getAuth());
+        requestBuilder.url(url).post(requestBody);
+
+        return requestBuilder.build();
     }
 }
