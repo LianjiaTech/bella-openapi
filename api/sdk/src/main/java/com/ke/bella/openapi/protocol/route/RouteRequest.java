@@ -13,4 +13,5 @@ public class RouteRequest {
     private String apikey;
     private String endpoint;
     private String model;
+    private Integer queueMode;
 }
