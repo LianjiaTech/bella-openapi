@@ -51,5 +51,10 @@
             <groupId>top.bella</groupId>
             <artifactId>openai-service</artifactId>
         </dependency>
+        <dependency>
+            <groupId>redis.clients</groupId>
+            <artifactId>jedis</artifactId>
+            <version>5.1.5</version>
+        </dependency>
     </dependencies>
 </project>
