@@ -87,12 +87,12 @@ public class LarkClientUtils {
                 response.setToken(resp.getData().getResult().getToken());
                 response.setStatus("success");
                 break;
-            case 3:
-                response.setStatus("failed");
-                response.setMessage(resp.getData().getResult().getJobErrorMsg());
+            case 2:
+                response.setStatus("processing");
                 break;
             default:
-                response.setStatus("processing");
+                response.setStatus("failed");
+                response.setMessage(resp.getData().getResult().getJobErrorMsg());
             }
             return response;
         } catch (Exception e) {
