@@ -71,7 +71,9 @@ export default function ImageGenerationsPlayground() {
     
     setIsUrlLoading(true);
     setError('');
-    
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
     try {
       const response = await fetch('/api/fetch-image', {
         method: 'POST',
@@ -79,8 +81,10 @@ export default function ImageGenerationsPlayground() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ url: imageUrl }),
+        signal: controller.signal
       });
       
+      clearTimeout(timeoutId);
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || `获取图像失败: ${response.status}`);
@@ -102,7 +106,12 @@ export default function ImageGenerationsPlayground() {
         throw new Error(data.error || '获取图像失败');
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : '获取图像失败');
+      clearTimeout(timeoutId);
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        setError('⚠️ 请求超时：无法获取图片。可能是服务器响应慢、URL无效或网络问题，请稍后重试或检查URL是否正确。');
+      } else {
+        setError(err instanceof Error ? err.message : '获取图像失败');
+      }
       setImagePreview(null);
       setImageFile(null);
     } finally {
