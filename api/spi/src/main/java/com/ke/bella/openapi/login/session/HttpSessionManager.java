@@ -4,9 +4,9 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.ke.bella.openapi.BellaResponse;
 import com.ke.bella.openapi.Operator;
 import com.ke.bella.openapi.common.exception.ChannelException;
-import com.ke.bella.openapi.login.LoginFilter;
 import com.ke.bella.openapi.utils.HttpUtils;
 import com.ke.bella.openapi.utils.JacksonUtils;
+import lombok.extern.slf4j.Slf4j;
 import okhttp3.Request;
 import okhttp3.Response;
 import org.apache.commons.lang3.StringUtils;
@@ -22,6 +22,7 @@ import java.util.Optional;
 import static com.ke.bella.openapi.login.LoginFilter.CONSOLE_HEADER;
 import static com.ke.bella.openapi.login.LoginFilter.REDIRECT_HEADER;
 
+@Slf4j
 public class HttpSessionManager implements SessionManager {
 
     private static final Logger log = LoggerFactory.getLogger(HttpSessionManager.class);
@@ -59,12 +60,16 @@ public class HttpSessionManager implements SessionManager {
                     .header("Cookie", extractCookie(request));
             if("true".equals(request.getHeader(CONSOLE_HEADER))) {
                 builder.header(CONSOLE_HEADER, "true");
+            } else if(request.getHeader(CONSOLE_HEADER) == null){
+                LOGGER.info("CONSOLE_HEADER is null");
             }
             Response response = HttpUtils.httpRequest(builder.build(), 10, 30);
             if(response.code() != 200) {
                 String redirectUrl = response.header(REDIRECT_HEADER);
                 if(response.code() == 401 && StringUtils.isNotEmpty(redirectUrl)) {
                     throw new ChannelException.ClientNotLoginException(redirectUrl);
+                } else if(response.code() == 401) {
+                    LOGGER.warn("redirectUrl is null");
                 }
                 throw ChannelException.fromResponse(response.code(), response.message());
             }
