@@ -40,7 +40,7 @@ public class BellaInterceptor implements Interceptor {
         Operator op = (Operator) Optional.ofNullable(context.get("oper")).orElse(new Operator());
         String user = op.getUserId() == null ? op.getSourceId() : op.getUserId().toString();
         ApikeyInfo apikeyInfo = (ApikeyInfo) Optional.ofNullable(context.get("ak")).orElse(new ApikeyInfo());
-        if(apikeyInfo.getApikey() != null) {
+        if(originalRequest.header("Authorization") == null && apikeyInfo.getApikey() != null) {
             bellaRequest.header("Authorization", "Bearer " + apikeyInfo.getApikey());
         }
         if(user == null) {
