@@ -105,7 +105,24 @@ public class RealTimeHandler extends TextWebSocketHandler {
             // 发送音频数据到第三方服务
             boolean success = adaptor.sendAudioData(ws, audioData, callback);
             if (!success) {
-                sendErrorResponse(session, 50000000,"发送音频数据失败");
+                // 发送失败，尝试发送空字节心跳检测连接状态
+                LOGGER.info("音频数据发送失败，尝试心跳检测连接状态");
+                boolean heartbeatSuccess = adaptor.sendAudioData(ws, new byte[0], callback);
+                if (!heartbeatSuccess) {
+                    // 心跳也失败，确认连接断开，清理状态并关闭客户端连接
+                    LOGGER.warn("心跳检测失败，ASR服务连接已断开，关闭客户端连接");
+                    ws = null;
+                    taskId = null;
+                    sendErrorResponse(session, 50000000,"ASR服务连接已断开");
+                    try {
+                        session.close();
+                    } catch (Exception e) {
+                        LOGGER.warn("关闭客户端连接时出错: {}", e.getMessage());
+                    }
+                } else {
+                    // 心跳成功但音频数据发送失败，可能是临时问题
+                    sendErrorResponse(session, 50000000,"发送音频数据失败");
+                }
             }
             
         } catch (Exception e) {
