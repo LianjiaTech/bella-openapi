@@ -25,7 +25,7 @@ openapi.interceptors.response.use(
         }
     },
     (error) => {
-        if (error.response && error.response.status === 401) {
+        if (error.response && error.response.status === 401 && !error.request.responseURL.endsWith("/openapi/userInfo")) {
             let loginUrl = error.response.headers['X-Redirect-Login'] || error.response.headers['x-redirect-login'];
             if (loginUrl) {
                 loginUrl += encodeURIComponent(window.location.href);
