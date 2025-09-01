@@ -41,7 +41,6 @@ import org.springframework.web.filter.CorsFilter;
 import java.util.List;
 
 @Configuration
-@Slf4j // Added for logging unrecognized type
 public class BellaLoginConfiguration {
 
     public static final String redirectParameter = "redirect";
