@@ -101,13 +101,13 @@ public class HuoshanStreamAsrCallback implements Callbacks.WebSocketCallback {
     public void onOpen(WebSocket webSocket, Response response) {
         try {
             
-            LOGGER.info("ASR WebSocket connection established, logId: {}", response.header("X-Tt-Logid"));
+            log.info("ASR WebSocket connection established, logId: {}", response.header("X-Tt-Logid"));
             processData.setChannelRequestId(response.header("X-Tt-Logid"));
 
             // 发送完整的客户端请求
             sendFullClientRequest(webSocket);
         } catch (Exception e) {
-            LOGGER.error("ASR onOpen error", e);
+            log.error("ASR onOpen error", e);
             onError(ChannelException.fromException(e));
         }
     }
@@ -134,13 +134,13 @@ public class HuoshanStreamAsrCallback implements Callbacks.WebSocketCallback {
 
     @Override
     public void onClosed(WebSocket webSocket, int code, String reason) {
-        LOGGER.info("ASR onClosed: code={}, reason={}", code, reason);
+        log.info("ASR onClosed: code={}, reason={}", code, reason);
         complete();
     }
 
     @Override
     public void onFailure(WebSocket webSocket, Throwable t, Response response) {
-        LOGGER.error("ASR onFailure: {}", t.getMessage(), t);
+        log.error("ASR onFailure: {}", t.getMessage(), t);
         
         int httpCode = response != null ? response.code() : 500;
         String message = t.getMessage();
@@ -179,13 +179,13 @@ public class HuoshanStreamAsrCallback implements Callbacks.WebSocketCallback {
      * 处理错误
      */
     private void onError(ChannelException exception) {
-        LOGGER.warn("ASR error: {}", exception.getMessage(), exception);
+        log.warn("ASR error: {}", exception.getMessage(), exception);
         sender.onError(exception);
         complete();
     }
 
     private void onProcessError(ChannelException exception) {
-        LOGGER.warn("ASR error: {}", exception.getMessage(), exception);
+        log.warn("ASR error: {}", exception.getMessage(), exception);
         sender.onError(exception);
         if(!request.isAsync()) {
             complete();
@@ -200,7 +200,7 @@ public class HuoshanStreamAsrCallback implements Callbacks.WebSocketCallback {
             byte[] payload = constructFullClientRequest();
             webSocket.send(ByteString.of(payload));
         } catch (Exception e) {
-            LOGGER.warn("Error sending full client request", e);
+            log.warn("Error sending full client request", e);
             onError(ChannelException.fromException(e));
         }
     }
@@ -382,7 +382,7 @@ public class HuoshanStreamAsrCallback implements Callbacks.WebSocketCallback {
 
             // 处理响应
             if (response.getCode() != 1000) {
-                LOGGER.error("ASR response error: {}", responseText);
+                log.error("ASR response error: {}", responseText);
                 handleTranscriptionFailed(response.getCode(), response.getMessage());
                 return;
             }
@@ -440,7 +440,7 @@ public class HuoshanStreamAsrCallback implements Callbacks.WebSocketCallback {
      * 处理转录失败事件
      */
     private void handleTranscriptionFailed(int code, String errorMsg) {
-        LOGGER.error("Transcription failed: {}", errorMsg);
+        log.error("Transcription failed: {}", errorMsg);
         isRunning = false;
         sender.onError(ChannelException.fromResponse(getHttpCode(code), errorMsg));
         if(!request.isAsync()) {
@@ -494,7 +494,7 @@ public class HuoshanStreamAsrCallback implements Callbacks.WebSocketCallback {
             }
             return out.toByteArray();
         } catch (Exception e) {
-            LOGGER.warn(e.getMessage(), e);
+            log.warn(e.getMessage(), e);
             return new byte[0];
         }
     }

@@ -7,5 +7,5 @@ public class LoginProperties {
     private String type;
     private String loginPageUrl;
     private String openapiBase;
-    private String authorizationHeader;
+    private String authorizationHeader = "Authorization";
 }

@@ -70,11 +70,11 @@ public class EndpointResponseAdvice implements ResponseBodyAdvice<Object> {
         String str = "req_id :" + requestId + ",msg:" + msg;
         //输出req_id方便根据req_id查询能力点日志
         if(httpCode == 500) {
-            LOGGER.error(str, e);
+            log.error(str, e);
         } else if(httpCode == 400 || httpCode == 401){
-            LOGGER.info(str, e);
+            log.info(str, e);
         } else {
-            LOGGER.warn(str, e);
+            log.warn(str, e);
         }
     }
 }

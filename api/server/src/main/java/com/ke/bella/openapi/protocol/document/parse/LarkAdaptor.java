@@ -674,7 +674,7 @@ public class LarkAdaptor implements DocParseAdaptor<LarkProperty> {
             }
         } catch (Exception e) {
             // 如果转换失败，返回空列表
-            LOGGER.warn("转换表格时出错: " + e.getMessage(), e);
+            log.warn("转换表格时出错: " + e.getMessage(), e);
         }
 
         return rows;

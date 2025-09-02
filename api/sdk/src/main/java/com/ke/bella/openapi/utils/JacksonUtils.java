@@ -105,7 +105,7 @@ public class JacksonUtils {
         try {
             return MAPPER.readValue(bytes, tTypeReference);
         } catch (Exception e) {
-            LOGGER.error(e.getMessage(), e);
+            LOGGER.warn(e.getMessage(), e);
         }
         return null;
     }
@@ -114,7 +114,7 @@ public class JacksonUtils {
         try {
             return MAPPER.readTree(jsonText);
         } catch (Exception e) {
-            LOGGER.error(e.getMessage(), e);
+            LOGGER.warn(e.getMessage(), e);
         }
         return null;
     }
@@ -123,7 +123,7 @@ public class JacksonUtils {
         try {
             return MAPPER.readTree(serialize(obj));
         } catch (Exception e) {
-            LOGGER.error(e.getMessage(), e);
+            LOGGER.warn(e.getMessage(), e);
         }
         return null;
     }
@@ -132,7 +132,7 @@ public class JacksonUtils {
         try {
             return MAPPER.createObjectNode();
         } catch (Exception e) {
-            LOGGER.error(e.getMessage(), e);
+            LOGGER.warn(e.getMessage(), e);
         }
         return null;
     }
@@ -141,7 +141,7 @@ public class JacksonUtils {
         try {
             return MAPPER.createArrayNode();
         } catch (Exception e) {
-            LOGGER.error(e.getMessage(), e);
+            LOGGER.warn(e.getMessage(), e);
         }
         return null;
     }
@@ -151,7 +151,7 @@ public class JacksonUtils {
         try {
             map = MAPPER.readValue(bytes, Map.class);
         } catch (IOException e) {
-            LOGGER.error(e.getMessage(), e);
+            LOGGER.warn(e.getMessage(), e);
         }
         return map;
     }
@@ -164,7 +164,7 @@ public class JacksonUtils {
         try {
             map = MAPPER.readValue(jsonStr, Map.class);
         } catch (IOException e) {
-            LOGGER.error(e.getMessage(), e);
+            LOGGER.warn(e.getMessage(), e);
         }
         return map;
     }

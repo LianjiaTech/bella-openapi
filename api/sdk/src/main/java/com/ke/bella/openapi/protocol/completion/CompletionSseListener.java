@@ -80,7 +80,7 @@ public class CompletionSseListener extends BellaEventSourceListener {
                 return new ChannelException.OpenAIException(response.code(), HttpStatus.valueOf(response.code()).getReasonPhrase(), msg);
             }
         } catch (Exception e) {
-            LOGGER.warn(e.getMessage(), e);
+            log.warn(e.getMessage(), e);
             return ChannelException.fromResponse(response.code(), response.message());
         }
     }

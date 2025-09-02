@@ -134,17 +134,17 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
     @Override
     public void onOpen(WebSocket webSocket, Response response) {
         try {
-            LOGGER.info("WebSocket连接已打开");
+            log.info("WebSocket连接已打开");
             sendFullClientRequest(webSocket);
         } catch (Exception e) {
-            LOGGER.error("WebSocket打开时出错", e);
+            log.error("WebSocket打开时出错", e);
             onError(ChannelException.fromException(e));
         }
     }
 
     @Override
     public void onMessage(WebSocket webSocket, String text) {
-        LOGGER.info("收到文本消息: {}", text);
+        log.info("收到文本消息: {}", text);
     }
 
     @Override
@@ -152,7 +152,7 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
         try {
             parseResponse(bytes.toByteArray(), webSocket);
         } catch (Exception e) {
-            LOGGER.error("处理WebSocket消息时出错", e);
+            log.error("处理WebSocket消息时出错", e);
             onError(ChannelException.fromException(e));
         }
     }
@@ -160,18 +160,18 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
     @Override
     public void onClosing(WebSocket webSocket, int code, String reason) {
         complete();
-        LOGGER.info("WebSocket正在关闭: code={}, reason={}", code, reason);
+        log.info("WebSocket正在关闭: code={}, reason={}", code, reason);
     }
 
     @Override
     public void onClosed(WebSocket webSocket, int code, String reason) {
-        LOGGER.info("WebSocket已关闭: code={}, reason={}", code, reason);
+        log.info("WebSocket已关闭: code={}, reason={}", code, reason);
         complete();
     }
 
     @Override
     public void onFailure(WebSocket webSocket, Throwable t, Response response) {
-        LOGGER.error("WebSocket连接失败", t);
+        log.error("WebSocket连接失败", t);
         onError(ChannelException.fromException(t));
     }
 
@@ -229,7 +229,7 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
             byte[] payload = constructFullClientRequest();
             webSocket.send(ByteString.of(payload));
         } catch (Exception e) {
-            LOGGER.warn("发送完整客户端请求时出错", e);
+            log.warn("发送完整客户端请求时出错", e);
             onError(ChannelException.fromException(e));
         }
     }
@@ -383,7 +383,7 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
                     }
                 }
             } catch (Exception e) {
-                LOGGER.error("分块发送音频数据时出错", e);
+                log.error("分块发送音频数据时出错", e);
                 onProcessError(ChannelException.fromException(e));
             }
         });
@@ -421,7 +421,7 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
 
             // 检查响应状态
             if (response == null) {
-                LOGGER.error("大模型ASR响应错误: {}", new String(payload));
+                log.error("大模型ASR响应错误: {}", new String(payload));
                 handleTranscriptionFailed(503, new String(payload));
                 return;
             }
@@ -441,7 +441,7 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
 
             // 检查响应码
             if (response.getCode() != 0) {
-                LOGGER.error("大模型ASR响应错误: code={}, message={}", response.getCode(), response.getMessage());
+                log.error("大模型ASR响应错误: code={}, message={}", response.getCode(), response.getMessage());
                 handleTranscriptionFailed(getHttpCode(response.getCode()), response.getMessage());
                 return;
             }
@@ -457,7 +457,7 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
         } else if (messageType == SERVER_ERROR_RESPONSE) {
             // 处理服务器错误响应
             String errorMsg = new String(payload);
-            LOGGER.error("服务器错误: {}", errorMsg);
+            log.error("服务器错误: {}", errorMsg);
             handleTranscriptionFailed(500, errorMsg);
         }
     }
@@ -476,7 +476,7 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
                 }
             }
         } catch (Exception e) {
-            LOGGER.error("处理中间响应时出错", e);
+            log.error("处理中间响应时出错", e);
         }
     }
 
@@ -495,7 +495,7 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
             }
             complete();
         } catch (Exception e) {
-            LOGGER.error("处理最终响应时出错", e);
+            log.error("处理最终响应时出错", e);
             onError(ChannelException.fromException(e));
         }
     }
@@ -565,13 +565,13 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
             gzip = new GZIPOutputStream(out);
             gzip.write(src);
         } catch (IOException e) {
-            LOGGER.error("GZIP压缩失败", e);
+            log.error("GZIP压缩失败", e);
         } finally {
             if (gzip != null) {
                 try {
                     gzip.close();
                 } catch (IOException e) {
-                    LOGGER.error("关闭GZIP输出流失败", e);
+                    log.error("关闭GZIP输出流失败", e);
                 }
             }
         }
@@ -596,13 +596,13 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
                 out.write(buffer, 0, n);
             }
         } catch (IOException e) {
-            LOGGER.error("GZIP解压缩失败", e);
+            log.error("GZIP解压缩失败", e);
         } finally {
             if (gzip != null) {
                 try {
                     gzip.close();
                 } catch (IOException e) {
-                    LOGGER.error("关闭GZIP输入流失败", e);
+                    log.error("关闭GZIP输入流失败", e);
                 }
             }
         }

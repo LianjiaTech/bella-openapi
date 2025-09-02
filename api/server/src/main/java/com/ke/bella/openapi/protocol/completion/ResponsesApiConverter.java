@@ -279,7 +279,7 @@ public class ResponsesApiConverter {
                         }
                         break;
                     default:
-                        LOGGER.debug("Unknown output item type: {}", item.getType());
+                        log.debug("Unknown output item type: {}", item.getType());
                         break;
                 }
             }

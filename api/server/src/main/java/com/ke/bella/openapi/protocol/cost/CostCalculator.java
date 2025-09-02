@@ -42,7 +42,7 @@ public class CostCalculator  {
                 .map(CostCalculators::getCalculator)
                 .orElse(null);
         if(calculator == null) {
-            LOGGER.warn("no calculator implemented for " + endpoint);
+            log.warn("no calculator implemented for " + endpoint);
             return true;
         }
         return calculator.checkPriceInfo(priceInfo);

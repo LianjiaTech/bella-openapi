@@ -38,7 +38,7 @@ public class StreamByteSender implements Callbacks.Sender {
                 stream.flush();
             }
         } catch (IOException e) {
-            LOGGER.warn(e.getMessage(), e);
+            log.warn(e.getMessage(), e);
         }
     }
 
@@ -56,7 +56,7 @@ public class StreamByteSender implements Callbacks.Sender {
             stream.close();
             context.complete();
         } catch (IOException e) {
-            LOGGER.warn(e.getMessage(), e);
+            log.warn(e.getMessage(), e);
         }
     }
 }

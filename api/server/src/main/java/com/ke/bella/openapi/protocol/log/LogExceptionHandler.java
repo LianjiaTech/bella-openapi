@@ -7,16 +7,16 @@ import lombok.extern.slf4j.Slf4j;
 public class LogExceptionHandler implements ExceptionHandler<LogEvent> {
     @Override
     public void handleEventException(Throwable ex, long sequence, LogEvent event) {
-        LOGGER.warn(ex.getMessage(), ex);
+        log.warn(ex.getMessage(), ex);
     }
 
     @Override
     public void handleOnStartException(Throwable ex) {
-        LOGGER.warn(ex.getMessage(), ex);
+        log.warn(ex.getMessage(), ex);
     }
 
     @Override
     public void handleOnShutdownException(Throwable ex) {
-        LOGGER.warn(ex.getMessage(), ex);
+        log.warn(ex.getMessage(), ex);
     }
 }

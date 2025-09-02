@@ -59,7 +59,7 @@ public class AwsAdaptor implements CompletionAdaptor<AwsProperty> {
                     .onComplete(awsCallBack)
                     .build());
         } catch (Exception bedrockException) {
-            LOGGER.info("sse异常,{}", bedrockException.getMessage());
+            log.info("sse异常,{}", bedrockException.getMessage());
         }
     }
 
@@ -110,7 +110,7 @@ public class AwsAdaptor implements CompletionAdaptor<AwsProperty> {
 
         @Override
         public void accept(Throwable throwable) {
-            LOGGER.warn(throwable.getMessage(), throwable);
+            log.warn(throwable.getMessage(), throwable);
             if (throwable instanceof BedrockRuntimeException) {
                 BedrockRuntimeException bedrockException = (BedrockRuntimeException) throwable;
                 callback.finish(ChannelException.fromResponse(bedrockException.statusCode(), bedrockException.getMessage()));

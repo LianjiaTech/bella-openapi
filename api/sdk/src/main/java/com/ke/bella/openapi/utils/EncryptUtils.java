@@ -46,7 +46,7 @@ public class EncryptUtils {
             return hexString.toString();
         } catch (NoSuchAlgorithmException e) {
             // 处理加密算法不支持的异常
-            LOGGER.error("encrypt error", e);
+            log.error("encrypt error", e);
             return null;
         }
     }

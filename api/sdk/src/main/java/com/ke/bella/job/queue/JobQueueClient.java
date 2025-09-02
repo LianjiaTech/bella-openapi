@@ -76,7 +76,7 @@ public class JobQueueClient {
             TaskResp.TaskGetResp taskResponse = HttpUtils.httpRequest(request, TaskResp.TaskGetResp.class);
             return Objects.isNull(taskResponse) ? TaskResp.TaskGetResp.builder().build() : taskResponse;
         } catch (Exception e) {
-            LOGGER.error("fetch job-queue task failed", e);
+            log.error("fetch job-queue task failed", e);
             return TaskResp.TaskGetResp.builder().build();
         }
     }

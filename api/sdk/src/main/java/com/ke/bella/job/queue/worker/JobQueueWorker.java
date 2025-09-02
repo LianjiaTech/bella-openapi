@@ -46,7 +46,7 @@ public class JobQueueWorker {
             try {
                 pollAndExecute();
             } catch (Exception e) {
-                LOGGER.error("execute job-queue task occur error", e);
+                log.error("execute job-queue task occur error", e);
             }
         }, 0, 5, TimeUnit.SECONDS);
     }

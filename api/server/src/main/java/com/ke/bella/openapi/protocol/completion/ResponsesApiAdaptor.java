@@ -32,7 +32,7 @@ public class ResponsesApiAdaptor implements CompletionAdaptor<ResponsesApiProper
 
     @Override
     public CompletionResponse completion(CompletionRequest request, String url, ResponsesApiProperty property) {
-        LOGGER.debug("Converting Chat Completion request to Responses API format");
+        log.debug("Converting Chat Completion request to Responses API format");
         
         // 转换请求格式
         ResponsesApiRequest responsesRequest = ResponsesApiConverter.convertChatCompletionToResponses(request, property);
@@ -50,14 +50,14 @@ public class ResponsesApiAdaptor implements CompletionAdaptor<ResponsesApiProper
         CompletionResponse response = ResponsesApiConverter.convertResponsesToChatCompletion(responsesResponse);
         response.setCreated(DateTimeUtils.getCurrentSeconds());
 
-        LOGGER.debug("Converted Responses API response to Chat Completion format");
+        log.debug("Converted Responses API response to Chat Completion format");
         return response;
     }
 
     @Override
     public void streamCompletion(CompletionRequest request, String url, ResponsesApiProperty property, 
                                Callbacks.StreamCompletionCallback callback) {
-        LOGGER.debug("Converting Chat Completion stream request to Responses API format");
+        log.debug("Converting Chat Completion stream request to Responses API format");
         
         // 转换请求格式
         ResponsesApiRequest responsesRequest = ResponsesApiConverter.convertChatCompletionToResponses(request, property);
@@ -71,7 +71,7 @@ public class ResponsesApiAdaptor implements CompletionAdaptor<ResponsesApiProper
         // 发送流式请求
         HttpUtils.streamRequest(httpRequest, listener);
 
-        LOGGER.debug("Started Responses API stream conversion");
+        log.debug("Started Responses API stream conversion");
     }
 
     /**

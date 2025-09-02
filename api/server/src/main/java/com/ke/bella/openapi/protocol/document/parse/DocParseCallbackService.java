@@ -49,7 +49,7 @@ public class DocParseCallbackService extends CallbackTaskService<DocParseCallbac
         DocParseCallbackTaskData taskData = new DocParseCallbackTaskData(
             protocol, taskId, callbackUrl, url, channelProperty, 0, 0);
         addTask(taskData);
-        LOGGER.info("Added doc parse callback task - protocol: {}, taskId: {}, callbackUrl: {}",
+        log.info("Added doc parse callback task - protocol: {}, taskId: {}, callbackUrl: {}",
                 protocol, taskId, callbackUrl);
     }
 
@@ -117,7 +117,7 @@ public class DocParseCallbackService extends CallbackTaskService<DocParseCallbac
                     "/v1/document/parse", taskData.getProtocol(), DocParseAdaptor.class);
                 
                 if (adaptor == null) {
-                    LOGGER.error("No adaptor found for protocol: {}", taskData.getProtocol());
+                    log.error("No adaptor found for protocol: {}", taskData.getProtocol());
                     return true; // 没有适配器，认为任务完成（避免无限重试）
                 }
 
@@ -128,7 +128,7 @@ public class DocParseCallbackService extends CallbackTaskService<DocParseCallbac
                 return adaptor.isCompletion(taskData.getTaskId(), taskData.getUrl(), property);
                 
             } catch (Exception e) {
-                LOGGER.error("Error checking task completion for taskId: {}, protocol: {}, error: {}",
+                log.error("Error checking task completion for taskId: {}, protocol: {}, error: {}",
                     taskData.getTaskId(), taskData.getProtocol(), e.getMessage(), e);
                 throw e;
             }
@@ -143,7 +143,7 @@ public class DocParseCallbackService extends CallbackTaskService<DocParseCallbac
                     "/v1/document/parse", taskData.getProtocol(), DocParseAdaptor.class);
                 
                 if (adaptor == null) {
-                    LOGGER.error("No adaptor found for protocol: {} when processing callback",
+                    log.error("No adaptor found for protocol: {} when processing callback",
                         taskData.getProtocol());
                     return true; // 没有适配器，认为处理完成
                 }
@@ -159,17 +159,17 @@ public class DocParseCallbackService extends CallbackTaskService<DocParseCallbac
                 boolean callbackSuccess = sendCallback(taskData.getCallbackUrl(), response);
                 
                 if (callbackSuccess) {
-                    LOGGER.info("Successfully sent callback for taskId: {}, protocol: {}, callbackUrl: {}",
+                    log.info("Successfully sent callback for taskId: {}, protocol: {}, callbackUrl: {}",
                         taskData.getTaskId(), taskData.getProtocol(), taskData.getCallbackUrl());
                 } else {
-                    LOGGER.warn("Failed to send callback for taskId: {}, protocol: {}, callbackUrl: {}",
+                    log.warn("Failed to send callback for taskId: {}, protocol: {}, callbackUrl: {}",
                         taskData.getTaskId(), taskData.getProtocol(), taskData.getCallbackUrl());
                 }
                 
                 return callbackSuccess;
                 
             } catch (Exception e) {
-                LOGGER.error("Error processing callback for taskId: {}, protocol: {}, error: {}",
+                log.error("Error processing callback for taskId: {}, protocol: {}, error: {}",
                     taskData.getTaskId(), taskData.getProtocol(), e.getMessage(), e);
                 throw e;
             }
@@ -195,17 +195,17 @@ public class DocParseCallbackService extends CallbackTaskService<DocParseCallbac
                 try (Response httpResponse = httpClient.newCall(request).execute()) {
                     boolean isSuccess = httpResponse.isSuccessful();
 
-                    LOGGER.debug("Callback response - URL: {}, Status: {}, Success: {}",
+                    log.debug("Callback response - URL: {}, Status: {}, Success: {}",
                         callbackUrl, httpResponse.code(), isSuccess);
                     
                     return isSuccess;
                 }
                 
             } catch (IOException e) {
-                LOGGER.error("Failed to send callback to URL: {}, error: {}", callbackUrl, e.getMessage(), e);
+                log.error("Failed to send callback to URL: {}, error: {}", callbackUrl, e.getMessage(), e);
                 return false;
             } catch (Exception e) {
-                LOGGER.error("Unexpected error when sending callback to URL: {}, error: {}",
+                log.error("Unexpected error when sending callback to URL: {}, error: {}",
                     callbackUrl, e.getMessage(), e);
                 return false;
             }

@@ -51,9 +51,9 @@ public class BellaWebSocketListener extends WebSocketListener {
     @Override
     public void onFailure(WebSocket webSocket, Throwable t, Response response) {
         if(t != null) {
-            LOGGER.warn(t.getMessage(), t);
+            log.warn(t.getMessage(), t);
         } else {
-            LOGGER.warn(response.message());
+            log.warn(response.message());
         }
         callback.onFailure(webSocket, t, response);
     }

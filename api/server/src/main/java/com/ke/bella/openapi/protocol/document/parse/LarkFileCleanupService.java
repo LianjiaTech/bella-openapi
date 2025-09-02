@@ -35,7 +35,7 @@ public class LarkFileCleanupService extends CallbackTaskService<LarkFileCleanupS
         LarkCleanupTaskData task = new LarkCleanupTaskData(fileToken, ticket, "file", 
             property.getClientId(), property.getClientSecret(), 0, 0);
         addTask(task);
-        LOGGER.info("Added cleanup task for file: {}, ticket: {}", fileToken, ticket);
+        log.info("Added cleanup task for file: {}, ticket: {}", fileToken, ticket);
     }
 
     @Override

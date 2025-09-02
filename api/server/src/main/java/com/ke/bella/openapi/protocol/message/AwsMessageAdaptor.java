@@ -140,7 +140,7 @@ public class AwsMessageAdaptor implements MessageAdaptor<AwsMessageProperty> {
 
         @Override
         public void accept(Throwable throwable) {
-            LOGGER.warn(throwable.getMessage(), throwable);
+            log.warn(throwable.getMessage(), throwable);
             if (throwable instanceof BedrockRuntimeException) {
                 BedrockRuntimeException bedrockException = (BedrockRuntimeException) throwable;
                 callback.finish(ChannelException.fromResponse(bedrockException.statusCode(), bedrockException.getMessage()));

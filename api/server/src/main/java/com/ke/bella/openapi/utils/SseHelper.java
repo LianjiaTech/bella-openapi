@@ -12,10 +12,10 @@ public class SseHelper {
     public static SseEmitter createSse(long timeout, String reqId) {
         SseEmitter sse = new SseEmitter(timeout);
 
-        sse.onCompletion(() -> LOGGER.info("[{}] 结束连接...................", reqId));
-        sse.onTimeout(() -> LOGGER.info("[{}]连接超时...................", reqId));
-        sse.onError(e -> LOGGER.info("[{}]连接异常,{}", reqId, e.toString()));
-        LOGGER.info("[{}]创建sse连接成功！", reqId);
+        sse.onCompletion(() -> log.info("[{}] 结束连接...................", reqId));
+        sse.onTimeout(() -> log.info("[{}]连接超时...................", reqId));
+        sse.onError(e -> log.info("[{}]连接异常,{}", reqId, e.toString()));
+        log.info("[{}]创建sse连接成功！", reqId);
 
         return sse;
     }
@@ -24,7 +24,7 @@ public class SseHelper {
         try {
             sse.send(event);
         } catch (IOException e) {
-            LOGGER.warn(e.getMessage(), e);
+            log.warn(e.getMessage(), e);
         }
     }
 

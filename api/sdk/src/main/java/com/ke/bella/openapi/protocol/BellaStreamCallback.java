@@ -31,7 +31,7 @@ public class BellaStreamCallback implements Callback {
 
     @Override
     public void onFailure(Call call, IOException e) {
-        LOGGER.error("流式请求失败", e);
+        log.error("流式请求失败", e);
         ChannelException exception = ChannelException.fromException(e);
         if(!connectionInitFuture.isDone()) {
             connectionInitFuture.completeExceptionally(exception);
@@ -44,7 +44,7 @@ public class BellaStreamCallback implements Callback {
     public void onResponse(Call call, Response response) {
         if(!response.isSuccessful()) {
             String errorMsg = "流式请求返回错误状态码: " + response.code() + ", message: " + response.message();
-            LOGGER.error(errorMsg);
+            log.error(errorMsg);
             ChannelException exception = ChannelException.fromResponse(response.code(), response.message());
             if(connectionInitFuture.isDone()) {
                 callback.finish(exception);
@@ -58,7 +58,7 @@ public class BellaStreamCallback implements Callback {
 
         ResponseBody body = response.body();
         if(body == null) {
-            LOGGER.warn("流式响应体为空");
+            log.warn("流式响应体为空");
             callback.finish();
             return;
         }
@@ -76,7 +76,7 @@ public class BellaStreamCallback implements Callback {
                 callback.finish();
             }
         } catch (IOException e) {
-            LOGGER.error("读取流式数据失败", e);
+            log.error("读取流式数据失败", e);
             ChannelException exception = ChannelException.fromException(e);
             callback.finish(exception);
         } finally {

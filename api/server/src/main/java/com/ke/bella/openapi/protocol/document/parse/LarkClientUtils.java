@@ -116,13 +116,13 @@ public class LarkClientUtils {
 
             DeleteFileResp resp = client.drive().v1().file().delete(req);
             if (resp.getCode() != 0) {
-                LOGGER.error("Failed to delete file {}: {}", fileToken, resp.getMsg());
+                log.error("Failed to delete file {}: {}", fileToken, resp.getMsg());
                 return false;
             }
-            LOGGER.info("Successfully deleted file: {}", fileToken);
+            log.info("Successfully deleted file: {}", fileToken);
             return true;
         } catch (Exception e) {
-            LOGGER.error("Exception when deleting file {}: {}", fileToken, e.getMessage(), e);
+            log.error("Exception when deleting file {}: {}", fileToken, e.getMessage(), e);
             return false;
         }
     }
@@ -140,7 +140,7 @@ public class LarkClientUtils {
         try {
             DownloadMediaResp resp = client.drive().v1().media().download(req);
             if(resp.getCode() != 0) {
-                LOGGER.warn(resp.getMsg());
+                log.warn(resp.getMsg());
                 return "";
             }
             ByteArrayOutputStream stream = resp.getData();
@@ -148,7 +148,7 @@ public class LarkClientUtils {
             MediaType mimeType = FileUtils.extraMediaType(fileName);
             return "data:" + mimeType + ";base64," + Base64.getEncoder().encodeToString(stream.toByteArray());
         } catch (Exception e) {
-            LOGGER.warn(e.getMessage(), e);
+            log.warn(e.getMessage(), e);
             return "";
         }
     }

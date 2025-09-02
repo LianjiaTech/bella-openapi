@@ -59,7 +59,7 @@ public class KeRealtimeCallback implements Callbacks.WebSocketCallback {
 
         RealTimeMessage message = JacksonUtils.deserialize(text, RealTimeMessage.class);
         if(message == null || message.getHeader() == null || message.getHeader().getName() == null) {
-            LOGGER.warn("无效的ASR响应消息格式:{}", text);
+            log.warn("无效的ASR响应消息格式:{}", text);
             return;
         }
 
@@ -86,14 +86,14 @@ public class KeRealtimeCallback implements Callbacks.WebSocketCallback {
             break;
 
         case TASK_FAILED:
-            LOGGER.warn("转录失败: {}",
+            log.warn("转录失败: {}",
                     message.getHeader().getStatusMessage() != null ?
                             message.getHeader().getStatusMessage() : "未知原因");
             complete();
             break;
 
         case UNKNOWN:
-            LOGGER.warn("收到未知事件类型: {}", eventName);
+            log.warn("收到未知事件类型: {}", eventName);
             break;
         }
     }
@@ -105,7 +105,7 @@ public class KeRealtimeCallback implements Callbacks.WebSocketCallback {
 
     @Override
     public void onClosed(WebSocket webSocket, int code, String reason) {
-        LOGGER.info("ASR onClosed: code={}, reason={}", code, reason);
+        log.info("ASR onClosed: code={}, reason={}", code, reason);
         complete();
     }
 
@@ -127,13 +127,13 @@ public class KeRealtimeCallback implements Callbacks.WebSocketCallback {
             Thread.currentThread().interrupt();
             throw ChannelException.fromException(e);
         } catch (ExecutionException | TimeoutException e) {
-            LOGGER.warn(e.getMessage(), e);
+            log.warn(e.getMessage(), e);
             throw ChannelException.fromException(e);
         }
     }
 
     private void onError(ChannelException exception) {
-        LOGGER.warn("realtime error: {}", exception.getMessage(), exception);
+        log.warn("realtime error: {}", exception.getMessage(), exception);
         sender.onError(exception);
         complete();
     }

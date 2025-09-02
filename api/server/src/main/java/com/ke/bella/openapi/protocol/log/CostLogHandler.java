@@ -1,11 +1,5 @@
 package com.ke.bella.openapi.protocol.log;
 
-import java.math.BigDecimal;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.apache.commons.lang3.StringUtils;
-
 import com.google.common.collect.Maps;
 import com.ke.bella.openapi.EndpointProcessData;
 import com.ke.bella.openapi.protocol.cost.CostCalculator;
@@ -13,11 +7,18 @@ import com.ke.bella.openapi.protocol.cost.CostCounter;
 import com.ke.bella.openapi.utils.GroovyExecutor;
 import com.ke.bella.openapi.utils.JacksonUtils;
 import com.lmax.disruptor.EventHandler;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import lombok.extern.slf4j.Slf4j;
+import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.Map;
 
-@Slf4j
 public class CostLogHandler implements EventHandler<LogEvent> {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(CostLogHandler.class);
+
     public CostLogHandler(CostCounter costCounter, CostScripFetcher costScripFetcher) {
         this.costCounter = costCounter;
         this.costScripFetcher = costScripFetcher;

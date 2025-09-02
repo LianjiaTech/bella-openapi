@@ -60,7 +60,7 @@ public class LimiterManager {
         try {
             executor.execute("/rpm", ScriptType.limiter, keys, params);
         } catch (IOException e) {
-            LOGGER.warn(e.getMessage(), e);
+            log.warn(e.getMessage(), e);
         }
     }
 
@@ -79,7 +79,7 @@ public class LimiterManager {
         try {
             executor.execute("/concurrent", ScriptType.limiter, keys, params);
         } catch (IOException e) {
-            LOGGER.warn(e.getMessage(), e);
+            log.warn(e.getMessage(), e);
         }
     }
     
