@@ -62,20 +62,18 @@ public class HttpSessionManager implements SessionManager {
                 log.info("CONSOLE_HEADER is null");
             }
             Response response = HttpUtils.httpRequest(builder.build(), 10, 30);
-            if(response.code() != 200) {
+            if(response.code() != 200 && "true".equals(request.getHeader(CONSOLE_HEADER))) {
                 String redirectUrl = response.header(REDIRECT_HEADER);
                 if(response.code() == 401 && StringUtils.isNotEmpty(redirectUrl)) {
                     throw new ChannelException.ClientNotLoginException(redirectUrl);
-                } else if(response.code() == 401) {
-                    log.warn("redirectUrl is null");
                 }
                 throw ChannelException.fromResponse(response.code(), response.message());
             }
             if(response.body() == null) {
-                throw new ChannelException.AuthorizationException("Authorization Failed");
+                return null;
             }
             return Optional.ofNullable(JacksonUtils.deserialize(response.body().bytes(), new TypeReference<BellaResponse<Operator>>(){}))
-                    .orElseThrow(() -> new ChannelException.AuthorizationException("Authorization Failed")).getData();
+                    .orElse(new BellaResponse<>()).getData();
         } catch (IOException e) {
             throw ChannelException.fromResponse(502, e.getMessage());
         }

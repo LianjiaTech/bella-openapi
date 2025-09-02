@@ -86,7 +86,7 @@ public class TypeSchema implements Serializable {
             }
             return schema;
         } catch (NoSuchMethodException e) {
-            LOGGER.warn(e.getMessage(), e);
+            log.warn(e.getMessage(), e);
             throw ChannelException.fromException(e);
         } catch (InstantiationException | IllegalAccessException e) {
             throw new RuntimeException(e);

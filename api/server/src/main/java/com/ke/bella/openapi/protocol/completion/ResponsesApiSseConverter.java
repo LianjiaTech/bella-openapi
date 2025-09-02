@@ -34,7 +34,7 @@ public class ResponsesApiSseConverter implements Callbacks.SseEventConverter<Str
             }
             return null;
         } catch (Exception e) {
-            LOGGER.error("Error processing Responses API stream event: {}", eventData, e);
+            log.error("Error processing Responses API stream event: {}", eventData, e);
             return null;
         }
     }
@@ -67,7 +67,7 @@ public class ResponsesApiSseConverter implements Callbacks.SseEventConverter<Str
             case "response.error":
                 return handleResponseError(event);
             default:
-                LOGGER.debug("Unknown Responses API event type: {}", event.getType());
+                log.debug("Unknown Responses API event type: {}", event.getType());
                 return null;
         }
     }
@@ -175,7 +175,7 @@ public class ResponsesApiSseConverter implements Callbacks.SseEventConverter<Str
     private StreamCompletionResponse handleFunctionCallArgumentsDone(ResponsesApiStreamEvent event) {
         // 工具调用参数构建完成，不需要额外处理
         toolCallIndex++;
-        LOGGER.debug("Function call arguments done for item: {}", event.getItem_id());
+        log.debug("Function call arguments done for item: {}", event.getItem_id());
         return null;
     }
 
@@ -208,7 +208,7 @@ public class ResponsesApiSseConverter implements Callbacks.SseEventConverter<Str
      */
     private StreamCompletionResponse handleReasoningSummaryDone(ResponsesApiStreamEvent event) {
         // 推理摘要构建完成
-        LOGGER.debug("Reasoning summary done for item: {}", event.getItem_id());
+        log.debug("Reasoning summary done for item: {}", event.getItem_id());
         return null;
     }
 
@@ -217,7 +217,7 @@ public class ResponsesApiSseConverter implements Callbacks.SseEventConverter<Str
      */
     private StreamCompletionResponse handleOutputItemDone(ResponsesApiStreamEvent event) {
         // 输出项完成，可能需要根据类型做特殊处理
-        LOGGER.debug("Output item done for index: {}", event.getOutput_index());
+        log.debug("Output item done for index: {}", event.getOutput_index());
         return null;
     }
 
@@ -247,7 +247,7 @@ public class ResponsesApiSseConverter implements Callbacks.SseEventConverter<Str
      * 处理响应错误事件
      */
     private StreamCompletionResponse handleResponseError(ResponsesApiStreamEvent event) {
-        LOGGER.error("Responses API error: {}", event.getResponse().getError());
+        log.error("Responses API error: {}", event.getResponse().getError());
         // 返回包含错误信息的响应
         return StreamCompletionResponse.builder()
                 .id(responseId)

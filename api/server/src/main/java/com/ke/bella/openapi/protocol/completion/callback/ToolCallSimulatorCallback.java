@@ -48,7 +48,7 @@ public class ToolCallSimulatorCallback extends Callbacks.StreamCompletionCallbac
                 } catch (Throwable e) {
                     next.done();
                     next.finish();
-                    LOGGER.warn("faild to parse function call, buffer: {}", buffer.toString(), e);
+                    log.warn("faild to parse function call, buffer: {}", buffer.toString(), e);
                 }
             });
             isOpen = true;
