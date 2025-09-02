@@ -40,10 +40,10 @@ public class BellaServerContextInitializer implements ApplicationContextInitiali
                     .build();
 
             BellaServerContextHolder.setContext(context);
-            LOGGER.info("BellaServerContextInitializer initialize() => ip={}, port={}, applicationName={}",
+            log.info("BellaServerContextInitializer initialize() => ip={}, port={}, applicationName={}",
                     ip, port, applicationName);
         } catch (Exception e) {
-            LOGGER.warn("BellaServerContextInitializer initialize() failed, e: ", e);
+            log.warn("BellaServerContextInitializer initialize() failed, e: ", e);
         } finally {
             inetUtils.close();
         }
