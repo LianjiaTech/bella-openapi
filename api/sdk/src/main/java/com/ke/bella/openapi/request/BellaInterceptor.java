@@ -47,7 +47,7 @@ public class BellaInterceptor implements Interceptor {
             user = apikeyInfo.getOwnerCode();
         }
         if(user != null) {
-            bellaRequest.header("ucid", op.getSourceId());
+            bellaRequest.header("ucid", user);
         }
          return chain.proceed(bellaRequest.build());
     }

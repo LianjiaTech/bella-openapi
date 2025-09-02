@@ -259,9 +259,10 @@ public class OpenapiClient {
         });
     }
 
-    public RouteResult route(String endpoint, String model, String userApikey, String consoleApikey) {
+    public RouteResult route(String endpoint, String model, Integer queueMode, String userApikey, String consoleApikey) {
         String url = openapiHost + "/v1/route";
-        RouteRequest routeRequest = RouteRequest.builder().apikey(userApikey).endpoint(endpoint).model(model).build();
+        RouteRequest routeRequest = RouteRequest.builder().apikey(userApikey)
+                .endpoint(endpoint).model(model).queueMode(queueMode).build();
         Request request = new Request.Builder()
                 .url(url)
                 .addHeader(HttpHeaders.AUTHORIZATION, "Bearer " + consoleApikey)
