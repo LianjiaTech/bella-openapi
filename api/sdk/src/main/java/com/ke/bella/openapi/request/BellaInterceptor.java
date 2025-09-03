@@ -28,9 +28,6 @@ public class BellaInterceptor implements Interceptor {
     @Override
     public Response intercept(@NotNull Chain chain) throws IOException {
         Map<String, Object> context = this.context;
-        if(context == null) {
-            context = BellaContext.snapshot();
-        }
         Map<String, String> headers = (Map<String, String>) Optional.ofNullable(context.get("headers")).orElse(new HashMap<>());
         Request originalRequest = chain.request();
         Request.Builder bellaRequest = originalRequest.newBuilder();
