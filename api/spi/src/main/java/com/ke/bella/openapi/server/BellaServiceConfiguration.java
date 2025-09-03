@@ -2,7 +2,6 @@ package com.ke.bella.openapi.server;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ke.bella.openapi.client.OpenapiClient;
-import com.ke.bella.openapi.request.BellaInterceptor;
 import com.ke.bella.openapi.request.BellaRequestFilter;
 import com.ke.bella.openapi.server.intercept.AuthorizationInterceptor;
 import com.ke.bella.openapi.server.intercept.ConcurrentStartInterceptor;
@@ -21,7 +20,6 @@ import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import retrofit2.Retrofit;
 
-import javax.annotation.PostConstruct;
 import java.util.concurrent.ExecutorService;
 
 @EnableConfigurationProperties(OpenapiProperties.class)
@@ -35,10 +33,10 @@ public class BellaServiceConfiguration implements WebMvcConfigurer {
     @Lazy
     private AuthorizationInterceptor authorizationInterceptor;
 
-    @PostConstruct
-    public void init() {
-        HttpUtils.addInterceptor(new BellaInterceptor());
+    public BellaServiceConfiguration() {
+        HttpUtils.useBellaInterceptor();
     }
+
 
     @Bean
     public OpenapiClient openapiClient(OpenapiProperties properties) {
@@ -68,14 +66,21 @@ public class BellaServiceConfiguration implements WebMvcConfigurer {
     public OpenAiService openAiService(OpenapiProperties openapiProperties) {
         ObjectMapper mapper = OpenAiService.defaultObjectMapper();
 
+        // 使用HttpUtils的defaultOkhttpClient，它会自动包含BellaInterceptor
         OkHttpClient client = HttpUtils.defaultOkhttpClient();
 
         Retrofit retrofit = OpenAiService.defaultRetrofit(client, mapper, openapiProperties.getHost() + "/v1/");
         OpenAiApi openAiApi = retrofit.create(OpenAiApi.class);
-
         ExecutorService executorService = client.dispatcher().executorService();
+
         return new OpenAiService(openAiApi, executorService);
     }
+
+    @Bean
+    public OpenAiServiceFactory openAiServiceFactory(OpenapiProperties openapiProperties) {
+        return new OpenAiServiceFactory(openapiProperties);
+    }
+
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {

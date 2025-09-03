@@ -1,11 +1,13 @@
 package com.ke.bella.openapi.utils;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.ke.bella.openapi.BellaContext;
 import com.ke.bella.openapi.common.exception.ChannelException;
 import com.ke.bella.openapi.protocol.BellaEventSourceListener;
 import com.ke.bella.openapi.protocol.BellaStreamCallback;
 import com.ke.bella.openapi.protocol.BellaWebSocketListener;
 import com.ke.bella.openapi.protocol.Callbacks;
+import com.ke.bella.openapi.request.BellaInterceptor;
 import okhttp3.ConnectionPool;
 import okhttp3.Dispatcher;
 import okhttp3.Interceptor;
@@ -34,6 +36,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
 /**
@@ -58,7 +61,13 @@ public class HttpUtils {
         return builder.build();
     }
 
+    private static AtomicBoolean useBellaInterceptor = new AtomicBoolean(false);
+
     private static OkHttpClient.Builder clientBuilder() {
+        return clientBuilder(useBellaInterceptor.get());
+    }
+    
+    private static OkHttpClient.Builder clientBuilder(boolean useBellaInterceptor) {
         Dispatcher dispatcher = new Dispatcher(executorService);
         dispatcher.setMaxRequests(2000);
         dispatcher.setMaxRequestsPerHost(500);
@@ -66,13 +75,19 @@ public class HttpUtils {
                 .proxySelector(ProxyUtils.getProxySelector())
                 .connectionPool(connectionPool)
                 .dispatcher(dispatcher);
+        
+        if (useBellaInterceptor) {
+            builder.addInterceptor(new BellaInterceptor(BellaContext.snapshot()));
+        }
+        
         interceptors.forEach(builder::addInterceptor);
         return builder;
     }
 
-    public static void addInterceptor(Interceptor interceptor) {
-        interceptors.add(interceptor);
+    public static void useBellaInterceptor() {
+        useBellaInterceptor.set(true);
     }
+
 
     public static Response httpRequest(Request request, int connectionTimeout, int readTimeout) throws IOException {
         return httpRequest(request, connectionTimeout, readTimeout, null);
