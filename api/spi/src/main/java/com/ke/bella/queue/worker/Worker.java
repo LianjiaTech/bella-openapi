@@ -1,5 +1,6 @@
 package com.ke.bella.queue.worker;
 
+import com.google.common.collect.Maps;
 import com.ke.bella.queue.TaskEvent;
 import com.ke.bella.queue.TaskWrapper;
 import com.theokanning.openai.queue.EventbusConfig;
@@ -8,6 +9,7 @@ import com.theokanning.openai.queue.Task;
 import com.theokanning.openai.service.OpenAiService;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.MapUtils;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
@@ -63,10 +65,12 @@ public class Worker {
             taskExecutor.submit(TaskWrapper.of(task, this));
         } catch (Exception e) {
             log.error("Task failed: {}", task.getTaskId(), e);
-            Map<String, Object> error = new HashMap<>();
-            error.put("error", e.getMessage());
-            error.put("type", "exception");
-            markComplete(task, error);
+            Map<String, Object> body = Maps.newHashMap();
+            body.put("error", e.getMessage());
+            Map<String, Object> response = new HashMap<>();
+            response.put("status_code", 500);
+            response.put("body", body);
+            markComplete(task, response);
         }
     }
 
