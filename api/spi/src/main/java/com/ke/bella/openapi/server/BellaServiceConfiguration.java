@@ -40,7 +40,7 @@ public class BellaServiceConfiguration implements WebMvcConfigurer {
 
     @Bean
     public OpenapiClient openapiClient(OpenapiProperties properties) {
-        return new OpenapiClient(properties.getHost());
+        return new OpenapiClient(properties.getHost(), properties.getServiceAk());
     }
 
     @Bean
