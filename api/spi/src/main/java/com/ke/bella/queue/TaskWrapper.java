@@ -48,7 +48,7 @@ public class TaskWrapper {
         }
     }
 
-    public void markRetryLater(Map<String, Object> result) {
+    public void markRetryLater() {
         worker.markRetryLater(task);
     }
 
