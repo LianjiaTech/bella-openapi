@@ -206,12 +206,17 @@ public class ChannelRouter {
     }
 
     public ChannelDB route(String endpoint, String model, ApikeyInfo apikey, Integer queueMode) {
-        if(StringUtils.isBlank(endpoint) || StringUtils.isBlank(model)) {
-            throw new BizParamCheckException("endpoint和model不能为空");
+        if(StringUtils.isBlank(endpoint)) {
+            throw new BizParamCheckException("endpoint不能为空");
         }
 
-        String terminalName = modelService.fetchTerminalModelName(model);
-        List<ChannelDB> channels = channelService.listActives(EntityConstants.MODEL, terminalName);
+        List<ChannelDB> channels;
+        if(StringUtils.isBlank(model)) {
+            channels = channelService.listActives(EntityConstants.ENDPOINT, endpoint);
+        } else {
+            String terminalName = modelService.fetchTerminalModelName(model);
+            channels = channelService.listActives(EntityConstants.MODEL, terminalName);
+        }
 
         List<ChannelDB> filteredChannels = Optional.ofNullable(channels)
                 .orElse(Collections.emptyList())
