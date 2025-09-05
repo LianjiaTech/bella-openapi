@@ -9,6 +9,9 @@ import okhttp3.MediaType;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import org.springframework.stereotype.Component;
+import org.springframework.web.util.UriUtils;
+
+import java.nio.charset.StandardCharsets;
 
 @Component("KeFlashAsr")
 public class KeAdaptor implements FlashAsrAdaptor<AsrProperty> {
@@ -19,6 +22,7 @@ public class KeAdaptor implements FlashAsrAdaptor<AsrProperty> {
                 .header("format", request.getFormat())
                 .header("max_sentence_silence", request.getMaxSentenceSilence().toString())
                 .header("sample_rate", request.getSampleRate().toString())
+                .header("hot_words", UriUtils.encode(request.getHotWords(), StandardCharsets.UTF_8))
                 .post(RequestBody.create(MediaType.parse(AudioFormat.getContentType(request.getFormat())), request.getContent()))
                 .build();
         return HttpUtils.httpRequest(httpRequest, FlashAsrResponse.class);
