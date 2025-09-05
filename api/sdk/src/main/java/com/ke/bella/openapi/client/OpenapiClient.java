@@ -7,6 +7,8 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
+import com.ke.bella.openapi.BellaContext;
+import com.ke.bella.openapi.metadata.Model;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.Assert;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -36,13 +38,25 @@ import okhttp3.RequestBody;
 
 public class OpenapiClient {
     private final String openapiHost;
+    private final String serviceAk;
+
     private Cache<String, ApikeyInfo> cache = CacheBuilder.newBuilder()
             .expireAfterAccess(10, TimeUnit.MINUTES)
             .maximumSize(10000)
             .build();
 
+    private Cache<String, Model> modelCache = CacheBuilder.newBuilder()
+            .expireAfterAccess(10, TimeUnit.MINUTES)
+            .maximumSize(100)
+            .build();
+
     public OpenapiClient(String openapiHost) {
+        this(openapiHost, null);
+    }
+
+    public OpenapiClient(String openapiHost, String serviceAk) {
         this.openapiHost = openapiHost;
+        this.serviceAk = serviceAk;
     }
 
     public ApikeyInfo whoami(String apikey) {
@@ -80,6 +94,30 @@ public class OpenapiClient {
         BellaResponse<ApikeyInfo> bellaResp = HttpUtils.httpRequest(request, new TypeReference<BellaResponse<ApikeyInfo>>() {
         });
         return bellaResp == null || bellaResp.getData() == null ? new ApikeyInfo() : bellaResp.getData();
+    }
+
+    public Model getModelInfo(String modelName) {
+        try {
+            return modelCache.get(modelName, () -> requestModel(modelName));
+        } catch (ExecutionException e) {
+            throw ChannelException.fromException(e);
+        }
+    }
+
+    private Model requestModel(String modelName) {
+        Assert.hasText(serviceAk, "serviceAk is null");
+        if(StringUtils.isEmpty(modelName)) {
+            return new Model();
+        }
+        String url = openapiHost + "/v1/meta/model/info/" + modelName;
+        Request request = new Request.Builder()
+                .get()
+                .url(url)
+                .addHeader(HttpHeaders.AUTHORIZATION, "Bearer " + serviceAk)
+                .build();
+        BellaResponse<Model> bellaResp = HttpUtils.httpRequest(request, new TypeReference<BellaResponse<Model>>() {
+        });
+        return bellaResp == null || bellaResp.getData() == null ? new Model() : bellaResp.getData();
     }
 
     public FileUrl getFileUrl(String apikey, String fileId) {
@@ -259,6 +297,45 @@ public class OpenapiClient {
         });
     }
 
+    public RouteResult route(String endpoint, String model, Integer queueMode, String userApikey) {
+        Assert.hasText(serviceAk, "serviceAk is null");
+        String url = openapiHost + "/v1/route";
+        RouteRequest routeRequest = RouteRequest.builder().apikey(userApikey)
+                .endpoint(endpoint).model(model).queueMode(queueMode).build();
+        Request request = new Request.Builder()
+                .url(url)
+                .addHeader(HttpHeaders.AUTHORIZATION, "Bearer " + serviceAk)
+                .post(RequestBody.create(JacksonUtils.serialize(routeRequest), MediaType.parse("application/json")))
+                .build();
+        BellaResponse<RouteResult> bellaResp = HttpUtils.httpRequest(request, new TypeReference<BellaResponse<RouteResult>>() {
+        });
+        if(bellaResp.getCode() != 200) {
+            throw ChannelException.fromResponse(bellaResp.getCode(), bellaResp.getMessage());
+        }
+        return bellaResp.getData();
+    }
+
+    public Boolean log(EndpointProcessData processData) {
+        Assert.hasText(serviceAk, "serviceAk is null");
+        Assert.hasText(processData.getEndpoint(), "endpoint can not be null");
+        Assert.hasText(processData.getAkSha(), "akSha can not be null");
+        Assert.hasText(processData.getBellaTraceId(), "bella trace id can not be null");
+        processData.setInnerLog(false);
+        String url = openapiHost + "/v1/log";
+        Request request = new Request.Builder()
+                .url(url)
+                .addHeader(HttpHeaders.AUTHORIZATION, "Bearer " + serviceAk)
+                .post(RequestBody.create(JacksonUtils.serialize(processData), MediaType.parse("application/json")))
+                .build();
+        BellaResponse<Boolean> bellaResp = HttpUtils.httpRequest(request, new TypeReference<BellaResponse<Boolean>>() {
+        });
+        if(bellaResp.getCode() != 200) {
+            throw ChannelException.fromResponse(bellaResp.getCode(), bellaResp.getMessage());
+        }
+        return bellaResp.getData();
+    }
+
+    @Deprecated
     public RouteResult route(String endpoint, String model, Integer queueMode, String userApikey, String consoleApikey) {
         String url = openapiHost + "/v1/route";
         RouteRequest routeRequest = RouteRequest.builder().apikey(userApikey)
@@ -276,6 +353,7 @@ public class OpenapiClient {
         return bellaResp.getData();
     }
 
+    @Deprecated
     public Boolean log(EndpointProcessData processData, String consoleApikey) {
         Assert.hasText(processData.getEndpoint(), "endpoint can not be null");
         Assert.hasText(processData.getAkSha(), "akSha can not be null");
