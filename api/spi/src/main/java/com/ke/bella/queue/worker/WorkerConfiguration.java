@@ -12,6 +12,7 @@ import org.springframework.context.annotation.Configuration;
 public class WorkerConfiguration {
 
     @Bean
+    @ConditionalOnProperty(prefix = "bella.queue.worker", name = "enabled", havingValue = "true")
     @ConditionalOnMissingBean(Worker.class)
     @ConditionalOnBean(TaskExecutor.class)
     public Worker worker(TaskExecutor taskExecutor, OpenAiService openAiService) {
