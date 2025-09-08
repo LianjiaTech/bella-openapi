@@ -70,7 +70,7 @@ public class TokenCounter {
         }
     }
 
-    private static int imageToken(double widthpx, double heightpx, boolean lowResolution) {
+    public static int imageToken(double widthpx, double heightpx, boolean lowResolution) {
         if (lowResolution) {
             //如果图片使用低分辨率处理，则图像统一被压缩到512*512范围内，占用token：85
             return 85;
