@@ -167,11 +167,12 @@ public class Message {
         @AllArgsConstructor
         @NoArgsConstructor
         @Builder
+        @JsonInclude(Include.NON_NULL)
         public static class FunctionParameter {
             private String type;
             private List<String> required;
             private Object properties;
-            private boolean additionalProperties;
+            private Boolean additionalProperties;
         }
     }
 

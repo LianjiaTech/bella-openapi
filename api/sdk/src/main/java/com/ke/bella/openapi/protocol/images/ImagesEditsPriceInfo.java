@@ -3,12 +3,13 @@ package com.ke.bella.openapi.protocol.images;
 import com.ke.bella.openapi.protocol.IPriceInfo;
 import lombok.Data;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Data
-public class ImagesEditsPriceInfo implements IPriceInfo {
+public class ImagesEditsPriceInfo implements IPriceInfo, Serializable {
 	private BigDecimal pricePerEdit;
 	private BigDecimal imageTokenPrice;
 
