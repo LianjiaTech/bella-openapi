@@ -371,7 +371,7 @@ public class TransferToCompletionsUtils {
             Message.Function.FunctionParameter params = tool.getFunction().getParameters();
             MessageRequest.InputSchema.InputSchemaBuilder schemaBuilder = MessageRequest.InputSchema.builder()
                     .type(params.getType())
-                    .additionalProperties(params.getAdditionalProperties());
+                    .additionalProperties(Boolean.TRUE == params.getAdditionalProperties());
             
             if (params.getProperties() != null) {
                 schemaBuilder.properties(params.getProperties());
