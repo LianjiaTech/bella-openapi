@@ -1,10 +1,11 @@
 package com.ke.bella.openapi.protocol.ocr;
 
+import java.io.Serializable;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.ke.bella.openapi.protocol.UserRequest;
-import lombok.Data;
 
-import java.io.Serializable;
+import lombok.Data;
 
 /**
  * OCR身份证识别请求
