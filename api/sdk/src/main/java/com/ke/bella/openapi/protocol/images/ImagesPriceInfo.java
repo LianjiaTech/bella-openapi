@@ -4,13 +4,14 @@ import com.ke.bella.openapi.ComponentList;
 import com.ke.bella.openapi.protocol.IPriceInfo;
 import lombok.Data;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Data
-public class ImagesPriceInfo implements IPriceInfo {
+public class ImagesPriceInfo implements IPriceInfo, Serializable {
     ImagesPriceInfoDetailsList details;
     @Override
     public String getUnit() {

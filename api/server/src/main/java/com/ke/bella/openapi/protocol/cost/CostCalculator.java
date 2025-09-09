@@ -20,6 +20,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -73,8 +74,19 @@ public class CostCalculator  {
         public BigDecimal calculate(String priceInfo, Object usage) {
             CompletionPriceInfo price = JacksonUtils.deserialize(priceInfo, CompletionPriceInfo.class);
             CompletionResponse.TokenUsage tokenUsage = (CompletionResponse.TokenUsage) usage;
-            return price.getInput().multiply(BigDecimal.valueOf(tokenUsage.getPrompt_tokens() / 1000.0))
-                    .add(price.getOutput().multiply(BigDecimal.valueOf(tokenUsage.getCompletion_tokens() / 1000.0)));
+            int promptTokens = tokenUsage.getPrompt_tokens();
+            int completionsTokens = tokenUsage.getCompletion_tokens();
+            Pair<BigDecimal, Integer> inputParts = CompletionsCalHelper.calculateAllElements(CompletionsCalHelper.INPUT, price, tokenUsage.getPrompt_tokens_details());
+            Pair<BigDecimal, Integer> outputParts = CompletionsCalHelper.calculateAllElements(CompletionsCalHelper.OUTPUT, price, tokenUsage.getCompletion_tokens_details());
+            if(inputParts.getLeft().doubleValue() > 0) {
+                promptTokens -= inputParts.getRight();
+            }
+            if(outputParts.getLeft().doubleValue() > 0) {
+                completionsTokens -= outputParts.getRight();
+            }
+            return price.getInput().multiply(BigDecimal.valueOf(promptTokens / 1000.0))
+                    .add(price.getOutput().multiply(BigDecimal.valueOf(completionsTokens / 1000.0)))
+                    .add(inputParts.getLeft()).add(outputParts.getLeft());
         }
 
         @Override
