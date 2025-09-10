@@ -81,11 +81,16 @@ public class LoginFilter implements Filter {
         }
         if("/openapi/userInfo".equals(httpRequest.getRequestURI())) {
             Operator operator = sessionManager.getSession(httpRequest);
-            BellaResponse<Operator> bellaResponse = new BellaResponse<>();
-            bellaResponse.setCode(operator == null ? 401 : 200);
-            bellaResponse.setData(operator);
-            response.setContentType("application/json; charset=utf-8");
-            response.getWriter().write(JacksonUtils.serialize(bellaResponse));
+            if(operator != null) {
+                BellaResponse<Operator> bellaResponse = new BellaResponse<>();
+                bellaResponse.setCode(200);
+                bellaResponse.setData(operator);
+                response.setContentType("application/json; charset=utf-8");
+                response.getWriter().write(JacksonUtils.serialize(bellaResponse));
+            } else {
+                httpResponse.setHeader(REDIRECT_HEADER, properties.getLoginPageUrl() + "?" + redirectParameter + "=");
+                httpResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            }
             return;
         }
 

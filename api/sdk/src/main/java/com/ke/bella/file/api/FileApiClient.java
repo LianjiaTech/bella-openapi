@@ -1,13 +1,11 @@
 package com.ke.bella.file.api;
 
 import com.ke.bella.openapi.utils.HttpUtils;
-import lombok.extern.slf4j.Slf4j;
 import okhttp3.Request;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
 
-@Slf4j
 public class FileApiClient {
     private final String url;
     private static volatile FileApiClient INSTANCE;

@@ -42,7 +42,7 @@ public class TransferApikeyListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleApiKeyTransfer(ApiKeyTransferEvent event) {
         try {
-            LOGGER.info("开始处理API Key转移事件 - akCode: {}, from: {} -> to: {}, operator: {}({})",
+            log.info("开始处理API Key转移事件 - akCode: {}, from: {} -> to: {}, operator: {}({})",
                     event.getAkCode(), 
                     event.getFromOwnerName(), 
                     event.getToOwnerName(),
@@ -51,9 +51,9 @@ public class TransferApikeyListener {
             
             clearTransferredApikeyCaches(event.getAkCode());
 
-            LOGGER.info("API Key转移事件处理完成 - akCode: {}", event.getAkCode());
+            log.info("API Key转移事件处理完成 - akCode: {}", event.getAkCode());
         } catch (Exception e) {
-            LOGGER.warn("API Key转移后缓存清理失败，可能存在一定时间的脏数据 - akCode: {}, error: {}",
+            log.warn("API Key转移后缓存清理失败，可能存在一定时间的脏数据 - akCode: {}, error: {}",
                     event.getAkCode(), e.getMessage(), e);
         }
     }
@@ -69,7 +69,7 @@ public class TransferApikeyListener {
         ApikeyInfo mainApikey = apikeyRepo.queryByCode(akCode);
         if (mainApikey != null) {
             apikeyService.clearApikeyCache(mainApikey.getAkSha());
-            LOGGER.debug("已清除主API Key缓存: akCode={}, akSha={}", akCode, mainApikey.getAkSha());
+            log.debug("已清除主API Key缓存: akCode={}, akSha={}", akCode, mainApikey.getAkSha());
         }
         
         // 清除所有子API Key缓存
@@ -80,11 +80,11 @@ public class TransferApikeyListener {
         if (CollectionUtils.isNotEmpty(subApikeys)) {
             for (ApikeyDB subApikey : subApikeys) {
                 apikeyService.clearApikeyCache(subApikey.getAkSha());
-                LOGGER.debug("已清除子API Key缓存: akCode={}, akSha={}", subApikey.getCode(), subApikey.getAkSha());
+                log.debug("已清除子API Key缓存: akCode={}, akSha={}", subApikey.getCode(), subApikey.getAkSha());
             }
-            LOGGER.info("API Key转移完成，共清除 {} 个子API Key缓存", subApikeys.size());
+            log.info("API Key转移完成，共清除 {} 个子API Key缓存", subApikeys.size());
         } else {
-            LOGGER.debug("API Key转移完成，无子API Key需要清除缓存");
+            log.debug("API Key转移完成，无子API Key需要清除缓存");
         }
     }
 }

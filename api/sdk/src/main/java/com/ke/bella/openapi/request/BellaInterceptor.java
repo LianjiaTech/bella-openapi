@@ -28,9 +28,6 @@ public class BellaInterceptor implements Interceptor {
     @Override
     public Response intercept(@NotNull Chain chain) throws IOException {
         Map<String, Object> context = this.context;
-        if(context == null) {
-            context = BellaContext.snapshot();
-        }
         Map<String, String> headers = (Map<String, String>) Optional.ofNullable(context.get("headers")).orElse(new HashMap<>());
         Request originalRequest = chain.request();
         Request.Builder bellaRequest = originalRequest.newBuilder();
@@ -40,14 +37,14 @@ public class BellaInterceptor implements Interceptor {
         Operator op = (Operator) Optional.ofNullable(context.get("oper")).orElse(new Operator());
         String user = op.getUserId() == null ? op.getSourceId() : op.getUserId().toString();
         ApikeyInfo apikeyInfo = (ApikeyInfo) Optional.ofNullable(context.get("ak")).orElse(new ApikeyInfo());
-        if(apikeyInfo.getApikey() != null) {
+        if(originalRequest.header("Authorization") == null && apikeyInfo.getApikey() != null) {
             bellaRequest.header("Authorization", "Bearer " + apikeyInfo.getApikey());
         }
         if(user == null) {
             user = apikeyInfo.getOwnerCode();
         }
         if(user != null) {
-            bellaRequest.header("ucid", op.getSourceId());
+            bellaRequest.header("ucid", user);
         }
          return chain.proceed(bellaRequest.build());
     }

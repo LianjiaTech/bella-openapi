@@ -300,7 +300,7 @@ public class TransferFromCompletionsUtils {
             }
             builder.tools(chatTools);
         } catch (Exception e) {
-            LOGGER.info(e.getMessage());
+            log.info(e.getMessage());
         }
     }
 

@@ -43,7 +43,7 @@ public class ToolCallSimulator<T extends CompletionProperty> implements Completi
                     choice.setFinish_reason(resp.finishReason());
                     resp.getChoices().set(0, choice);
                 } catch (Exception e) {
-                    LOGGER.info(resp.content(), e);
+                    log.info(resp.content(), e);
                 }
                 return resp;
             }

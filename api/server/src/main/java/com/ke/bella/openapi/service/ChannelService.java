@@ -209,7 +209,9 @@ public class ChannelService {
                 priceInfo.description().forEach((filedName, desc) -> {
                     try {
                         Object val = fields.get(filedName).get(priceInfo);
-                        details.getDisplayPrice().put(desc, val == null ? "N/A" : val.toString());
+                        if(val != null) {
+                            details.getDisplayPrice().put(desc, val.toString());
+                        }
                     } catch (IllegalAccessException e) {
                         throw new RuntimeException(e);
                     }

@@ -100,7 +100,7 @@ public class RedisSessionManager implements SessionManager, TicketManager { // C
                 expire(id, sessionProperty.getMaxInactiveInterval());
             }
         } catch (Exception e) {
-            LOGGER.warn("session renew error", e);
+            log.warn("session renew error", e);
         }
     }
 

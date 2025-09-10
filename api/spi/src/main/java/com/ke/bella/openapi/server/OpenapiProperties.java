@@ -8,4 +8,5 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class OpenapiProperties {
     public String host;
     public String service;
+    public String serviceAk;
 }

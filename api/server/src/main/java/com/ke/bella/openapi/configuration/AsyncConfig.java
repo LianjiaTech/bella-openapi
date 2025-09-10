@@ -37,7 +37,7 @@ public class AsyncConfig {
             try {
                 runnable.run();
             } catch (Exception e) {
-                LOGGER.warn("异步缓存清理任务执行失败", e);
+                log.warn("异步缓存清理任务执行失败", e);
             }
         });
         

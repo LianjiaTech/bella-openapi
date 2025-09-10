@@ -162,6 +162,7 @@ public class CompletionResponse extends OpenapiResponse {
         private int cache_creation_tokens;
         private int cache_read_tokens;
         private TokensDetail completion_tokens_details;
+        private TokensDetail prompt_tokens_details;
 
         public TokenUsage add(TokenUsage u) {
             this.completion_tokens += u.completion_tokens;
@@ -182,6 +183,9 @@ public class CompletionResponse extends OpenapiResponse {
     @Data
     public static class TokensDetail {
         private int reasoning_tokens;
+        private int cached_tokens;
+        private int audio_tokens;
+        private int image_tokens;
     }
 
 }

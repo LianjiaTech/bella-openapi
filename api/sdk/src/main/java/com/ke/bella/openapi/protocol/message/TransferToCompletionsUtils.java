@@ -39,7 +39,6 @@ public class TransferToCompletionsUtils {
         }
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
     public static MessageRequest convertRequest(CompletionRequest completionRequest) {
         if (completionRequest == null) {
             return null;
@@ -96,16 +95,15 @@ public class TransferToCompletionsUtils {
         if (messages == null) {
             return result;
         }
-        
-        for (int i = 0; i < messages.size(); i++) {
-            Message message = messages.get(i);
-            if ("system".equals(message.getRole())) {
+
+        for (Message message : messages) {
+            if("system".equals(message.getRole())) {
                 result.setSystemContent(convertContentToMessageFormat(message.getContent()));
-            } else if ("tool".equals(message.getRole())) {
+            } else if("tool".equals(message.getRole())) {
                 // Tool messages should be merged with the previous user message
-                if (!result.getMessages().isEmpty()) {
+                if(!result.getMessages().isEmpty()) {
                     MessageRequest.InputMessage lastMessage = result.getMessages().get(result.getMessages().size() - 1);
-                    if ("user".equals(lastMessage.getRole())) {
+                    if("user".equals(lastMessage.getRole())) {
                         // Merge tool result into the last user message
                         MessageRequest.InputMessage mergedMessage = mergeToolResultIntoAssistantMessage(lastMessage, message);
                         result.getMessages().set(result.getMessages().size() - 1, mergedMessage);
@@ -213,6 +211,7 @@ public class TransferToCompletionsUtils {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private static MessageRequest.InputMessage mergeToolResultIntoAssistantMessage(MessageRequest.InputMessage userMessage, Message toolMessage) {
         // Create a new list of content blocks based on the existing user message
         List<MessageRequest.ContentBlock> contentBlocks = new ArrayList<>();
@@ -269,6 +268,7 @@ public class TransferToCompletionsUtils {
         return messageBuilder.build();
     }
 
+    @SuppressWarnings("unchecked")
     private static void processTextContent(Message message, List<MessageRequest.ContentBlock> contentBlocks) {
         if (message.getContent() == null || "tool".equals(message.getRole())) return;
         
@@ -326,6 +326,7 @@ public class TransferToCompletionsUtils {
         return toolUseBlock;
     }
 
+    @SuppressWarnings("unchecked")
     private static Object extractToolResultContent(Message message) {
         if (message.getContent() instanceof String) {
             return message.getContent();
@@ -370,7 +371,7 @@ public class TransferToCompletionsUtils {
             Message.Function.FunctionParameter params = tool.getFunction().getParameters();
             MessageRequest.InputSchema.InputSchemaBuilder schemaBuilder = MessageRequest.InputSchema.builder()
                     .type(params.getType())
-                    .additionalProperties(params.isAdditionalProperties());
+                    .additionalProperties(Boolean.TRUE == params.getAdditionalProperties());
             
             if (params.getProperties() != null) {
                 schemaBuilder.properties(params.getProperties());
@@ -622,6 +623,7 @@ public class TransferToCompletionsUtils {
         return responseBuilder.build();
     }
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     private static Object convertContentToMessageFormat(Object content) {
         if (content instanceof String) {
             return content;
@@ -717,6 +719,7 @@ public class TransferToCompletionsUtils {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private static StreamMessageResponse.Delta createDeltaFromMap(Object deltaMap) {
         if (!(deltaMap instanceof Map)) {
             return null;
@@ -741,6 +744,7 @@ public class TransferToCompletionsUtils {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private static StreamMessageResponse.MessageDeltaInfo createMessageDeltaInfoFromMap(Object deltaMap) {
         if (!(deltaMap instanceof Map)) {
             return null;

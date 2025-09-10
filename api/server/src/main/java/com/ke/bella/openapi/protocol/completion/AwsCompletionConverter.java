@@ -570,7 +570,7 @@ public class AwsCompletionConverter {
                     builder.toolChoice(ToolChoice.fromAuto(AutoToolChoice.builder().build()));
                 }
             } catch (Exception e) {
-                LOGGER.warn("Failed to parse toolChoice object: {}", e.getMessage());
+                log.warn("Failed to parse toolChoice object: {}", e.getMessage());
                 builder.toolChoice(ToolChoice.fromAuto(AutoToolChoice.builder().build())); // 解析失败，默认为auto
             }
         } else {

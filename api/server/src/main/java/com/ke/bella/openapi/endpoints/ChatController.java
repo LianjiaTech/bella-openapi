@@ -72,7 +72,7 @@ public class ChatController {
             int maxNum = models.length;
             // Validate model count
             if (models.length > maxModelsPerRequest) {
-                LOGGER.warn("请求模型数量超过最大限制: " + maxModelsPerRequest);
+                log.warn("请求模型数量超过最大限制: " + maxModelsPerRequest);
                 maxNum = maxModelsPerRequest;
             }
             Exception lastException = null;
