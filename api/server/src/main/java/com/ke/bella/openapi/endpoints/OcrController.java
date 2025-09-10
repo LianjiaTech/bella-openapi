@@ -14,7 +14,11 @@ import com.ke.bella.openapi.annotations.EndpointAPI;
 import com.ke.bella.openapi.protocol.AdaptorManager;
 import com.ke.bella.openapi.protocol.ChannelRouter;
 import com.ke.bella.openapi.protocol.limiter.LimiterManager;
+import com.ke.bella.openapi.protocol.ocr.OcrIdcardAdaptor;
 import com.ke.bella.openapi.protocol.ocr.OcrIdcardRequest;
+import com.ke.bella.openapi.protocol.ocr.OcrProperty;
+import com.ke.bella.openapi.tables.pojos.ChannelDB;
+import com.ke.bella.openapi.utils.JacksonUtils;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 
@@ -45,9 +49,25 @@ public class OcrController {
         // 2. 参数校验
         validateRequest(request);
 
-		// Todo implements
-		
-        return null;
+        // 3. 渠道路由选择
+        ChannelDB channel = router.route(endpoint, model, EndpointContext.getApikey(), processData.isMock());
+        EndpointContext.setEndpointData(channel);
+
+        // 4. 并发限制管理
+        if(!EndpointContext.getProcessData().isPrivate()) {
+            limiterManager.incrementConcurrentCount(EndpointContext.getProcessData().getAkCode(), model);
+        }
+
+        // 5. 获取协议适配器
+        String protocol = processData.getProtocol();
+        String url = processData.getForwardUrl();
+        String channelInfo = channel.getChannelInfo();
+        OcrIdcardAdaptor adaptor = adaptorManager.getProtocolAdaptor(endpoint, protocol, OcrIdcardAdaptor.class);
+        OcrProperty property = (OcrProperty) JacksonUtils.deserialize(channelInfo, adaptor.getPropertyClass());
+        EndpointContext.setEncodingType(property.getEncodingType());
+
+        // 6. 调用适配器处理
+        return adaptor.idcard(request, url, property);
     }
 
     private void validateRequest(OcrIdcardRequest request) {
