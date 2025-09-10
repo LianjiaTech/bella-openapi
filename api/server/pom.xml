@@ -17,6 +17,7 @@
         <db.username>bella_user</db.username>
         <db.password>123456</db.password>
         <db.schema>bella_openapi</db.schema>
+        <mockito.version>3.12.4</mockito.version>
     </properties>
 
     <dependencies>
@@ -285,6 +286,18 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>${mockito.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-inline</artifactId>
+            <version>${mockito.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
