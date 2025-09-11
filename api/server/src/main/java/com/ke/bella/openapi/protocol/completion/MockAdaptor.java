@@ -35,6 +35,7 @@ import com.ke.bella.openapi.utils.JacksonUtils;
 
 import io.netty.util.concurrent.DefaultThreadFactory;
 import lombok.Data;
+import org.springframework.util.Assert;
 
 @Component("mock")
 public class MockAdaptor implements CompletionAdaptorDelegator<CompletionProperty> {
@@ -146,6 +147,7 @@ public class MockAdaptor implements CompletionAdaptorDelegator<CompletionPropert
         private String id = "chatcmpl-" + UUID.randomUUID();
 
         public MockCompletionRequest(CompletionRequest request, Map<String, String> requestInfo, CompletionProperty property) {
+            Assert.notEmpty(request.getMessages(), "message is empty");
             this.property = property;
             String ttft = requestInfo.get("X-BELLA-MOCK-TTFT");
             String ttlt = requestInfo.get("X-BELLA-MOCK-TTLT");
@@ -169,32 +171,47 @@ public class MockAdaptor implements CompletionAdaptorDelegator<CompletionPropert
                     this.reasoning = ContentGenerator.generateContent(200);
                 }
             }
-            if(StringUtils.isBlank(text) && StringUtils.isBlank(function)) {
-                if(CollectionUtils.isNotEmpty(request.getTools())) {
-                    if(property.isFunctionCallSimulate()) {
-                        this.content = FunctionCallGenerator.generatePythonCode(request.getTools(), true);
-                    } else {
-                        this.toolCalls = FunctionCallGenerator.generateToolCalls(request.getTools(), true);
-                    }
-                } else  {
-                    this.content = ContentGenerator.generateContent(500);
-                }
-            } else {
+            Message last = request.getMessages().get(request.getMessages().size() - 1);
+            boolean isToolResult = "tool".equals(last.getRole());
+            if(isToolResult) {
                 try {
                     if(StringUtils.isNotBlank(text)) {
                         text = URLDecoder.decode(text, StandardCharsets.UTF_8.toString());
                         this.content = text;
                     } else {
-                        function = URLDecoder.decode(function, StandardCharsets.UTF_8.toString());
-                        Message.ToolCall toolCall = new Message.ToolCall();
-                        toolCall.setId(UUID.randomUUID().toString());
-                        toolCall.setIndex(0);
-                        toolCall.setType("function");
-                        toolCall.setFunction(JacksonUtils.deserialize(function, Message.FunctionCall.class));
-                        this.toolCalls = Lists.newArrayList(toolCall);
+                        this.content = ContentGenerator.generateContent(500);
                     }
                 } catch (UnsupportedEncodingException e) {
                     throw new BizParamCheckException(e.getMessage());
+                }
+            } else {
+                if(StringUtils.isBlank(text) && StringUtils.isBlank(function)) {
+                    if(CollectionUtils.isNotEmpty(request.getTools())) {
+                        if(property.isFunctionCallSimulate()) {
+                            this.content = FunctionCallGenerator.generatePythonCode(request.getTools(), true);
+                        } else {
+                            this.toolCalls = FunctionCallGenerator.generateToolCalls(request.getTools(), true);
+                        }
+                    } else {
+                        this.content = ContentGenerator.generateContent(500);
+                    }
+                } else {
+                    try {
+                        if(StringUtils.isNotBlank(text)) {
+                            text = URLDecoder.decode(text, StandardCharsets.UTF_8.toString());
+                            this.content = text;
+                        } else {
+                            function = URLDecoder.decode(function, StandardCharsets.UTF_8.toString());
+                            Message.ToolCall toolCall = new Message.ToolCall();
+                            toolCall.setId(UUID.randomUUID().toString());
+                            toolCall.setIndex(0);
+                            toolCall.setType("function");
+                            toolCall.setFunction(JacksonUtils.deserialize(function, Message.FunctionCall.class));
+                            this.toolCalls = Lists.newArrayList(toolCall);
+                        }
+                    } catch (UnsupportedEncodingException e) {
+                        throw new BizParamCheckException(e.getMessage());
+                    }
                 }
             }
         }
@@ -284,7 +301,7 @@ public class MockAdaptor implements CompletionAdaptorDelegator<CompletionPropert
             if(isName) {
                 target.getFunction().setName(toolCall.getFunction().getName());
             } else {
-                target.getFunction().setName(toolCall.getFunction().getArguments());
+                target.getFunction().setArguments(toolCall.getFunction().getArguments());
             }
             return response;
         }
