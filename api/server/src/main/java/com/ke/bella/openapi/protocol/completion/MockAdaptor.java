@@ -284,7 +284,7 @@ public class MockAdaptor implements CompletionAdaptorDelegator<CompletionPropert
             if(isName) {
                 target.getFunction().setName(toolCall.getFunction().getName());
             } else {
-                target.getFunction().setName(toolCall.getFunction().getArguments());
+                target.getFunction().setArguments(toolCall.getFunction().getArguments());
             }
             return response;
         }
