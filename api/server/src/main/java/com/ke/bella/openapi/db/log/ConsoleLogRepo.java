@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class ConsoleLogRepo implements LogRepo {
-    private static final Logger LOGGER = LoggerFactory.getLogger(CostLogHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ConsoleLogRepo.class);
     
     @Value("${bella.log.max-size-bytes:#{null}}")
     private Integer maxLogSizeBytes;
