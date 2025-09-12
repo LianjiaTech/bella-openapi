@@ -277,6 +277,11 @@ public class TransferToCompletionsUtils {
             thinkingContentBlock.setSignature(message.getReasoning_content_signature());
             contentBlocks.add(thinkingContentBlock);
         }
+        if(message.getRedacted_reasoning_content() != null) {
+            MessageRequest.RedactedThinkingContentBlock redactedThinkingContentBlock = new MessageRequest.RedactedThinkingContentBlock();
+            redactedThinkingContentBlock.setData(message.getRedacted_reasoning_content());
+            contentBlocks.add(redactedThinkingContentBlock);
+        }
     }
 
     @SuppressWarnings("unchecked")

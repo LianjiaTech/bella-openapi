@@ -106,7 +106,7 @@ public class MessageRequest {
     @EqualsAndHashCode(callSuper = true)
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class RedactedThinkingContentBlock extends ContentBlock {
-        private String date;
+        private String data;
         public String getType() {
             return "redacted_thinking";
         }
