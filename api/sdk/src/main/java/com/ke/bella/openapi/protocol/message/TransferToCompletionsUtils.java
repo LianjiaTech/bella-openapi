@@ -20,7 +20,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
@@ -253,6 +252,9 @@ public class TransferToCompletionsUtils {
         
         List<MessageRequest.ContentBlock> contentBlocks = new ArrayList<>();
 
+        //处理thinking内容
+        processThinkContent(message, contentBlocks);
+
         // 处理文本内容
         processTextContent(message, contentBlocks);
         
@@ -266,6 +268,15 @@ public class TransferToCompletionsUtils {
         setMessageContent(messageBuilder, contentBlocks);
         
         return messageBuilder.build();
+    }
+
+    private static void processThinkContent(Message message, List<MessageRequest.ContentBlock> contentBlocks) {
+        if(message.getReasoning_content() != null) {
+            MessageRequest.ThinkingContentBlock thinkingContentBlock = new MessageRequest.ThinkingContentBlock();
+            thinkingContentBlock.setThinking(message.getReasoning_content());
+            thinkingContentBlock.setSignature(message.getReasoning_content_signature());
+            contentBlocks.add(thinkingContentBlock);
+        }
     }
 
     @SuppressWarnings("unchecked")
