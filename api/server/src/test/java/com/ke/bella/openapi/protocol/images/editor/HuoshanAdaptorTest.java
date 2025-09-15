@@ -20,6 +20,13 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+/**
+ * HuoshanAdaptor的单元测试
+ * 测试覆盖：能力点、接口描述、类属性、请求构建、请求映射
+ *
+ * @author 张鑫宇
+ * @since 2025-09-10
+ */
 @ExtendWith(MockitoExtension.class)
 class HuoshanAdaptorTest {
 

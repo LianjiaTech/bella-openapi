@@ -18,6 +18,13 @@ import java.util.Base64;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+/**
+ * ImagesEditorAdaptor的单元测试
+ * 测试覆盖：接口特性逻辑、参数处理优先级逻辑
+ *
+ * @author 张鑫宇
+ * @since 2025-09-10
+ */
 @ExtendWith(MockitoExtension.class)
 class ImagesEditorAdaptorTest {
 
