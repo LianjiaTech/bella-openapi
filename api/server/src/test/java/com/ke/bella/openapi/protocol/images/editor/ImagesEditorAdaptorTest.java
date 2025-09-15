@@ -18,13 +18,6 @@ import java.util.Base64;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-/**
- * ImagesEditorAdaptor的单元测试
- * 测试覆盖：接口特性逻辑、参数处理优先级逻辑
- *
- * @author 张鑫宇
- * @since 2025-09-10
- */
 @ExtendWith(MockitoExtension.class)
 class ImagesEditorAdaptorTest {
 
@@ -37,7 +30,7 @@ class ImagesEditorAdaptorTest {
 	private ImagesEditRequest request;
 	private TestImagesEditorAdaptor adaptor;
 
-	// 创建一个测试用的实现类
+	// Create a test implementation class
 	private static class TestImagesEditorAdaptor implements ImagesEditorAdaptor<ImagesEditorProperty> {
 		@Override
 		public String endpoint() {
@@ -68,7 +61,7 @@ class ImagesEditorAdaptorTest {
 
 	@Test
 	void testProcessImageData_WithBase64_ShouldReturnBase64Type() throws IOException {
-		// 设置支持Base64且提供了Base64数据
+		// Setup support for Base64 and provide Base64 data
 		when(property.isSupportBase64()).thenReturn(true);
 		request.setImage_b64_json("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==");
 
@@ -80,7 +73,7 @@ class ImagesEditorAdaptorTest {
 
 	@Test
 	void testProcessImageData_WithUrl_ShouldReturnUrlType() throws IOException {
-		// 设置不支持Base64但支持URL，且提供了URL
+		// Setup no Base64 support but URL support, and provide URL
 		when(property.isSupportBase64()).thenReturn(false);
 		when(property.isSupportUrl()).thenReturn(true);
 		request.setImage_url("http://example.com/image.jpg");
@@ -94,7 +87,7 @@ class ImagesEditorAdaptorTest {
 
 	@Test
 	void testProcessImageData_WithFile_ShouldReturnFileType() throws IOException {
-		// 设置不支持Base64和URL，但支持文件上传
+		// Setup no Base64 and URL support, but support file upload
 		when(property.isSupportBase64()).thenReturn(false);
 		when(property.isSupportUrl()).thenReturn(false);
 		when(property.isSupportFile()).thenReturn(true);
@@ -113,7 +106,7 @@ class ImagesEditorAdaptorTest {
 
 	@Test
 	void testProcessImageData_WithFileConvertToBase64_ShouldReturnBase64Type() throws IOException {
-		// 设置不支持文件上传但支持Base64，提供文件时应转换为Base64
+		// Setup no file upload support but Base64 support, should convert file to Base64
 		when(property.isSupportBase64()).thenReturn(true);
 		when(property.isSupportUrl()).thenReturn(false);
 		when(property.isSupportFile()).thenReturn(false);
@@ -127,7 +120,7 @@ class ImagesEditorAdaptorTest {
 
 		assertEquals(ImageDataType.BASE64, result);
 
-		// 验证Base64数据被正确设置
+		// Verify Base64 data is correctly set
 		String expectedBase64 = Base64.getEncoder().encodeToString("test image data".getBytes());
 		String expectedImageData = String.format("data:image/%s;base64,%s", "png", expectedBase64);
 		assertEquals(expectedImageData, request.getImage_b64_json());
@@ -138,7 +131,7 @@ class ImagesEditorAdaptorTest {
 
 	@Test
 	void testProcessImageData_WithFileConvertToBase64_DefaultPngFormat() throws IOException {
-		// 测试文件没有Content-Type时默认使用png格式
+		// Test default png format when file has no Content-Type
 		when(property.isSupportBase64()).thenReturn(true);
 		when(property.isSupportUrl()).thenReturn(false);
 		when(property.isSupportFile()).thenReturn(false);
@@ -152,7 +145,7 @@ class ImagesEditorAdaptorTest {
 
 		assertEquals(ImageDataType.BASE64, result);
 
-		// 验证使用默认的png格式
+		// Verify using default png format
 		String expectedBase64 = Base64.getEncoder().encodeToString("test image data".getBytes());
 		String expectedImageData = String.format("data:image/%s;base64,%s", "png", expectedBase64);
 		assertEquals(expectedImageData, request.getImage_b64_json());
@@ -160,7 +153,7 @@ class ImagesEditorAdaptorTest {
 
 	@Test
 	void testProcessImageData_WithFileConvertToBase64_NonImageContentType() throws IOException {
-		// 测试非图片Content-Type时默认使用png格式
+		// Test default png format for non-image Content-Type
 		when(property.isSupportBase64()).thenReturn(true);
 		when(property.isSupportUrl()).thenReturn(false);
 		when(property.isSupportFile()).thenReturn(false);
@@ -174,7 +167,7 @@ class ImagesEditorAdaptorTest {
 
 		assertEquals(ImageDataType.BASE64, result);
 
-		// 验证使用默认的png格式
+		// Verify using default png format
 		String expectedBase64 = Base64.getEncoder().encodeToString("test image data".getBytes());
 		String expectedImageData = String.format("data:image/%s;base64,%s", "png", expectedBase64);
 		assertEquals(expectedImageData, request.getImage_b64_json());
@@ -182,7 +175,7 @@ class ImagesEditorAdaptorTest {
 
 	@Test
 	void testProcessImageData_NoValidInput_ShouldThrowException() {
-		// 测试没有提供任何有效输入时抛出异常
+		// Test throwing exception when no valid input is provided
 		when(property.isSupportBase64()).thenReturn(true);
 		when(property.isSupportUrl()).thenReturn(true);
 		when(property.isSupportFile()).thenReturn(true);
@@ -199,7 +192,7 @@ class ImagesEditorAdaptorTest {
 
 	@Test
 	void testProcessImageData_OnlySupportBase64_ErrorMessage() {
-		// 测试只支持Base64时的错误信息
+		// Test error message when only Base64 is supported
 		when(property.isSupportBase64()).thenReturn(true);
 		when(property.isSupportUrl()).thenReturn(false);
 		when(property.isSupportFile()).thenReturn(false);
@@ -215,7 +208,7 @@ class ImagesEditorAdaptorTest {
 
 	@Test
 	void testProcessImageData_OnlySupportUrl_ErrorMessage() {
-		// 测试只支持URL时的错误信息
+		// Test error message when only URL is supported
 		when(property.isSupportBase64()).thenReturn(false);
 		when(property.isSupportUrl()).thenReturn(true);
 		when(property.isSupportFile()).thenReturn(false);
@@ -231,7 +224,7 @@ class ImagesEditorAdaptorTest {
 
 	@Test
 	void testProcessImageData_OnlySupportFile_ErrorMessage() {
-		// 测试只支持文件上传时的错误信息
+		// Test error message when only file upload is supported
 		when(property.isSupportBase64()).thenReturn(false);
 		when(property.isSupportUrl()).thenReturn(false);
 		when(property.isSupportFile()).thenReturn(true);
@@ -247,7 +240,7 @@ class ImagesEditorAdaptorTest {
 
 	@Test
 	void testProcessImageData_EmptyBase64String_ShouldSkip() throws IOException {
-		// 测试空的Base64字符串应该被跳过
+		// Test empty Base64 string should be skipped
 		when(property.isSupportBase64()).thenReturn(true);
 		when(property.isSupportUrl()).thenReturn(true);
 		request.setImage_b64_json("");
@@ -260,7 +253,7 @@ class ImagesEditorAdaptorTest {
 
 	@Test
 	void testProcessImageData_EmptyUrlString_ShouldSkip() throws IOException {
-		// 测试空的URL字符串应该被跳过
+		// Test empty URL string should be skipped
 		when(property.isSupportBase64()).thenReturn(false);
 		when(property.isSupportUrl()).thenReturn(true);
 		when(property.isSupportFile()).thenReturn(true);
@@ -276,7 +269,7 @@ class ImagesEditorAdaptorTest {
 
 	@Test
 	void testProcessImageData_EmptyMultipartFile_ShouldSkip() {
-		// 测试空的MultipartFile应该被跳过
+		// Test empty MultipartFile should be skipped
 		when(property.isSupportBase64()).thenReturn(false);
 		when(property.isSupportUrl()).thenReturn(false);
 		when(property.isSupportFile()).thenReturn(true);
@@ -293,10 +286,10 @@ class ImagesEditorAdaptorTest {
 
 	@Test
 	void testProcessImageData_PriorityOrder_Base64First() throws IOException {
-		// 测试优先级：Base64 > URL > File
+		// Test priority: Base64 > URL > File
 		when(property.isSupportBase64()).thenReturn(true);
-		when(property.isSupportUrl()).thenReturn(true);
-		when(property.isSupportFile()).thenReturn(true);
+		lenient().when(property.isSupportUrl()).thenReturn(true);
+		lenient().when(property.isSupportFile()).thenReturn(true);
 
 		request.setImage_b64_json("data:image/png;base64,test");
 		request.setImage_url("http://example.com/image.jpg");
@@ -305,7 +298,7 @@ class ImagesEditorAdaptorTest {
 		ImageDataType result = adaptor.processImageData(request, property);
 
 		assertEquals(ImageDataType.BASE64, result);
-		// 验证只检查了Base64支持，没有检查其他的
+		// Verify only Base64 support was checked, not others
 		verify(property).isSupportBase64();
 		verify(property, never()).isSupportUrl();
 		verify(property, never()).isSupportFile();
@@ -313,10 +306,10 @@ class ImagesEditorAdaptorTest {
 
 	@Test
 	void testProcessImageData_PriorityOrder_UrlSecond() throws IOException {
-		// 测试优先级：URL > File（当Base64不可用时）
+		// Test priority: URL > File (when Base64 is not available)
 		when(property.isSupportBase64()).thenReturn(false);
 		when(property.isSupportUrl()).thenReturn(true);
-		when(property.isSupportFile()).thenReturn(true);
+		lenient().when(property.isSupportFile()).thenReturn(true);
 
 		request.setImage_url("http://example.com/image.jpg");
 		request.setImage(multipartFile);

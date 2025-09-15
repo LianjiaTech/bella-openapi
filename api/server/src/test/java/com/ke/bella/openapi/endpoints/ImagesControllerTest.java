@@ -30,12 +30,12 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 /**
- * ImagesController 兼容性测试
+ * ImagesController compatibility tests
  *
- * 绕过Spring的AOP、拦截器、过滤器等，直接测试Controller的核心业务逻辑
- * 测试数据与测试逻辑分离，通过外部JSON文件管理历史请求案例
+ * Bypasses Spring AOP, interceptors, filters to directly test Controller core business logic
+ * Separates test data from test logic, managing historical request cases via external JSON files
  *
- * 核心目标：确保代码迭代过程中，历史API请求不会受到影响
+ * Core objective: Ensure historical API requests remain unaffected during code iterations
  */
 @RunWith(MockitoJUnitRunner.class)
 public class ImagesControllerTest {
@@ -67,13 +67,13 @@ public class ImagesControllerTest {
     }
 
     /**
-     * 批量验证所有图片生成历史请求的兼容性
+     * Batch validate backward compatibility of all image generation historical requests
      */
     @Test
     public void testAllGenerationsHistoricalRequestsBackwardCompatibility() {
-        System.out.println("=== 开始批量图片生成兼容性验证 ===");
+        System.out.println("=== Starting batch image generation compatibility validation ===");
 
-        // 加载测试数据
+        // Load test data
         List<ImagesHistoricalDataLoader.GenerationsTestCase> allCases =
             ImagesHistoricalDataLoader.loadGenerationsRequests();
 
@@ -81,48 +81,48 @@ public class ImagesControllerTest {
         int passedCases = 0;
         List<String> failedCases = new ArrayList<>();
 
-        System.out.println("加载图片生成历史请求场景总数: " + totalCases);
+        System.out.println("Loaded image generation historical request scenarios: " + totalCases);
 
         for (ImagesHistoricalDataLoader.GenerationsTestCase testCase : allCases) {
             try {
-                System.out.println("--- 验证场景: " + testCase.getScenarioName() + " ---");
-                System.out.println("场景描述: " + testCase.getDescription());
+                System.out.println("--- Validating scenario: " + testCase.getScenarioName() + " ---");
+                System.out.println("Scenario description: " + testCase.getDescription());
 
-                // 执行单个历史请求测试
+                // Execute single historical request test
                 validateSingleGenerationsHistoricalRequest(testCase);
 
                 passedCases++;
-                System.out.println("✅ " + testCase.getScenarioName() + " - 兼容性验证通过");
+                System.out.println("✅ " + testCase.getScenarioName() + " - Compatibility validation passed");
 
             } catch (Exception | AssertionError e) {
                 failedCases.add(testCase.getScenarioName() + ": " + e.getMessage());
-                System.err.println("❌ " + testCase.getScenarioName() + " - 兼容性验证失败: " + e.getMessage());
+                System.err.println("❌ " + testCase.getScenarioName() + " - Compatibility validation failed: " + e.getMessage());
                 e.printStackTrace();
             }
         }
 
-        System.out.println("=== 批量图片生成兼容性验证结果 ===");
-        System.out.println("总测试场景: " + totalCases);
-        System.out.println("通过场景: " + passedCases);
-        System.out.println("失败场景: " + failedCases.size());
+        System.out.println("=== Batch image generation compatibility validation results ===");
+        System.out.println("Total test scenarios: " + totalCases);
+        System.out.println("Passed scenarios: " + passedCases);
+        System.out.println("Failed scenarios: " + failedCases.size());
 
         if (!failedCases.isEmpty()) {
-            System.err.println("失败的场景详情:");
+            System.err.println("Failed scenario details:");
             failedCases.forEach(failure -> System.err.println("  - " + failure));
-            fail("存在 " + failedCases.size() + " 个图片生成历史请求兼容性验证失败的场景");
+            fail("Found " + failedCases.size() + " image generation historical request compatibility validation failures");
         }
 
-        System.out.println("🎉 所有图片生成历史请求的兼容性验证全部完成！");
+        System.out.println("🎉 All image generation historical request compatibility validations completed!");
     }
 
     /**
-     * 批量验证所有图片编辑历史请求的兼容性
+     * Batch validate backward compatibility of all image editing historical requests
      */
     @Test
     public void testAllEditsHistoricalRequestsBackwardCompatibility() {
-        System.out.println("=== 开始批量图片编辑兼容性验证 ===");
+        System.out.println("=== Starting batch image editing compatibility validation ===");
 
-        // 加载测试数据
+        // Load test data
         List<ImagesHistoricalDataLoader.EditsTestCase> allCases =
             ImagesHistoricalDataLoader.loadEditsRequests();
 
@@ -130,96 +130,96 @@ public class ImagesControllerTest {
         int passedCases = 0;
         List<String> failedCases = new ArrayList<>();
 
-        System.out.println("加载图片编辑历史请求场景总数: " + totalCases);
+        System.out.println("Loaded image editing historical request scenarios: " + totalCases);
 
         for (ImagesHistoricalDataLoader.EditsTestCase testCase : allCases) {
             try {
-                System.out.println("--- 验证场景: " + testCase.getScenarioName() + " ---");
-                System.out.println("场景描述: " + testCase.getDescription());
+                System.out.println("--- Validating scenario: " + testCase.getScenarioName() + " ---");
+                System.out.println("Scenario description: " + testCase.getDescription());
 
-                // 执行单个历史请求测试
+                // Execute single historical request test
                 validateSingleEditsHistoricalRequest(testCase);
 
                 passedCases++;
-                System.out.println("✅ " + testCase.getScenarioName() + " - 兼容性验证通过");
+                System.out.println("✅ " + testCase.getScenarioName() + " - Compatibility validation passed");
 
             } catch (Exception | AssertionError e) {
                 failedCases.add(testCase.getScenarioName() + ": " + e.getMessage());
-                System.err.println("❌ " + testCase.getScenarioName() + " - 兼容性验证失败: " + e.getMessage());
-                e.printStackTrace(); // 打印完整的堆栈信息
+                System.err.println("❌ " + testCase.getScenarioName() + " - Compatibility validation failed: " + e.getMessage());
+                e.printStackTrace(); // Print complete stack trace
             }
         }
 
-        // 输出最终结果
-        System.out.println("=== 批量图片编辑兼容性验证结果 ===");
-        System.out.println("总测试场景: " + totalCases);
-        System.out.println("通过场景: " + passedCases);
-        System.out.println("失败场景: " + failedCases.size());
+        // Output final results
+        System.out.println("=== Batch image editing compatibility validation results ===");
+        System.out.println("Total test scenarios: " + totalCases);
+        System.out.println("Passed scenarios: " + passedCases);
+        System.out.println("Failed scenarios: " + failedCases.size());
 
         if (!failedCases.isEmpty()) {
-            System.err.println("失败的场景详情:");
+            System.err.println("Failed scenario details:");
             failedCases.forEach(failure -> System.err.println("  - " + failure));
-            fail("存在 " + failedCases.size() + " 个图片编辑历史请求兼容性验证失败的场景");
+            fail("Found " + failedCases.size() + " image editing historical request compatibility validation failures");
         }
 
-        System.out.println("🎉 所有图片编辑历史请求的兼容性验证全部完成！");
+        System.out.println("🎉 All image editing historical request compatibility validations completed!");
     }
 
     /**
-     * 验证单个图片生成历史请求场景的纯逻辑
+     * Validate single image generation historical request scenario logic
      */
     private void validateSingleGenerationsHistoricalRequest(ImagesHistoricalDataLoader.GenerationsTestCase testCase) {
-        // 1. 设置请求上下文
+        // 1. Setup request context
         setupGenerationsRequestContext();
 
-        // 2. 准备测试环境
+        // 2. Prepare test environment
         setupMockForGenerationsTestCase(testCase);
 
-        // 3. 执行Controller核心逻辑（绕过所有AOP）
+        // 3. Execute Controller core logic (bypass all AOP)
         ImagesResponse actualResponse = imagesController.generateImages(testCase.getRequest());
 
-        // 4. 验证响应格式兼容性
+        // 4. Validate response format compatibility
         validateGenerationsResponseCompatibility(testCase, actualResponse);
 
-        // 5. 验证底层服务调用参数
+        // 5. Validate underlying service call parameters
         validateGenerationsServiceCallParameters(testCase);
 
-        // 6. 重置Mock状态以准备下一个测试
+        // 6. Reset Mock state for next test
         reset(channelRouter, adaptorManager, mockGeneratorAdaptor);
     }
 
     /**
-     * 验证单个图片编辑历史请求场景的纯逻辑
+     * Validate single image editing historical request scenario logic
      */
     private void validateSingleEditsHistoricalRequest(ImagesHistoricalDataLoader.EditsTestCase testCase) {
-        // 1. 设置请求上下文
+        // 1. Setup request context
         setupEditsRequestContext();
 
-        // 2. 准备测试环境
+        // 2. Prepare test environment
         setupMockForEditsTestCase(testCase);
 
-        // 3. 执行Controller核心逻辑（绕过所有AOP）
+        // 3. Execute Controller core logic (bypass all AOP)
         ImagesResponse actualResponse = imagesController.editImages(testCase.getRequest());
 
-        // 4. 验证响应格式兼容性
+        // 4. Validate response format compatibility
         validateEditsResponseCompatibility(testCase, actualResponse);
 
-        // 5. 验证底层服务调用参数
+        // 5. Validate underlying service call parameters
         validateEditsServiceCallParameters(testCase);
 
-        // 6. 重置Mock状态以准备下一个测试
+        // 6. Reset Mock state for next test
         reset(channelRouter, adaptorManager, mockEditorAdaptor);
     }
 
     /**
-     * 为图片生成测试场景设置Mock
+     * Setup Mock for image generation test scenarios
      */
     private void setupMockForGenerationsTestCase(ImagesHistoricalDataLoader.GenerationsTestCase testCase) {
-        // 设置ChannelRouter Mock
+        // Setup ChannelRouter Mock
         when(channelRouter.route(eq("/v1/images/generations"), eq(testCase.getRequest().getModel()), any(), eq(false)))
             .thenReturn(testCase.getMockChannel());
 
-        // 设置AdaptorManager Mock
+        // Setup AdaptorManager Mock
         when(adaptorManager.getProtocolAdaptor(eq("/v1/images/generations"),
                                               eq(testCase.getMockChannel().getProtocol()),
                                               eq(ImagesGeneratorAdaptor.class)))
@@ -228,7 +228,7 @@ public class ImagesControllerTest {
         when(mockGeneratorAdaptor.getPropertyClass())
             .thenReturn((Class) ImagesProperty.class);
 
-        // 设置Adaptor Mock响应
+        // Setup Adaptor Mock response
         when(mockGeneratorAdaptor.generateImages(any(ImagesRequest.class),
                                                eq(testCase.getMockChannel().getUrl()),
                                                any(ImagesProperty.class)))
@@ -236,14 +236,14 @@ public class ImagesControllerTest {
     }
 
     /**
-     * 为图片编辑测试场景设置Mock
+     * Setup Mock for image editing test scenarios
      */
     private void setupMockForEditsTestCase(ImagesHistoricalDataLoader.EditsTestCase testCase) {
-        // 设置ChannelRouter Mock
+        // Setup ChannelRouter Mock
         when(channelRouter.route(eq("/v1/images/edits"), eq(testCase.getRequest().getModel()), any(), eq(false)))
             .thenReturn(testCase.getMockChannel());
 
-        // 设置AdaptorManager Mock
+        // Setup AdaptorManager Mock
         when(adaptorManager.getProtocolAdaptor(eq("/v1/images/edits"),
                                               eq(testCase.getMockChannel().getProtocol()),
                                               eq(ImagesEditorAdaptor.class)))
@@ -252,7 +252,7 @@ public class ImagesControllerTest {
         when(mockEditorAdaptor.getPropertyClass())
             .thenReturn((Class) ImagesEditorProperty.class);
 
-        // 设置Adaptor Mock响应
+        // Setup Adaptor Mock response
         when(mockEditorAdaptor.editImages(any(ImagesEditRequest.class),
                                         eq(testCase.getMockChannel().getUrl()),
                                         any(ImagesEditorProperty.class)))
@@ -260,104 +260,104 @@ public class ImagesControllerTest {
     }
 
     /**
-     * 验证图片生成响应格式的兼容性
+     * Validate image generation response format compatibility
      */
     private void validateGenerationsResponseCompatibility(ImagesHistoricalDataLoader.GenerationsTestCase testCase,
                                                         ImagesResponse actualResponse) {
-        assertNotNull(testCase.getScenarioName() + " - 响应不能为空", actualResponse);
-        assertNotNull(testCase.getScenarioName() + " - 响应必须包含data字段", actualResponse.getData());
-        assertFalse(testCase.getScenarioName() + " - 响应data不能为空", actualResponse.getData().isEmpty());
+        assertNotNull(testCase.getScenarioName() + " - Response cannot be null", actualResponse);
+        assertNotNull(testCase.getScenarioName() + " - Response must contain data field", actualResponse.getData());
+        assertFalse(testCase.getScenarioName() + " - Response data cannot be empty", actualResponse.getData().isEmpty());
 
 
-        // 验证每个图片数据的必要字段
+        // Validate required fields for each image data
         for (int i = 0; i < actualResponse.getData().size(); i++) {
             ImagesResponse.ImageData imageData = actualResponse.getData().get(i);
-            String fieldPrefix = testCase.getScenarioName() + " - 图片" + (i + 1);
+            String fieldPrefix = testCase.getScenarioName() + " - Image" + (i + 1);
 
-            // 根据response_format验证相应字段
+            // Validate corresponding fields based on response_format
             if ("url".equals(testCase.getRequest().getResponse_format())) {
-                assertNotNull(fieldPrefix + " - URL不能为空", imageData.getUrl());
+                assertNotNull(fieldPrefix + " - URL cannot be null", imageData.getUrl());
             } else if ("b64_json".equals(testCase.getRequest().getResponse_format())) {
-                assertNotNull(fieldPrefix + " - Base64数据不能为空", imageData.getB64_json());
+                assertNotNull(fieldPrefix + " - Base64 data cannot be null", imageData.getB64_json());
             } else {
-				assertTrue(fieldPrefix + " - Base64数据或URL不能为空",
+				assertTrue(fieldPrefix + " - Base64 data or URL cannot be null",
 					imageData.getB64_json() != null || imageData.getUrl() != null);
 			}
 
 
-            // 验证尺寸字段
+            // Validate size field
             if (testCase.getRequest().getSize() != null) {
-                assertEquals(fieldPrefix + " - 尺寸必须匹配请求",
+                assertEquals(fieldPrefix + " - Size must match request",
                            testCase.getRequest().getSize(),
                            imageData.getSize());
             }
         }
 
-        // 执行场景特定的验证
+        // Execute scenario-specific validation
         if (testCase.getCustomValidator() != null) {
             testCase.getCustomValidator().accept(actualResponse);
         }
     }
 
     /**
-     * 验证图片编辑响应格式的兼容性
+     * Validate image editing response format compatibility
      */
     private void validateEditsResponseCompatibility(ImagesHistoricalDataLoader.EditsTestCase testCase,
                                                   ImagesResponse actualResponse) {
-        assertNotNull(testCase.getScenarioName() + " - 响应不能为空", actualResponse);
-        assertNotNull(testCase.getScenarioName() + " - 响应必须包含data字段", actualResponse.getData());
-        assertFalse(testCase.getScenarioName() + " - 响应data不能为空", actualResponse.getData().isEmpty());
+        assertNotNull(testCase.getScenarioName() + " - Response cannot be null", actualResponse);
+        assertNotNull(testCase.getScenarioName() + " - Response must contain data field", actualResponse.getData());
+        assertFalse(testCase.getScenarioName() + " - Response data cannot be empty", actualResponse.getData().isEmpty());
 
 
-        // 验证每个图片数据的必要字段
+        // Validate required fields for each image data
         for (int i = 0; i < actualResponse.getData().size(); i++) {
             ImagesResponse.ImageData imageData = actualResponse.getData().get(i);
-            String fieldPrefix = testCase.getScenarioName() + " - 图片" + (i + 1);
+            String fieldPrefix = testCase.getScenarioName() + " - Image" + (i + 1);
 
-            // 根据response_format验证相应字段
+            // Validate corresponding fields based on response_format
             if ("url".equals(testCase.getRequest().getResponse_format())) {
-                assertNotNull(fieldPrefix + " - URL不能为空", imageData.getUrl());
+                assertNotNull(fieldPrefix + " - URL cannot be null", imageData.getUrl());
             } else if ("b64_json".equals(testCase.getRequest().getResponse_format())) {
-                assertNotNull(fieldPrefix + " - Base64数据不能为空", imageData.getB64_json());
+                assertNotNull(fieldPrefix + " - Base64 data cannot be null", imageData.getB64_json());
             } else {
-				assertTrue(fieldPrefix + " - Base64数据或URL不能为空",
+				assertTrue(fieldPrefix + " - Base64 data or URL cannot be null",
 					imageData.getB64_json() != null || imageData.getUrl() != null);
 			}
 
-            // 验证尺寸字段
+            // Validate size field
             if (testCase.getRequest().getSize() != null) {
-                assertEquals(fieldPrefix + " - 尺寸必须匹配请求",
+                assertEquals(fieldPrefix + " - Size must match request",
                            testCase.getRequest().getSize(),
                            imageData.getSize());
             }
         }
 
-        // 执行场景特定的验证
+        // Execute scenario-specific validation
         if (testCase.getCustomValidator() != null) {
             testCase.getCustomValidator().accept(actualResponse);
         }
     }
 
     /**
-     * 验证图片生成底层服务调用参数的正确性
+     * Validate correctness of image generation underlying service call parameters
      */
     private void validateGenerationsServiceCallParameters(ImagesHistoricalDataLoader.GenerationsTestCase testCase) {
-        // 验证ChannelRouter调用
+        // Validate ChannelRouter call
         verify(channelRouter, times(1)).route(
             eq("/v1/images/generations"),
             eq(testCase.getRequest().getModel()),
-            any(), // API密钥
-            eq(false) // 非Mock模式
+            any(), // API key
+            eq(false) // Non-Mock mode
         );
 
-        // 验证AdaptorManager调用
+        // Validate AdaptorManager call
         verify(adaptorManager, times(1)).getProtocolAdaptor(
             eq("/v1/images/generations"),
             eq(testCase.getMockChannel().getProtocol()),
             eq(ImagesGeneratorAdaptor.class)
         );
 
-        // 验证Adaptor调用的参数传递
+        // Validate Adaptor call parameter passing
         verify(mockGeneratorAdaptor, times(1)).generateImages(
             argThat(req -> testCase.getParameterValidator().test(req)),
             eq(testCase.getMockChannel().getUrl()),
@@ -366,25 +366,25 @@ public class ImagesControllerTest {
     }
 
     /**
-     * 验证图片编辑底层服务调用参数的正确性
+     * Validate correctness of image editing underlying service call parameters
      */
     private void validateEditsServiceCallParameters(ImagesHistoricalDataLoader.EditsTestCase testCase) {
-        // 验证ChannelRouter调用
+        // Validate ChannelRouter call
         verify(channelRouter, times(1)).route(
             eq("/v1/images/edits"),
             eq(testCase.getRequest().getModel()),
-            any(), // API密钥
-            eq(false) // 非Mock模式
+            any(), // API key
+            eq(false) // Non-Mock mode
         );
 
-        // 验证AdaptorManager调用
+        // Validate AdaptorManager call
         verify(adaptorManager, times(1)).getProtocolAdaptor(
             eq("/v1/images/edits"),
             eq(testCase.getMockChannel().getProtocol()),
             eq(ImagesEditorAdaptor.class)
         );
 
-        // 验证Adaptor调用的参数传递
+        // Validate Adaptor call parameter passing
         verify(mockEditorAdaptor, times(1)).editImages(
             argThat(req -> testCase.getParameterValidator().test(req)),
             eq(testCase.getMockChannel().getUrl()),
@@ -393,10 +393,10 @@ public class ImagesControllerTest {
     }
 
     /**
-     * 设置基础的Mock环境
+     * Setup basic Mock environment
      */
     private void setupBasicMockEnvironment() {
-        // 设置BellaContext中的API密钥
+        // Setup API key in BellaContext
         ApikeyInfo testApikey = new ApikeyInfo();
         testApikey.setApikey("test-key");
         ApikeyInfo.RolePath rolePath = new ApikeyInfo.RolePath();
@@ -406,7 +406,7 @@ public class ImagesControllerTest {
     }
 
     /**
-     * 为图片生成测试设置请求上下文
+     * Setup request context for image generation tests
      */
     private void setupGenerationsRequestContext() {
         when(mockWrappedRequest.getRequestURI()).thenReturn("/v1/images/generations");
@@ -414,7 +414,7 @@ public class ImagesControllerTest {
     }
 
     /**
-     * 为图片编辑测试设置请求上下文
+     * Setup request context for image editing tests
      */
     private void setupEditsRequestContext() {
         when(mockWrappedRequest.getRequestURI()).thenReturn("/v1/images/edits");

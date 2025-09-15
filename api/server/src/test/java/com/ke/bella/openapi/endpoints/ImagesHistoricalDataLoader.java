@@ -15,8 +15,8 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 /**
- * 图片相关接口的历史请求数据加载器
- * 支持 /v1/images/generations 和 /v1/images/edits 接口
+ * Historical request data loader for image-related endpoints
+ * Supports /v1/images/generations and /v1/images/edits endpoints
  */
 public class ImagesHistoricalDataLoader {
 
@@ -24,13 +24,13 @@ public class ImagesHistoricalDataLoader {
     private static final String DATA_FILE = "/historical-images-requests.json";
 
     /**
-     * 加载所有图片生成的历史请求测试案例
+     * Load all historical request test cases for image generation
      */
     public static List<GenerationsTestCase> loadGenerationsRequests() {
         try {
             InputStream inputStream = ImagesHistoricalDataLoader.class.getResourceAsStream(DATA_FILE);
             if (inputStream == null) {
-                throw new RuntimeException("无法找到测试数据文件: " + DATA_FILE);
+                throw new RuntimeException("Cannot find test data file: " + DATA_FILE);
             }
 
             ImagesHistoricalData data = objectMapper.readValue(inputStream, ImagesHistoricalData.class);
@@ -43,18 +43,18 @@ public class ImagesHistoricalDataLoader {
             return testCases;
 
         } catch (IOException e) {
-            throw new RuntimeException("加载图片生成历史请求数据失败", e);
+            throw new RuntimeException("Failed to load image generation historical request data", e);
         }
     }
 
     /**
-     * 加载所有图片编辑的历史请求测试案例
+     * Load all historical request test cases for image editing
      */
     public static List<EditsTestCase> loadEditsRequests() {
         try {
             InputStream inputStream = ImagesHistoricalDataLoader.class.getResourceAsStream(DATA_FILE);
             if (inputStream == null) {
-                throw new RuntimeException("无法找到测试数据文件: " + DATA_FILE);
+                throw new RuntimeException("Cannot find test data file: " + DATA_FILE);
             }
 
             ImagesHistoricalData data = objectMapper.readValue(inputStream, ImagesHistoricalData.class);
@@ -67,27 +67,27 @@ public class ImagesHistoricalDataLoader {
             return testCases;
 
         } catch (IOException e) {
-            throw new RuntimeException("加载图片编辑历史请求数据失败", e);
+            throw new RuntimeException("Failed to load image editing historical request data", e);
         }
     }
 
     /**
-     * 将JSON数据转换为图片生成测试案例对象
+     * Convert JSON data to image generation test case object
      */
     private static GenerationsTestCase convertToGenerationsTestCase(ImagesHistoricalData.RequestScenario scenario) {
-        // 构建请求对象
+        // Build request object
         ImagesRequest request = buildImagesRequest(scenario.getRequest());
 
-        // 构建期望响应
+        // Build expected response
         ImagesResponse expectedResponse = buildImagesResponse(scenario.getExpectedResponse());
 
-        // 构建Mock通道
+        // Build Mock channel
         ChannelDB mockChannel = buildMockChannel(scenario.getMockChannel());
 
-        // 构建参数验证器
+        // Build parameter validator
         Predicate<ImagesRequest> parameterValidator = buildGenerationsParameterValidator(scenario.getParameterValidations());
 
-        // 构建自定义验证器
+        // Build custom validator
         Consumer<ImagesResponse> customValidator = buildCustomValidator(scenario.getCustomValidations());
 
         return new GenerationsTestCase(
@@ -102,22 +102,22 @@ public class ImagesHistoricalDataLoader {
     }
 
     /**
-     * 将JSON数据转换为图片编辑测试案例对象
+     * Convert JSON data to image editing test case object
      */
     private static EditsTestCase convertToEditsTestCase(ImagesHistoricalData.RequestScenario scenario) {
-        // 构建编辑请求对象
+        // Build edit request object
         ImagesEditRequest request = buildImagesEditRequest(scenario.getRequest());
 
-        // 构建期望响应
+        // Build expected response
         ImagesResponse expectedResponse = buildImagesResponse(scenario.getExpectedResponse());
 
-        // 构建Mock通道
+        // Build Mock channel
         ChannelDB mockChannel = buildMockChannel(scenario.getMockChannel());
 
-        // 构建参数验证器
+        // Build parameter validator
         Predicate<ImagesEditRequest> parameterValidator = buildEditsParameterValidator(scenario.getParameterValidations());
 
-        // 构建自定义验证器
+        // Build custom validator
         Consumer<ImagesResponse> customValidator = buildCustomValidator(scenario.getCustomValidations());
 
         return new EditsTestCase(
@@ -132,7 +132,7 @@ public class ImagesHistoricalDataLoader {
     }
 
     /**
-     * 构建ImagesRequest对象
+     * Build ImagesRequest object
      */
     private static ImagesRequest buildImagesRequest(Map<String, Object> requestData) {
         ImagesRequest request = new ImagesRequest();
@@ -166,7 +166,7 @@ public class ImagesHistoricalDataLoader {
     }
 
     /**
-     * 构建ImagesEditRequest对象
+     * Build ImagesEditRequest object
      */
     private static ImagesEditRequest buildImagesEditRequest(Map<String, Object> requestData) {
         ImagesEditRequest request = new ImagesEditRequest();
@@ -175,7 +175,7 @@ public class ImagesHistoricalDataLoader {
             request.setModel((String) requestData.get("model"));
         }
         if (requestData.containsKey("image")) {
-			// FIXME file类型的数据暂时未验证
+			// FIXME file type data not validated temporarily
             request.setImage_b64_json((String) requestData.get("image"));
         }
 		if (requestData.containsKey("image_url")) {
@@ -185,7 +185,7 @@ public class ImagesHistoricalDataLoader {
 			request.setImage_b64_json((String) requestData.get("image_b64_json"));
 		}
         if (requestData.containsKey("mask")) {
-            // 对于mask，我们需要检查是否为null
+            // For mask, we need to check if it's null
             Object maskValue = requestData.get("mask");
 
         }
@@ -209,7 +209,7 @@ public class ImagesHistoricalDataLoader {
     }
 
     /**
-     * 构建ImagesResponse对象
+     * Build ImagesResponse object
      */
     @SuppressWarnings("unchecked")
     private static ImagesResponse buildImagesResponse(Map<String, Object> responseData) {
@@ -247,7 +247,7 @@ public class ImagesHistoricalDataLoader {
     }
 
     /**
-     * 构建Mock通道对象
+     * Build Mock channel object
      */
     private static ChannelDB buildMockChannel(Map<String, Object> channelData) {
         ChannelDB channel = new ChannelDB();
@@ -266,7 +266,7 @@ public class ImagesHistoricalDataLoader {
     }
 
     /**
-     * 构建图片生成参数验证器
+     * Build image generation parameter validator
      */
     @SuppressWarnings("unchecked")
     private static Predicate<ImagesRequest> buildGenerationsParameterValidator(List<Map<String, Object>> validations) {
@@ -297,7 +297,7 @@ public class ImagesHistoricalDataLoader {
     }
 
     /**
-     * 构建图片编辑参数验证器
+     * Build image editing parameter validator
      */
     @SuppressWarnings("unchecked")
     private static Predicate<ImagesEditRequest> buildEditsParameterValidator(List<Map<String, Object>> validations) {
@@ -328,7 +328,7 @@ public class ImagesHistoricalDataLoader {
     }
 
     /**
-     * 验证图片生成字段值相等
+     * Validate image generation field value equality
      */
     private static boolean validateGenerationsFieldEquals(ImagesRequest req, String field, Object expectedValue) {
         Object actualValue = getGenerationsFieldValue(req, field);
@@ -336,7 +336,7 @@ public class ImagesHistoricalDataLoader {
     }
 
     /**
-     * 验证图片编辑字段值相等
+     * Validate image editing field value equality
      */
     private static boolean validateEditsFieldEquals(ImagesEditRequest req, String field, Object expectedValue) {
         Object actualValue = getEditsFieldValue(req, field);
@@ -344,7 +344,7 @@ public class ImagesHistoricalDataLoader {
     }
 
     /**
-     * 验证图片生成字段包含指定值
+     * Validate image generation field contains specified values
      */
     private static boolean validateGenerationsFieldContains(ImagesRequest req, String field, List<String> containsValues) {
         Object actualValue = getGenerationsFieldValue(req, field);
@@ -360,7 +360,7 @@ public class ImagesHistoricalDataLoader {
     }
 
     /**
-     * 验证图片编辑字段包含指定值
+     * Validate image editing field contains specified values
      */
     private static boolean validateEditsFieldContains(ImagesEditRequest req, String field, List<String> containsValues) {
         Object actualValue = getEditsFieldValue(req, field);
@@ -376,7 +376,7 @@ public class ImagesHistoricalDataLoader {
     }
 
     /**
-     * 获取图片生成字段值
+     * Get image generation field value
      */
     private static Object getGenerationsFieldValue(ImagesRequest req, String field) {
         switch (field) {
@@ -393,13 +393,13 @@ public class ImagesHistoricalDataLoader {
     }
 
     /**
-     * 获取图片编辑字段值
+     * Get image editing field value
      */
     private static Object getEditsFieldValue(ImagesEditRequest req, String field) {
         switch (field) {
             case "model": return req.getModel();
-            case "image": return req.getImage_b64_json();  // 使用base64字段
-            case "mask": return null;  // mask字段在测试中暂时返回null
+            case "image": return req.getImage_b64_json();  // Use base64 field
+            case "mask": return null;  // mask field returns null temporarily in tests
             case "prompt": return req.getPrompt();
             case "n": return req.getN();
             case "size": return req.getSize();
@@ -410,7 +410,7 @@ public class ImagesHistoricalDataLoader {
     }
 
     /**
-     * 构建自定义验证器
+     * Build custom validator
      */
     private static Consumer<ImagesResponse> buildCustomValidator(List<Map<String, Object>> customValidations) {
         if (customValidations == null || customValidations.isEmpty()) {
@@ -433,7 +433,7 @@ public class ImagesHistoricalDataLoader {
     }
 
     /**
-     * 图片相关历史请求数据结构
+     * Image-related historical request data structure
      */
     @Setter
 	@Getter
@@ -457,7 +457,7 @@ public class ImagesHistoricalDataLoader {
     }
 
     /**
-     * 图片生成测试案例
+     * Image generation test case
      */
     @Getter
 	public static class GenerationsTestCase {
@@ -487,7 +487,7 @@ public class ImagesHistoricalDataLoader {
 	}
 
     /**
-     * 图片编辑测试案例
+     * Image editing test case
      */
     @Getter
 	public static class EditsTestCase {

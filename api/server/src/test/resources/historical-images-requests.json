@@ -19,7 +19,7 @@
       "mockChannel": {
         "channelInfo": "{\"apiKey\":\"test-key\",\"deployName\":\"dall-e-3\"}",
         "protocol": "openai",
-        "url": "https://api.openai.com/v1/images/generations"
+        "url": "https://your-custom-endpoint.com/v1/images/generations"
       },
       "parameterValidations": [
         {"field": "model", "expectedValue": "dall-e-3"}
@@ -51,7 +51,7 @@
       "mockChannel": {
         "channelInfo": "{\"apiKey\":\"test-key\",\"deployName\":\"doubao-seedream-3-0-t2i\"}",
         "protocol": "huoshan",
-        "url": "https://api.openai.com/v1/images/generations"
+        "url": "https://your-custom-endpoint.comv1/images/generations"
       },
       "parameterValidations": [
         {"field": "model", "expectedValue": "doubao-seedream-3-0-t2i"}
@@ -78,7 +78,7 @@
       "mockChannel": {
         "channelInfo": "{\"apiKey\":\"test-key\",\"deployName\":\"doubao-seededit-3-0-i2i-250628\"}",
         "protocol": "huoshan",
-        "url": "https://api.openai.com/v1/images/edits"
+        "url": "https://your-custom-endpoint.com/v1/images/edits"
       },
       "parameterValidations": [
         {"field": "model", "expectedValue": "doubao-seededit-3.0-i2i"},
@@ -112,7 +112,7 @@
       "mockChannel": {
         "channelInfo": "{\"apiKey\":\"test-key\",\"deployName\":\"doubao-seededit-3-0-i2i-250628\"}",
         "protocol": "huoshan",
-        "url": "https://api.openai.com/v1/images/edits"
+        "url": "https://your-custom-endpoint.com/v1/images/edits"
       },
       "parameterValidations": [
         {"field": "model", "expectedValue": "doubao-seededit-3.0-i2i"},
@@ -140,7 +140,7 @@
       "mockChannel": {
         "channelInfo": "{\"apiKey\":\"test-key\",\"deployName\":\"doubao-seededit-3-0-i2i-250628\"}",
         "protocol": "huoshan",
-        "url": "https://api.openai.com/v1/images/edits"
+        "url": "https://your-custom-endpoint.com/v1/images/edits"
       },
       "parameterValidations": [
         {"field": "response_format", "expectedValue": "b64_json"}
