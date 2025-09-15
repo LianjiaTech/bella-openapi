@@ -20,13 +20,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-/**
- * HuoshanAdaptor的单元测试
- * 测试覆盖：能力点、接口描述、类属性、请求构建、请求映射
- *
- * @author 张鑫宇
- * @since 2025-09-10
- */
 @ExtendWith(MockitoExtension.class)
 class HuoshanAdaptorTest {
 
@@ -39,7 +32,7 @@ class HuoshanAdaptorTest {
 
 	@BeforeEach
 	void setUp() {
-		// 初始化测试数据
+		// Initialize test data
 		request = new ImagesEditRequest();
 		request.setPrompt("test prompt");
 		request.setUser("test_user");
@@ -51,10 +44,10 @@ class HuoshanAdaptorTest {
 		property = new ImagesEditorProperty();
 		property.setDeployName("test_model");
 
-		// 设置认证属性
+		// Setup authentication properties
 		AuthorizationProperty authProperty = new AuthorizationProperty();
 		authProperty.setApiKey("test_api_key");
-		authProperty.setType(AuthType.BEARER); // 假设默认是BEARER类型
+		authProperty.setType(AuthType.BEARER); // Assume default is BEARER type
 		property.setAuth(authProperty);
 
 		testUrl = "http://test.com/v1/images/edits";
@@ -62,28 +55,28 @@ class HuoshanAdaptorTest {
 
 	@Test
 	void testEndpoint() {
-		// 测试endpoint方法
+		// Test endpoint method
 		String endpoint = huoshanAdaptor.endpoint();
 		assertEquals("/v1/images/edits", endpoint);
 	}
 
 	@Test
 	void testGetDescription() {
-		// 测试getDescription方法
+		// Test getDescription method
 		String description = huoshanAdaptor.getDescription();
 		assertEquals("火山方舟图片编辑适配器", description);
 	}
 
 	@Test
 	void testGetPropertyClass() {
-		// 测试getPropertyClass方法
+		// Test getPropertyClass method
 		Class<?> propertyClass = huoshanAdaptor.getPropertyClass();
 		assertEquals(ImagesEditorProperty.class, propertyClass);
 	}
 
 	@Test
 	void testBuildRequest_WithBase64DataType() {
-		// 测试使用BASE64数据类型构建请求
+		// Test building request with BASE64 data type
 		try (MockedStatic<JacksonUtils> jacksonUtilsMock = mockStatic(JacksonUtils.class)) {
 			jacksonUtilsMock.when(() -> JacksonUtils.serialize(any(Map.class)))
 				.thenReturn("{\"test\":\"json\"}");
@@ -96,14 +89,14 @@ class HuoshanAdaptorTest {
 			assertNotNull(httpRequest.body());
 			assertEquals("Bearer test_api_key", httpRequest.header("Authorization"));
 
-			// 验证JacksonUtils.serialize被调用
+			// Verify JacksonUtils.serialize was called
 			jacksonUtilsMock.verify(() -> JacksonUtils.serialize(any(Map.class)), times(1));
 		}
 	}
 
 	@Test
 	void testBuildRequest_WithUrlDataType() {
-		// 测试使用URL数据类型构建请求
+		// Test building request with URL data type
 		try (MockedStatic<JacksonUtils> jacksonUtilsMock = mockStatic(JacksonUtils.class)) {
 			jacksonUtilsMock.when(() -> JacksonUtils.serialize(any(Map.class)))
 				.thenReturn("{\"test\":\"json\"}");
@@ -116,14 +109,14 @@ class HuoshanAdaptorTest {
 			assertNotNull(httpRequest.body());
 			assertEquals("Bearer test_api_key", httpRequest.header("Authorization"));
 
-			// 验证JacksonUtils.serialize被调用
+			// Verify JacksonUtils.serialize was called
 			jacksonUtilsMock.verify(() -> JacksonUtils.serialize(any(Map.class)), times(1));
 		}
 	}
 
 	@Test
 	void testBuildRequest_WithFileDataType_ThrowsException() {
-		// 测试使用FILE数据类型时抛出异常
+		// Test throwing exception when using FILE data type
 		IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
 			huoshanAdaptor.buildRequest(request, testUrl, property, ImageDataType.FILE);
 		});
@@ -133,12 +126,12 @@ class HuoshanAdaptorTest {
 
 	@Test
 	void testBuildRequest_WithNullOptionalFields() {
-		// 测试可选字段为null的情况
+		// Test case with optional fields as null
 		try (MockedStatic<JacksonUtils> jacksonUtilsMock = mockStatic(JacksonUtils.class)) {
 			jacksonUtilsMock.when(() -> JacksonUtils.serialize(any(Map.class)))
 				.thenReturn("{\"test\":\"json\"}");
 
-			// 设置可选字段为null
+			// Set optional fields to null
 			request.setResponse_format(null);
 			request.setSize(null);
 
@@ -148,28 +141,28 @@ class HuoshanAdaptorTest {
 			assertEquals(testUrl, httpRequest.url().toString());
 			assertEquals("POST", httpRequest.method());
 
-			// 验证JacksonUtils.serialize被调用
+			// Verify JacksonUtils.serialize was called
 			jacksonUtilsMock.verify(() -> JacksonUtils.serialize(any(Map.class)), times(1));
 		}
 	}
 
 	@Test
 	void testBuildRequest_VerifyRequestMapContent() {
-		// 测试请求映射内容的正确性
+		// Test correctness of request mapping content
 		try (MockedStatic<JacksonUtils> jacksonUtilsMock = mockStatic(JacksonUtils.class)) {
-			// 捕获传递给serialize方法的Map
+			// Capture Map passed to serialize method
 			jacksonUtilsMock.when(() -> JacksonUtils.serialize(any(Map.class)))
 				.thenAnswer(invocation -> {
 					Map<String, Object> requestMap = invocation.getArgument(0);
 
-					// 验证必需字段
+					// Verify required fields
 					assertEquals("test prompt", requestMap.get("prompt"));
 					assertEquals("test_model", requestMap.get("model"));
 					assertEquals("test_user", requestMap.get("user"));
 					assertEquals(false, requestMap.get("watermark"));
 					assertEquals("base64_image_data", requestMap.get("image"));
 
-					// 验证可选字段
+					// Verify optional fields
 					assertEquals("url", requestMap.get("response_format"));
 					assertEquals("1024x1024", requestMap.get("size"));
 
@@ -178,20 +171,20 @@ class HuoshanAdaptorTest {
 
 			huoshanAdaptor.buildRequest(request, testUrl, property, ImageDataType.BASE64);
 
-			// 验证JacksonUtils.serialize被调用
+			// Verify JacksonUtils.serialize was called
 			jacksonUtilsMock.verify(() -> JacksonUtils.serialize(any(Map.class)), times(1));
 		}
 	}
 
 	@Test
 	void testBuildRequest_VerifyUrlDataType_UsesCorrectImageField() {
-		// 测试URL数据类型使用正确的图片字段
+		// Test URL data type uses correct image field
 		try (MockedStatic<JacksonUtils> jacksonUtilsMock = mockStatic(JacksonUtils.class)) {
 			jacksonUtilsMock.when(() -> JacksonUtils.serialize(any(Map.class)))
 				.thenAnswer(invocation -> {
 					Map<String, Object> requestMap = invocation.getArgument(0);
 
-					// 验证使用URL字段而不是BASE64字段
+					// Verify using URL field instead of BASE64 field
 					assertEquals("http://example.com/image.jpg", requestMap.get("image"));
 
 					return "{\"test\":\"json\"}";
