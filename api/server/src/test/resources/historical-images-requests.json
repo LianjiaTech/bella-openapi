@@ -1,0 +1,150 @@
+{
+  "generationsRequests": [
+    {
+      "scenarioName": "DALL-E-3标准请求",
+      "description": "DALL-E-3标准请求",
+      "request": {
+        "model": "dall-e-3",
+        "prompt": "一只可爱的小猫在草地上玩耍，阳光明媚"
+      },
+      "expectedResponse": {
+        "created": 1757920244,
+        "data": [
+          {
+            "url": "https://dalleprodsec.blob.core.windows.net/private/images/e45bf32d-c690-4b4f-8141-c99e8c201487/generated_00.png?se=2025-09-16T07%3A10%3A53Z&sig=HTKzpLo2D%2B%2BRjR912pDqGvfuf2eOkPc6POrceDPb0Jo%3D&ske=2025-09-19T16%3A28%3A29Z&skoid=e52d5ed7-0657-4f62-bc12-7e5dbb260a96&sks=b&skt=2025-09-12T16%3A28%3A29Z&sktid=33e01921-4d64-4f8c-a055-5bdaffd5e33d&skv=2020-10-02&sp=r&spr=https&sr=b&sv=2020-10-02",
+            "revised_prompt": "A cute kitten playing on a grassy field under bright sunshine. The cat has soft fluffy fur and appears joyful, surrounded by vibrant green grass and colorful wildflowers. The background features a clear blue sky with a few fluffy white clouds and sunlight streaming down, creating a warm and cheerful ambiance."
+          }
+        ]
+      },
+      "mockChannel": {
+        "channelInfo": "{\"apiKey\":\"test-key\",\"deployName\":\"dall-e-3\"}",
+        "protocol": "openai",
+        "url": "https://api.openai.com/v1/images/generations"
+      },
+      "parameterValidations": [
+        {"field": "model", "expectedValue": "dall-e-3"}
+      ]
+    },
+    {
+      "scenarioName": "doubao-seedream-3-0-t2i标准请求",
+      "description": "doubao-seedream-3-0-t2i标准请求",
+      "request": {
+        "model": "doubao-seedream-3-0-t2i",
+        "prompt": "一只可爱的小猫在草地上玩耍，阳光明媚"
+      },
+      "expectedResponse": {
+        "created": 1757920416,
+        "data": [
+          {
+            "url": "img_url",
+            "size": "1024x1024"
+          }
+        ],
+        "usage": {
+          "num": 1,
+          "size": "1024x1024",
+          "quality": "high",
+          "output_tokens": 4096,
+          "total_tokens": 4096
+        }
+      },
+      "mockChannel": {
+        "channelInfo": "{\"apiKey\":\"test-key\",\"deployName\":\"doubao-seedream-3-0-t2i\"}",
+        "protocol": "huoshan",
+        "url": "https://api.openai.com/v1/images/generations"
+      },
+      "parameterValidations": [
+        {"field": "model", "expectedValue": "doubao-seedream-3-0-t2i"}
+      ]
+    }
+  ],
+  "editsRequests": [
+    {
+      "scenarioName": "doubao-seededit-3.0-i2i基础编辑请求（OpenAI格式）",
+      "description": "doubao-seededit-3.0-i2i图片编辑的经典格式",
+      "request": {
+        "model": "doubao-seededit-3.0-i2i",
+        "image": "Image_File_Type",
+        "prompt": "转化为卡通风格"
+      },
+      "expectedResponse": {
+        "created": 1234567890,
+        "data": [
+          {
+            "url": "https://mock-edited-image.com/edited-1.png"
+          }
+        ]
+      },
+      "mockChannel": {
+        "channelInfo": "{\"apiKey\":\"test-key\",\"deployName\":\"doubao-seededit-3-0-i2i-250628\"}",
+        "protocol": "huoshan",
+        "url": "https://api.openai.com/v1/images/edits"
+      },
+      "parameterValidations": [
+        {"field": "model", "expectedValue": "doubao-seededit-3.0-i2i"},
+        {"field": "prompt", "expectedValue": "转化为卡通风格"}
+
+      ]
+    },
+    {
+      "scenarioName": "doubao-seededit-3.0-i2i基础编辑请求（Url）",
+      "description": "doubao-seededit-3.0-i2i图片编辑的经典格式",
+      "request": {
+        "model": "doubao-seededit-3.0-i2i",
+        "image_url": "https://ark-project.tos-cn-beijing.volces.com/doc_image/seedream4_imageToimage.png",
+        "prompt": "删除小狗"
+      },
+      "expectedResponse": {
+        "created": 1757922575,
+        "data": [
+          {
+            "url": "img_url"
+          }
+        ],
+        "usage": {
+          "num": 1,
+          "size": "864x1152",
+          "quality": "high",
+          "output_tokens": 3888,
+          "total_tokens": 3888
+        }
+      },
+      "mockChannel": {
+        "channelInfo": "{\"apiKey\":\"test-key\",\"deployName\":\"doubao-seededit-3-0-i2i-250628\"}",
+        "protocol": "huoshan",
+        "url": "https://api.openai.com/v1/images/edits"
+      },
+      "parameterValidations": [
+        {"field": "model", "expectedValue": "doubao-seededit-3.0-i2i"},
+        {"field": "prompt", "expectedValue": "删除小狗"}
+
+      ]
+    },
+    {
+      "scenarioName": "Base64编辑响应格式",
+      "description": "验证图片编辑的b64_json响应格式兼容性",
+      "request": {
+        "model": "doubao-seededit-3.0-i2i",
+        "image": "Image_File_Type",
+        "prompt": "Change the background to ocean",
+        "response_format": "b64_json"
+      },
+      "expectedResponse": {
+        "created": 1234567890,
+        "data": [
+          {
+            "b64_json": "base64-encoded-edited-image-data-1"
+          }
+        ]
+      },
+      "mockChannel": {
+        "channelInfo": "{\"apiKey\":\"test-key\",\"deployName\":\"doubao-seededit-3-0-i2i-250628\"}",
+        "protocol": "huoshan",
+        "url": "https://api.openai.com/v1/images/edits"
+      },
+      "parameterValidations": [
+        {"field": "response_format", "expectedValue": "b64_json"}
+      ]
+    }
+  ]
+}
