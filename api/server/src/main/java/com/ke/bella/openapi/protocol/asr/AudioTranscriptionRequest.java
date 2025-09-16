@@ -162,6 +162,8 @@ public class AudioTranscriptionRequest {
         @JsonProperty("boosting_table_name")
         private String boostingTableName;
 
+        @JsonProperty("embedding_model")
+        private String embeddingModel;
     }
 
     @Data
