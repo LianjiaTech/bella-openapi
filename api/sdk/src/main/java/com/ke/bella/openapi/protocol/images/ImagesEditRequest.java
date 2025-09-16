@@ -29,7 +29,7 @@ public class ImagesEditRequest implements UserRequest, Serializable {
      */
     @Nullable
     @JsonIgnore
-    private MultipartFile image;
+    private MultipartFile[] image;
     
     /**
      * 一个额外的图片，其完全透明的区域（例如alpha为零的地方）指示应该编辑图片的位置。
@@ -44,14 +44,14 @@ public class ImagesEditRequest implements UserRequest, Serializable {
      * 如果未提供mask，图片必须具有透明度，该透明度将用作mask。
      */
     @Nullable
-    private String image_url;
+    private String[] image_url;
     
     /**
      * 要编辑的图片的base64编码JSON格式。必须是有效的PNG文件，小于4MB，且为正方形。
      * 如果未提供mask，图片必须具有透明度，该透明度将用作mask。
      */
     @Nullable
-    private String image_b64_json;
+    private String[] image_b64_json;
     
     /**
      * 描述所需图片的文本。最大长度为1000个字符。
@@ -88,4 +88,9 @@ public class ImagesEditRequest implements UserRequest, Serializable {
      */
     @Nullable
     private String user;
+	/**
+	 * 额外的请求体参数，用于透传给具体的协议适配器处理
+	 */
+	@Nullable
+	private java.util.Map<String, Object> extra_body;
 }
