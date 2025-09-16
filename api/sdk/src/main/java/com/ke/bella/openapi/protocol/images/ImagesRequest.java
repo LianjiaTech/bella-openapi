@@ -104,4 +104,11 @@ public class ImagesRequest implements UserRequest, Serializable {
      * 火山协议：模型输出结果与prompt的一致程度，即生成图像的自由度；值越大，模型自由度越小，与用户输入的提示词相关性越强。取值范围：[1, 10] 之间的浮点数。
      */
     private Float guidance_scale;
+
+	/**
+	 * 额外的请求体参数，用于透传给具体的协议适配器处理
+	 * 可以包含各种协议特定的参数，如图片URL列表、连续生成选项等
+	 */
+	@Nullable
+	private java.util.Map<String, Object> extra_body;
 }
