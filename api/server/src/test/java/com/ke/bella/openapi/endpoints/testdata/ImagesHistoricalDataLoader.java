@@ -1,6 +1,5 @@
-package com.ke.bella.openapi.endpoints;
+package com.ke.bella.openapi.endpoints.testdata;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ke.bella.openapi.protocol.images.ImagesRequest;
 import com.ke.bella.openapi.protocol.images.ImagesEditRequest;
 import com.ke.bella.openapi.protocol.images.ImagesResponse;
@@ -20,23 +19,36 @@ import java.util.function.Predicate;
  */
 public class ImagesHistoricalDataLoader {
 
-    private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final String DATA_FILE = "/historical-images-requests.json";
 
     /**
      * Load all historical request test cases for image generation
      */
     public static List<GenerationsTestCase> loadGenerationsRequests() {
+        return new ImagesHistoricalDataLoader().loadGenerationsTestData();
+    }
+
+    /**
+     * Load all historical request test cases for image editing
+     */
+    public static List<EditsTestCase> loadEditsRequests() {
+        return new ImagesHistoricalDataLoader().loadEditsTestData();
+    }
+
+    /**
+     * Load generations test data
+     */
+    private List<GenerationsTestCase> loadGenerationsTestData() {
         try {
             InputStream inputStream = ImagesHistoricalDataLoader.class.getResourceAsStream(DATA_FILE);
             if (inputStream == null) {
                 throw new RuntimeException("Cannot find test data file: " + DATA_FILE);
             }
 
-            ImagesHistoricalData data = objectMapper.readValue(inputStream, ImagesHistoricalData.class);
+            ImagesHistoricalData data = BaseHistoricalDataLoader.objectMapper.readValue(inputStream, ImagesHistoricalData.class);
             List<GenerationsTestCase> testCases = new ArrayList<>();
 
-            for (ImagesHistoricalData.RequestScenario scenario : data.getGenerationsRequests()) {
+            for (BaseHistoricalDataLoader.RequestScenario scenario : data.getGenerationsRequests()) {
                 testCases.add(convertToGenerationsTestCase(scenario));
             }
 
@@ -48,19 +60,19 @@ public class ImagesHistoricalDataLoader {
     }
 
     /**
-     * Load all historical request test cases for image editing
+     * Load edits test data
      */
-    public static List<EditsTestCase> loadEditsRequests() {
+    private List<EditsTestCase> loadEditsTestData() {
         try {
             InputStream inputStream = ImagesHistoricalDataLoader.class.getResourceAsStream(DATA_FILE);
             if (inputStream == null) {
                 throw new RuntimeException("Cannot find test data file: " + DATA_FILE);
             }
 
-            ImagesHistoricalData data = objectMapper.readValue(inputStream, ImagesHistoricalData.class);
+            ImagesHistoricalData data = BaseHistoricalDataLoader.objectMapper.readValue(inputStream, ImagesHistoricalData.class);
             List<EditsTestCase> testCases = new ArrayList<>();
 
-            for (ImagesHistoricalData.RequestScenario scenario : data.getEditsRequests()) {
+            for (BaseHistoricalDataLoader.RequestScenario scenario : data.getEditsRequests()) {
                 testCases.add(convertToEditsTestCase(scenario));
             }
 
@@ -74,20 +86,11 @@ public class ImagesHistoricalDataLoader {
     /**
      * Convert JSON data to image generation test case object
      */
-    private static GenerationsTestCase convertToGenerationsTestCase(ImagesHistoricalData.RequestScenario scenario) {
-        // Build request object
+    private GenerationsTestCase convertToGenerationsTestCase(BaseHistoricalDataLoader.RequestScenario scenario) {
         ImagesRequest request = buildImagesRequest(scenario.getRequest());
-
-        // Build expected response
         ImagesResponse expectedResponse = buildImagesResponse(scenario.getExpectedResponse());
-
-        // Build Mock channel
         ChannelDB mockChannel = buildMockChannel(scenario.getMockChannel());
-
-        // Build parameter validator
         Predicate<ImagesRequest> parameterValidator = buildGenerationsParameterValidator(scenario.getParameterValidations());
-
-        // Build custom validator
         Consumer<ImagesResponse> customValidator = buildCustomValidator(scenario.getCustomValidations());
 
         return new GenerationsTestCase(
@@ -104,20 +107,11 @@ public class ImagesHistoricalDataLoader {
     /**
      * Convert JSON data to image editing test case object
      */
-    private static EditsTestCase convertToEditsTestCase(ImagesHistoricalData.RequestScenario scenario) {
-        // Build edit request object
+    private EditsTestCase convertToEditsTestCase(BaseHistoricalDataLoader.RequestScenario scenario) {
         ImagesEditRequest request = buildImagesEditRequest(scenario.getRequest());
-
-        // Build expected response
         ImagesResponse expectedResponse = buildImagesResponse(scenario.getExpectedResponse());
-
-        // Build Mock channel
         ChannelDB mockChannel = buildMockChannel(scenario.getMockChannel());
-
-        // Build parameter validator
         Predicate<ImagesEditRequest> parameterValidator = buildEditsParameterValidator(scenario.getParameterValidations());
-
-        // Build custom validator
         Consumer<ImagesResponse> customValidator = buildCustomValidator(scenario.getCustomValidations());
 
         return new EditsTestCase(
@@ -134,7 +128,7 @@ public class ImagesHistoricalDataLoader {
     /**
      * Build ImagesRequest object
      */
-    private static ImagesRequest buildImagesRequest(Map<String, Object> requestData) {
+    private ImagesRequest buildImagesRequest(Map<String, Object> requestData) {
         ImagesRequest request = new ImagesRequest();
 
         if (requestData.containsKey("model")) {
@@ -168,26 +162,23 @@ public class ImagesHistoricalDataLoader {
     /**
      * Build ImagesEditRequest object
      */
-    private static ImagesEditRequest buildImagesEditRequest(Map<String, Object> requestData) {
+    private ImagesEditRequest buildImagesEditRequest(Map<String, Object> requestData) {
         ImagesEditRequest request = new ImagesEditRequest();
 
         if (requestData.containsKey("model")) {
             request.setModel((String) requestData.get("model"));
         }
         if (requestData.containsKey("image")) {
-			// FIXME file type data not validated temporarily
             request.setImage_b64_json((String) requestData.get("image"));
         }
-		if (requestData.containsKey("image_url")) {
-			request.setImage_url((String) requestData.get("image_url"));
-		}
-		if (requestData.containsKey("image_b64_json")) {
-			request.setImage_b64_json((String) requestData.get("image_b64_json"));
-		}
+        if (requestData.containsKey("image_url")) {
+            request.setImage_url((String) requestData.get("image_url"));
+        }
+        if (requestData.containsKey("image_b64_json")) {
+            request.setImage_b64_json((String) requestData.get("image_b64_json"));
+        }
         if (requestData.containsKey("mask")) {
-            // For mask, we need to check if it's null
             Object maskValue = requestData.get("mask");
-
         }
         if (requestData.containsKey("prompt")) {
             request.setPrompt((String) requestData.get("prompt"));
@@ -212,7 +203,7 @@ public class ImagesHistoricalDataLoader {
      * Build ImagesResponse object
      */
     @SuppressWarnings("unchecked")
-    private static ImagesResponse buildImagesResponse(Map<String, Object> responseData) {
+    private ImagesResponse buildImagesResponse(Map<String, Object> responseData) {
         ImagesResponse response = new ImagesResponse();
 
         if (responseData.containsKey("created")) {
@@ -249,7 +240,7 @@ public class ImagesHistoricalDataLoader {
     /**
      * Build Mock channel object
      */
-    private static ChannelDB buildMockChannel(Map<String, Object> channelData) {
+    private ChannelDB buildMockChannel(Map<String, Object> channelData) {
         ChannelDB channel = new ChannelDB();
 
         if (channelData.containsKey("channelInfo")) {
@@ -269,7 +260,7 @@ public class ImagesHistoricalDataLoader {
      * Build image generation parameter validator
      */
     @SuppressWarnings("unchecked")
-    private static Predicate<ImagesRequest> buildGenerationsParameterValidator(List<Map<String, Object>> validations) {
+    private Predicate<ImagesRequest> buildGenerationsParameterValidator(List<Map<String, Object>> validations) {
         if (validations == null || validations.isEmpty()) {
             return req -> true;
         }
@@ -300,7 +291,7 @@ public class ImagesHistoricalDataLoader {
      * Build image editing parameter validator
      */
     @SuppressWarnings("unchecked")
-    private static Predicate<ImagesEditRequest> buildEditsParameterValidator(List<Map<String, Object>> validations) {
+    private Predicate<ImagesEditRequest> buildEditsParameterValidator(List<Map<String, Object>> validations) {
         if (validations == null || validations.isEmpty()) {
             return req -> true;
         }
@@ -328,91 +319,9 @@ public class ImagesHistoricalDataLoader {
     }
 
     /**
-     * Validate image generation field value equality
-     */
-    private static boolean validateGenerationsFieldEquals(ImagesRequest req, String field, Object expectedValue) {
-        Object actualValue = getGenerationsFieldValue(req, field);
-        return Objects.equals(expectedValue, actualValue);
-    }
-
-    /**
-     * Validate image editing field value equality
-     */
-    private static boolean validateEditsFieldEquals(ImagesEditRequest req, String field, Object expectedValue) {
-        Object actualValue = getEditsFieldValue(req, field);
-        return Objects.equals(expectedValue, actualValue);
-    }
-
-    /**
-     * Validate image generation field contains specified values
-     */
-    private static boolean validateGenerationsFieldContains(ImagesRequest req, String field, List<String> containsValues) {
-        Object actualValue = getGenerationsFieldValue(req, field);
-        if (actualValue == null) return false;
-
-        String actualStr = actualValue.toString();
-        for (String containsValue : containsValues) {
-            if (!actualStr.contains(containsValue)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /**
-     * Validate image editing field contains specified values
-     */
-    private static boolean validateEditsFieldContains(ImagesEditRequest req, String field, List<String> containsValues) {
-        Object actualValue = getEditsFieldValue(req, field);
-        if (actualValue == null) return false;
-
-        String actualStr = actualValue.toString();
-        for (String containsValue : containsValues) {
-            if (!actualStr.contains(containsValue)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /**
-     * Get image generation field value
-     */
-    private static Object getGenerationsFieldValue(ImagesRequest req, String field) {
-        switch (field) {
-            case "model": return req.getModel();
-            case "prompt": return req.getPrompt();
-            case "n": return req.getN();
-            case "size": return req.getSize();
-            case "response_format": return req.getResponse_format();
-            case "quality": return req.getQuality();
-            case "style": return req.getStyle();
-            case "user": return req.getUser();
-            default: return null;
-        }
-    }
-
-    /**
-     * Get image editing field value
-     */
-    private static Object getEditsFieldValue(ImagesEditRequest req, String field) {
-        switch (field) {
-            case "model": return req.getModel();
-            case "image": return req.getImage_b64_json();  // Use base64 field
-            case "mask": return null;  // mask field returns null temporarily in tests
-            case "prompt": return req.getPrompt();
-            case "n": return req.getN();
-            case "size": return req.getSize();
-            case "response_format": return req.getResponse_format();
-            case "user": return req.getUser();
-            default: return null;
-        }
-    }
-
-    /**
      * Build custom validator
      */
-    private static Consumer<ImagesResponse> buildCustomValidator(List<Map<String, Object>> customValidations) {
+    private Consumer<ImagesResponse> buildCustomValidator(List<Map<String, Object>> customValidations) {
         if (customValidations == null || customValidations.isEmpty()) {
             return response -> {};
         }
@@ -432,37 +341,87 @@ public class ImagesHistoricalDataLoader {
         };
     }
 
+    // Field validation methods (keeping original logic)
+    private static boolean validateGenerationsFieldEquals(ImagesRequest req, String field, Object expectedValue) {
+        Object actualValue = getGenerationsFieldValue(req, field);
+        return Objects.equals(expectedValue, actualValue);
+    }
+
+    private static boolean validateEditsFieldEquals(ImagesEditRequest req, String field, Object expectedValue) {
+        Object actualValue = getEditsFieldValue(req, field);
+        return Objects.equals(expectedValue, actualValue);
+    }
+
+    private static boolean validateGenerationsFieldContains(ImagesRequest req, String field, List<String> containsValues) {
+        Object actualValue = getGenerationsFieldValue(req, field);
+        if (actualValue == null) return false;
+
+        String actualStr = actualValue.toString();
+        for (String containsValue : containsValues) {
+            if (!actualStr.contains(containsValue)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean validateEditsFieldContains(ImagesEditRequest req, String field, List<String> containsValues) {
+        Object actualValue = getEditsFieldValue(req, field);
+        if (actualValue == null) return false;
+
+        String actualStr = actualValue.toString();
+        for (String containsValue : containsValues) {
+            if (!actualStr.contains(containsValue)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static Object getGenerationsFieldValue(ImagesRequest req, String field) {
+        switch (field) {
+            case "model": return req.getModel();
+            case "prompt": return req.getPrompt();
+            case "n": return req.getN();
+            case "size": return req.getSize();
+            case "response_format": return req.getResponse_format();
+            case "quality": return req.getQuality();
+            case "style": return req.getStyle();
+            case "user": return req.getUser();
+            default: return null;
+        }
+    }
+
+    private static Object getEditsFieldValue(ImagesEditRequest req, String field) {
+        switch (field) {
+            case "model": return req.getModel();
+            case "image": return req.getImage_b64_json();
+            case "mask": return null;
+            case "prompt": return req.getPrompt();
+            case "n": return req.getN();
+            case "size": return req.getSize();
+            case "response_format": return req.getResponse_format();
+            case "user": return req.getUser();
+            default: return null;
+        }
+    }
+
     /**
      * Image-related historical request data structure
      */
     @Setter
-	@Getter
-	public static class ImagesHistoricalData {
-        private List<RequestScenario> generationsRequests;
-        private List<RequestScenario> editsRequests;
-
-		@Setter
-		@Getter
-		public static class RequestScenario {
-			// Getters and Setters
-			private String scenarioName;
-            private String description;
-            private Map<String, Object> request;
-            private Map<String, Object> expectedResponse;
-            private Map<String, Object> mockChannel;
-            private List<Map<String, Object>> parameterValidations;
-            private List<Map<String, Object>> customValidations;
-
-		}
+    @Getter
+    public static class ImagesHistoricalData {
+        private List<BaseHistoricalDataLoader.RequestScenario> generationsRequests;
+        private List<BaseHistoricalDataLoader.RequestScenario> editsRequests;
     }
 
     /**
      * Image generation test case
      */
     @Getter
-	public static class GenerationsTestCase {
-		// Getters
-		private final String scenarioName;
+    public static class GenerationsTestCase implements BaseHistoricalDataLoader.BaseTestCase<ImagesRequest, ImagesResponse> {
+        private final String scenarioName;
         private final String description;
         private final ImagesRequest request;
         private final ImagesResponse expectedResponse;
@@ -483,16 +442,14 @@ public class ImagesHistoricalDataLoader {
             this.parameterValidator = parameterValidator;
             this.customValidator = customValidator;
         }
-
-	}
+    }
 
     /**
      * Image editing test case
      */
     @Getter
-	public static class EditsTestCase {
-		// Getters
-		private final String scenarioName;
+    public static class EditsTestCase implements BaseHistoricalDataLoader.BaseTestCase<ImagesEditRequest, ImagesResponse> {
+        private final String scenarioName;
         private final String description;
         private final ImagesEditRequest request;
         private final ImagesResponse expectedResponse;
@@ -513,6 +470,5 @@ public class ImagesHistoricalDataLoader {
             this.parameterValidator = parameterValidator;
             this.customValidator = customValidator;
         }
-
-	}
+    }
 }

@@ -13,6 +13,7 @@ import com.ke.bella.openapi.protocol.limiter.LimiterManager;
 import com.ke.bella.openapi.EndpointContext;
 import com.ke.bella.openapi.BellaContext;
 import com.ke.bella.openapi.apikey.ApikeyInfo;
+import com.ke.bella.openapi.endpoints.testdata.ImagesHistoricalDataLoader;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
