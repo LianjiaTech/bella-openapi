@@ -52,19 +52,26 @@ public class OpenAIAdaptor implements ImagesGeneratorAdaptor<ImagesProperty> {
      */
     private Object buildRequestBody(ImagesRequest request) {
         Map<String, Object> extraBody = request.getExtra_body();
+        Object realExtraBody = request.getRealExtraBody();
 
-        if (extraBody == null || extraBody.isEmpty()) {
+        if ((extraBody == null || extraBody.isEmpty()) && realExtraBody == null) {
             return request;
         }
 
-        // 将 request 对象转换为 Map
         @SuppressWarnings("unchecked")
         Map<String, Object> requestMap = JacksonUtils.toMap(request);
 
         if (requestMap != null) {
             requestMap.remove("extra_body");
+            requestMap.remove("realExtraBody");
 
-            requestMap.putAll(extraBody);
+            if (extraBody != null && !extraBody.isEmpty()) {
+                requestMap.putAll(extraBody);
+            }
+
+            if (realExtraBody != null) {
+                requestMap.put("extra_body", realExtraBody);
+            }
         }
         
         return requestMap;

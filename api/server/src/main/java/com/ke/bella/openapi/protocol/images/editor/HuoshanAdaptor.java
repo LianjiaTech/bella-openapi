@@ -79,6 +79,11 @@ public class HuoshanAdaptor implements ImagesEditorAdaptor<ImagesEditorProperty>
 			requestMap.putAll(extraBody);
 		}
 
+		Object realExtraBody = request.getRealExtraBody();
+		if (realExtraBody != null) {
+			requestMap.put("extra_body", realExtraBody);
+		}
+
 		Request.Builder requestBuilder = authorizationRequestBuilder(property.getAuth());
 		requestBuilder.url(url)
 			.post(RequestBody.create(MediaType.get("application/json; charset=utf-8"),
