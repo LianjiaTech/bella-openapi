@@ -10,7 +10,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.Collection;
 
 /**
  * OpenAI图片编辑适配器
@@ -50,38 +49,12 @@ public class OpenAIAdaptor implements ImagesEditorAdaptor<ImagesEditorProperty> 
         // 根据数据类型添加图片数据
         switch (dataType) {
             case FILE:
-                Object imageObj = request.getImage();
-                if (imageObj != null) {
-                    if (imageObj instanceof MultipartFile) {
-                        // 单张图片 - 下发单个文件
-                        MultipartFile imageFile = (MultipartFile) imageObj;
+                MultipartFile[] imageFiles = (MultipartFile[]) request.getImage();
+                if (imageFiles != null) {
+                    for (MultipartFile imageFile : imageFiles) {
                         if (!imageFile.isEmpty()) {
                             multipartBuilder.addFormDataPart("image", imageFile.getOriginalFilename(),
                                 RequestBody.create(MediaType.parse("image/png"), imageFile.getBytes()));
-                        }
-                    } else if (imageObj instanceof Collection) {
-                        // 处理Collection类型（如LinkedList）
-                        Collection<?> imageCollection = (Collection<?>) imageObj;
-                        for (Object obj : imageCollection) {
-                            if (obj instanceof MultipartFile) {
-                                MultipartFile imageFile = (MultipartFile) obj;
-                                if (!imageFile.isEmpty()) {
-                                    multipartBuilder.addFormDataPart("image", imageFile.getOriginalFilename(),
-                                        RequestBody.create(MediaType.parse("image/png"), imageFile.getBytes()));
-                                }
-                            }
-                        }
-                    } else if (imageObj.getClass().isArray()) {
-                        // 处理数组类型（如StandardMultipartFile[]）
-                        Object[] objArray = (Object[]) imageObj;
-                        for (Object obj : objArray) {
-                            if (obj instanceof MultipartFile) {
-                                MultipartFile imageFile = (MultipartFile) obj;
-                                if (!imageFile.isEmpty()) {
-                                    multipartBuilder.addFormDataPart("image", imageFile.getOriginalFilename(),
-                                        RequestBody.create(MediaType.parse("image/png"), imageFile.getBytes()));
-                                }
-                            }
                         }
                     }
                 }

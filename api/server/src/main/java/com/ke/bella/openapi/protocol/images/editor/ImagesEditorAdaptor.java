@@ -10,7 +10,6 @@ import com.ke.bella.openapi.protocol.images.ImageDataType;
 
 import java.io.IOException;
 import java.util.Base64;
-import java.util.Collection;
 
 /**
  * 图片编辑适配器接口
@@ -55,100 +54,28 @@ public interface ImagesEditorAdaptor<T extends ImagesEditorProperty> extends IPr
 		}
 
 
-		// 处理image字段，支持单张(MultipartFile)和多张(MultipartFile[])
-		Object imageObj = request.getImage();
-		if (imageObj != null) {
-			if (imageObj instanceof MultipartFile) {
-				// 单张图片
-				MultipartFile singleFile = (MultipartFile) imageObj;
-				if (!singleFile.isEmpty()) {
-					if (property.isSupportFile()) {
-						return ImageDataType.FILE;
-					} else if (property.isSupportBase64()) {
-						// 单张图片转base64
-						byte[] imageBytes = singleFile.getBytes();
+		MultipartFile[] imageFiles = (MultipartFile[]) request.getImage();
+		if (imageFiles != null && imageFiles.length > 0 && !imageFiles[0].isEmpty()) {
+			if (property.isSupportFile()) {
+				return ImageDataType.FILE;
+			} else if (property.isSupportBase64()) {
+				// 将所有文件转换为base64
+				String[] base64Images = new String[imageFiles.length];
+				for (int i = 0; i < imageFiles.length; i++) {
+					MultipartFile imageFile = imageFiles[i];
+					if (!imageFile.isEmpty()) {
+						byte[] imageBytes = imageFile.getBytes();
 						String base64Image = Base64.getEncoder().encodeToString(imageBytes);
-						String contentType = singleFile.getContentType();
+						String contentType = imageFile.getContentType();
 						String imageFormat = "png";
 						if (contentType != null && contentType.startsWith("image/")) {
 							imageFormat = contentType.substring("image/".length());
 						}
-						String base64WithPrefix = String.format("data:image/%s;base64,%s", imageFormat, base64Image);
-						request.setImage_b64_json(new String[]{base64WithPrefix});
-						return ImageDataType.BASE64;
+						base64Images[i] = String.format("data:image/%s;base64,%s", imageFormat, base64Image);
 					}
 				}
-			} else if (imageObj instanceof Collection) {
-				// 处理Collection类型（如LinkedList）
-				Collection<?> imageCollection = (Collection<?>) imageObj;
-				if (!imageCollection.isEmpty()) {
-					// 检查第一个元素是否为MultipartFile类型
-					Object firstObj = imageCollection.iterator().next();
-					if (firstObj instanceof MultipartFile) {
-						MultipartFile firstFile = (MultipartFile) firstObj;
-						if (!firstFile.isEmpty()) {
-							if (property.isSupportFile()) {
-								return ImageDataType.FILE;
-							} else if (property.isSupportBase64()) {
-								// 将所有文件转换为 base64
-								String[] base64Images = new String[imageCollection.size()];
-								int index = 0;
-								for (Object obj : imageCollection) {
-									if (obj instanceof MultipartFile) {
-										MultipartFile imageFile = (MultipartFile) obj;
-										if (!imageFile.isEmpty()) {
-											byte[] imageBytes = imageFile.getBytes();
-											String base64Image = Base64.getEncoder().encodeToString(imageBytes);
-											String contentType = imageFile.getContentType();
-											String imageFormat = "png";
-											if (contentType != null && contentType.startsWith("image/")) {
-												imageFormat = contentType.substring("image/".length());
-											}
-											base64Images[index] = String.format("data:image/%s;base64,%s", imageFormat, base64Image);
-										}
-									}
-									index++;
-								}
-								request.setImage_b64_json(base64Images);
-								return ImageDataType.BASE64;
-							}
-						}
-					}
-				}
-			} else if (imageObj.getClass().isArray()) {
-				// 处理数组类型（包括StandardMultipartFile[]等实现类）
-				Object[] objArray = (Object[]) imageObj;
-				if (objArray.length > 0) {
-					// 检查第一个元素是否为MultipartFile类型
-					if (objArray[0] instanceof MultipartFile) {
-						MultipartFile firstFile = (MultipartFile) objArray[0];
-						if (!firstFile.isEmpty()) {
-							if (property.isSupportFile()) {
-								return ImageDataType.FILE;
-							} else if (property.isSupportBase64()) {
-								// 将所有文件转换为 base64
-								String[] base64Images = new String[objArray.length];
-								for (int i = 0; i < objArray.length; i++) {
-									if (objArray[i] instanceof MultipartFile) {
-										MultipartFile imageFile = (MultipartFile) objArray[i];
-										if (!imageFile.isEmpty()) {
-											byte[] imageBytes = imageFile.getBytes();
-											String base64Image = Base64.getEncoder().encodeToString(imageBytes);
-											String contentType = imageFile.getContentType();
-											String imageFormat = "png";
-											if (contentType != null && contentType.startsWith("image/")) {
-												imageFormat = contentType.substring("image/".length());
-											}
-											base64Images[i] = String.format("data:image/%s;base64,%s", imageFormat, base64Image);
-										}
-									}
-								}
-								request.setImage_b64_json(base64Images);
-								return ImageDataType.BASE64;
-							}
-						}
-					}
-				}
+				request.setImage_b64_json(base64Images);
+				return ImageDataType.BASE64;
 			}
 		}
 
