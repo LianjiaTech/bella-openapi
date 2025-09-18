@@ -34,7 +34,11 @@ public class ImageConverter {
             }
         }
 
-        return Base64.getDecoder().decode(cleanBase64);
+        try {
+            return Base64.getDecoder().decode(cleanBase64);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid Base64 format: " + e.getMessage(), e);
+        }
     }
 
     public byte[] convertFileIdToBinary(String fileId) {
