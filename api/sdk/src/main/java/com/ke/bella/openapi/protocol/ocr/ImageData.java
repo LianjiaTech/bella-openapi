@@ -6,9 +6,9 @@ import lombok.Data;
 @Data
 @Builder
 public class ImageData {
-	private String imageBase64;
-	private String imageUrl;
-	private String fileId;
-	private byte[] imageBinary;
-	private ImageDataType imageType;
+    private String imageBase64;
+    private String imageUrl;
+    private String fileId;
+    private byte[] imageBinary;
+    private ImageDataType imageType;
 }
