@@ -75,7 +75,7 @@ public class BaiduOcrAdaptor implements OcrIdcardAdaptor<BaiduOcrProperty> {
             return convertBaiduResponse(baiduResponse, request);
         } catch (Exception e) {
             log.error("百度OCR识别失败", e);
-            return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR.toString(), "百度OCR识别失败: " + e.getMessage());
+            return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR.toString(), "百度OCR识别失败: " + e.getMessage(), null);
         }
     }
 
@@ -214,10 +214,10 @@ public class BaiduOcrAdaptor implements OcrIdcardAdaptor<BaiduOcrProperty> {
      */
     private OcrIdcardResponse convertBaiduResponse(JSONObject baiduResponse, OcrIdcardRequest originalRequest) {
         if(baiduResponse.has(ERROR_CODE_FIELD) && !ERROR_CODE_SUCCESS.equals(baiduResponse.getString(ERROR_CODE_FIELD))) {
-            return buildErrorResponse(baiduResponse.getString(ERROR_CODE_FIELD), baiduResponse.getString(ERROR_MSG_FIELD));
+            return buildErrorResponse(baiduResponse.getString(ERROR_CODE_FIELD), baiduResponse.getString(ERROR_MSG_FIELD), baiduResponse);
         }
         OcrIdcardResponse response = new OcrIdcardResponse();
-        response.setRequest_id(generateRequestId());
+        response.setRequest_id(String.valueOf(baiduResponse.getLong("log_id")));
         String imageStatus = baiduResponse.getString(IMAGE_STATUS_FIELD);
 
         // 根据输入参数和image_status推断实际的身份证面
@@ -348,9 +348,9 @@ public class BaiduOcrAdaptor implements OcrIdcardAdaptor<BaiduOcrProperty> {
     /**
      * 构建错误响应
      */
-    private OcrIdcardResponse buildErrorResponse(String errorCode, String errorMsg) {
+    private OcrIdcardResponse buildErrorResponse(String errorCode, String errorMsg, JSONObject baiduResponse) {
         OcrIdcardResponse response = new OcrIdcardResponse();
-        response.setRequest_id(generateRequestId());
+        response.setRequest_id(baiduResponse == null ? generateRequestId() : String.valueOf(baiduResponse.getLong("log_id")));
 
         OpenapiResponse.OpenapiError error = OpenapiResponse.OpenapiError.builder()
                 .code(errorCode)
