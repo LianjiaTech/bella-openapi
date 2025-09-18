@@ -1,11 +1,11 @@
 package com.ke.bella.openapi.protocol.ocr;
 
+import javax.validation.constraints.NotBlank;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-
-import javax.validation.constraints.NotBlank;
 
 /**
  * 百度OCR配置属性
@@ -18,10 +18,10 @@ public class BaiduOcrProperty extends OcrProperty {
     // 百度AI平台认证信息
     @NotBlank(message = "百度OCR AppId不能为空")
     private String appId;           // App ID
-    
+
     @NotBlank(message = "百度OCR ApiKey不能为空")
     private String apiKey;          // API Key
-    
+
     @NotBlank(message = "百度OCR SecretKey不能为空")
     private String secretKey;       // Secret Key
 
