@@ -1,5 +1,7 @@
 package com.ke.bella.openapi.protocol.ocr;
 
+import java.util.Map;
+
 import javax.validation.constraints.NotBlank;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -38,4 +40,21 @@ public class BaiduOcrProperty extends OcrProperty {
     private Boolean detectRisk = false;         // 是否开启身份证风险检测
     private Boolean detectPhoto = false;        // 是否检测头像内容
     private Boolean detectCard = false;         // 是否检测身份证进行裁剪
+
+    @Override
+    public Map<String, String> description() {
+        Map<String, String> map = super.description();
+        map.put("appId", "百度OCR应用ID");
+        map.put("apiKey", "百度OCR API密钥");
+        map.put("secretKey", "百度OCR Secret密钥");
+        map.put("connectionTimeoutMillis", "连接超时时间(毫秒)");
+        map.put("socketTimeoutMillis", "读取超时时间(毫秒)");
+        map.put("proxyHost", "代理服务器地址");
+        map.put("proxyPort", "代理服务器端口");
+        map.put("detectDirection", "是否检测图像朝向");
+        map.put("detectRisk", "是否开启身份证风险检测");
+        map.put("detectPhoto", "是否检测头像内容");
+        map.put("detectCard", "是否检测身份证进行裁剪");
+        return map;
+    }
 }
