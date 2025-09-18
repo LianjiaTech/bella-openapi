@@ -28,6 +28,28 @@ import lombok.extern.slf4j.Slf4j;
 @Component("baiduOcr")
 public class BaiduOcrAdaptor implements OcrIdcardAdaptor<BaiduOcrProperty> {
 
+    private static final String FRONT_SIDE = "front";
+    private static final String IMAGE_STATUS_NORMAL = "normal";
+    private static final String IMAGE_STATUS_REVERSED = "reversed_side";
+    private static final String ERROR_CODE_FIELD = "error_code";
+    private static final String ERROR_MSG_FIELD = "error_msg";
+    private static final String ERROR_CODE_SUCCESS = "0";
+    private static final String IMAGE_STATUS_FIELD = "image_status";
+    private static final String WORDS_RESULT_FIELD = "words_result";
+    private static final String WORDS_FIELD = "words";
+    private static final String BAIDU_OCR_ERROR_TYPE = "BAIDU_OCR_ERROR";
+
+    // 身份证字段常量
+    private static final String FIELD_NAME = "姓名";
+    private static final String FIELD_SEX = "性别";
+    private static final String FIELD_NATIONALITY = "民族";
+    private static final String FIELD_ID_NUMBER = "公民身份号码";
+    private static final String FIELD_ADDRESS = "住址";
+    private static final String FIELD_BIRTH_DATE = "出生";
+    private static final String FIELD_ISSUE_AUTHORITY = "签发机关";
+    private static final String FIELD_ISSUE_DATE = "签发日期";
+    private static final String FIELD_EXPIRE_DATE = "失效日期";
+
     @Autowired
     private FileApiProperties fileApiProperties;
 
@@ -73,7 +95,8 @@ public class BaiduOcrAdaptor implements OcrIdcardAdaptor<BaiduOcrProperty> {
      * 执行OCR识别
      */
     private JSONObject performOcrRecognition(OcrIdcardRequest request, AipOcr client, HashMap<String, String> options) {
-        String idCardSide = extractIdCardSide(request);
+        // 统一使用front参数，百度会通过image_status返回实际的正反面信息
+        String idCardSide = getIdCardSideForBaiduApi(request);
 
         if(StringUtils.hasText(request.getImageUrl())) {
             return client.idcardUrl(request.getImageUrl(), idCardSide, options);
@@ -175,23 +198,27 @@ public class BaiduOcrAdaptor implements OcrIdcardAdaptor<BaiduOcrProperty> {
     }
 
     /**
-     * 从model字段中提取身份证面信息，默认正面
+     * 获取身份证面参数
+     * 注意：由于无法从请求中判断用户上传的是正面还是反面，
+     * 这里统一使用"front"，让百度API自动检测实际的正反面，
+     * 然后通过返回的image_status字段来确定实际面信息
      */
-    private String extractIdCardSide(OcrIdcardRequest request) {
-        // 默认为正面
-        return "front";
+    @SuppressWarnings("unused")
+    private String getIdCardSideForBaiduApi(OcrIdcardRequest request) {
+        // 百度API会自动检测正反面，统一传入front参数
+        return FRONT_SIDE;
     }
 
     /**
      * 转换百度响应为统一格式
      */
     private OcrIdcardResponse convertBaiduResponse(JSONObject baiduResponse, OcrIdcardRequest originalRequest) {
-        if(baiduResponse.has("error_code") && baiduResponse.get("error_code") != "0") {
-            return buildErrorResponse(baiduResponse.getString("error_code"), baiduResponse.getString("error_msg"));
+        if(baiduResponse.has(ERROR_CODE_FIELD) && !ERROR_CODE_SUCCESS.equals(baiduResponse.getString(ERROR_CODE_FIELD))) {
+            return buildErrorResponse(baiduResponse.getString(ERROR_CODE_FIELD), baiduResponse.getString(ERROR_MSG_FIELD));
         }
         OcrIdcardResponse response = new OcrIdcardResponse();
         response.setRequest_id(generateRequestId());
-        String imageStatus = baiduResponse.getString("image_status");
+        String imageStatus = baiduResponse.getString(IMAGE_STATUS_FIELD);
 
         // 根据输入参数和image_status推断实际的身份证面
         OcrIdcardResponse.IdCardSide actualSide = determineActualSide(originalRequest, imageStatus);
@@ -208,20 +235,20 @@ public class BaiduOcrAdaptor implements OcrIdcardAdaptor<BaiduOcrProperty> {
     }
 
     private OcrIdcardResponse.IdCardSide determineActualSide(OcrIdcardRequest originalRequest, String imageStatus) {
-        String expectedSide = extractIdCardSide(originalRequest);
+        String expectedSide = getIdCardSideForBaiduApi(originalRequest);
 
         // 如果image_status为normal，说明图片面和期望一致
-        if("normal".equals(imageStatus)) {
-            return "front".equals(expectedSide) ? OcrIdcardResponse.IdCardSide.PORTRAIT : OcrIdcardResponse.IdCardSide.NATIONAL_EMBLEM;
+        if(IMAGE_STATUS_NORMAL.equals(imageStatus)) {
+            return FRONT_SIDE.equals(expectedSide) ? OcrIdcardResponse.IdCardSide.PORTRAIT : OcrIdcardResponse.IdCardSide.NATIONAL_EMBLEM;
         }
 
         // 如果image_status为reversed_side，说明图片面和期望相反
-        if("reversed_side".equals(imageStatus)) {
-            return "front".equals(expectedSide) ? OcrIdcardResponse.IdCardSide.NATIONAL_EMBLEM : OcrIdcardResponse.IdCardSide.PORTRAIT;
+        if(IMAGE_STATUS_REVERSED.equals(imageStatus)) {
+            return FRONT_SIDE.equals(expectedSide) ? OcrIdcardResponse.IdCardSide.NATIONAL_EMBLEM : OcrIdcardResponse.IdCardSide.PORTRAIT;
         }
 
         // 默认情况下，按照期望的面返回
-        return "front".equals(expectedSide) ? OcrIdcardResponse.IdCardSide.PORTRAIT : OcrIdcardResponse.IdCardSide.NATIONAL_EMBLEM;
+        return FRONT_SIDE.equals(expectedSide) ? OcrIdcardResponse.IdCardSide.PORTRAIT : OcrIdcardResponse.IdCardSide.NATIONAL_EMBLEM;
     }
 
     /**
@@ -230,16 +257,16 @@ public class BaiduOcrAdaptor implements OcrIdcardAdaptor<BaiduOcrProperty> {
     private OcrIdcardResponse.PortraitData extractPortraitData(JSONObject baiduResponse) {
         OcrIdcardResponse.PortraitData data = new OcrIdcardResponse.PortraitData();
 
-        if(baiduResponse.has("words_result")) {
-            JSONObject wordsResult = baiduResponse.getJSONObject("words_result");
+        if(baiduResponse.has(WORDS_RESULT_FIELD)) {
+            JSONObject wordsResult = baiduResponse.getJSONObject(WORDS_RESULT_FIELD);
 
             // 提取各字段
-            data.setName(extractFieldValue(wordsResult, "姓名"));
-            data.setSex(extractFieldValue(wordsResult, "性别"));
-            data.setNationality(extractFieldValue(wordsResult, "民族"));
-            data.setIdcard_number(extractFieldValue(wordsResult, "公民身份号码"));
-            data.setAddress(extractFieldValue(wordsResult, "住址"));
-            data.setBirth_date(formatBirthDate(extractFieldValue(wordsResult, "出生")));
+            data.setName(extractFieldValue(wordsResult, FIELD_NAME));
+            data.setSex(extractFieldValue(wordsResult, FIELD_SEX));
+            data.setNationality(extractFieldValue(wordsResult, FIELD_NATIONALITY));
+            data.setIdcard_number(extractFieldValue(wordsResult, FIELD_ID_NUMBER));
+            data.setAddress(extractFieldValue(wordsResult, FIELD_ADDRESS));
+            data.setBirth_date(formatBirthDate(extractFieldValue(wordsResult, FIELD_BIRTH_DATE)));
         }
 
         return data;
@@ -251,13 +278,13 @@ public class BaiduOcrAdaptor implements OcrIdcardAdaptor<BaiduOcrProperty> {
     private OcrIdcardResponse.NationalEmblemData extractNationalEmblemData(JSONObject baiduResponse) {
         OcrIdcardResponse.NationalEmblemData data = new OcrIdcardResponse.NationalEmblemData();
 
-        if(baiduResponse.has("words_result")) {
-            JSONObject wordsResult = baiduResponse.getJSONObject("words_result");
+        if(baiduResponse.has(WORDS_RESULT_FIELD)) {
+            JSONObject wordsResult = baiduResponse.getJSONObject(WORDS_RESULT_FIELD);
 
             // 提取各字段
-            data.setIssue_authority(extractFieldValue(wordsResult, "签发机关"));
-            data.setValid_date_start(formatValidDate(extractFieldValue(wordsResult, "签发日期")));
-            data.setValid_date_end(formatValidDate(extractFieldValue(wordsResult, "失效日期")));
+            data.setIssue_authority(extractFieldValue(wordsResult, FIELD_ISSUE_AUTHORITY));
+            data.setValid_date_start(formatValidDate(extractFieldValue(wordsResult, FIELD_ISSUE_DATE)));
+            data.setValid_date_end(formatValidDate(extractFieldValue(wordsResult, FIELD_EXPIRE_DATE)));
         }
 
         return data;
@@ -269,7 +296,7 @@ public class BaiduOcrAdaptor implements OcrIdcardAdaptor<BaiduOcrProperty> {
     private String extractFieldValue(JSONObject wordsResult, String fieldName) {
         if(wordsResult.has(fieldName)) {
             JSONObject fieldObj = wordsResult.getJSONObject(fieldName);
-            return fieldObj.optString("words", "");
+            return fieldObj.optString(WORDS_FIELD, "");
         }
         return "";
     }
@@ -328,7 +355,7 @@ public class BaiduOcrAdaptor implements OcrIdcardAdaptor<BaiduOcrProperty> {
         OpenapiResponse.OpenapiError error = OpenapiResponse.OpenapiError.builder()
                 .code(errorCode)
                 .message(errorMsg)
-                .type("BAIDU_OCR_ERROR")
+                .type(BAIDU_OCR_ERROR_TYPE)
                 .httpCode(400)
                 .build();
         response.setError(error);
@@ -340,6 +367,6 @@ public class BaiduOcrAdaptor implements OcrIdcardAdaptor<BaiduOcrProperty> {
      * 生成请求ID
      */
     private String generateRequestId() {
-        return System.currentTimeMillis() + "," + UUID.randomUUID().toString();
+        return System.currentTimeMillis() + "," + UUID.randomUUID();
     }
 }
