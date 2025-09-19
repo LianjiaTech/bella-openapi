@@ -122,7 +122,7 @@ export default function ChatCompletions() {
       if (mimeType.startsWith('image/')) {
         images.push({ mimeType, base64Data });
         // 在文本中用占位符替换图像
-        textContent = textContent.replace(fullMatch, '[图像]');
+        textContent = textContent.replace(fullMatch, '');
       }
     }
     
@@ -147,7 +147,7 @@ export default function ChatCompletions() {
       if (mimeType.startsWith('image/')) {
         images.push({ mimeType, base64Data });
         // 在文本中用占位符替换图像
-        textContent = textContent.replace(fullMatch, '[图像]');
+        textContent = textContent.replace(fullMatch, '');
       }
     }
     
