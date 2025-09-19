@@ -5,8 +5,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import com.ke.bella.openapi.intercept.AuthorizationInterceptor;
-import com.ke.bella.openapi.intercept.ImagesEditRequestResolver;
-import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -65,11 +63,4 @@ public class WebConfig implements WebMvcConfigurer {
         return new ConcurrentStartInterceptor();
     }
 
-	@Autowired
-	private ImagesEditRequestResolver imagesEditRequestResolver;
-
-	@Override
-	public void addArgumentResolvers(List<HandlerMethodArgumentResolver> resolvers) {
-		resolvers.add(imagesEditRequestResolver);
-    }
 }

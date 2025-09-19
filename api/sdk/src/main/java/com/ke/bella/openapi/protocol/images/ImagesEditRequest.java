@@ -33,7 +33,7 @@ public class ImagesEditRequest implements UserRequest, Serializable {
      */
     @Nullable
     @JsonIgnore
-    private Object image;
+    private MultipartFile[] image;
     
     /**
      * 一个额外的图片，其完全透明的区域（例如alpha为零的地方）指示应该编辑图片的位置。
