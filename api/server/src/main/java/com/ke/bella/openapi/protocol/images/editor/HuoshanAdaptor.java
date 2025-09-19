@@ -52,10 +52,16 @@ public class HuoshanAdaptor implements ImagesEditorAdaptor<ImagesEditorProperty>
 
 		switch (dataType) {
 			case BASE64:
-				requestMap.put("image", request.getImage_b64_json());
+				String[] base64Images = request.getImage_b64_json();
+				if (base64Images != null && base64Images.length > 0) {
+					requestMap.put("image", base64Images);
+				}
 				break;
 			case URL:
-				requestMap.put("image", request.getImage_url());
+				String[] imageUrls = request.getImage_url();
+				if (imageUrls != null && imageUrls.length > 0) {
+					requestMap.put("image", imageUrls);
+				}
 				break;
 			case FILE:
 				throw new IllegalStateException("火山方舟不支持直接文件上传");
@@ -67,6 +73,17 @@ public class HuoshanAdaptor implements ImagesEditorAdaptor<ImagesEditorProperty>
 		if (request.getSize() != null) {
 			requestMap.put("size", request.getSize());
 		}
+		
+		Map<String, Object> extraBody = request.getExtra_body();
+		if (extraBody != null && !extraBody.isEmpty()) {
+			requestMap.putAll(extraBody);
+		}
+
+		Object realExtraBody = request.getRealExtraBody();
+		if (realExtraBody != null) {
+			requestMap.put("extra_body", realExtraBody);
+		}
+
 		Request.Builder requestBuilder = authorizationRequestBuilder(property.getAuth());
 		requestBuilder.url(url)
 			.post(RequestBody.create(MediaType.get("application/json; charset=utf-8"),
