@@ -76,14 +76,13 @@ public class OcrController {
 
         // 校验图片输入：三选一
         int imageInputCount = 0;
-        if(StringUtils.hasText(request.getImage_base64()))
+        if(StringUtils.hasText(request.getImageBase64()))
             imageInputCount++;
-        if(StringUtils.hasText(request.getImage_url()))
+        if(StringUtils.hasText(request.getImageUrl()))
             imageInputCount++;
-        if(StringUtils.hasText(request.getFile_id()))
+        if(StringUtils.hasText(request.getFileId()))
             imageInputCount++;
 
         Assert.isTrue(imageInputCount == 1, "image_base64、image_url、file_id必须三选一");
     }
-
 }
