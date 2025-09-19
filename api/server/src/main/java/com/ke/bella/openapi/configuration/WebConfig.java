@@ -62,5 +62,4 @@ public class WebConfig implements WebMvcConfigurer {
     public ConcurrentStartInterceptor concurrentStartInterceptor() {
         return new ConcurrentStartInterceptor();
     }
-
 }
