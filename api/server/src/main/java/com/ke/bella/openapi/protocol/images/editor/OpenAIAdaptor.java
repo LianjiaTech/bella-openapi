@@ -49,7 +49,7 @@ public class OpenAIAdaptor implements ImagesEditorAdaptor<ImagesEditorProperty> 
         // 根据数据类型添加图片数据
         switch (dataType) {
             case FILE:
-                MultipartFile[] imageFiles = (MultipartFile[]) request.getImage();
+                MultipartFile[] imageFiles = request.getImage();
                 if (imageFiles != null) {
                     for (MultipartFile imageFile : imageFiles) {
                         if (!imageFile.isEmpty()) {
@@ -61,21 +61,19 @@ public class OpenAIAdaptor implements ImagesEditorAdaptor<ImagesEditorProperty> 
                 break;
             case URL:
                 String[] imageUrls = request.getImage_url();
-                if (imageUrls != null && imageUrls.length > 0) {
+                if (imageUrls != null) {
                     // 添加所有图片URL
-                    for (int i = 0; i < imageUrls.length; i++) {
-                        String fieldName = imageUrls.length == 1 ? "image_url" : "image_url_" + i;
-                        multipartBuilder.addFormDataPart(fieldName, imageUrls[i]);
+                    for (String imageUrl : imageUrls) {
+                        multipartBuilder.addFormDataPart("image_url", imageUrl);
                     }
                 }
                 break;
             case BASE64:
                 String[] base64Images = request.getImage_b64_json();
-                if (base64Images != null && base64Images.length > 0) {
+                if (base64Images != null) {
                     // 添加所有base64图片
-                    for (int i = 0; i < base64Images.length; i++) {
-                        String fieldName = base64Images.length == 1 ? "image_b64_json" : "image_b64_json_" + i;
-                        multipartBuilder.addFormDataPart(fieldName, base64Images[i]);
+                    for (String base64Image : base64Images) {
+                        multipartBuilder.addFormDataPart("image_b64_json", base64Image);
                     }
                 }
                 break;

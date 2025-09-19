@@ -54,7 +54,7 @@ public interface ImagesEditorAdaptor<T extends ImagesEditorProperty> extends IPr
 		}
 
 
-		MultipartFile[] imageFiles = (MultipartFile[]) request.getImage();
+		MultipartFile[] imageFiles = request.getImage();
 		if (imageFiles != null && imageFiles.length > 0 && !imageFiles[0].isEmpty()) {
 			if (property.isSupportFile()) {
 				return ImageDataType.FILE;

@@ -393,7 +393,6 @@ export default function ChatCompletions() {
         }
         return messages;
       });
-      
       // 直接更新流式响应状态
       setStreamingResponse(prev => prev + processedContent);
     });
@@ -790,6 +789,7 @@ export default function ChatCompletions() {
                     );
                   });
                 })()}
+
 
                 <div ref={messagesEndRef} />
               </div>

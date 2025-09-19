@@ -76,9 +76,9 @@ export const ChatMessage = ({
               </span>
             )}
             {error && (
-              <span className="text-red-500">
-                {error}
-              </span>
+                <span className="text-red-500">
+                  {error}
+                </span>
             )}
           </div>
         </div>
