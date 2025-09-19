@@ -81,8 +81,8 @@ export default function ChatCompletions() {
 
   // 处理内联内容的函数
   function processInlineContent(content: string) {
-    // 匹配 <inline><data>...</data><mineType>...</mineType></inline> 格式
-    const regex = /<inline><data>(.*?)<\/data><mineType>(.*?)<\/mineType><\/inline>/g;
+    // 匹配 <inline><data>...</data><mimeType>...</mimeType></inline> 格式
+    const regex = /<inline><data>(.*?)<\/data><mimeType>(.*?)<\/mimeType><\/inline>/g;
     let result = content;
     let match;
     
@@ -108,7 +108,7 @@ export default function ChatCompletions() {
   function extractInlineImages(content: string): { text: string, images: Array<{mimeType: string, base64Data: string}> } {
     if (!content) return { text: '', images: [] };
     
-    const regex = /<inline><data>(.*?)<\/data><mineType>(.*?)<\/mineType><\/inline>/g;
+    const regex = /<inline><data>(.*?)<\/data><mimeType>(.*?)<\/mimeType><\/inline>/g;
     const images: Array<{mimeType: string, base64Data: string}> = [];
     let textContent = content;
     let match;
@@ -198,7 +198,7 @@ export default function ChatCompletions() {
     
     // 1. 清理原始内联数据格式
     cleanedContent = cleanedContent.replace(
-      /<inline><data>.*?<\/data><mineType>(.*?)<\/mineType><\/inline>/g, 
+      /<inline><data>.*?<\/data><mimeType>(.*?)<\/mimeType><\/inline>/g, 
       '[图像内容，MIME类型: $1]'
     );
     
@@ -642,7 +642,7 @@ export default function ChatCompletions() {
 
       // 在发送请求前，更新UI状态
       setMessages([...allCurrentMessages]);
-      
+
       // 发送请求
       await chatCompletionsWriterRef.current?.send(request);
     } catch (err) {
