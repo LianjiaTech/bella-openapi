@@ -356,7 +356,7 @@ public class VertexConverter {
                 if(Boolean.TRUE == part.getThought()) {
                     reasoning.append(part.getText());
                 } else {
-                    textContent.append(part.getText()).append("\n");
+                    textContent.append(part.getText());
                 }
             }
             
