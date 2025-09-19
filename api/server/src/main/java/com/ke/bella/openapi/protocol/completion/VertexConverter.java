@@ -380,9 +380,9 @@ public class VertexConverter {
                 textContent.append("<data>");
                 textContent.append(part.getInlineData().getData());
                 textContent.append("</data>");
-                textContent.append("<mineType>");
+                textContent.append("<mimeType>");
                 textContent.append(part.getInlineData().getMimeType());
-                textContent.append("</mineType>");
+                textContent.append("</mimeType>");
                 textContent.append("</inline>");
                 textContent.append("\n");
             }
