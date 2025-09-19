@@ -16,6 +16,9 @@ import com.ke.bella.openapi.protocol.asr.AudioTranscriptionRequest.AudioTranscri
 import com.ke.bella.openapi.protocol.asr.AudioTranscriptionRequest.AudioTranscriptionResultReq;
 import com.ke.bella.openapi.protocol.asr.AudioTranscriptionResponse.AudioTranscriptionResp;
 import com.ke.bella.openapi.protocol.asr.AudioTranscriptionResponse.AudioTranscriptionResultResp;
+import com.ke.bella.openapi.protocol.asr.diarization.SpeakerDiarizationResponse;
+import com.ke.bella.openapi.protocol.asr.diarization.SpeakerDiarizationAdaptor;
+import com.ke.bella.openapi.protocol.asr.diarization.SpeakerDiarizationProperty;
 import com.ke.bella.openapi.protocol.asr.flash.FlashAsrAdaptor;
 import com.ke.bella.openapi.protocol.asr.flash.FlashAsrResponse;
 import com.ke.bella.openapi.protocol.limiter.LimiterManager;
@@ -292,6 +295,26 @@ public class AudioController {
         SpeakerEmbeddingProperty property = (SpeakerEmbeddingProperty) JacksonUtils.deserialize(channelInfo, adaptor.getPropertyClass());
         EndpointContext.setEncodingType(property.getEncodingType());
         return adaptor.speakerEmbedding(request, url, property);
+    }
+
+    @PostMapping("/speaker/diarization")
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public SpeakerDiarizationResponse speakerDiarization(@RequestBody AudioTranscriptionReq audioTranscriptionReq) {
+        String endpoint = EndpointContext.getRequest().getRequestURI();
+        String model = audioTranscriptionReq.getModel();
+        EndpointContext.setEndpointData(endpoint, model, audioTranscriptionReq);
+        EndpointProcessData processData = EndpointContext.getProcessData();
+        ChannelDB channel = router.route(endpoint, model, EndpointContext.getApikey(), processData.isMock());
+        EndpointContext.setEndpointData(channel);
+        if(!EndpointContext.getProcessData().isPrivate()) {
+            limiterManager.incrementConcurrentCount(EndpointContext.getProcessData().getAkCode(), model);
+        }
+        String protocol = processData.getProtocol();
+        String url = processData.getForwardUrl();
+        String channelInfo = channel.getChannelInfo();
+        SpeakerDiarizationAdaptor adaptor = adaptorManager.getProtocolAdaptor(endpoint, protocol, SpeakerDiarizationAdaptor.class);
+        SpeakerDiarizationProperty property = (SpeakerDiarizationProperty) JacksonUtils.deserialize(channelInfo, adaptor.getPropertyClass());
+        return adaptor.speakerDiarization(audioTranscriptionReq, url, property);
     }
 
 }
