@@ -1,5 +1,7 @@
 package com.ke.bella.openapi.protocol.cost;
 
+import com.ke.bella.openapi.protocol.asr.diarization.SpeakerDiarizationLogHandler;
+import com.ke.bella.openapi.protocol.asr.diarization.SpeakerDiarizationPriceInfo;
 import com.ke.bella.openapi.protocol.asr.flash.FlashAsrPriceInfo;
 import com.ke.bella.openapi.protocol.asr.transcription.TranscriptionsAsrPriceInfo;
 import com.ke.bella.openapi.protocol.completion.CompletionPriceInfo;
@@ -60,10 +62,11 @@ public class CostCalculator  {
         ASR_STREAM("/v*/audio/asr/stream", realtime),
         REAL_TIME("/v*/audio/realtime", realtime),
         ASR_TRANSCRIPTIONS("/v*/audio/transcriptions", asr_transcriptions),
+        SPEAKER_EMBEDDING("/v*/audio/speaker/embedding", speakerEmbedding),
+        SPEAKER_DIARIZATION("/v*/audio/speaker/diarization", speakerDiarization),
         IMAGES("/v*/images/generations", images),
         IMAGES_EDITS("/v*/images/edits", images_edits),
-        IMAGES_VARIATIONS("/v*/images/variations", images),
-        SPEAKER_EMBEDDING("/v*/audio/speaker/embedding", speakerEmbedding)
+        IMAGES_VARIATIONS("/v*/images/variations", images)
         ;
         final String endpoint;
         final EndpointCostCalculator calculator;
@@ -283,6 +286,37 @@ public class CostCalculator  {
         @Override
         public boolean checkPriceInfo(String priceInfo) {
             SpeakerEmbeddingPriceInfo priceConfig = JacksonUtils.deserialize(priceInfo, SpeakerEmbeddingPriceInfo.class);
+            return priceConfig != null && priceConfig.getPrice() != null && 
+                   priceConfig.getPrice().compareTo(BigDecimal.ZERO) >= 0;
+        }
+    };
+
+    static EndpointCostCalculator speakerDiarization = new EndpointCostCalculator() {
+        @Override
+        public BigDecimal calculate(String priceInfo, Object usage) {
+            SpeakerDiarizationPriceInfo priceConfig = JacksonUtils.deserialize(priceInfo, SpeakerDiarizationPriceInfo.class);
+            if (priceConfig.getPrice() == null) {
+                return BigDecimal.ZERO;
+            }
+            
+            // usage 就是 SpeakerDiarizationUsage 类型
+            if (usage instanceof SpeakerDiarizationLogHandler.SpeakerDiarizationUsage) {
+                SpeakerDiarizationLogHandler.SpeakerDiarizationUsage diarizationUsage = 
+                    (SpeakerDiarizationLogHandler.SpeakerDiarizationUsage) usage;
+                int audioDurationSeconds = diarizationUsage.getAudioDurationSeconds();
+                
+                // 基于音频时长计算成本：price（元/小时） × audioDurationHours（小时）
+                // 将秒转换为小时：audioDurationSeconds / 3600.0
+                double audioDurationHours = audioDurationSeconds / 3600.0;
+                return priceConfig.getPrice().multiply(BigDecimal.valueOf(audioDurationHours));
+            }
+            
+            return BigDecimal.ZERO;
+        }
+
+        @Override
+        public boolean checkPriceInfo(String priceInfo) {
+            SpeakerDiarizationPriceInfo priceConfig = JacksonUtils.deserialize(priceInfo, SpeakerDiarizationPriceInfo.class);
             return priceConfig != null && priceConfig.getPrice() != null && 
                    priceConfig.getPrice().compareTo(BigDecimal.ZERO) >= 0;
         }

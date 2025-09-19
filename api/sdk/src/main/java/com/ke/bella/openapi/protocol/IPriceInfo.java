@@ -1,6 +1,7 @@
 package com.ke.bella.openapi.protocol;
 
 import com.ke.bella.openapi.IDescription;
+import com.ke.bella.openapi.protocol.asr.diarization.SpeakerDiarizationPriceInfo;
 import com.ke.bella.openapi.protocol.asr.flash.FlashAsrPriceInfo;
 import com.ke.bella.openapi.protocol.asr.transcription.TranscriptionsAsrPriceInfo;
 import com.ke.bella.openapi.protocol.realtime.RealTimePriceInfo;
@@ -28,6 +29,7 @@ public interface IPriceInfo extends IDescription {
         REALTIME("/v1/audio/realtime", RealTimePriceInfo.class),
         TRANSCRIPTION_ASR("/v1/audio/transcriptions", TranscriptionsAsrPriceInfo.class),
         SPEAKER_EMBEDDING("/v1/audio/speaker/embedding", SpeakerEmbeddingPriceInfo.class),
+        SPEAKER_DIARIZATION("/v1/audio/speaker/diarization", SpeakerDiarizationPriceInfo.class),
         IMAGES("/v1/images/generations", ImagesPriceInfo.class),
         IMAGES_EDIT("/v1/images/edits", ImagesEditsPriceInfo.class),
         OCR_IDCARD("/v1/ocr/idcard", OcrPriceInfo.class)
