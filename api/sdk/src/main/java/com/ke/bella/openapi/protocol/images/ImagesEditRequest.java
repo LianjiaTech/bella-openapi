@@ -124,7 +124,6 @@ public class ImagesEditRequest implements UserRequest, Serializable {
 	/**
 	 * Handle unknown properties during deserialization and store them in extra_body
 	 */
-	@JsonAnySetter
 	public void setExtraBodyField(String key, Object value) {
 		if (extra_body == null) {
 			extra_body = new HashMap<>();
