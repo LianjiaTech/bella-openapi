@@ -1,5 +1,8 @@
 package com.ke.bella.openapi.protocol.images;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.ke.bella.openapi.protocol.UserRequest;
@@ -10,6 +13,8 @@ import lombok.experimental.SuperBuilder;
 import javax.annotation.Nullable;
 import javax.validation.constraints.NotBlank;
 import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
 
 @Data
 @SuperBuilder
@@ -104,4 +109,44 @@ public class ImagesRequest implements UserRequest, Serializable {
      * 火山协议：模型输出结果与prompt的一致程度，即生成图像的自由度；值越大，模型自由度越小，与用户输入的提示词相关性越强。取值范围：[1, 10] 之间的浮点数。
      */
     private Float guidance_scale;
+
+	@JsonIgnore
+	private Map<String, Object> extra_body;
+
+	/**
+	 * Specific extra body field, serialized as extra_body
+	 */
+	@JsonIgnore
+	private Object realExtraBody;
+
+	/**
+	 * Flatten extra_body fields to the outer JSON during serialization
+	 */
+	@JsonAnyGetter
+	public Map<String, Object> getExtraBodyFields() {
+		Map<String, Object> result = new HashMap<>();
+
+		// Add regular extra_body fields
+		if (extra_body != null) {
+			result.putAll(extra_body);
+		}
+
+		// Add realExtraBody as extra_body field
+		if (realExtraBody != null) {
+			result.put("extra_body", realExtraBody);
+		}
+
+		return result.isEmpty() ? null : result;
+	}
+
+	/**
+	 * Handle unknown properties during deserialization and store them in extra_body
+	 */
+	@JsonAnySetter
+	public void setExtraBodyField(String key, Object value) {
+		if (extra_body == null) {
+			extra_body = new HashMap<>();
+		}
+		extra_body.put(key, value);
+	}
 }
