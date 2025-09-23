@@ -49,17 +49,33 @@ public class OpenAIAdaptor implements ImagesEditorAdaptor<ImagesEditorProperty> 
         // 根据数据类型添加图片数据
         switch (dataType) {
             case FILE:
-                MultipartFile imageFile = request.getImage();
-                if (imageFile != null && !imageFile.isEmpty()) {
-                    multipartBuilder.addFormDataPart("image", imageFile.getOriginalFilename(),
-                        RequestBody.create(MediaType.parse("image/png"), imageFile.getBytes()));
+                MultipartFile[] imageFiles = request.getImage();
+                if (imageFiles != null) {
+                    for (MultipartFile imageFile : imageFiles) {
+                        if (!imageFile.isEmpty()) {
+                            multipartBuilder.addFormDataPart("image", imageFile.getOriginalFilename(),
+                                RequestBody.create(MediaType.parse("image/png"), imageFile.getBytes()));
+                        }
+                    }
                 }
                 break;
             case URL:
-                multipartBuilder.addFormDataPart("image_url", request.getImage_url());
+                String[] imageUrls = request.getImage_url();
+                if (imageUrls != null) {
+                    // 添加所有图片URL
+                    for (String imageUrl : imageUrls) {
+                        multipartBuilder.addFormDataPart("image_url", imageUrl);
+                    }
+                }
                 break;
             case BASE64:
-                multipartBuilder.addFormDataPart("image_b64_json", request.getImage_b64_json());
+                String[] base64Images = request.getImage_b64_json();
+                if (base64Images != null) {
+                    // 添加所有base64图片
+                    for (String base64Image : base64Images) {
+                        multipartBuilder.addFormDataPart("image_b64_json", base64Image);
+                    }
+                }
                 break;
         }
 

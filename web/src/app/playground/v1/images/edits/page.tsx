@@ -7,8 +7,17 @@ import { Textarea } from '@/components/ui/textarea';
 import { api_host } from '@/config';
 import { useUser } from "@/lib/context/user-context";
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Maximize2, Upload, X, Link, Image as ImageIcon } from 'lucide-react';
+import { Maximize2, Upload, X, Link, Image as ImageIcon, Trash2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
+interface ImageItem {
+  id: string;
+  file?: File;
+  url?: string;
+  preview: string;
+  isLoading?: boolean;
+  error?: string;
+}
 
 export default function ImageGenerationsPlayground() {
   const [model, setModel] = useState('');
@@ -19,9 +28,8 @@ export default function ImageGenerationsPlayground() {
   const { userInfo } = useUser();
   const [selectedTab, setSelectedTab] = useState('upload');
   
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [imageUrl, setImageUrl] = useState('');
+  const [images, setImages] = useState<ImageItem[]>([]);
+  const [urlInput, setUrlInput] = useState('');
   const [isUrlLoading, setIsUrlLoading] = useState(false);
   
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -36,51 +44,72 @@ export default function ImageGenerationsPlayground() {
     }
   }, []);
 
+  const generateId = () => Math.random().toString(36).substr(2, 9);
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
     
-    setImageFile(file);
+    files.forEach(file => {
+      const id = generateId();
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const dataUrl = event.target?.result as string;
+        setImages(prev => [...prev, {
+          id,
+          file,
+          preview: dataUrl
+        }]);
+      };
+      reader.readAsDataURL(file);
+    });
     
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const dataUrl = event.target?.result as string;
-      setImagePreview(dataUrl);
-      setImageUrl('');
-    };
-    reader.readAsDataURL(file);
+    // 清空文件输入
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
   
-  const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setImageUrl(e.target.value);
+  const removeImage = (id: string) => {
+    setImages(prev => prev.filter(img => img.id !== id));
   };
   
-  const clearImage = () => {
-    setImageFile(null);
-    setImagePreview(null);
+  const clearAllImages = () => {
+    setImages([]);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
   
   const fetchImageFromUrl = async () => {
-    if (!imageUrl.trim()) {
+    if (!urlInput.trim()) {
       setError('请输入有效的图片URL');
       return;
     }
     
     setIsUrlLoading(true);
     setError('');
+    
+    const id = generateId();
+    
+    // 添加加载状态的图片项
+    setImages(prev => [...prev, {
+      id,
+      url: urlInput,
+      preview: '',
+      isLoading: true
+    }]);
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30000);
+    
     try {
       const response = await fetch('/api/fetch-image', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ url: imageUrl }),
+        body: JSON.stringify({ url: urlInput }),
         signal: controller.signal
       });
       
@@ -93,27 +122,36 @@ export default function ImageGenerationsPlayground() {
       const data = await response.json();
       
       if (data.success) {
-        setImagePreview(data.imageData);
-        
         const base64Response = await fetch(data.imageData);
         const blob = await base64Response.blob();
         
-        const fileName = imageUrl.split('/').pop() || 'image.png';
+        const fileName = urlInput.split('/').pop() || 'image.png';
         const file = new File([blob], fileName, { type: blob.type });
         
-        setImageFile(file);
+        // 更新图片项
+        setImages(prev => prev.map(img => 
+          img.id === id 
+            ? { ...img, file, preview: data.imageData, isLoading: false }
+            : img
+        ));
+        
+        // 清空URL输入
+        setUrlInput('');
       } else {
         throw new Error(data.error || '获取图像失败');
       }
     } catch (err) {
       clearTimeout(timeoutId);
-      if (err instanceof DOMException && err.name === 'AbortError') {
-        setError('⚠️ 请求超时：无法获取图片。可能是服务器响应慢、URL无效或网络问题，请稍后重试或检查URL是否正确。');
-      } else {
-        setError(err instanceof Error ? err.message : '获取图像失败');
-      }
-      setImagePreview(null);
-      setImageFile(null);
+      const errorMessage = err instanceof DOMException && err.name === 'AbortError'
+        ? '⚠️ 请求超时：无法获取图片。可能是服务器响应慢、URL无效或网络问题，请稍后重试或检查URL是否正确。'
+        : err instanceof Error ? err.message : '获取图像失败';
+      
+      // 更新图片项的错误状态
+      setImages(prev => prev.map(img => 
+        img.id === id 
+          ? { ...img, isLoading: false, error: errorMessage }
+          : img
+      ));
     } finally {
       setIsUrlLoading(false);
     }
@@ -125,8 +163,21 @@ export default function ImageGenerationsPlayground() {
       return;
     }
     
-    if (!imageUrl && !imageFile) {
+    if (images.length === 0) {
       setError('请上传图片或提供图片URL');
+      return;
+    }
+    
+    const hasLoadingImages = images.some(img => img.isLoading);
+    if (hasLoadingImages) {
+      setError('请等待所有图片加载完成');
+      return;
+    }
+    
+    // 检查是否有错误的图片
+    const hasErrorImages = images.some(img => img.error);
+    if (hasErrorImages) {
+      setError('请移除加载失败的图片');
       return;
     }
     
@@ -142,13 +193,15 @@ export default function ImageGenerationsPlayground() {
       if (model) formData.append('model', model);
       if (userInfo?.userId) formData.append('user', userInfo.userId);
       
-      if (imageUrl) {
-        formData.append('image_url', imageUrl);
-      }
+      const imageFiles = images.filter(img => img.file);
+      imageFiles.forEach((image) => {
+        formData.append('image', image.file!);
+      });
       
-      if (imageFile) {
-        formData.append('image', imageFile);
-      }
+      const imageUrls = images.filter(img => img.url && !img.file).map(img => img.url!);
+      imageUrls.forEach((url) => {
+        formData.append('image_url', url);
+      });
       
       const result = await fetch(`${protocol}//${host}/v1/images/edits`, {
         method: 'POST',
@@ -176,13 +229,20 @@ export default function ImageGenerationsPlayground() {
       generateImages();
     }
   };
+
+  const handleUrlKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      fetchImageFromUrl();
+    }
+  };
   
   const hasValidInput = () => {
-    return prompt.trim() && ( imageUrl || imageFile );
+    return prompt.trim() && images.length > 0 && !images.some(img => img.isLoading || img.error);
   };
 
   return (
-    <div className="container mx-auto px-4 py-3 max-w-5xl h-screen flex flex-col">
+    <div className="container mx-auto px-4 py-3 max-w-6xl h-screen flex flex-col">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
         <h1 className="text-2xl font-bold">图像编辑</h1>
 
@@ -194,107 +254,193 @@ export default function ImageGenerationsPlayground() {
         </div>
       </div>
 
-      <div className="mb-4 h-[300px]">
-        <div className="flex flex-col md:flex-row gap-4 h-full">
-          <div className="w-full md:w-1/2 h-full">
+      <div className="mb-4 h-[350px]">
+        <div className="flex flex-col lg:flex-row gap-4 h-full">
+          <div className="w-full lg:w-2/3 h-full">
             <div className="border-2 border-gray-300 rounded-lg p-4 flex flex-col h-full">
               <Tabs value={selectedTab} onValueChange={setSelectedTab} className="h-full flex flex-col">
-                <TabsList className="grid grid-cols-2 mb-4">
-                  <TabsTrigger value="upload" className="flex items-center gap-1">
-                    <ImageIcon className="h-4 w-4" />
-                    <span>上传图片</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="url" className="flex items-center gap-1">
-                    <Link className="h-4 w-4" />
-                    <span>图片URL</span>
-                  </TabsTrigger>
-                </TabsList>
+                <div className="flex justify-between items-center mb-4">
+                  <TabsList className="grid grid-cols-2">
+                    <TabsTrigger value="upload" className="flex items-center gap-1">
+                      <ImageIcon className="h-4 w-4" />
+                      <span>上传图片</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="url" className="flex items-center gap-1">
+                      <Link className="h-4 w-4" />
+                      <span>图片URL</span>
+                    </TabsTrigger>
+                  </TabsList>
+                  
+                  {images.length > 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={clearAllImages}
+                      className="text-red-500 hover:text-red-600"
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      清空所有
+                    </Button>
+                  )}
+                </div>
                 
-                <div className="flex-grow flex flex-col">
-                  {imagePreview ? (
-                    <div className="w-full h-full flex flex-col">
-                      <div className="flex-grow flex items-center justify-center bg-gray-50 rounded-lg overflow-hidden relative" style={{ minHeight: "180px" }}>
-                        <div className="w-full h-full flex items-center justify-center p-2">
-                          <img 
-                            src={imagePreview} 
-                            alt="Preview" 
-                            className="object-contain max-h-[200px] max-w-full shadow-sm"
-                          />
-                        </div>
-                        
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={clearImage}
-                          className="absolute top-2 right-2 bg-white/80 text-red-500 hover:text-red-600 hover:bg-white"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      
-                    </div>
-                  ) : (
-                    <>
-                      <TabsContent value="upload" className="flex-grow flex flex-col">
-                        <div className="flex flex-col items-center justify-center h-full border-2 border-dashed border-gray-300 rounded-lg p-6">
-                          <Upload className="h-10 w-10 text-gray-400 mb-2" />
-                          <p className="text-sm text-gray-500 mb-4">上传图片</p>
+                <div className="flex-grow flex flex-col overflow-hidden">
+                  <TabsContent value="upload" className="flex-grow flex flex-col overflow-hidden">
+                    <div className="flex flex-col h-full">
+                      <div className="flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-4 mb-4">
+                        <div className="text-center">
+                          <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                          <p className="text-sm text-gray-500 mb-2">上传多张图片</p>
                           <label className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-4 rounded-md text-sm transition-colors">
                             选择图片
                             <input
                               ref={fileInputRef}
                               type="file"
                               accept="image/*"
+                              multiple
                               onChange={handleFileUpload}
                               className="hidden"
                             />
                           </label>
                         </div>
-                      </TabsContent>
+                      </div>
                       
-                      <TabsContent value="url" className="flex-grow">
-                        <div className="flex flex-col h-full">
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            输入图片URL
-                          </label>
-                          <div className="flex gap-2">
-                            <input
-                              type="text"
-                              placeholder="https://example.com/image.png"
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400"
-                              value={imageUrl}
-                              onChange={handleUrlChange}
-                            />
-                            <Button 
-                              onClick={fetchImageFromUrl}
-                              disabled={isUrlLoading || !imageUrl.trim()}
-                              className="whitespace-nowrap"
-                            >
-                              {isUrlLoading ? (
-                                <>
-                                  <div className="animate-spin mr-2 h-4 w-4 border-2 border-b-transparent border-white rounded-full"></div>
-                                  加载中
-                                </>
-                              ) : '确定'}
-                            </Button>
+                      {images.length > 0 && (
+                        <div className="flex-grow overflow-y-auto">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                            {images.map((image) => (
+                              <div key={image.id} className="relative group border rounded-lg overflow-hidden bg-white">
+                                {image.isLoading ? (
+                                  <div className="w-full h-24 flex items-center justify-center bg-gray-100">
+                                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900"></div>
+                                  </div>
+                                ) : image.error ? (
+                                  <div className="w-full h-24 flex items-center justify-center bg-red-50 p-2">
+                                    <p className="text-xs text-red-500 text-center break-words">{image.error}</p>
+                                  </div>
+                                ) : (
+                                  <div className="w-full h-24 overflow-hidden">
+                                    <img 
+                                      src={image.preview} 
+                                      alt="Preview" 
+                                      className="w-full h-full object-cover cursor-pointer hover:scale-110 transition-transform duration-200"
+                                      onClick={() => setSelectedImage(image.preview)}
+                                    />
+                                  </div>
+                                )}
+                                
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => removeImage(image.id)}
+                                  className="absolute top-1 right-1 bg-white/90 text-red-500 hover:text-red-600 hover:bg-white p-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            ))}
                           </div>
-                          
-                          <div className="mt-4 flex-grow flex flex-col">
-                            <div className="mt-2 p-3 bg-gray-50 rounded-md overflow-auto flex-grow">
-                              <p className="text-sm font-medium mb-1">使用说明:</p>
-                              <p className="text-sm text-gray-600">输入图片URL后点击"确定"按钮加载图片预览</p>
+                        </div>
+                      )}
+                    </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="url" className="flex-grow flex flex-col overflow-hidden">
+                    <div className="flex flex-col h-full">
+                      {/* URL输入区域 */}
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          输入图片URL
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            placeholder="https://example.com/image.png"
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                            value={urlInput}
+                            onChange={(e) => setUrlInput(e.target.value)}
+                            onKeyDown={handleUrlKeyDown}
+                            disabled={isUrlLoading}
+                          />
+                          <Button 
+                            onClick={fetchImageFromUrl}
+                            disabled={isUrlLoading || !urlInput.trim()}
+                            className="whitespace-nowrap px-4"
+                          >
+                            {isUrlLoading ? (
+                              <>
+                                <div className="animate-spin mr-2 h-4 w-4 border-2 border-b-transparent border-white rounded-full"></div>
+                                加载中
+                              </>
+                            ) : '加载图片'}
+                          </Button>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">
+                          输入图片URL后按回车键或点击"加载图片"按钮
+                        </p>
+                      </div>
+                      
+                      {/* 已加载图片展示区域 */}
+                      {images.length > 0 ? (
+                        <div className="flex-grow overflow-hidden">
+                          <div className="flex items-center justify-between mb-3">
+                            <h3 className="text-sm font-medium text-gray-700">
+                              已加载的图片 ({images.length})
+                            </h3>
+                          </div>
+                          <div className="h-full overflow-y-auto">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                              {images.map((image) => (
+                                <div key={image.id} className="relative group border rounded-lg overflow-hidden bg-white">
+                                  {image.isLoading ? (
+                                    <div className="w-full h-24 flex items-center justify-center bg-gray-100">
+                                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900"></div>
+                                    </div>
+                                  ) : image.error ? (
+                                    <div className="w-full h-24 flex items-center justify-center bg-red-50 p-2">
+                                      <p className="text-xs text-red-500 text-center break-words">{image.error}</p>
+                                    </div>
+                                  ) : (
+                                    <div className="w-full h-24 overflow-hidden">
+                                      <img 
+                                        src={image.preview} 
+                                        alt="Preview" 
+                                        className="w-full h-full object-cover cursor-pointer hover:scale-110 transition-transform duration-200"
+                                        onClick={() => setSelectedImage(image.preview)}
+                                      />
+                                    </div>
+                                  )}
+                                  
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => removeImage(image.id)}
+                                    className="absolute top-1 right-1 bg-white/90 text-red-500 hover:text-red-600 hover:bg-white p-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              ))}
                             </div>
                           </div>
                         </div>
-                      </TabsContent>
-                    </>
-                  )}
+                      ) : (
+                        <div className="flex-grow flex items-center justify-center">
+                          <div className="text-center text-gray-500">
+                            <ImageIcon className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                            <p className="text-sm">暂无图片</p>
+                            <p className="text-xs mt-1">请在上方输入图片URL并加载</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </TabsContent>
                 </div>
               </Tabs>
             </div>
           </div>
 
-          <div className="w-full md:w-1/2 flex flex-col h-full">
+          <div className="w-full lg:w-1/3 flex flex-col h-full">
             <div className="flex-grow h-full flex flex-col">
               <label htmlFor="prompt" className="block text-sm font-medium text-gray-700 mb-1">
                 编辑提示词
@@ -311,7 +457,8 @@ export default function ImageGenerationsPlayground() {
             
               <div className="flex justify-between items-center mt-2">
                 <div className="text-xs text-gray-500">
-                  <p>提示：描述您想要的编辑效果，Ctrl+Enter 或 Cmd+Enter 快速生成</p>
+                  <p>已选择 {images.length} 张图片</p>
+                  <p>Ctrl+Enter 快速生成</p>
                 </div>
                 <Button
                   variant={hasValidInput() ? "default" : "outline"}
@@ -353,7 +500,7 @@ export default function ImageGenerationsPlayground() {
                 </div>
               ) : response ? (
                 <div className="space-y-4 pb-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {response.data && response.data.map((image: any, index: number) => (
                       <div key={index} className="relative group border rounded-lg shadow-md overflow-hidden">
                         <div className="p-3">
@@ -418,7 +565,7 @@ export default function ImageGenerationsPlayground() {
                   <div className="text-center">
                     <ImageIcon className="h-12 w-12 text-gray-300 mx-auto mb-3" />
                     <p>请提供图片并输入描述文字，然后点击"编辑图像"开始</p>
-                    <p className="text-xs mt-2">支持上传图片或输入图片URL</p>
+                    <p className="text-xs mt-2">支持上传多张图片或输入图片URL</p>
                   </div>
                 </div>
               )}

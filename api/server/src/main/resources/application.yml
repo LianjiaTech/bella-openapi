@@ -20,8 +20,8 @@ spring:
         codec: !<org.redisson.client.codec.StringCodec> {}
   servlet:
     multipart:
-      max-file-size: 4MB
-      max-request-size: 4MB
+      max-file-size: 10MB
+      max-request-size: 20MB
 
 jetcache:
   statIntervalMinutes: 0
