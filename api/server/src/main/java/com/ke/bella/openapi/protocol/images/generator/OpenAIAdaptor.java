@@ -62,9 +62,6 @@ public class OpenAIAdaptor implements ImagesGeneratorAdaptor<ImagesProperty> {
         Map<String, Object> requestMap = JacksonUtils.toMap(request);
 
         if (requestMap != null) {
-            requestMap.remove("extra_body");
-            requestMap.remove("realExtraBody");
-
             if (extraBody != null && !extraBody.isEmpty()) {
                 requestMap.putAll(extraBody);
             }
