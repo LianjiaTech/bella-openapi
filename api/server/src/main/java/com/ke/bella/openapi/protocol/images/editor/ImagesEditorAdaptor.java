@@ -44,30 +44,39 @@ public interface ImagesEditorAdaptor<T extends ImagesEditorProperty> extends IPr
 	 */
 	default ImageDataType processImageData(ImagesEditRequest request, T property) throws IOException {
 
-		if (property.isSupportBase64() && request.getImage_b64_json() != null && !request.getImage_b64_json().isEmpty()) {
+		if (property.isSupportBase64() && request.getImage_b64_json() != null && request.getImage_b64_json().length > 0) {
 			return ImageDataType.BASE64;
 		}
 
 
-		if (property.isSupportUrl() && request.getImage_url() != null && !request.getImage_url().isEmpty()) {
+		if (property.isSupportUrl() && request.getImage_url() != null && request.getImage_url().length > 0) {
 			return ImageDataType.URL;
 		}
 
 
-		MultipartFile imageFile = request.getImage();
-		if (property.isSupportFile() && imageFile != null && !imageFile.isEmpty()) {
-			return ImageDataType.FILE;
-		} else if(property.isSupportBase64() && imageFile != null && !imageFile.isEmpty()) {
-			byte[] imageBytes = imageFile.getBytes();
-			String base64Image = Base64.getEncoder().encodeToString(imageBytes);
-			String contentType = imageFile.getContentType();
-			String imageFormat = "png";
-			if (contentType != null && contentType.startsWith("image/")) {
-				imageFormat = contentType.substring("image/".length());
+		MultipartFile[] imageFiles = request.getImage();
+		if (imageFiles != null && imageFiles.length > 0 && !imageFiles[0].isEmpty()) {
+			if (property.isSupportFile()) {
+				return ImageDataType.FILE;
+			} else if (property.isSupportBase64()) {
+				// 将所有文件转换为base64
+				String[] base64Images = new String[imageFiles.length];
+				for (int i = 0; i < imageFiles.length; i++) {
+					MultipartFile imageFile = imageFiles[i];
+					if (!imageFile.isEmpty()) {
+						byte[] imageBytes = imageFile.getBytes();
+						String base64Image = Base64.getEncoder().encodeToString(imageBytes);
+						String contentType = imageFile.getContentType();
+						String imageFormat = "png";
+						if (contentType != null && contentType.startsWith("image/")) {
+							imageFormat = contentType.substring("image/".length());
+						}
+						base64Images[i] = String.format("data:image/%s;base64,%s", imageFormat, base64Image);
+					}
+				}
+				request.setImage_b64_json(base64Images);
+				return ImageDataType.BASE64;
 			}
-
-			request.setImage_b64_json(String.format("data:image/%s;base64,%s", imageFormat, base64Image));
-			return ImageDataType.BASE64;
 		}
 
 

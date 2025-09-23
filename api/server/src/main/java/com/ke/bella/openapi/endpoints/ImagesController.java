@@ -16,6 +16,7 @@ import com.ke.bella.openapi.protocol.images.ImagesVariationRequest;
 import com.ke.bella.openapi.protocol.images.ImagesResponse;
 import com.ke.bella.openapi.protocol.limiter.LimiterManager;
 import com.ke.bella.openapi.tables.pojos.ChannelDB;
+import com.ke.bella.openapi.utils.ImagesEditRequestUtils;
 import com.ke.bella.openapi.utils.JacksonUtils;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +25,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartHttpServletRequest;
+
+import javax.servlet.http.HttpServletRequest;
 
 @EndpointAPI
 @RestController
@@ -60,13 +64,20 @@ public class ImagesController {
     }
     
     /**
-     * 图片编辑接口
-     * @param request 图片编辑请求参数
+     * 图片编辑接口 - 使用工具类处理multipart请求
+     * @param servletRequest HTTP请求对象
      * @return 编辑后的图片响应
      */
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @PostMapping("/edits")
-    public ImagesResponse editImages(ImagesEditRequest request) {
+    public ImagesResponse editImages(HttpServletRequest servletRequest) {
+        // 使用工具类处理multipart请求
+        if (!(servletRequest instanceof MultipartHttpServletRequest)) {
+            throw new IllegalArgumentException("Request must be multipart/form-data");
+        }
+
+        MultipartHttpServletRequest multipartRequest = (MultipartHttpServletRequest) servletRequest;
+        ImagesEditRequest request = ImagesEditRequestUtils.readFromMultipartRequest(multipartRequest);
         String endpoint = EndpointContext.getRequest().getRequestURI();
         String model = request.getModel();
         EndpointContext.setEndpointData(endpoint, model, request);
