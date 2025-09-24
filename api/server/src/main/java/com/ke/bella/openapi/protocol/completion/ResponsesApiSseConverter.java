@@ -117,7 +117,7 @@ public class ResponsesApiSseConverter implements Callbacks.SseEventConverter<Str
      */
     private StreamCompletionResponse handleOutputTextDelta(ResponsesApiStreamEvent event) {
         String delta = event.getDelta();
-        if (StringUtils.isNotBlank(delta)) {
+        if (StringUtils.isEmpty(delta)) {
             return StreamCompletionResponse.builder()
                     .id(responseId)
                     .object("chat.completion.chunk")
@@ -141,7 +141,7 @@ public class ResponsesApiSseConverter implements Callbacks.SseEventConverter<Str
     private StreamCompletionResponse handleFunctionCallArgumentsDelta(ResponsesApiStreamEvent event) {
         String delta = event.getDelta();
         
-        if (StringUtils.isNotBlank(delta)) {
+        if (StringUtils.isNotEmpty(delta)) {
             // 发送工具调用参数增量
             return StreamCompletionResponse.builder()
                     .id(responseId)
@@ -184,7 +184,7 @@ public class ResponsesApiSseConverter implements Callbacks.SseEventConverter<Str
      */
     private StreamCompletionResponse handleReasoningSummaryDelta(ResponsesApiStreamEvent event) {
         String delta = event.getDelta();
-        if (StringUtils.isNotBlank(delta)) {
+        if (StringUtils.isNotEmpty(delta)) {
             // 发送推理内容增量
             return StreamCompletionResponse.builder()
                     .id(responseId)
