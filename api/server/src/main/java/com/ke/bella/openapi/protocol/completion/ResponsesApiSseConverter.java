@@ -117,7 +117,7 @@ public class ResponsesApiSseConverter implements Callbacks.SseEventConverter<Str
      */
     private StreamCompletionResponse handleOutputTextDelta(ResponsesApiStreamEvent event) {
         String delta = event.getDelta();
-        if (StringUtils.isEmpty(delta)) {
+        if (StringUtils.isNotEmpty(delta)) {
             return StreamCompletionResponse.builder()
                     .id(responseId)
                     .object("chat.completion.chunk")
