@@ -38,8 +38,8 @@ class HuoshanAdaptorTest {
 		request.setUser("test_user");
 		request.setResponse_format("url");
 		request.setSize("1024x1024");
-		request.setImage_b64_json("base64_image_data");
-		request.setImage_url("http://example.com/image.jpg");
+		request.setImage_b64_json(new String[]{"base64_image_data"});
+		request.setImage_url(new String[]{"http://example.com/image.jpg"});
 
 		property = new ImagesEditorProperty();
 		property.setDeployName("test_model");
@@ -160,6 +160,7 @@ class HuoshanAdaptorTest {
 					assertEquals("test_model", requestMap.get("model"));
 					assertEquals("test_user", requestMap.get("user"));
 					assertEquals(false, requestMap.get("watermark"));
+					// Image field should be the first element of the array
 					assertEquals("base64_image_data", requestMap.get("image"));
 
 					// Verify optional fields
