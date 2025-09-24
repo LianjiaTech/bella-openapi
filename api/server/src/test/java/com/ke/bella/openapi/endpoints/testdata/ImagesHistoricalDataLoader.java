@@ -19,7 +19,8 @@ import java.util.function.Predicate;
  */
 public class ImagesHistoricalDataLoader {
 
-    private static final String DATA_FILE = "/historical-images-requests.json";
+    private static final String GENERATIONS_DATA_FILE = "/test-data/images/generations/image-generation-scenarios.json";
+    private static final String EDITS_DATA_FILE = "/test-data/images/edits/image-edit-scenarios.json";
 
     /**
      * Load all historical request test cases for image generation
@@ -40,9 +41,9 @@ public class ImagesHistoricalDataLoader {
      */
     private List<GenerationsTestCase> loadGenerationsTestData() {
         try {
-            InputStream inputStream = ImagesHistoricalDataLoader.class.getResourceAsStream(DATA_FILE);
+            InputStream inputStream = ImagesHistoricalDataLoader.class.getResourceAsStream(GENERATIONS_DATA_FILE);
             if (inputStream == null) {
-                throw new RuntimeException("Cannot find test data file: " + DATA_FILE);
+                throw new RuntimeException("Cannot find test data file: " + GENERATIONS_DATA_FILE);
             }
 
             ImagesHistoricalData data = BaseHistoricalDataLoader.objectMapper.readValue(inputStream, ImagesHistoricalData.class);
@@ -64,9 +65,9 @@ public class ImagesHistoricalDataLoader {
      */
     private List<EditsTestCase> loadEditsTestData() {
         try {
-            InputStream inputStream = ImagesHistoricalDataLoader.class.getResourceAsStream(DATA_FILE);
+            InputStream inputStream = ImagesHistoricalDataLoader.class.getResourceAsStream(EDITS_DATA_FILE);
             if (inputStream == null) {
-                throw new RuntimeException("Cannot find test data file: " + DATA_FILE);
+                throw new RuntimeException("Cannot find test data file: " + EDITS_DATA_FILE);
             }
 
             ImagesHistoricalData data = BaseHistoricalDataLoader.objectMapper.readValue(inputStream, ImagesHistoricalData.class);
@@ -169,13 +170,28 @@ public class ImagesHistoricalDataLoader {
             request.setModel((String) requestData.get("model"));
         }
         if (requestData.containsKey("image")) {
-            request.setImage_b64_json((String) requestData.get("image"));
+            Object image = requestData.get("image");
+            if (image instanceof String) {
+                request.setImage_b64_json(new String[]{(String) image});
+            } else if (image instanceof String[]) {
+                request.setImage_b64_json((String[]) image);
+            }
         }
         if (requestData.containsKey("image_url")) {
-            request.setImage_url((String) requestData.get("image_url"));
+            Object imageUrl = requestData.get("image_url");
+            if (imageUrl instanceof String) {
+                request.setImage_url(new String[]{(String) imageUrl});
+            } else if (imageUrl instanceof String[]) {
+                request.setImage_url((String[]) imageUrl);
+            }
         }
         if (requestData.containsKey("image_b64_json")) {
-            request.setImage_b64_json((String) requestData.get("image_b64_json"));
+            Object imageB64 = requestData.get("image_b64_json");
+            if (imageB64 instanceof String) {
+                request.setImage_b64_json(new String[]{(String) imageB64});
+            } else if (imageB64 instanceof String[]) {
+                request.setImage_b64_json((String[]) imageB64);
+            }
         }
         if (requestData.containsKey("mask")) {
             Object maskValue = requestData.get("mask");

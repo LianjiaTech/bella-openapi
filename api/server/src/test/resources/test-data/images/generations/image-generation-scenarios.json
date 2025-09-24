@@ -56,94 +56,45 @@
       "parameterValidations": [
         {"field": "model", "expectedValue": "doubao-seedream-3-0-t2i"}
       ]
-    }
-  ],
-  "editsRequests": [
+    },
     {
-      "scenarioName": "doubao-seededit-3.0-i2i基础编辑请求（OpenAI格式）",
-      "description": "doubao-seededit-3.0-i2i图片编辑的经典格式",
+      "scenarioName": "doubao-seedream-4.0-gen标准请求",
+      "description": "使用doubao-seedream-4.0-gen模型进行图像生成，支持2K尺寸和watermark控制",
       "request": {
-        "model": "doubao-seededit-3.0-i2i",
-        "image": "Image_File_Type",
-        "prompt": "转化为卡通风格"
+        "model": "doubao-seedream-4.0-gen",
+        "prompt": "生成狗狗趴在草地上的近景画面",
+        "size": "2K",
+        "response_format": "url",
+        "extra_body": {
+          "watermark": false
+        }
       },
       "expectedResponse": {
         "created": 1234567890,
         "data": [
           {
-            "url": "https://mock-edited-image.com/edited-1.png"
-          }
-        ]
-      },
-      "mockChannel": {
-        "channelInfo": "{\"apiKey\":\"test-key\",\"deployName\":\"doubao-seededit-3-0-i2i-250628\"}",
-        "protocol": "huoshan",
-        "url": "https://your-custom-endpoint.com/v1/images/edits"
-      },
-      "parameterValidations": [
-        {"field": "model", "expectedValue": "doubao-seededit-3.0-i2i"},
-        {"field": "prompt", "expectedValue": "转化为卡通风格"}
-
-      ]
-    },
-    {
-      "scenarioName": "doubao-seededit-3.0-i2i基础编辑请求（Url）",
-      "description": "doubao-seededit-3.0-i2i图片编辑的经典格式",
-      "request": {
-        "model": "doubao-seededit-3.0-i2i",
-        "image_url": "https://ark-project.tos-cn-beijing.volces.com/doc_image/seedream4_imageToimage.png",
-        "prompt": "删除小狗"
-      },
-      "expectedResponse": {
-        "created": 1757922575,
-        "data": [
-          {
-            "url": "img_url"
+            "url": "https://mock-generated-image.com/seedream4-gen-dog-grass.png",
+            "size": "2K"
           }
         ],
         "usage": {
           "num": 1,
-          "size": "864x1152",
+          "size": "2K",
           "quality": "high",
-          "output_tokens": 3888,
-          "total_tokens": 3888
+          "output_tokens": 4096,
+          "total_tokens": 4096
         }
       },
       "mockChannel": {
-        "channelInfo": "{\"apiKey\":\"test-key\",\"deployName\":\"doubao-seededit-3-0-i2i-250628\"}",
+        "channelInfo": "{\"apiKey\":\"test-key\",\"deployName\":\"doubao-seedream-4-0-gen\"}",
         "protocol": "huoshan",
-        "url": "https://your-custom-endpoint.com/v1/images/edits"
+        "url": "https://your-custom-endpoint.com/v1/images/generations"
       },
       "parameterValidations": [
-        {"field": "model", "expectedValue": "doubao-seededit-3.0-i2i"},
-        {"field": "prompt", "expectedValue": "删除小狗"}
-
-      ]
-    },
-    {
-      "scenarioName": "Base64编辑响应格式",
-      "description": "验证图片编辑的b64_json响应格式兼容性",
-      "request": {
-        "model": "doubao-seededit-3.0-i2i",
-        "image": "Image_File_Type",
-        "prompt": "Change the background to ocean",
-        "response_format": "b64_json"
-      },
-      "expectedResponse": {
-        "created": 1234567890,
-        "data": [
-          {
-            "b64_json": "base64-encoded-edited-image-data-1"
-          }
-        ]
-      },
-      "mockChannel": {
-        "channelInfo": "{\"apiKey\":\"test-key\",\"deployName\":\"doubao-seededit-3-0-i2i-250628\"}",
-        "protocol": "huoshan",
-        "url": "https://your-custom-endpoint.com/v1/images/edits"
-      },
-      "parameterValidations": [
-        {"field": "response_format", "expectedValue": "b64_json"}
+        {"field": "model", "expectedValue": "doubao-seedream-4.0-gen"},
+        {"field": "prompt", "expectedValue": "生成狗狗趴在草地上的近景画面"},
+        {"field": "size", "expectedValue": "2K"},
+        {"field": "response_format", "expectedValue": "url"}
       ]
     }
   ]

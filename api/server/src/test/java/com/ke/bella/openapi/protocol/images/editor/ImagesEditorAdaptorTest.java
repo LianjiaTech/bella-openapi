@@ -63,7 +63,7 @@ class ImagesEditorAdaptorTest {
 	void testProcessImageData_WithBase64_ShouldReturnBase64Type() throws IOException {
 		// Setup support for Base64 and provide Base64 data
 		when(property.isSupportBase64()).thenReturn(true);
-		request.setImage_b64_json("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==");
+		request.setImage_b64_json(new String[]{"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="});
 
 		ImageDataType result = adaptor.processImageData(request, property);
 
@@ -76,7 +76,7 @@ class ImagesEditorAdaptorTest {
 		// Setup no Base64 support but URL support, and provide URL
 		when(property.isSupportBase64()).thenReturn(false);
 		when(property.isSupportUrl()).thenReturn(true);
-		request.setImage_url("http://example.com/image.jpg");
+		request.setImage_url(new String[]{"http://example.com/image.jpg"});
 
 		ImageDataType result = adaptor.processImageData(request, property);
 
@@ -93,7 +93,7 @@ class ImagesEditorAdaptorTest {
 		when(property.isSupportFile()).thenReturn(true);
 		when(multipartFile.isEmpty()).thenReturn(false);
 
-		request.setImage(multipartFile);
+		request.setImage(new MultipartFile[]{multipartFile});
 
 		ImageDataType result = adaptor.processImageData(request, property);
 
@@ -114,7 +114,7 @@ class ImagesEditorAdaptorTest {
 		when(multipartFile.getBytes()).thenReturn("test image data".getBytes());
 		when(multipartFile.getContentType()).thenReturn("image/png");
 
-		request.setImage(multipartFile);
+		request.setImage(new MultipartFile[]{multipartFile});
 
 		ImageDataType result = adaptor.processImageData(request, property);
 
@@ -123,7 +123,7 @@ class ImagesEditorAdaptorTest {
 		// Verify Base64 data is correctly set
 		String expectedBase64 = Base64.getEncoder().encodeToString("test image data".getBytes());
 		String expectedImageData = String.format("data:image/%s;base64,%s", "png", expectedBase64);
-		assertEquals(expectedImageData, request.getImage_b64_json());
+		assertEquals(expectedImageData, request.getImage_b64_json()[0]);
 
 		verify(multipartFile).getBytes();
 		verify(multipartFile).getContentType();
@@ -139,7 +139,7 @@ class ImagesEditorAdaptorTest {
 		when(multipartFile.getBytes()).thenReturn("test image data".getBytes());
 		when(multipartFile.getContentType()).thenReturn(null);
 
-		request.setImage(multipartFile);
+		request.setImage(new MultipartFile[]{multipartFile});
 
 		ImageDataType result = adaptor.processImageData(request, property);
 
@@ -148,7 +148,7 @@ class ImagesEditorAdaptorTest {
 		// Verify using default png format
 		String expectedBase64 = Base64.getEncoder().encodeToString("test image data".getBytes());
 		String expectedImageData = String.format("data:image/%s;base64,%s", "png", expectedBase64);
-		assertEquals(expectedImageData, request.getImage_b64_json());
+		assertEquals(expectedImageData, request.getImage_b64_json()[0]);
 	}
 
 	@Test
@@ -161,7 +161,7 @@ class ImagesEditorAdaptorTest {
 		when(multipartFile.getBytes()).thenReturn("test image data".getBytes());
 		when(multipartFile.getContentType()).thenReturn("application/octet-stream");
 
-		request.setImage(multipartFile);
+		request.setImage(new MultipartFile[]{multipartFile});
 
 		ImageDataType result = adaptor.processImageData(request, property);
 
@@ -170,7 +170,7 @@ class ImagesEditorAdaptorTest {
 		// Verify using default png format
 		String expectedBase64 = Base64.getEncoder().encodeToString("test image data".getBytes());
 		String expectedImageData = String.format("data:image/%s;base64,%s", "png", expectedBase64);
-		assertEquals(expectedImageData, request.getImage_b64_json());
+		assertEquals(expectedImageData, request.getImage_b64_json()[0]);
 	}
 
 	@Test
@@ -243,8 +243,8 @@ class ImagesEditorAdaptorTest {
 		// Test empty Base64 string should be skipped
 		when(property.isSupportBase64()).thenReturn(true);
 		when(property.isSupportUrl()).thenReturn(true);
-		request.setImage_b64_json("");
-		request.setImage_url("http://example.com/image.jpg");
+		request.setImage_b64_json(new String[]{""});
+		request.setImage_url(new String[]{"http://example.com/image.jpg"});
 
 		ImageDataType result = adaptor.processImageData(request, property);
 
@@ -259,8 +259,8 @@ class ImagesEditorAdaptorTest {
 		when(property.isSupportFile()).thenReturn(true);
 		when(multipartFile.isEmpty()).thenReturn(false);
 
-		request.setImage_url("");
-		request.setImage(multipartFile);
+		request.setImage_url(new String[]{""});
+		request.setImage(new MultipartFile[]{multipartFile});
 
 		ImageDataType result = adaptor.processImageData(request, property);
 
@@ -275,7 +275,7 @@ class ImagesEditorAdaptorTest {
 		when(property.isSupportFile()).thenReturn(true);
 		when(multipartFile.isEmpty()).thenReturn(true);
 
-		request.setImage(multipartFile);
+		request.setImage(new MultipartFile[]{multipartFile});
 
 		BizParamCheckException exception = assertThrows(BizParamCheckException.class, () -> {
 			adaptor.processImageData(request, property);
@@ -291,9 +291,9 @@ class ImagesEditorAdaptorTest {
 		lenient().when(property.isSupportUrl()).thenReturn(true);
 		lenient().when(property.isSupportFile()).thenReturn(true);
 
-		request.setImage_b64_json("data:image/png;base64,test");
-		request.setImage_url("http://example.com/image.jpg");
-		request.setImage(multipartFile);
+		request.setImage_b64_json(new String[]{"data:image/png;base64,test"});
+		request.setImage_url(new String[]{"http://example.com/image.jpg"});
+		request.setImage(new MultipartFile[]{multipartFile});
 
 		ImageDataType result = adaptor.processImageData(request, property);
 
@@ -311,8 +311,8 @@ class ImagesEditorAdaptorTest {
 		when(property.isSupportUrl()).thenReturn(true);
 		lenient().when(property.isSupportFile()).thenReturn(true);
 
-		request.setImage_url("http://example.com/image.jpg");
-		request.setImage(multipartFile);
+		request.setImage_url(new String[]{"http://example.com/image.jpg"});
+		request.setImage(new MultipartFile[]{multipartFile});
 
 		ImageDataType result = adaptor.processImageData(request, property);
 

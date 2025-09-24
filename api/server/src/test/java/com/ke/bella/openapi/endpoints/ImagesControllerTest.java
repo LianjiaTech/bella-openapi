@@ -22,6 +22,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.web.util.ContentCachingRequestWrapper;
+import org.springframework.mock.web.MockMultipartHttpServletRequest;
+import org.springframework.mock.web.MockMultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -199,16 +201,19 @@ public class ImagesControllerTest {
         // 2. Prepare test environment
         setupMockForEditsTestCase(testCase);
 
-        // 3. Execute Controller core logic (bypass all AOP)
-        ImagesResponse actualResponse = imagesController.editImages(testCase.getRequest());
+        // 3. Create mock multipart request for the new editImages signature
+        MockMultipartHttpServletRequest mockMultipartRequest = createMockMultipartRequest(testCase.getRequest());
 
-        // 4. Validate response format compatibility
+        // 4. Execute Controller core logic (bypass all AOP)
+        ImagesResponse actualResponse = imagesController.editImages(mockMultipartRequest);
+
+        // 5. Validate response format compatibility
         validateEditsResponseCompatibility(testCase, actualResponse);
 
-        // 5. Validate underlying service call parameters
+        // 6. Validate underlying service call parameters
         validateEditsServiceCallParameters(testCase);
 
-        // 6. Reset Mock state for next test
+        // 7. Reset Mock state for next test
         reset(channelRouter, adaptorManager, mockEditorAdaptor);
     }
 
@@ -420,6 +425,77 @@ public class ImagesControllerTest {
     private void setupEditsRequestContext() {
         when(mockWrappedRequest.getRequestURI()).thenReturn("/v1/images/edits");
         EndpointContext.setRequest(mockWrappedRequest);
+    }
+
+    /**
+     * Create mock multipart request from ImagesEditRequest for testing
+     */
+    private MockMultipartHttpServletRequest createMockMultipartRequest(ImagesEditRequest editRequest) {
+        MockMultipartHttpServletRequest mockRequest = new MockMultipartHttpServletRequest();
+        mockRequest.setRequestURI("/v1/images/edits");
+        mockRequest.setMethod("POST");
+        mockRequest.setContentType("multipart/form-data");
+
+        // Add basic parameters
+        if (editRequest.getModel() != null) {
+            mockRequest.setParameter("model", editRequest.getModel());
+        }
+        if (editRequest.getPrompt() != null) {
+            mockRequest.setParameter("prompt", editRequest.getPrompt());
+        }
+        if (editRequest.getSize() != null) {
+            mockRequest.setParameter("size", editRequest.getSize());
+        }
+        if (editRequest.getResponse_format() != null) {
+            mockRequest.setParameter("response_format", editRequest.getResponse_format());
+        }
+        if (editRequest.getUser() != null) {
+            mockRequest.setParameter("user", editRequest.getUser());
+        }
+        if (editRequest.getN() != null) {
+            mockRequest.setParameter("n", String.valueOf(editRequest.getN()));
+        }
+
+        // Add image data as multipart files or parameters
+        // Use compatible parameter names that match backend processing logic
+        if (editRequest.getImage_b64_json() != null) {
+            String[] base64Array = editRequest.getImage_b64_json();
+            if (base64Array.length == 1) {
+                // Single value: use "image_b64_json"
+                mockRequest.setParameter("image_b64_json", base64Array[0]);
+            } else {
+                // Multiple values: use "image_b64_json[]"
+                for (String base64Value : base64Array) {
+                    mockRequest.addParameter("image_b64_json[]", base64Value);
+                }
+            }
+        }
+
+        if (editRequest.getImage_url() != null) {
+            String[] urlArray = editRequest.getImage_url();
+            if (urlArray.length == 1) {
+                // Single value: use "image_url"
+                mockRequest.setParameter("image_url", urlArray[0]);
+            } else {
+                // Multiple values: use "image_url[]"
+                for (String urlValue : urlArray) {
+                    mockRequest.addParameter("image_url[]", urlValue);
+                }
+            }
+        }
+
+        // Add mock image file if needed (for testing purposes)
+        if (editRequest.getImage() != null || editRequest.getImage_b64_json() != null || editRequest.getImage_url() != null) {
+            MockMultipartFile mockImageFile = new MockMultipartFile(
+                "image",
+                "test-image.png",
+                "image/png",
+                "fake-image-data".getBytes()
+            );
+            mockRequest.addFile(mockImageFile);
+        }
+
+        return mockRequest;
     }
 
     @After
