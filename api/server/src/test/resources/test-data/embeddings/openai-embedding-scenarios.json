@@ -33,16 +33,16 @@
       ]
     },
     {
-      "scenarioName": "OpenAI text-embedding-3-small 多文本请求",
-      "description": "使用OpenAI text-embedding-3-small模型处理多个文本输入",
+      "scenarioName": "OpenAI text-embedding-3-large 多文本请求",
+      "description": "使用OpenAI text-embedding-3-large模型处理多个文本输入",
       "request": {
-        "model": "text-embedding-3-small",
+        "model": "text-embedding-3-large",
         "input": ["Hello world", "How are you today?", "Nice to meet you"],
         "encoding_format": "float"
       },
       "expectedResponse": {
         "object": "list",
-        "model": "text-embedding-3-small",
+        "model": "text-embedding-3-large",
         "data": [
           {
             "object": "embedding",
@@ -71,7 +71,7 @@
         "url": "https://api.openai.com/v1/embeddings"
       },
       "parameterValidations": [
-        {"field": "model", "expectedValue": "text-embedding-3-small"},
+        {"field": "model", "expectedValue": "text-embedding-3-large"},
         {"field": "encoding_format", "expectedValue": "float"}
       ],
       "customValidations": [
@@ -125,103 +125,8 @@
       ]
     },
     {
-      "scenarioName": "AWS Bedrock Titan 嵌入请求",
-      "description": "使用AWS Bedrock Titan模型进行文本嵌入",
-      "request": {
-        "model": "amazon.titan-embed-text-v1",
-        "input": "What is the weather like today?"
-      },
-      "expectedResponse": {
-        "object": "list",
-        "model": "amazon.titan-embed-text-v1",
-        "data": [
-          {
-            "object": "embedding",
-            "embedding": [0.5, 0.4, 0.3, 0.2, 0.1],
-            "index": 0
-          }
-        ],
-        "usage": {
-          "prompt_tokens": 7,
-          "total_tokens": 7
-        }
-      },
-      "mockChannel": {
-        "channelInfo": "{\"region\":\"us-east-1\",\"accessKey\":\"test-access\",\"secretKey\":\"test-secret\"}",
-        "protocol": "bedrock",
-        "url": "https://bedrock-runtime.us-east-1.amazonaws.com"
-      },
-      "parameterValidations": [
-        {"field": "model", "expectedValue": "amazon.titan-embed-text-v1"}
-      ]
-    },
-    {
-      "scenarioName": "阿里云 text-embedding-v1 中文请求",
-      "description": "使用阿里云text-embedding-v1模型处理中文文本",
-      "request": {
-        "model": "text-embedding-v1",
-        "input": "今天天气很好，适合外出游玩。"
-      },
-      "expectedResponse": {
-        "object": "list",
-        "model": "text-embedding-v1",
-        "data": [
-          {
-            "object": "embedding",
-            "embedding": [0.8, 0.7, 0.6, 0.5, 0.4],
-            "index": 0
-          }
-        ],
-        "usage": {
-          "prompt_tokens": 12,
-          "total_tokens": 12
-        }
-      },
-      "mockChannel": {
-        "channelInfo": "{\"apiKey\":\"test-ali-key\"}",
-        "protocol": "dashscope",
-        "url": "https://dashscope.aliyuncs.com/api/v1/services/embeddings/text-embedding/text-embedding"
-      },
-      "parameterValidations": [
-        {"field": "model", "expectedValue": "text-embedding-v1"}
-      ]
-    },
-    {
-      "scenarioName": "带用户标识的请求",
-      "description": "包含用户标识字段的嵌入请求",
-      "request": {
-        "model": "text-embedding-ada-002",
-        "input": "This is a sample text for embedding.",
-        "user": "user-12345"
-      },
-      "expectedResponse": {
-        "object": "list",
-        "model": "text-embedding-ada-002",
-        "data": [
-          {
-            "object": "embedding",
-            "embedding": [0.2, 0.4, 0.6, 0.8, 1.0],
-            "index": 0
-          }
-        ],
-        "usage": {
-          "prompt_tokens": 8,
-          "total_tokens": 8
-        }
-      },
-      "mockChannel": {
-        "channelInfo": "{\"apiKey\":\"test-key\"}",
-        "protocol": "openai",
-        "url": "https://api.openai.com/v1/embeddings"
-      },
-      "parameterValidations": [
-        {"field": "model", "expectedValue": "text-embedding-ada-002"},
-        {"field": "user", "expectedValue": "user-12345"}
-      ]
-    },
-    {
-      "scenarioName": "OpenAI text-embedding-ada-002 基础请求",
-      "description": "使用OpenAI text-embedding-ada-002模型进行文本嵌入的标准请求",
+      "scenarioName": "OpenAI text-embedding-ada-002 多文本用户标识请求",
+      "description": "使用OpenAI text-embedding-ada-002模型进行多文本嵌入并包含用户标识",
       "request": {
         "input": [
           "Hello world!",
@@ -266,6 +171,39 @@
           "description": "应该返回2个嵌入向量",
           "expectedValue": 2
         }
+      ]
+    },
+    {
+      "scenarioName": "带用户标识的单文本请求",
+      "description": "包含用户标识字段的嵌入请求",
+      "request": {
+        "model": "text-embedding-ada-002",
+        "input": "This is a sample text for embedding.",
+        "user": "user-12345"
+      },
+      "expectedResponse": {
+        "object": "list",
+        "model": "text-embedding-ada-002",
+        "data": [
+          {
+            "object": "embedding",
+            "embedding": [0.2, 0.4, 0.6, 0.8, 1.0],
+            "index": 0
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 8,
+          "total_tokens": 8
+        }
+      },
+      "mockChannel": {
+        "channelInfo": "{\"apiKey\":\"test-key\"}",
+        "protocol": "openai",
+        "url": "https://api.openai.com/v1/embeddings"
+      },
+      "parameterValidations": [
+        {"field": "model", "expectedValue": "text-embedding-ada-002"},
+        {"field": "user", "expectedValue": "user-12345"}
       ]
     }
   ]

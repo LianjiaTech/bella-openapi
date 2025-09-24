@@ -18,13 +18,22 @@ import java.util.function.Predicate;
  */
 public class EmbeddingHistoricalDataLoader extends BaseHistoricalDataLoader<EmbeddingRequest, EmbeddingResponse, EmbeddingHistoricalDataLoader.EmbeddingTestCase> {
 
-    private static final String DATA_FILE = "/historical-embedding-requests.json";
+    private static final String[] DATA_FILES = {
+        "/test-data/embeddings/openai-embedding-scenarios.json"
+    };
 
     /**
      * Load all historical request test cases for embeddings
      */
     public static List<EmbeddingTestCase> loadEmbeddingRequests() {
-        return new EmbeddingHistoricalDataLoader().loadTestData(DATA_FILE);
+        EmbeddingHistoricalDataLoader loader = new EmbeddingHistoricalDataLoader();
+        List<EmbeddingTestCase> allTestCases = new ArrayList<>();
+
+        for (String dataFile : DATA_FILES) {
+            allTestCases.addAll(loader.loadTestData(dataFile));
+        }
+
+        return allTestCases;
     }
 
     @Override

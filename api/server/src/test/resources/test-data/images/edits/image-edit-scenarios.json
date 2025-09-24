@@ -1,0 +1,273 @@
+{
+  "editsRequests": [
+    {
+      "scenarioName": "doubao-seededit-3.0-i2i基础编辑请求（OpenAI格式）",
+      "description": "doubao-seededit-3.0-i2i图片编辑的经典格式",
+      "request": {
+        "model": "doubao-seededit-3.0-i2i",
+        "image": "Image_File_Type",
+        "prompt": "转化为卡通风格"
+      },
+      "expectedResponse": {
+        "created": 1234567890,
+        "data": [
+          {
+            "url": "https://mock-edited-image.com/edited-1.png"
+          }
+        ]
+      },
+      "mockChannel": {
+        "channelInfo": "{\"apiKey\":\"test-key\",\"deployName\":\"doubao-seededit-3-0-i2i-250628\"}",
+        "protocol": "huoshan",
+        "url": "https://your-custom-endpoint.com/v1/images/edits"
+      },
+      "parameterValidations": [
+        {"field": "model", "expectedValue": "doubao-seededit-3.0-i2i"},
+        {"field": "prompt", "expectedValue": "转化为卡通风格"}
+      ]
+    },
+    {
+      "scenarioName": "doubao-seededit-3.0-i2i基础编辑请求（Url）",
+      "description": "doubao-seededit-3.0-i2i图片编辑的经典格式",
+      "request": {
+        "model": "doubao-seededit-3.0-i2i",
+        "image_url": "https://ark-project.tos-cn-beijing.volces.com/doc_image/seedream4_imageToimage.png",
+        "prompt": "删除小狗"
+      },
+      "expectedResponse": {
+        "created": 1757922575,
+        "data": [
+          {
+            "url": "img_url"
+          }
+        ],
+        "usage": {
+          "num": 1,
+          "size": "864x1152",
+          "quality": "high",
+          "output_tokens": 3888,
+          "total_tokens": 3888
+        }
+      },
+      "mockChannel": {
+        "channelInfo": "{\"apiKey\":\"test-key\",\"deployName\":\"doubao-seededit-3-0-i2i-250628\"}",
+        "protocol": "huoshan",
+        "url": "https://your-custom-endpoint.com/v1/images/edits"
+      },
+      "parameterValidations": [
+        {"field": "model", "expectedValue": "doubao-seededit-3.0-i2i"},
+        {"field": "prompt", "expectedValue": "删除小狗"}
+      ]
+    },
+    {
+      "scenarioName": "Base64编辑响应格式",
+      "description": "验证图片编辑的b64_json响应格式兼容性",
+      "request": {
+        "model": "doubao-seededit-3.0-i2i",
+        "image": "Image_File_Type",
+        "prompt": "Change the background to ocean",
+        "response_format": "b64_json"
+      },
+      "expectedResponse": {
+        "created": 1234567890,
+        "data": [
+          {
+            "b64_json": "base64-encoded-edited-image-data-1"
+          }
+        ]
+      },
+      "mockChannel": {
+        "channelInfo": "{\"apiKey\":\"test-key\",\"deployName\":\"doubao-seededit-3-0-i2i-250628\"}",
+        "protocol": "huoshan",
+        "url": "https://your-custom-endpoint.com/v1/images/edits"
+      },
+      "parameterValidations": [
+        {"field": "response_format", "expectedValue": "b64_json"}
+      ]
+    },
+    {
+      "scenarioName": "doubao-seedream-4.0多图URL融合请求",
+      "description": "使用doubao-seedream-4.0模型进行多图URL融合，支持watermark控制",
+      "request": {
+        "model": "doubao_seedream_4_0",
+        "prompt": "将图1的画风和图2进行融合",
+        "image_url": [
+          "https://ark-project.tos-cn-beijing.volces.com/doc_image/seedream4_imagesToimage_1.png",
+          "https://ark-project.tos-cn-beijing.volces.com/doc_image/seedream4_imageToimage.png"
+        ],
+        "extra_body": {
+          "watermark": false
+        }
+      },
+      "expectedResponse": {
+        "created": 1234567890,
+        "data": [
+          {
+            "url": "https://mock-edited-image.com/seedream4-fusion-1.png"
+          }
+        ]
+      },
+      "mockChannel": {
+        "channelInfo": "{\"apiKey\":\"test-key\",\"deployName\":\"doubao-seedream-4-0\"}",
+        "protocol": "huoshan",
+        "url": "https://your-custom-endpoint.com/v1/images/edits"
+      },
+      "parameterValidations": [
+        {"field": "model", "expectedValue": "doubao_seedream_4_0"},
+        {"field": "prompt", "expectedValue": "将图1的画风和图2进行融合"}
+      ]
+    },
+    {
+      "scenarioName": "doubao-seedream-4.0多图文件融合请求",
+      "description": "使用doubao-seedream-4.0模型进行多图文件融合，包含额外body参数",
+      "request": {
+        "model": "doubao_seedream_4_0",
+        "prompt": "将图1的画风和图2进行融合",
+        "image[]": "Multiple_Image_Files_Type",
+        "extra_body": {
+          "watermark": false,
+          "number_test": 123
+        }
+      },
+      "expectedResponse": {
+        "created": 1234567890,
+        "data": [
+          {
+            "url": "https://mock-edited-image.com/seedream4-fusion-2.png"
+          }
+        ]
+      },
+      "mockChannel": {
+        "channelInfo": "{\"apiKey\":\"test-key\",\"deployName\":\"doubao-seedream-4-0\"}",
+        "protocol": "huoshan",
+        "url": "https://your-custom-endpoint.com/v1/images/edits"
+      },
+      "parameterValidations": [
+        {"field": "model", "expectedValue": "doubao_seedream_4_0"},
+        {"field": "prompt", "expectedValue": "将图1的画风和图2进行融合"}
+      ]
+    },
+    {
+      "scenarioName": "doubao-seedream-4.0单图编辑请求",
+      "description": "使用doubao-seedream-4.0模型进行单图编辑，指定2K尺寸",
+      "request": {
+        "model": "doubao-seedream-4.0",
+        "prompt": "生成狗狗趴在草地上的近景画面",
+        "image": "Single_Image_File_Type",
+        "size": "2K",
+        "response_format": "url",
+        "extra_body": {
+          "watermark": false
+        }
+      },
+      "expectedResponse": {
+        "created": 1234567890,
+        "data": [
+          {
+            "url": "https://mock-edited-image.com/seedream4-dog-grass.png",
+            "size": "2K"
+          }
+        ]
+      },
+      "mockChannel": {
+        "channelInfo": "{\"apiKey\":\"test-key\",\"deployName\":\"doubao-seedream-4-0\"}",
+        "protocol": "huoshan",
+        "url": "https://your-custom-endpoint.com/v1/images/edits"
+      },
+      "parameterValidations": [
+        {"field": "model", "expectedValue": "doubao-seedream-4.0"},
+        {"field": "prompt", "expectedValue": "生成狗狗趴在草地上的近景画面"},
+        {"field": "size", "expectedValue": "2K"},
+        {"field": "response_format", "expectedValue": "url"}
+      ]
+    },
+    {
+      "scenarioName": "doubao-seedream-4.0多图风格迁移请求",
+      "description": "使用doubao-seedream-4.0模型进行图片风格迁移",
+      "request": {
+        "model": "doubao_seedream_4_0",
+        "prompt": "将图1的画风迁移至图2",
+        "image": "Multiple_Image_Files_Type",
+        "size": "2K",
+        "response_format": "url",
+        "extra_body": {
+          "watermark": false
+        }
+      },
+      "expectedResponse": {
+        "created": 1234567890,
+        "data": [
+          {
+            "url": "https://mock-edited-image.com/seedream4-style-transfer.png",
+            "size": "2K"
+          }
+        ]
+      },
+      "mockChannel": {
+        "channelInfo": "{\"apiKey\":\"test-key\",\"deployName\":\"doubao-seedream-4-0\"}",
+        "protocol": "huoshan",
+        "url": "https://your-custom-endpoint.com/v1/images/edits"
+      },
+      "parameterValidations": [
+        {"field": "model", "expectedValue": "doubao_seedream_4_0"},
+        {"field": "prompt", "expectedValue": "将图1的画风迁移至图2"},
+        {"field": "size", "expectedValue": "2K"}
+      ]
+    },
+    {
+      "scenarioName": "doubao-seedream-4.0序列图生成请求",
+      "description": "使用doubao-seedream-4.0模型生成序列图片，支持连贯插画生成",
+      "request": {
+        "model": "doubao_seedream_4_0",
+        "prompt": "生成一组共4张连贯插画，核心为同一庭院一角的四季变迁，以统一风格展现四季独特色彩、元素与氛围",
+        "image[]": "Multiple_Image_Files_Type",
+        "size": "2K",
+        "response_format": "url",
+        "extra_body": {
+          "watermark": false,
+          "sequential_image_generation": "auto",
+          "sequential_image_generation_options": {
+            "max_images": 4
+          }
+        }
+      },
+      "expectedResponse": {
+        "created": 1234567890,
+        "data": [
+          {
+            "url": "https://mock-edited-image.com/seedream4-garden-spring.png",
+            "size": "2K"
+          },
+          {
+            "url": "https://mock-edited-image.com/seedream4-garden-summer.png",
+            "size": "2K"
+          },
+          {
+            "url": "https://mock-edited-image.com/seedream4-garden-autumn.png",
+            "size": "2K"
+          },
+          {
+            "url": "https://mock-edited-image.com/seedream4-garden-winter.png",
+            "size": "2K"
+          }
+        ]
+      },
+      "mockChannel": {
+        "channelInfo": "{\"apiKey\":\"test-key\",\"deployName\":\"doubao-seedream-4-0\"}",
+        "protocol": "huoshan",
+        "url": "https://your-custom-endpoint.com/v1/images/edits"
+      },
+      "parameterValidations": [
+        {"field": "model", "expectedValue": "doubao_seedream_4_0"},
+        {"field": "size", "expectedValue": "2K"}
+      ],
+      "customValidations": [
+        {
+          "type": "responseLength",
+          "description": "Should generate 4 sequential images",
+          "expectedLength": 4
+        }
+      ]
+    }
+  ]
+}
