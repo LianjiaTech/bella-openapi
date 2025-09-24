@@ -10,6 +10,8 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import org.springframework.stereotype.Component;
 
+import java.util.Map;
+
 /**
  * OpenAI文生图适配器
  */
@@ -34,13 +36,42 @@ public class OpenAIAdaptor implements ImagesGeneratorAdaptor<ImagesProperty> {
     @Override
     public ImagesResponse generateImages(ImagesRequest request, String url, ImagesProperty property) {
         request.setModel(property.getDeployName());
+        Object requestBody = buildRequestBody(request);
         Request.Builder requestBuilder = authorizationRequestBuilder(property.getAuth());
 
         requestBuilder.url(url)
                 .post(RequestBody.create(MediaType.get("application/json; charset=utf-8"),
-                        JacksonUtils.serialize(request)));
+                        JacksonUtils.serialize(requestBody)));
 
         Request httpRequest = requestBuilder.build();
         return HttpUtils.httpRequest(httpRequest, ImagesResponse.class);
     }
+
+    /**
+     * 构建请求体，extra_body 中的所有参数都释放出来，存在就覆盖
+     */
+    private Object buildRequestBody(ImagesRequest request) {
+        Map<String, Object> extraBody = request.getExtra_body();
+        Object realExtraBody = request.getRealExtraBody();
+
+        if ((extraBody == null || extraBody.isEmpty()) && realExtraBody == null) {
+            return request;
+        }
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> requestMap = JacksonUtils.toMap(request);
+
+        if (requestMap != null) {
+            if (extraBody != null && !extraBody.isEmpty()) {
+                requestMap.putAll(extraBody);
+            }
+
+            if (realExtraBody != null) {
+                requestMap.put("extra_body", realExtraBody);
+            }
+        }
+        
+        return requestMap;
+    }
+
 }

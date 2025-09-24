@@ -1,5 +1,7 @@
 package com.ke.bella.openapi.protocol.images;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -12,6 +14,8 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.annotation.Nullable;
 import javax.validation.constraints.NotBlank;
 import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * 图片编辑请求参数
@@ -29,7 +33,7 @@ public class ImagesEditRequest implements UserRequest, Serializable {
      */
     @Nullable
     @JsonIgnore
-    private MultipartFile image;
+    private MultipartFile[] image;
     
     /**
      * 一个额外的图片，其完全透明的区域（例如alpha为零的地方）指示应该编辑图片的位置。
@@ -44,14 +48,14 @@ public class ImagesEditRequest implements UserRequest, Serializable {
      * 如果未提供mask，图片必须具有透明度，该透明度将用作mask。
      */
     @Nullable
-    private String image_url;
+    private String[] image_url;
     
     /**
      * 要编辑的图片的base64编码JSON格式。必须是有效的PNG文件，小于4MB，且为正方形。
      * 如果未提供mask，图片必须具有透明度，该透明度将用作mask。
      */
     @Nullable
-    private String image_b64_json;
+    private String[] image_b64_json;
     
     /**
      * 描述所需图片的文本。最大长度为1000个字符。
@@ -88,4 +92,42 @@ public class ImagesEditRequest implements UserRequest, Serializable {
      */
     @Nullable
     private String user;
+	@JsonIgnore
+	private Map<String, Object> extra_body;
+
+	/**
+	 * Specific extra body field, serialized as extra_body
+	 */
+	@JsonIgnore
+	private Object realExtraBody;
+
+	/**
+	 * Flatten extra_body fields to the outer JSON during serialization
+	 */
+	@JsonAnyGetter
+	public Map<String, Object> getExtraBodyFields() {
+		Map<String, Object> result = new HashMap<>();
+
+		// Add regular extra_body fields
+		if (extra_body != null) {
+			result.putAll(extra_body);
+		}
+
+		// Add realExtraBody as extra_body field
+		if (realExtraBody != null) {
+			result.put("extra_body", realExtraBody);
+		}
+
+		return result.isEmpty() ? null : result;
+	}
+
+	/**
+	 * Handle unknown properties during deserialization and store them in extra_body
+	 */
+	public void setExtraBodyField(String key, Object value) {
+		if (extra_body == null) {
+			extra_body = new HashMap<>();
+		}
+		extra_body.put(key, value);
+	}
 }

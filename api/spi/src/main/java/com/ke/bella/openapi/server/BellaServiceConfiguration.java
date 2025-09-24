@@ -63,20 +63,6 @@ public class BellaServiceConfiguration implements WebMvcConfigurer {
     }
 
     @Bean
-    public OpenAiService openAiService(OpenapiProperties openapiProperties) {
-        ObjectMapper mapper = OpenAiService.defaultObjectMapper();
-
-        // 使用HttpUtils的defaultOkhttpClient，它会自动包含BellaInterceptor
-        OkHttpClient client = HttpUtils.defaultOkhttpClient();
-
-        Retrofit retrofit = OpenAiService.defaultRetrofit(client, mapper, openapiProperties.getHost() + "/v1/");
-        OpenAiApi openAiApi = retrofit.create(OpenAiApi.class);
-        ExecutorService executorService = client.dispatcher().executorService();
-
-        return new OpenAiService(openAiApi, executorService);
-    }
-
-    @Bean
     public OpenAiServiceFactory openAiServiceFactory(OpenapiProperties openapiProperties) {
         return new OpenAiServiceFactory(openapiProperties);
     }

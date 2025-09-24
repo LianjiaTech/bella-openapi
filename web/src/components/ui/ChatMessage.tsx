@@ -11,10 +11,20 @@ export interface ChatMessageProps {
   /** 深度思考内容 */
   reasoning_content?: string;
   error?: string;
+  /** 是否包含需要以HTML方式渲染的内容 */
+  dangerousHTML?: boolean;
 }
 
-export const ChatMessage = ({ isUser, content, reasoning_content, error,isLoading = false }: ChatMessageProps) => {
+export const ChatMessage = ({ 
+  isUser, 
+  content, 
+  reasoning_content, 
+  error,
+  isLoading = false,
+  dangerousHTML = false 
+}: ChatMessageProps) => {
   const [isReasoningExpanded, setIsReasoningExpanded] = useState(true);
+  
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-3`}>
       <div className={`flex ${isUser ? 'flex-row-reverse' : 'flex-row'} max-w-[85%]`}>
@@ -50,8 +60,16 @@ export const ChatMessage = ({ isUser, content, reasoning_content, error,isLoadin
               </div>
             )}
 
-            {/* 普通内容 */}
-            {content}
+            {/* 普通内容 - 根据dangerousHTML属性决定渲染方式 */}
+            {dangerousHTML ? (
+              <div 
+                className="content-wrapper" 
+                dangerouslySetInnerHTML={{ __html: content }}
+              />
+            ) : (
+              <div className="content-wrapper">{content}</div>
+            )}
+            
             {isLoading && (
               <span className="inline-block ml-1">
                 {isUser ? <WaitingForVoiceInput /> : <WaitingForAIResponse />}
