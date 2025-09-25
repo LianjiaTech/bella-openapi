@@ -1,6 +1,5 @@
 package com.ke.bella.openapi.protocol.completion;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -13,6 +12,7 @@ import org.apache.commons.lang3.StringUtils;
 import javax.annotation.Nullable;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
+import java.io.Serializable;
 import java.util.List;
 import java.util.UUID;
 
@@ -21,7 +21,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @Builder
 @JsonInclude(Include.NON_NULL)
-public class Message {
+public class Message implements Serializable {
 
     // one of the system, user, assistant, function, tool
     @NotNull
@@ -75,7 +75,7 @@ public class Message {
     @AllArgsConstructor
     @NoArgsConstructor
     @Builder
-    public static class ToolCall {
+    public static class ToolCall implements Serializable {
 
         private int index;
 
@@ -124,7 +124,7 @@ public class Message {
     @AllArgsConstructor
     @NoArgsConstructor
     @Builder
-    public static class Tool {
+    public static class Tool implements Serializable {
         private String type;
         private Function function;
         private Object cache_control;
@@ -134,7 +134,7 @@ public class Message {
     @AllArgsConstructor
     @NoArgsConstructor
     @Builder
-    public static class Function {
+    public static class Function implements Serializable {
 
         /**
          * The name of the function to be called. Must be a-z, A-Z, 0-9, or
@@ -168,7 +168,7 @@ public class Message {
         @NoArgsConstructor
         @Builder
         @JsonInclude(Include.NON_NULL)
-        public static class FunctionParameter {
+        public static class FunctionParameter implements Serializable {
             private String type;
             private List<String> required;
             private Object properties;
@@ -180,7 +180,7 @@ public class Message {
     @AllArgsConstructor
     @NoArgsConstructor
     @Builder
-    public static class FunctionCall {
+    public static class FunctionCall implements Serializable {
 
         /**
          * The name of the function to call.
