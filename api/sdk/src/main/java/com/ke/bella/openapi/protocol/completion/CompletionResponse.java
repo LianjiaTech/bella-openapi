@@ -190,7 +190,7 @@ public class CompletionResponse extends OpenapiResponse {
 
     @Override
     public boolean supportClone() {
-        return true;
+        return CollectionUtils.isNotEmpty(choices) && choices.stream().anyMatch(choice -> choice.getLogprobs() != null);
     }
 
 }
