@@ -99,7 +99,7 @@ public class CompletionResponse extends OpenapiResponse {
         private String finish_reason;
         private int index;
         private Message message;
-        private Object logprobs;
+        private Logprobs logprobs;
 
         public String content() {
             if(message != null && message.getContent() != null) {
@@ -186,6 +186,40 @@ public class CompletionResponse extends OpenapiResponse {
         private int cached_tokens;
         private int audio_tokens;
         private int image_tokens;
+    }
+
+
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    @Builder
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public static class Logprobs implements Serializable {
+        private List<Content> content;
+        private List<Content> refusal;
+
+        @Data
+        @AllArgsConstructor
+        @NoArgsConstructor
+        @Builder
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        public static class Content implements Serializable {
+            private String token;
+            private Double logprob;
+            private List<Integer> bytes;
+            private List<TopLogprob> top_logprobs;
+        }
+
+        @Data
+        @AllArgsConstructor
+        @NoArgsConstructor
+        @Builder
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        public static class TopLogprob implements Serializable {
+            private String token;
+            private Double logprob;
+            private List<Integer> bytes;
+        }
     }
 
     @Override

@@ -121,9 +121,16 @@ public class CompletionRequest implements UserRequest, Serializable {
     private Float frequency_penalty;
 
     /**
-     * Whether to return log probabilities of the output tokens or not. If true, returns the log probabilities of each output token returned in the content of message.
+     * Whether to return log probabilities of the output tokens.
      */
+    @Nullable
     private Boolean logprobs;
+
+    /**
+     * The number of most likely tokens to return at each token position, for each token generated.
+     */
+    @Nullable
+    private Integer top_logprobs;
 
     /**
      * defaults to null Modify the likelihood of specified tokens appearing in the completion.

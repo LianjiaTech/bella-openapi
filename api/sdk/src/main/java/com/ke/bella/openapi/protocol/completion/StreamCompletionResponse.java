@@ -125,7 +125,7 @@ public class StreamCompletionResponse extends OpenapiResponse {
         private String finish_reason;
         private int index;
         private Message delta;
-        private Object logprobs;
+        private CompletionResponse.Logprobs logprobs;
 
         public String content() {
             if(delta != null && delta.getContent() != null) {
