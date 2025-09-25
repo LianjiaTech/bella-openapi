@@ -1,0 +1,212 @@
+{
+  "realtimeAsrRequests": [
+    {
+      "scenarioName": "基础实时ASR请求",
+      "description": "标准的实时语音识别WebSocket连接测试",
+      "request": {
+        "model": "ke-realtime",
+        "endpoint": "/v1/audio/realtime",
+        "websocket_upgrade": true,
+        "startMessage": {
+          "header": {
+            "message_id": "test-msg-001",
+            "task_id": "test-task-001",
+            "namespace": "SpeechTranscriber",
+            "name": "StartTranscription",
+            "appkey": "default"
+          },
+          "payload": {
+            "format": "pcm",
+            "sample_rate": 16000,
+            "enable_intermediate_result": true,
+            "enable_punctuation_prediction": true,
+            "enable_inverse_text_normalization": true
+          }
+        }
+      },
+      "expectedResponse": {
+        "websocket_connection": "established",
+        "status_code": 101,
+        "upgrade_header": "websocket"
+      },
+      "mockChannel": {
+        "channelInfo": "{\"apiKey\":\"test-key\",\"deployName\":\"ke-realtime\"}",
+        "protocol": "websocket",
+        "url": "wss://test-realtime-service.com/v1/audio/realtime"
+      },
+      "parameterValidations": [
+        {"field": "model", "expectedValue": "ke-realtime"},
+        {"field": "websocket_upgrade", "expectedValue": true}
+      ]
+    },
+    {
+      "scenarioName": "ASR Stream请求",
+      "description": "仅转录事件的实时语音识别WebSocket连接测试",
+      "request": {
+        "model": "ke-stream-asr",
+        "endpoint": "/v1/audio/asr/stream",
+        "websocket_upgrade": true,
+        "startMessage": {
+          "header": {
+            "message_id": "test-msg-002",
+            "task_id": "test-task-002",
+            "namespace": "SpeechTranscriber",
+            "name": "StartTranscription",
+            "appkey": "default"
+          },
+          "payload": {
+            "format": "pcm",
+            "sample_rate": 16000,
+            "enable_intermediate_result": true,
+            "enable_punctuation_prediction": false,
+            "enable_inverse_text_normalization": false
+          }
+        }
+      },
+      "expectedResponse": {
+        "websocket_connection": "established",
+        "status_code": 101,
+        "upgrade_header": "websocket"
+      },
+      "mockChannel": {
+        "channelInfo": "{\"apiKey\":\"test-key-stream\",\"deployName\":\"ke-stream-asr\"}",
+        "protocol": "websocket",
+        "url": "wss://test-stream-service.com/v1/audio/asr/stream"
+      },
+      "parameterValidations": [
+        {"field": "model", "expectedValue": "ke-stream-asr"},
+        {"field": "endpoint", "expectedValue": "/v1/audio/asr/stream"}
+      ]
+    },
+    {
+      "scenarioName": "完整实时对话请求",
+      "description": "包含LLM和TTS的完整实时对话WebSocket连接测试",
+      "request": {
+        "model": "ke-realtim",
+        "endpoint": "/v1/audio/realtime",
+        "websocket_upgrade": true,
+        "startMessage": {
+          "header": {
+            "message_id": "test-msg-003",
+            "task_id": "test-task-003",
+            "namespace": "SpeechTranscriber",
+            "name": "StartTranscription",
+            "appkey": "default"
+          },
+          "payload": {
+            "format": "pcm",
+            "sample_rate": 16000,
+            "enable_intermediate_result": true,
+            "enable_punctuation_prediction": true,
+            "enable_inverse_text_normalization": true,
+            "llm_option": {
+              "main": {
+                "model": "qwen2.5-coder:3b",
+                "sys_prompt": "你是一个全能的语音助理，你的回复会转成音频给用户，所以请尽可能简洁的回复，同时首句话尽快结束以便更好的进行流式合成语音"
+              }
+            },
+            "tts_option": {
+              "model": "chat-tts",
+              "sample_rate": 24000,
+              "voice": "zh_female"
+            }
+          }
+        }
+      },
+      "expectedResponse": {
+        "websocket_connection": "established",
+        "status_code": 101,
+        "upgrade_header": "websocket"
+      },
+      "mockChannel": {
+        "channelInfo": "{\"apiKey\":\"test-key-chat\",\"deployName\":\"ke-realtim\"}",
+        "protocol": "websocket",
+        "url": "wss://test-chat-service.com/v1/audio/realtime"
+      },
+      "parameterValidations": [
+        {"field": "model", "expectedValue": "ke-realtim"},
+        {"field": "llm_option.main.model", "expectedValue": "qwen2.5-coder:3b"},
+        {"field": "tts_option.model", "expectedValue": "chat-tts"}
+      ],
+      "customValidations": [
+        {
+          "type": "websocketUpgrade",
+          "description": "Should have proper WebSocket upgrade headers",
+          "expectedHeaders": ["Upgrade: websocket", "Connection: Upgrade"]
+        }
+      ]
+    },
+    {
+      "scenarioName": "非WebSocket请求错误",
+      "description": "测试非WebSocket请求应该返回400错误",
+      "request": {
+        "model": "realtime-asr-v1",
+        "endpoint": "/v1/audio/realtime",
+        "websocket_upgrade": false,
+        "startMessage": null
+      },
+      "expectedResponse": {
+        "websocket_connection": "rejected",
+        "status_code": 400,
+        "error_message": "Bad Request"
+      },
+      "mockChannel": {
+        "channelInfo": "{\"apiKey\":\"test-key\",\"deployName\":\"realtime-asr-v1\"}",
+        "protocol": "websocket",
+        "url": "wss://test-realtime-service.com/v1/audio/realtime"
+      },
+      "parameterValidations": [
+        {"field": "websocket_upgrade", "expectedValue": false}
+      ]
+    },
+    {
+      "scenarioName": "高采样率实时ASR请求",
+      "description": "使用24kHz采样率的实时语音识别测试",
+      "request": {
+        "model": "realtime-asr-hd",
+        "endpoint": "/v1/audio/realtime",
+        "websocket_upgrade": true,
+        "startMessage": {
+          "header": {
+            "message_id": "test-msg-004",
+            "task_id": "test-task-004",
+            "namespace": "SpeechTranscriber",
+            "name": "StartTranscription",
+            "appkey": "default"
+          },
+          "payload": {
+            "format": "pcm",
+            "sample_rate": 24000,
+            "enable_intermediate_result": true,
+            "enable_punctuation_prediction": true,
+            "enable_inverse_text_normalization": true,
+            "variables": {
+              "context": "high quality audio processing"
+            }
+          }
+        }
+      },
+      "expectedResponse": {
+        "websocket_connection": "established",
+        "status_code": 101,
+        "upgrade_header": "websocket"
+      },
+      "mockChannel": {
+        "channelInfo": "{\"apiKey\":\"test-key-hd\",\"deployName\":\"realtime-asr-hd\"}",
+        "protocol": "websocket",
+        "url": "wss://test-hd-service.com/v1/audio/realtime"
+      },
+      "parameterValidations": [
+        {"field": "model", "expectedValue": "realtime-asr-hd"},
+        {"field": "startMessage.payload.sample_rate", "expectedValue": 24000}
+      ],
+      "customValidations": [
+        {
+          "type": "sampleRateValidation",
+          "description": "Should support high sample rate configurations",
+          "expectedValue": 24000
+        }
+      ]
+    }
+  ]
+}

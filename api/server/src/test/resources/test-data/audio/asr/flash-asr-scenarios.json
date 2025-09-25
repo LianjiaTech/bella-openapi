@@ -1,0 +1,198 @@
+{
+  "flashAsrRequests": [
+    {
+      "scenarioName": "基础Flash ASR请求",
+      "description": "使用默认参数进行Flash ASR语音识别",
+      "request": {
+        "model": "ke-funasr-flash",
+        "format": "wav",
+        "sample_rate": 16000,
+        "max_sentence_silence": 3000,
+        "hot_words": "",
+        "hot_words_table_id": "",
+        "audio_content": "test audio data"
+      },
+      "expectedResponse": {
+        "task_id": "flash-asr-task-001",
+        "user": "test-user",
+        "flash_result": {
+          "duration": 5600,
+          "sentences": [
+            {
+              "text": "今天天气真不错",
+              "begin_time": 0,
+              "end_time": 2500
+            },
+            {
+              "text": "我很开心",
+              "begin_time": 3000,
+              "end_time": 5600
+            }
+          ]
+        }
+      },
+      "mockChannel": {
+        "channelInfo": "{\"apiKey\":\"test-key\",\"deployName\":\"flash-asr-v1\"}",
+        "protocol": "huoshan",
+        "url": "https://openspeech.bytedance.com/api/v1/asr/flash"
+      },
+      "parameterValidations": [
+        {"field": "model", "expectedValue": "flash-asr-v1"},
+        {"field": "format", "expectedValue": "wav"},
+        {"field": "sample_rate", "expectedValue": 16000},
+        {"field": "max_sentence_silence", "expectedValue": 3000}
+      ]
+    },
+    {
+      "scenarioName": "高采样率Flash ASR请求",
+      "description": "使用24kHz采样率进行Flash ASR语音识别",
+      "request": {
+        "model": "flash-asr-hd",
+        "format": "mp3",
+        "sample_rate": 24000,
+        "max_sentence_silence": 2000,
+        "hot_words": "语音识别,深度学习",
+        "hot_words_table_id": "hw_table_001",
+        "audio_content": "high quality audio data"
+      },
+      "expectedResponse": {
+        "task_id": "flash-asr-task-002",
+        "user": "test-user-hd",
+        "flash_result": {
+          "duration": 8500,
+          "sentences": [
+            {
+              "text": "语音识别技术正在快速发展",
+              "begin_time": 0,
+              "end_time": 3500
+            },
+            {
+              "text": "深度学习推动了识别准确率的提升",
+              "begin_time": 4000,
+              "end_time": 8500
+            }
+          ]
+        }
+      },
+      "mockChannel": {
+        "channelInfo": "{\"apiKey\":\"test-key-hd\",\"deployName\":\"flash-asr-hd\"}",
+        "protocol": "huoshan",
+        "url": "https://openspeech.bytedance.com/api/v1/asr/flash"
+      },
+      "parameterValidations": [
+        {"field": "model", "expectedValue": "flash-asr-hd"},
+        {"field": "format", "expectedValue": "mp3"},
+        {"field": "sample_rate", "expectedValue": 24000},
+        {"field": "hot_words", "expectedValue": "语音识别,深度学习"}
+      ]
+    },
+    {
+      "scenarioName": "短静音间隔Flash ASR请求",
+      "description": "使用较短的句子间静音间隔进行识别",
+      "request": {
+        "model": "flash-asr-fast",
+        "format": "pcm",
+        "sample_rate": 8000,
+        "max_sentence_silence": 1000,
+        "hot_words": "",
+        "hot_words_table_id": "",
+        "audio_content": "fast processing audio"
+      },
+      "expectedResponse": {
+        "task_id": "flash-asr-task-003",
+        "user": "test-user-fast",
+        "flash_result": {
+          "duration": 4200,
+          "sentences": [
+            {
+              "text": "快速",
+              "begin_time": 0,
+              "end_time": 800
+            },
+            {
+              "text": "语音",
+              "begin_time": 1000,
+              "end_time": 1800
+            },
+            {
+              "text": "识别",
+              "begin_time": 2200,
+              "end_time": 3000
+            },
+            {
+              "text": "测试",
+              "begin_time": 3500,
+              "end_time": 4200
+            }
+          ]
+        }
+      },
+      "mockChannel": {
+        "channelInfo": "{\"apiKey\":\"test-key-fast\",\"deployName\":\"flash-asr-fast\"}",
+        "protocol": "huoshan",
+        "url": "https://openspeech.bytedance.com/api/v1/asr/flash"
+      },
+      "parameterValidations": [
+        {"field": "model", "expectedValue": "flash-asr-fast"},
+        {"field": "format", "expectedValue": "pcm"},
+        {"field": "sample_rate", "expectedValue": 8000},
+        {"field": "max_sentence_silence", "expectedValue": 1000}
+      ]
+    },
+    {
+      "scenarioName": "带热词表Flash ASR请求",
+      "description": "使用热词表提升特定词汇识别准确率",
+      "request": {
+        "model": "flash-asr-custom",
+        "format": "wav",
+        "sample_rate": 16000,
+        "max_sentence_silence": 3000,
+        "hot_words": "人工智能,机器学习,神经网络",
+        "hot_words_table_id": "ai_vocab_v2",
+        "audio_content": "ai technical content"
+      },
+      "expectedResponse": {
+        "task_id": "flash-asr-task-004",
+        "user": "test-user-ai",
+        "flash_result": {
+          "duration": 7800,
+          "sentences": [
+            {
+              "text": "人工智能是未来技术发展的核心",
+              "begin_time": 0,
+              "end_time": 3800
+            },
+            {
+              "text": "机器学习和神经网络推动了AI的进步",
+              "begin_time": 4200,
+              "end_time": 7800
+            }
+          ]
+        }
+      },
+      "mockChannel": {
+        "channelInfo": "{\"apiKey\":\"test-key-custom\",\"deployName\":\"flash-asr-custom\"}",
+        "protocol": "huoshan",
+        "url": "https://openspeech.bytedance.com/api/v1/asr/flash"
+      },
+      "parameterValidations": [
+        {"field": "model", "expectedValue": "flash-asr-custom"},
+        {"field": "hot_words", "expectedValue": "人工智能,机器学习,神经网络"},
+        {"field": "hot_words_table_id", "expectedValue": "ai_vocab_v2"}
+      ],
+      "customValidations": [
+        {
+          "type": "durationRange",
+          "description": "Duration should be reasonable for content length",
+          "minValue": 5000,
+          "maxValue": 10000
+        },
+        {
+          "type": "sentenceCount",
+          "description": "Should have at least 2 sentences",
+          "minValue": 2
+        }
+      ]
+    }
+  ]
+}
