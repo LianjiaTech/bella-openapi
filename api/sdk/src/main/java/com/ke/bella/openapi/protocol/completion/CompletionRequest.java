@@ -121,6 +121,11 @@ public class CompletionRequest implements UserRequest, Serializable {
     private Float frequency_penalty;
 
     /**
+     * Whether to return log probabilities of the output tokens or not. If true, returns the log probabilities of each output token returned in the content of message.
+     */
+    private Boolean logprobs;
+
+    /**
      * defaults to null Modify the likelihood of specified tokens appearing in the completion.
      * <p>
      * Accepts a json object that maps tokens (specified by their token ID in the tokenizer) to an associated bias value from -100 to 100.
