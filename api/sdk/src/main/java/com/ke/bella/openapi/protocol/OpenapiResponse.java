@@ -1,8 +1,6 @@
 package com.ke.bella.openapi.protocol;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.ke.bella.openapi.common.exception.ChannelException;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -45,7 +43,7 @@ public class OpenapiResponse implements Serializable {
     @AllArgsConstructor
     @NoArgsConstructor
     @Builder
-    public static class OpenapiError {
+    public static class OpenapiError implements Serializable {
 
         /**
          * 安全检查结果为failed，返回error中包含检查结果
@@ -86,6 +84,10 @@ public class OpenapiResponse implements Serializable {
             this.code = httpCode.toString();
             this.httpCode = httpCode;
         }
+    }
+
+    public boolean supportClone() {
+        return false;
     }
 
 }

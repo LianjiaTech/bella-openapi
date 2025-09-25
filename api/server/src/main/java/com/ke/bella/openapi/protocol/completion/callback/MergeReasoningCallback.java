@@ -59,7 +59,7 @@ public class MergeReasoningCallback extends Callbacks.StreamCompletionCallbackNo
         } else if(stage == 3) {
             message.setContent("\n```\n" + (thinkMessage.getContent() == null ? "" : thinkMessage.getContent()));
         }
-        response.getChoices().add(new StreamCompletionResponse.Choice("", 0, message));
+        response.getChoices().add(new StreamCompletionResponse.Choice("", 0, message, null));
         response.setStandardFormat(resp);
         return response;
     }

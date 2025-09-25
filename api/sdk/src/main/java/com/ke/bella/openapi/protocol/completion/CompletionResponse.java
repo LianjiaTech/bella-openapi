@@ -1,20 +1,19 @@
 package com.ke.bella.openapi.protocol.completion;
 
-import java.util.List;
-
-import lombok.Builder;
-import org.apache.commons.collections4.CollectionUtils;
-
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.ke.bella.openapi.protocol.OpenapiResponse;
 import com.ke.bella.openapi.protocol.completion.Message.ToolCall;
-
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
+import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.util.Assert;
+
+import java.io.Serializable;
+import java.util.List;
 
 @Data
 @JsonInclude(Include.NON_NULL)
@@ -88,7 +87,7 @@ public class CompletionResponse extends OpenapiResponse {
     @JsonInclude(Include.NON_NULL)
     @SuperBuilder
     @NoArgsConstructor
-    public static class Choice {
+    public static class Choice implements Serializable {
 
         /**
          * Every response will include a finish_reason. The possible values for finish_reason are:
@@ -100,6 +99,7 @@ public class CompletionResponse extends OpenapiResponse {
         private String finish_reason;
         private int index;
         private Message message;
+        private Logprobs logprobs;
 
         public String content() {
             if(message != null && message.getContent() != null) {
@@ -155,7 +155,7 @@ public class CompletionResponse extends OpenapiResponse {
     @Builder
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class TokenUsage {
+    public static class TokenUsage implements Serializable {
         private int completion_tokens;
         private int prompt_tokens;
         private int total_tokens;
@@ -181,11 +181,50 @@ public class CompletionResponse extends OpenapiResponse {
     }
 
     @Data
-    public static class TokensDetail {
+    public static class TokensDetail implements Serializable {
         private int reasoning_tokens;
         private int cached_tokens;
         private int audio_tokens;
         private int image_tokens;
+    }
+
+
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    @Builder
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public static class Logprobs implements Serializable {
+        private List<Content> content;
+        private List<Content> refusal;
+
+        @Data
+        @AllArgsConstructor
+        @NoArgsConstructor
+        @Builder
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        public static class Content implements Serializable {
+            private String token;
+            private Double logprob;
+            private List<Integer> bytes;
+            private List<TopLogprob> top_logprobs;
+        }
+
+        @Data
+        @AllArgsConstructor
+        @NoArgsConstructor
+        @Builder
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        public static class TopLogprob implements Serializable {
+            private String token;
+            private Double logprob;
+            private List<Integer> bytes;
+        }
+    }
+
+    @Override
+    public boolean supportClone() {
+        return CollectionUtils.isNotEmpty(choices) && choices.stream().anyMatch(choice -> choice.getLogprobs() != null);
     }
 
 }

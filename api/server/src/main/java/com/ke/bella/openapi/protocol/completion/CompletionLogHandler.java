@@ -38,6 +38,9 @@ public class CompletionLogHandler implements EndpointLogHandler {
         CompletionResponse.TokenUsage usage = countTokenUsage(request, processData.getResponse(), encodingType);
         processData.setUsage(usage);
         processData.setMetrics(countMetrics(startTime, processData.getRequestMillis(), created, firstPackageTime, usage));
+        if(response != null && response.getChoices() != null) {
+            response.getChoices().forEach(choice -> choice.setLogprobs(null));
+        }
     }
 
     @Override
@@ -57,7 +60,7 @@ public class CompletionLogHandler implements EndpointLogHandler {
     }
 
     private CompletionResponse.TokenUsage countTokenUsage(CompletionRequest request, OpenapiResponse openapiResponse, String encodingType) {
-        if(openapiResponse.getError() != null) {
+        if(openapiResponse != null && openapiResponse.getError() != null) {
             int httpCode = openapiResponse.getError().getHttpCode();
             if(httpCode > 399 && httpCode < 500 && httpCode != 408) {
                 CompletionResponse.TokenUsage tokenUsage = new CompletionResponse.TokenUsage();
