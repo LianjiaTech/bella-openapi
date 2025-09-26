@@ -24,8 +24,8 @@ export type MessageRole = 'user' | 'assistant' | 'system' | 'function';
 export interface ChatMessage {
   /** 消息角色 */
   role: MessageRole;
-  /** 消息内容 */
-  content: string;
+  /** 消息内容 - 支持文本或多模态内容 */
+  content: string | any[];
   /** 深度思考内容 */
   reasoning_content?: string;
   /** 是否是思考内容 */
