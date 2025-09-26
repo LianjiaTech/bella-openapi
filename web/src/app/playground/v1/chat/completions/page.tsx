@@ -274,53 +274,55 @@ export default function ChatCompletions() {
     return cleanedContent;
   }
 
-  // 添加一个处理模型输出内容的函数
-  function processModelOutput(content: string, currentModel: string) {
-    if (!content) return content;
-    
-    // 特定模型的处理规则
-    const modelRules: {[key: string]: (text: string) => string} = {
-      'gemini-2.5-flash-image-preview': (text) => {
-        // 移除每个块末尾的换行符
-        return text.endsWith('\n') ? text.slice(0, -1) : text;
-      },
-      // 可以添加其他模型的特殊处理规则
-      'default': (text) => text // 默认不做处理
-    };
-    
-    // 获取当前模型的处理函数，如果没有特定规则则使用默认处理
-    const processFunction = modelRules[currentModel] || modelRules.default;
-    return processFunction(content);
-  }
 
-  // 从URL中获取model参数并检查模型是否支持视觉功能
+  // 从URL中获取model参数和模型数据
   useEffect(() => {
-    // 从URL参数中获取model值
     const params = new URLSearchParams(window.location.search);
     const modelParam = params.get('model');
-    // 如果有参数并且是有效的模型，则使用它
+    const modelDataParam = params.get('modelData');
+
+    // 设置模型名称
     setModel(modelParam || '');
 
-    // 获取模型详情以检查是否支持视觉功能
-    const fetchModelInfo = async () => {
-      if (modelParam) {
-        try {
-          const endpointDetails = await getEndpointDetails('/v1/chat/completions', modelParam, []);
-          const modelInfo = endpointDetails.models.find(m => m.modelName === modelParam || m.terminalModel === modelParam);
-          if (modelInfo) {
-            setCurrentModelInfo(modelInfo);
-            // 检查模型是否支持vision功能
-            const features = JSON.parse(modelInfo.features || '{}');
-            setHasVisionCapability(features.vision === true);
-          }
-        } catch (error) {
-          console.error('Failed to fetch model info:', error);
+    // 解析模型数据
+    if (modelDataParam) {
+      try {
+        const modelInfo: Model = JSON.parse(decodeURIComponent(modelDataParam));
+        setCurrentModelInfo(modelInfo);
+
+        // 检查模型是否支持vision功能
+        if (modelInfo.features) {
+          const features = JSON.parse(modelInfo.features);
+          setHasVisionCapability(features.vision === true);
+        }
+      } catch (error) {
+        console.error('Failed to parse model data:', error);
+        // 如果解析失败，回退到原来的逻辑
+        if (modelParam) {
+          fetchModelInfoFallback(modelParam);
         }
       }
-    };
-
-    fetchModelInfo();
+    } else if (modelParam) {
+      // 如果没有modelData参数，回退到原来的逻辑
+      fetchModelInfoFallback(modelParam);
+    }
   }, []);
+
+  // 回退方案：当URL中没有modelData时使用
+  const fetchModelInfoFallback = async (modelParam: string) => {
+    try {
+      const endpointDetails = await getEndpointDetails('/v1/chat/completions', modelParam, []);
+      const modelInfo = endpointDetails.models.find(m => m.modelName === modelParam || m.terminalModel === modelParam);
+      if (modelInfo) {
+        setCurrentModelInfo(modelInfo);
+        // 检查模型是否支持vision功能
+        const features = JSON.parse(modelInfo.features || '{}');
+        setHasVisionCapability(features.vision === true);
+      }
+    } catch (error) {
+      console.error('Failed to fetch model info:', error);
+    }
+  };
 
   // 初始化ChatCompletionsWriter
   useEffect(() => {
@@ -357,7 +359,7 @@ export default function ChatCompletions() {
       if (!data.content) return;
       
       // 使用通用处理函数处理内容
-      const processedContent = processModelOutput(data.content, model);
+      const processedContent = data.content;
       
       // 检查是否开始接收内联数据
       if (processedContent.includes('<inline>') && !processedContent.includes('</inline>')) {
@@ -474,7 +476,7 @@ export default function ChatCompletions() {
       setStreamingResponse(prev => prev + processedContent);
     });
 
-    writer.on(ChatCompletionsEventType.FINISH, (data) => {
+    writer.on(ChatCompletionsEventType.FINISH, () => {
       setIsLoading(false);
       // 完成时重置流式响应和思考内容
       setStreamingResponse('');
