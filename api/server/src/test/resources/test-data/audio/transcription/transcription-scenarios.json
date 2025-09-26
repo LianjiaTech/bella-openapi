@@ -1,0 +1,188 @@
+{
+  "transcriptionRequests": [
+    {
+      "scenarioName": "基础音频转录请求",
+      "description": "基本的音频文件转录请求，使用默认参数",
+      "request": {
+        "url": "https://example.com/audio/recording.mp3",
+        "model": "whisper-large-v3",
+        "user": "user123",
+        "callback_url": "https://your-domain.com/callback/transcription",
+        "enable_words": true
+      },
+      "expectedResponse": {
+        "task_id": "transcription-task-123456"
+      },
+      "mockChannel": {
+        "channelInfo": "{\"apiKey\":\"test-key\",\"deployName\":\"whisper-large-v3\"}",
+        "protocol": "openai",
+        "url": "https://mock-transcription-service.com/v1/audio/transcriptions"
+      },
+      "parameterValidations": [
+        {"field": "url", "expectedValue": "https://example.com/audio/recording.mp3"},
+        {"field": "model", "expectedValue": "whisper-large-v3"},
+        {"field": "user", "expectedValue": "user123"},
+        {"field": "callback_url", "expectedValue": "https://your-domain.com/callback/transcription"}
+      ]
+    },
+    {
+      "scenarioName": "带说话人识别的转录请求",
+      "description": "启用说话人识别功能的音频转录请求",
+      "request": {
+        "url": "https://example.com/audio/meeting.wav",
+        "model": "whisper-large-v3",
+        "user": "user456",
+        "callback_url": "https://callback.example.com/transcription",
+        "speaker_diarization": true,
+        "speaker_number": 3,
+        "enable_words": true,
+        "enable_semantic_sentence_detection": true,
+        "enable_punctuation_prediction": true
+      },
+      "expectedResponse": {
+        "task_id": "transcription-task-789012"
+      },
+      "mockChannel": {
+        "channelInfo": "{\"apiKey\":\"test-key\",\"deployName\":\"whisper-large-v3\"}",
+        "protocol": "openai",
+        "url": "https://mock-transcription-service.com/v1/audio/transcriptions"
+      },
+      "parameterValidations": [
+        {"field": "model", "expectedValue": "whisper-large-v3"},
+        {"field": "speaker_diarization", "expectedValue": true},
+        {"field": "speaker_number", "expectedValue": 3},
+        {"field": "enable_semantic_sentence_detection", "expectedValue": true},
+        {"field": "enable_punctuation_prediction", "expectedValue": true}
+      ]
+    },
+    {
+      "scenarioName": "自定义采样率和热词转录请求",
+      "description": "指定采样率和热词的音频转录请求",
+      "request": {
+        "url": "https://example.com/audio/lecture.mp3",
+        "model": "whisper-medium",
+        "user": "user789",
+        "callback_url": "https://webhook.example.com/transcription",
+        "sample_rate": 16000,
+        "hot_word": "人工智能,机器学习,深度学习",
+        "language": "cn",
+        "language_type": 1,
+        "enable_words": false,
+        "chunk_length": 15
+      },
+      "expectedResponse": {
+        "task_id": "transcription-task-345678"
+      },
+      "mockChannel": {
+        "channelInfo": "{\"apiKey\":\"test-key\",\"deployName\":\"whisper-medium\"}",
+        "protocol": "openai",
+        "url": "https://mock-transcription-service.com/v1/audio/transcriptions"
+      },
+      "parameterValidations": [
+        {"field": "sample_rate", "expectedValue": 16000},
+        {"field": "hot_word", "expectedValue": "人工智能,机器学习,深度学习"},
+        {"field": "language", "expectedValue": "cn"},
+        {"field": "language_type", "expectedValue": 1},
+        {"field": "chunk_length", "expectedValue": 15}
+      ]
+    },
+    {
+      "scenarioName": "火山引擎转录请求",
+      "description": "使用火山引擎相关参数的转录请求",
+      "request": {
+        "url": "https://example.com/audio/call.wav",
+        "model": "huoshan-asr",
+        "user": "user101112",
+        "callback_url": "https://api.company.com/transcription/callback",
+        "enable_itn": true,
+        "enable_ddc": true,
+        "enable_channel_split": true,
+        "show_utterances": true,
+        "vad_segment": true,
+        "boosting_table_name": "custom_vocab_table",
+        "channel_number": 2
+      },
+      "expectedResponse": {
+        "task_id": "transcription-task-901234"
+      },
+      "mockChannel": {
+        "channelInfo": "{\"apiKey\":\"test-key\",\"deployName\":\"huoshan-asr\"}",
+        "protocol": "huoshan",
+        "url": "https://mock-huoshan-service.com/v1/audio/transcriptions"
+      },
+      "parameterValidations": [
+        {"field": "model", "expectedValue": "huoshan-asr"},
+        {"field": "enable_itn", "expectedValue": true},
+        {"field": "enable_ddc", "expectedValue": true},
+        {"field": "enable_channel_split", "expectedValue": true},
+        {"field": "channel_number", "expectedValue": 2}
+      ]
+    },
+    {
+      "scenarioName": "讯飞转录请求",
+      "description": "使用讯飞相关参数的转录请求",
+      "request": {
+        "url": "https://example.com/audio/interview.mp3",
+        "model": "xfyun-asr",
+        "user": "user131415",
+        "callback_url": "https://backend.example.com/asr/callback",
+        "language": "cn",
+        "candidate": 1,
+        "audio_mode": "urlLink",
+        "standard_wav": 0,
+        "language_type": 2,
+        "trans_mode": 2,
+        "eng_smoothproc": true,
+        "eng_collogproc": false,
+        "eng_vad_mdn": 1,
+        "eng_vad_margin": 1,
+        "eng_rlang": 1
+      },
+      "expectedResponse": {
+        "task_id": "transcription-task-567890"
+      },
+      "mockChannel": {
+        "channelInfo": "{\"apiKey\":\"test-key\",\"deployName\":\"xfyun-asr\"}",
+        "protocol": "xfyun",
+        "url": "https://mock-xfyun-service.com/v1/audio/transcriptions"
+      },
+      "parameterValidations": [
+        {"field": "model", "expectedValue": "xfyun-asr"},
+        {"field": "candidate", "expectedValue": 1},
+        {"field": "audio_mode", "expectedValue": "urlLink"},
+        {"field": "trans_mode", "expectedValue": 2},
+        {"field": "eng_smoothproc", "expectedValue": true}
+      ]
+    },
+    {
+      "scenarioName": "腾讯转录请求",
+      "description": "使用腾讯云相关参数的转录请求",
+      "request": {
+        "url": "https://example.com/audio/webinar.wav",
+        "model": "tencent-asr",
+        "user": "user161718",
+        "callback_url": "https://service.example.com/transcription/webhook",
+        "vocab_id": "custom_vocab_12345",
+        "enable_words": true,
+        "enable_vad": true,
+        "enable_semantic_sentence_detection": true,
+        "enable_punctuation_prediction": true,
+        "max_end_silence": 3000
+      },
+      "expectedResponse": {
+        "task_id": "transcription-task-234567"
+      },
+      "mockChannel": {
+        "channelInfo": "{\"apiKey\":\"test-key\",\"deployName\":\"tencent-asr\"}",
+        "protocol": "tencent",
+        "url": "https://mock-tencent-service.com/v1/audio/transcriptions"
+      },
+      "parameterValidations": [
+        {"field": "model", "expectedValue": "tencent-asr"},
+        {"field": "vocab_id", "expectedValue": "custom_vocab_12345"},
+        {"field": "enable_vad", "expectedValue": true},
+        {"field": "max_end_silence", "expectedValue": 3000}
+      ]
+    }
+  ]
+}
