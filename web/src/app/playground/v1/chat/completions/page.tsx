@@ -413,7 +413,6 @@ export default function ChatCompletions() {
             if (messages.length > 0 && messages[messages.length - 1].role === 'assistant') {
               const lastMsg = messages[messages.length - 1];
               const currentContent = typeof lastMsg.content === 'string' ? lastMsg.content : '';
-
               // 替换内联数据部分
               const newContent = currentContent.replace(updatedBuffer, processedInlineContent);
               
@@ -459,7 +458,7 @@ export default function ChatCompletions() {
             current.content = currentContentStr + processedContent;
             // 同时更新apiContent
             current.apiContent = cleanInlineContentForAPI(current.content);
-
+            
             // 检查是否需要更新多模态内容
             if (typeof current.content === 'string' && (current.content.includes('<img') || current.content.includes('data:image/'))) {
               const { multimodalContent, hasImage } = createMultimodalContent(current.content);
@@ -491,7 +490,6 @@ export default function ChatCompletions() {
           if (messages.length > 0 && messages[messages.length - 1].role === 'assistant') {
             const lastMsg = messages[messages.length - 1];
             const currentContent = typeof lastMsg.content === 'string' ? lastMsg.content : '';
-
             // 替换内联数据部分
             const newContent = currentContent.replace(inlineBuffer, processedContent);
             
