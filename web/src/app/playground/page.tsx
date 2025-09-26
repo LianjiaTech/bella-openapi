@@ -85,7 +85,7 @@ function PlaygroundContent() {
                     </div>)}
                     <div className="flex-1 overflow-hidden">
                         <iframe
-                            src={`/playground${selectedEndpoint}?model=${selectedModel}`}
+                            src={`/playground${selectedEndpoint}?model=${selectedModel}&modelData=${encodeURIComponent(JSON.stringify(models.find(m => m.modelName === selectedDisplayModel) || {}))}`}
                             className="w-full h-full border-0"
                             sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"
                             referrerPolicy="no-referrer"
