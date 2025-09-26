@@ -10,11 +10,13 @@ import {
   ChatMessage
 } from '@/components/playground/ChatCompletionsProcessor';
 import {api_host} from '@/config';
-import {SendIcon} from 'lucide-react';
+import {SendIcon, ImageIcon, X} from 'lucide-react';
 import {Textarea} from '@/components/ui/textarea';
 import {ChatMessage as MessageComponent} from '@/components/ui/ChatMessage';
 import {v4 as uuidv4} from 'uuid';
 import {useUser} from "@/lib/context/user-context";
+import {getEndpointDetails} from '@/lib/api/meta';
+import {Model} from '@/lib/types/openapi';
 
 // 默认system prompt
 const DEFAULT_SYSTEM_PROMPT = '你是一个智能助手，可以回答各种问题并提供帮助。请尽量提供准确、有帮助的信息。';
@@ -70,6 +72,11 @@ export default function ChatCompletions() {
   const [model, setModel] = useState('');
   const [streamingResponse, setStreamingResponse] = useState('');
   const {userInfo} = useUser();
+
+  // 图像上传相关状态
+  const [uploadedImages, setUploadedImages] = useState<{id: string, file: File, base64: string}[]>([]);
+  const [hasVisionCapability, setHasVisionCapability] = useState(false);
+  const [currentModelInfo, setCurrentModelInfo] = useState<Model | null>(null);
   
   // 新增状态：用于处理内联数据
   const [isReceivingInline, setIsReceivingInline] = useState(false);
@@ -78,6 +85,52 @@ export default function ChatCompletions() {
   // Refs
   const chatCompletionsWriterRef = useRef<ChatCompletionsProcessor | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // 图像处理函数
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files) return;
+
+    Array.from(files).forEach(file => {
+      // 检查文件类型
+      if (!file.type.startsWith('image/')) {
+        setError('请选择图片文件');
+        return;
+      }
+
+      // 检查文件大小 (限制为10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        setError('图片大小不能超过10MB');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const base64 = e.target?.result as string;
+        const newImage = {
+          id: uuidv4(),
+          file,
+          base64
+        };
+        setUploadedImages(prev => [...prev, newImage]);
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // 清空input以允许重复选择同一文件
+    if (event.target) {
+      event.target.value = '';
+    }
+  };
+
+  const removeImage = (imageId: string) => {
+    setUploadedImages(prev => prev.filter(img => img.id !== imageId));
+  };
+
+  const openImageSelector = () => {
+    fileInputRef.current?.click();
+  };
 
   // 处理内联内容的函数
   function processInlineContent(content: string) {
@@ -191,11 +244,15 @@ export default function ChatCompletions() {
   }
 
   // 为API请求清理内联数据的函数 - 增强版
-  function cleanInlineContentForAPI(content: string) {
-    if (!content) return content;
-    
+  function cleanInlineContentForAPI(content: string | any[]): string {
+    if (!content) return '';
+
+    // 如果是数组（多模态内容），返回占位符
+    if (Array.isArray(content)) {
+      return '[多模态内容]';
+    }
+
     let cleanedContent = content;
-    
     // 1. 清理原始内联数据格式
     cleanedContent = cleanedContent.replace(
       /<inline><data>.*?<\/data><mimeType>(.*?)<\/mimeType><\/inline>/g, 
@@ -236,13 +293,33 @@ export default function ChatCompletions() {
     return processFunction(content);
   }
 
-  // 从URL中获取model参数
+  // 从URL中获取model参数并检查模型是否支持视觉功能
   useEffect(() => {
     // 从URL参数中获取model值
     const params = new URLSearchParams(window.location.search);
     const modelParam = params.get('model');
     // 如果有参数并且是有效的模型，则使用它
     setModel(modelParam || '');
+
+    // 获取模型详情以检查是否支持视觉功能
+    const fetchModelInfo = async () => {
+      if (modelParam) {
+        try {
+          const endpointDetails = await getEndpointDetails('/v1/chat/completions', modelParam, []);
+          const modelInfo = endpointDetails.models.find(m => m.modelName === modelParam || m.terminalModel === modelParam);
+          if (modelInfo) {
+            setCurrentModelInfo(modelInfo);
+            // 检查模型是否支持vision功能
+            const features = JSON.parse(modelInfo.features || '{}');
+            setHasVisionCapability(features.vision === true);
+          }
+        } catch (error) {
+          console.error('Failed to fetch model info:', error);
+        }
+      }
+    };
+
+    fetchModelInfo();
   }, []);
 
   // 初始化ChatCompletionsWriter
@@ -335,8 +412,8 @@ export default function ChatCompletions() {
             const messages = [...prev];
             if (messages.length > 0 && messages[messages.length - 1].role === 'assistant') {
               const lastMsg = messages[messages.length - 1];
-              const currentContent = lastMsg.content || '';
-              
+              const currentContent = typeof lastMsg.content === 'string' ? lastMsg.content : '';
+
               // 替换内联数据部分
               const newContent = currentContent.replace(updatedBuffer, processedInlineContent);
               
@@ -378,12 +455,13 @@ export default function ChatCompletions() {
             current.reasoning_content = (lastMsg.reasoning_content || '') + data.reasoning_content;
             current.isReasoningContent = true
           } else if(processedContent) {
-            current.content = (lastMsg.content || '') + processedContent;
+            const currentContentStr = typeof lastMsg.content === 'string' ? lastMsg.content : '';
+            current.content = currentContentStr + processedContent;
             // 同时更新apiContent
             current.apiContent = cleanInlineContentForAPI(current.content);
-            
+
             // 检查是否需要更新多模态内容
-            if (current.content.includes('<img') || current.content.includes('data:image/')) {
+            if (typeof current.content === 'string' && (current.content.includes('<img') || current.content.includes('data:image/'))) {
               const { multimodalContent, hasImage } = createMultimodalContent(current.content);
               current.multimodalContent = multimodalContent;
               current.hasImage = hasImage;
@@ -412,8 +490,8 @@ export default function ChatCompletions() {
           const messages = [...prev];
           if (messages.length > 0 && messages[messages.length - 1].role === 'assistant') {
             const lastMsg = messages[messages.length - 1];
-            const currentContent = lastMsg.content || '';
-            
+            const currentContent = typeof lastMsg.content === 'string' ? lastMsg.content : '';
+
             // 替换内联数据部分
             const newContent = currentContent.replace(inlineBuffer, processedContent);
             
@@ -438,7 +516,7 @@ export default function ChatCompletions() {
       // 最终检查所有消息，确保所有内联内容都已处理
       setMessages(prev => {
         return prev.map(msg => {
-          if (msg.role === 'assistant' && msg.content) {
+          if (msg.role === 'assistant' && typeof msg.content === 'string' && msg.content) {
             // 检查消息内容是否包含未处理的内联数据
             if (msg.content.includes('<inline>') && msg.content.includes('</inline>')) {
               const processedContent = processInlineContent(msg.content);
@@ -529,11 +607,13 @@ export default function ChatCompletions() {
     // 重置内联数据状态
     setIsReceivingInline(false);
     setInlineBuffer('');
+    // 清除上传的图片
+    setUploadedImages([]);
   };
 
   // 发送消息 - 支持多模态格式
   const sendMessage = async () => {
-    if (!input.trim() || isLoading) return;
+    if ((!input.trim() && uploadedImages.length === 0) || isLoading) return;
 
     // 如果正在编辑系统提示词，先保存
     if (isEditingPrompt) {
@@ -549,12 +629,41 @@ export default function ChatCompletions() {
       setIsLoading(true);
     }, 0);
 
+    // 创建用户消息内容（支持多模态）
+    let userMessageHasImage = false;
+    let userMessageMultimodalContent: MultimodalContentItem[] = [];
+
+    // 如果有上传的图片，创建多模态内容
+    if (uploadedImages.length > 0) {
+      userMessageHasImage = true;
+
+      // 添加文本内容（如果有）
+      if (input.trim()) {
+        userMessageMultimodalContent.push({
+          type: "text",
+          text: input.trim()
+        });
+      }
+
+      // 添加图片内容
+      uploadedImages.forEach(image => {
+        userMessageMultimodalContent.push({
+          type: "image_url",
+          image_url: {
+            url: image.base64
+          }
+        });
+      });
+    }
+
     // 添加用户消息
     const userMessage: EnhancedChatMessage = {
       id: uuidv4(),
       role: 'user',
-      content: input,
-      timestamp: Date.now()
+      content: userMessageHasImage ? '' : input, // 当有图片时，内容为空，实际内容在multimodalContent中
+      timestamp: Date.now(),
+      multimodalContent: userMessageHasImage ? userMessageMultimodalContent : undefined,
+      hasImage: userMessageHasImage
     };
     
     // 重置流式响应和思考内容
@@ -563,8 +672,9 @@ export default function ChatCompletions() {
     setIsReceivingInline(false);
     setInlineBuffer('');
 
-    // 清空输入
+    // 清空输入和图片
     setInput('');
+    setUploadedImages([]);
 
     try {
       // 重要：先获取当前所有消息的副本
@@ -598,8 +708,8 @@ export default function ChatCompletions() {
           });
         } 
         // 否则，检查是否需要提取图像
-        else if (msg.content && (msg.content.includes('<inline>') || 
-                 msg.content.includes('data:image/') || 
+        else if (typeof msg.content === 'string' && msg.content && (msg.content.includes('<inline>') ||
+                 msg.content.includes('data:image/') ||
                  msg.content.includes('<img'))) {
           
           const { multimodalContent, hasImage } = createMultimodalContent(msg.content);
@@ -626,7 +736,7 @@ export default function ChatCompletions() {
         else {
           requestMessages.push({
             role: msg.role,
-            content: msg.content
+            content: typeof msg.content === 'string' ? msg.content : ''
           });
         }
       }
@@ -674,8 +784,14 @@ export default function ChatCompletions() {
 
         <div className="mt-2 md:mt-0 flex items-center">
           <span className="text-sm font-medium mr-2">模型:</span>
-          <div className="p-2 rounded">
-            {model}
+          <div className="p-2 rounded flex items-center gap-2">
+            <span>{model}</span>
+            {hasVisionCapability && (
+              <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+                <ImageIcon className="w-3 h-3" />
+                支持图像
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -772,8 +888,39 @@ export default function ChatCompletions() {
                     const needsLoadingIndicator = isLoading && !isUser &&
                       msg.id === lastAssistantMessage?.id;
 
+                    // 对于有图片的用户消息，使用自定义显示
+                    if (isUser && msg.hasImage && msg.multimodalContent) {
+                      const textContent = msg.multimodalContent.find(item => item.type === 'text')?.text || '';
+                      const imageItems = msg.multimodalContent.filter(item => item.type === 'image_url');
+
+                      return (
+                        <div key={msg.id} className={`flex justify-end mb-3`}>
+                          <div className={`flex flex-row-reverse max-w-[85%]`}>
+                            <div className={`flex-shrink-0 h-8 w-8 rounded-full flex items-center justify-center bg-blue-500 ml-2`}>
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                            <div className={`py-2 px-3 rounded-lg bg-blue-100 text-blue-900`}>
+                              <div className="whitespace-pre-wrap text-sm">
+                                {imageItems.map((item, idx) => (
+                                  <img
+                                    key={idx}
+                                    src={item.image_url?.url}
+                                    alt="用户上传的图片"
+                                    className="max-w-xs rounded-lg mb-2"
+                                  />
+                                ))}
+                                {textContent && <div>{textContent}</div>}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+
                     // 使用处理后的内容（如果有）
-                    const displayContent = msg.processedContent || msg.content || '';
+                    const displayContent = msg.processedContent || (typeof msg.content === 'string' ? msg.content : '') || '';
 
                     return (
                       <MessageComponent
@@ -816,13 +963,61 @@ export default function ChatCompletions() {
 
       <div className="flex items-end gap-3 mt-3 flex-shrink-0">
         <div className="flex-grow">
-          <Textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="输入问题..."
-            className="h-20 resize-none rounded-xl shadow-sm focus:border-blue-400 focus:ring-blue-400"
-            disabled={isLoading}
+          {/* 图片预览区域 */}
+          {uploadedImages.length > 0 && (
+            <div className="mb-2 p-2 border border-gray-200 rounded-lg bg-gray-50">
+              <div className="flex flex-wrap gap-2">
+                {uploadedImages.map((image) => (
+                  <div key={image.id} className="relative group">
+                    <img
+                      src={image.base64}
+                      alt="上传的图片"
+                      className="w-16 h-16 object-cover rounded border"
+                    />
+                    <button
+                      onClick={() => removeImage(image.id)}
+                      className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      disabled={isLoading}
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="relative">
+            <Textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={hasVisionCapability ? "输入问题或上传图片..." : "输入问题..."}
+              className="h-20 resize-none rounded-xl shadow-sm focus:border-blue-400 focus:ring-blue-400 pr-12"
+              disabled={isLoading}
+            />
+
+            {/* 图片上传按钮 */}
+            {hasVisionCapability && (
+              <button
+                onClick={openImageSelector}
+                className="absolute bottom-2 right-2 p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                disabled={isLoading}
+                title="上传图片"
+              >
+                <ImageIcon className="w-5 h-5" />
+              </button>
+            )}
+          </div>
+
+          {/* 隐藏的文件输入 */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={handleImageUpload}
+            className="hidden"
           />
         </div>
 
@@ -836,7 +1031,7 @@ export default function ChatCompletions() {
         ) : (
           <Button
             onClick={sendMessage}
-            disabled={!input.trim()}
+            disabled={!input.trim() && uploadedImages.length === 0}
             className="h-12 px-6 rounded-full shadow-sm bg-blue-600 hover:bg-blue-700">
             <SendIcon className="h-5 w-5 mr-2" /> 发送
           </Button>
