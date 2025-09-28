@@ -4,7 +4,10 @@ import java.util.List;
 
 import javax.annotation.PreDestroy;
 
+import com.ke.bella.openapi.server.OpenAiServiceFactory;
+import com.ke.bella.openapi.server.OpenapiProperties;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -28,6 +31,8 @@ import com.lmax.disruptor.dsl.Disruptor;
 import com.lmax.disruptor.dsl.ProducerType;
 import com.lmax.disruptor.util.DaemonThreadFactory;
 
+
+@EnableConfigurationProperties(OpenapiProperties.class)
 @Configuration
 public class BellaAutoConf {
     private final SleepingWaitStrategy sleepingWaitStrategy = new SleepingWaitStrategy();
@@ -80,5 +85,10 @@ public class BellaAutoConf {
         if(costCounter != null) {
             costCounter.flush();
         }
+    }
+
+    @Bean
+    public OpenAiServiceFactory openAiServiceFactory(OpenapiProperties openapiProperties) {
+        return new OpenAiServiceFactory(openapiProperties);
     }
 }

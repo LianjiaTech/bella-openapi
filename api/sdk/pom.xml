@@ -5,7 +5,7 @@
     <parent>
         <groupId>top.bella</groupId>
         <artifactId>bella-openapi</artifactId>
-        <version>1.1.76</version>
+        <version>1.1.81</version>
     </parent>
 
     <artifactId>openapi-sdk</artifactId>
@@ -130,6 +130,10 @@
         <dependency>
             <groupId>com.knuddels</groupId>
             <artifactId>jtokkit</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>top.bella</groupId>
+            <artifactId>openai-service</artifactId>
         </dependency>
     </dependencies>
 </project>

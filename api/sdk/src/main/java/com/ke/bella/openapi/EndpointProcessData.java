@@ -7,6 +7,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.SerializationUtils;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
@@ -16,6 +18,7 @@ import java.util.Map;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@Slf4j
 public class EndpointProcessData {
     @JsonIgnore
     private String apikey;
@@ -60,5 +63,19 @@ public class EndpointProcessData {
         this.setParentAkCode(ak.getParentCode());
         this.setAccountType(ak.getOwnerType());
         this.setAccountCode(ak.getOwnerCode());
+    }
+
+    // 保存副本，防止日志处理中对response的修改影响返回结果
+    public void setResponse(OpenapiResponse response) {
+        if(response.supportClone()) {
+            try {
+                this.response = SerializationUtils.clone(response);
+            } catch (Exception e) {
+                log.warn(e.getMessage(), e);
+                this.response = response;
+            }
+        } else {
+            this.response = response;
+        }
     }
 }

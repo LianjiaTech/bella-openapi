@@ -1,6 +1,6 @@
 package com.ke.bella.openapi;
 
-import com.ke.bella.file.api.config.EnableFileApi;
+import com.alicp.jetcache.anno.config.EnableMethodCache;
 import com.ke.bella.job.queue.config.EnableJobQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,8 +10,6 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-import com.alicp.jetcache.anno.config.EnableMethodCache;
-
 @ComponentScan(basePackages = { "com.ke.bella.openapi" }, 
     excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, 
     classes = com.ke.bella.openapi.server.BellaServiceConfiguration.class))
@@ -19,7 +17,6 @@ import com.alicp.jetcache.anno.config.EnableMethodCache;
 @EnableMethodCache(basePackages = "com.ke.bella.openapi")
 @EnableScheduling
 @EnableJobQueue
-@EnableFileApi
 public class Application {
     private static final Logger LOGGER = LoggerFactory.getLogger(Application.class);
 

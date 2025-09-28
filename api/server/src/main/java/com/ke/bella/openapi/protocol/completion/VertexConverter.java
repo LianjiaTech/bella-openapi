@@ -8,6 +8,7 @@ import com.ke.bella.openapi.protocol.completion.gemini.FunctionResponse;
 import com.ke.bella.openapi.protocol.completion.gemini.GeminiRequest;
 import com.ke.bella.openapi.protocol.completion.gemini.GeminiResponse;
 import com.ke.bella.openapi.protocol.completion.gemini.GenerationConfig;
+import com.ke.bella.openapi.protocol.completion.gemini.LogprobsResult;
 import com.ke.bella.openapi.protocol.completion.gemini.Part;
 import com.ke.bella.openapi.protocol.completion.gemini.SystemInstruction;
 import com.ke.bella.openapi.protocol.completion.gemini.Tool;
@@ -312,32 +313,78 @@ public class VertexConverter {
         if (request.getSeed() != null) {
             builder.seed(request.getSeed());
         }
+        //todo: 开启Logprobs存在问题，暂不支持
+//        if (request.getLogprobs() != null) {
+//            builder.responseLogprobs(request.getLogprobs());
+//        }
+//        if (request.getTop_logprobs() != null) {
+//            builder.logprobs(request.getTop_logprobs());
+//        }
         if(request.getReasoning_effort() != null && property.isSupportThinkConfig()) {
             builder.thinkingConfig(new GenerationConfig.ThinkingConfig());
         }
         return builder.build();
     }
-    
+
     private static CompletionResponse.Choice convertCandidate(Candidate candidate, int index) {
         Message message = convertContentToMessage(candidate.getContent());
         String finishReason = convertFinishReason(candidate.getFinishReason());
-        
+
         return CompletionResponse.Choice.builder()
                 .index(index)
                 .message(message)
                 .finish_reason(finishReason)
+                .logprobs(convertLogprobs(candidate.getLogprobsResult()))
                 .build();
     }
-    
+
     private static StreamCompletionResponse.Choice convertStreamCandidate(Candidate candidate, int index, boolean isFinal) {
         Message delta = convertContentToMessage(candidate.getContent());
         String finishReason = isFinal ? convertFinishReason(candidate.getFinishReason()) : null;
-        
+
         return StreamCompletionResponse.Choice.builder()
                 .index(index)
                 .delta(delta)
                 .finish_reason(finishReason)
+                .logprobs(convertLogprobs(candidate.getLogprobsResult()))
                 .build();
+    }
+
+    private static CompletionResponse.Logprobs convertLogprobs(LogprobsResult logprobsResult) {
+        if (logprobsResult == null || CollectionUtils.isEmpty(logprobsResult.getChosenCandidates())) {
+            return null;
+        }
+
+        List<CompletionResponse.Logprobs.Content> contents = new ArrayList<>();
+        List<LogprobsResult.ChosenCandidate> chosenCandidates = logprobsResult.getChosenCandidates();
+        List<LogprobsResult.TopCandidates> topCandidates = logprobsResult.getTopCandidates();
+
+        for (int i = 0; i < chosenCandidates.size(); i++) {
+            LogprobsResult.ChosenCandidate chosenCandidate = chosenCandidates.get(i);
+            CompletionResponse.Logprobs.Content.ContentBuilder contentBuilder = CompletionResponse.Logprobs.Content
+                    .builder()
+                    .token(chosenCandidate.getToken())
+                    .logprob(chosenCandidate.getLogProbability());
+
+            if (CollectionUtils.isNotEmpty(topCandidates) && topCandidates.size() > i
+                    && CollectionUtils.isNotEmpty(topCandidates.get(i).getCandidates())) {
+                List<CompletionResponse.Logprobs.TopLogprob> topLogprobs = topCandidates.get(i).getCandidates().stream()
+                        .map(candidate -> CompletionResponse.Logprobs.TopLogprob.builder()
+                                .token(candidate.getToken())
+                                .logprob(candidate.getLogProbability())
+                                .build())
+                        .collect(Collectors.toList());
+                contentBuilder.top_logprobs(topLogprobs);
+            }
+
+            contents.add(contentBuilder.build());
+        }
+
+        if (contents.isEmpty()) {
+            return null;
+        }
+
+        return CompletionResponse.Logprobs.builder().content(contents).build();
     }
     
     private static Message convertContentToMessage(Content content) {

@@ -69,6 +69,7 @@ bella:
     cookie-context-path: /
   openapi:
     max-models-per-request: 3
+    host: http://localhost:8080
 
 app:
   id: bella-openapi
