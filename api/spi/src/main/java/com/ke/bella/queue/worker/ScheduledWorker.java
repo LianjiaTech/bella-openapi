@@ -91,6 +91,14 @@ public class ScheduledWorker {
         private String takeStrategy;
         private int size = 1;
 		private int scheduleWorkerDelayMs = 100;
+
+		// Properties类中添加验证
+		public void setScheduleWorkerDelayMs(int scheduleWorkerDelayMs) {
+			if (scheduleWorkerDelayMs < 50) {
+				throw new IllegalArgumentException("scheduleWorkerDelayMs must be at least 50ms");
+			}
+			this.scheduleWorkerDelayMs = scheduleWorkerDelayMs;
+		}
     }
 
 }
