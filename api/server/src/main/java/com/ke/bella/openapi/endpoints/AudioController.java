@@ -1,6 +1,5 @@
 package com.ke.bella.openapi.endpoints;
 
-import com.ke.bella.file.api.FileApiClient;
 import com.ke.bella.job.queue.JobQueueClient;
 import com.ke.bella.job.queue.api.entity.response.TaskResp;
 import com.ke.bella.job.queue.config.JobQueueProperties;
@@ -16,9 +15,9 @@ import com.ke.bella.openapi.protocol.asr.AudioTranscriptionRequest.AudioTranscri
 import com.ke.bella.openapi.protocol.asr.AudioTranscriptionRequest.AudioTranscriptionResultReq;
 import com.ke.bella.openapi.protocol.asr.AudioTranscriptionResponse.AudioTranscriptionResp;
 import com.ke.bella.openapi.protocol.asr.AudioTranscriptionResponse.AudioTranscriptionResultResp;
-import com.ke.bella.openapi.protocol.asr.diarization.SpeakerDiarizationResponse;
 import com.ke.bella.openapi.protocol.asr.diarization.SpeakerDiarizationAdaptor;
 import com.ke.bella.openapi.protocol.asr.diarization.SpeakerDiarizationProperty;
+import com.ke.bella.openapi.protocol.asr.diarization.SpeakerDiarizationResponse;
 import com.ke.bella.openapi.protocol.asr.flash.FlashAsrAdaptor;
 import com.ke.bella.openapi.protocol.asr.flash.FlashAsrResponse;
 import com.ke.bella.openapi.protocol.limiter.LimiterManager;
