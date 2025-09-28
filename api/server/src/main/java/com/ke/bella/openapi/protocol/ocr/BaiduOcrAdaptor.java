@@ -1,26 +1,24 @@
 package com.ke.bella.openapi.protocol.ocr;
 
-import java.text.SimpleDateFormat;
-import java.util.Base64;
-import java.util.Date;
-import java.util.Map;
-
+import com.ke.bella.openapi.protocol.OpenapiResponse;
+import com.ke.bella.openapi.protocol.ocr.util.ImageConverter;
+import com.ke.bella.openapi.server.OpenAiServiceFactory;
+import com.ke.bella.openapi.utils.HttpUtils;
+import com.theokanning.openai.service.OpenAiService;
+import lombok.extern.slf4j.Slf4j;
+import okhttp3.FormBody;
+import okhttp3.Request;
+import okhttp3.RequestBody;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
-import com.ke.bella.file.api.FileApiClient;
-import com.ke.bella.file.api.config.FileApiProperties;
-import com.ke.bella.openapi.EndpointContext;
-import com.ke.bella.openapi.protocol.OpenapiResponse;
-import com.ke.bella.openapi.protocol.ocr.util.ImageConverter;
-import com.ke.bella.openapi.utils.HttpUtils;
-
-import lombok.extern.slf4j.Slf4j;
-import okhttp3.FormBody;
-import okhttp3.Request;
-import okhttp3.RequestBody;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Base64;
+import java.util.Date;
+import java.util.Map;
 
 /**
  * 百度OCR适配器
@@ -51,7 +49,7 @@ public class BaiduOcrAdaptor implements OcrIdcardAdaptor<BaiduOcrProperty> {
     private static final String FIELD_EXPIRE_DATE = "失效日期";
 
     @Autowired
-    private FileApiProperties fileApiProperties;
+    private OpenAiServiceFactory openAiServiceFactory;
 
     @Override
     public String getDescription() {
@@ -137,9 +135,12 @@ public class BaiduOcrAdaptor implements OcrIdcardAdaptor<BaiduOcrProperty> {
      * 从文件ID获取图片数据
      */
     private byte[] getImageFromFileId(String fileId) {
-        FileApiClient fileApiClient = FileApiClient.getInstance(fileApiProperties.getUrl());
-        String apikey = EndpointContext.getApikey().getCode();
-        return fileApiClient.getContent(fileId, apikey);
+        OpenAiService openAiService = openAiServiceFactory.create(10, 60);
+        try {
+            return openAiService.retrieveDomTreeContent(fileId).bytes();
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     /**

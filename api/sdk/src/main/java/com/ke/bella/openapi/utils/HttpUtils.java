@@ -1,32 +1,10 @@
 package com.ke.bella.openapi.utils;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.ke.bella.openapi.BellaContext;
-import com.ke.bella.openapi.common.exception.ChannelException;
-import com.ke.bella.openapi.protocol.BellaEventSourceListener;
-import com.ke.bella.openapi.protocol.BellaStreamCallback;
-import com.ke.bella.openapi.protocol.BellaWebSocketListener;
-import com.ke.bella.openapi.protocol.Callbacks;
-import com.ke.bella.openapi.request.BellaInterceptor;
-import okhttp3.ConnectionPool;
-import okhttp3.Dispatcher;
-import okhttp3.Interceptor;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
-import okhttp3.ResponseBody;
-import okhttp3.WebSocket;
-import okhttp3.internal.Util;
-import okhttp3.sse.EventSources;
-
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
-import java.nio.channels.Channels;
-import java.nio.channels.FileChannel;
-import java.nio.channels.ReadableByteChannel;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -38,6 +16,26 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.ke.bella.openapi.BellaContext;
+import com.ke.bella.openapi.common.exception.ChannelException;
+import com.ke.bella.openapi.protocol.BellaEventSourceListener;
+import com.ke.bella.openapi.protocol.BellaStreamCallback;
+import com.ke.bella.openapi.protocol.BellaWebSocketListener;
+import com.ke.bella.openapi.protocol.Callbacks;
+import com.ke.bella.openapi.request.BellaInterceptor;
+
+import okhttp3.ConnectionPool;
+import okhttp3.Dispatcher;
+import okhttp3.Interceptor;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
+import okhttp3.WebSocket;
+import okhttp3.internal.Util;
+import okhttp3.sse.EventSources;
 
 /**
  * Author: Stan Sai Date: 2024/8/14 12:09 description:
@@ -305,38 +303,19 @@ public class HttpUtils {
     }
 
     public static void doHttpRequest(Request request, File output) {
-        Response response = null;
-        ResponseBody body = null;
-        try {
-            response = HttpUtils.httpRequest(request);
-
-            if(!response.isSuccessful()) {
+        try (Response response = HttpUtils.httpRequest(request)) {
+            if (!response.isSuccessful()) {
                 throw new IllegalStateException(String.format("failed to do http request, code: %s", response.code()));
             }
-            body = response.body();
 
-            if(body != null) {
-                InputStream stream = body.byteStream();
-                try (FileOutputStream fos = new FileOutputStream(output);
-                        ReadableByteChannel inputChannel = Channels.newChannel(stream);
-                        FileChannel outputChannel = fos.getChannel()) {
-                    ByteBuffer buffer = ByteBuffer.allocateDirect(8192);
-                    while (inputChannel.read(buffer) != -1) {
-                        buffer.flip();
-                        outputChannel.write(buffer);
-                        buffer.clear();
-                    }
+            ResponseBody body = response.body();
+            if (body != null) {
+                try (InputStream inputStream = body.byteStream()) {
+                    Files.copy(inputStream, output.toPath(), StandardCopyOption.REPLACE_EXISTING);
                 }
             }
         } catch (IOException e) {
             throw new IllegalStateException(e);
-        } finally {
-            if(response != null) {
-                response.close();
-            }
-            if(body != null) {
-                body.close();
-            }
         }
     }
 

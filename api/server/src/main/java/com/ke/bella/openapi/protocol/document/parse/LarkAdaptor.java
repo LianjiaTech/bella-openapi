@@ -1,11 +1,8 @@
 package com.ke.bella.openapi.protocol.document.parse;
 
-import com.ke.bella.file.api.FileApiClient;
-import com.ke.bella.file.api.config.FileApiProperties;
-import com.ke.bella.openapi.EndpointContext;
 import com.ke.bella.openapi.common.exception.BizParamCheckException;
 import com.ke.bella.openapi.common.exception.ChannelException;
-import com.ke.bella.openapi.utils.FileUtils;
+import com.ke.bella.openapi.server.OpenAiServiceFactory;
 import com.lark.oapi.Client;
 import com.lark.oapi.service.docx.v1.model.Block;
 import com.lark.oapi.service.docx.v1.model.Image;
@@ -14,6 +11,7 @@ import com.lark.oapi.service.docx.v1.model.ListDocumentBlockResp;
 import com.lark.oapi.service.docx.v1.model.ListDocumentBlockRespBody;
 import com.lark.oapi.service.docx.v1.model.TableMergeInfo;
 import com.lark.oapi.service.docx.v1.model.TextElement;
+import com.theokanning.openai.service.FileUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,24 +32,22 @@ import static com.ke.bella.openapi.protocol.document.parse.LarkClientUtils.uploa
 @Slf4j
 @Component("LarkDocumentParse")
 public class LarkAdaptor implements DocParseAdaptor<LarkProperty> {
-
-    @Autowired
-    private FileApiProperties fileApiProperties;
-
     @Autowired
     private LarkFileCleanupService cleanupService;
+
+    @Autowired
+    private OpenAiServiceFactory openAiServiceFactory;
 
     @Override
     public DocParseTaskInfo doParse(DocParseRequest request, String url, String channelCode, LarkProperty property) {
         try {
             SourceFile sourceFile = request.getFile();
-            String fileType = FileUtils.getFileExtension(sourceFile.getName());
+            String fileType = FileUtil.getFileExtension(sourceFile.getName());
             if(property.getSupportTypes() != null && Arrays.stream(property.getSupportTypes()).noneMatch(support -> support.equals(fileType))) {
                 throw new BizParamCheckException("File type must be any one of: " + String.join(",", property.getSupportTypes()));
             }
-            FileApiClient fileApi = FileApiClient.getInstance(fileApiProperties.getUrl());
             File tempFile = File.createTempFile("lark_", sourceFile.getName());
-            fileApi.writeContent(sourceFile.getId(), EndpointContext.getApikey().getApikey(), tempFile);
+            openAiServiceFactory.create().retrieveFileContentAndSave(sourceFile.getId(), tempFile.getPath());
             Client client = LarkClientProvider.client(property.getClientId(), property.getClientSecret());
             String fileToken = uploadFile(client, sourceFile.getName(), property.getUploadDirToken(), tempFile);
             String ticket = importTask(client, fileToken, property.getCloudDirToken(), sourceFile.getName(), fileType);

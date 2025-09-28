@@ -1,7 +1,6 @@
 package com.ke.bella.openapi.protocol.document.parse;
 
 import com.ke.bella.openapi.common.exception.ChannelException;
-import com.ke.bella.openapi.utils.FileUtils;
 import com.lark.oapi.Client;
 import com.lark.oapi.service.docx.v1.model.Image;
 import com.lark.oapi.service.drive.v1.model.CreateImportTaskReq;
@@ -17,6 +16,7 @@ import com.lark.oapi.service.drive.v1.model.ImportTaskMountPoint;
 import com.lark.oapi.service.drive.v1.model.UploadAllFileReq;
 import com.lark.oapi.service.drive.v1.model.UploadAllFileReqBody;
 import com.lark.oapi.service.drive.v1.model.UploadAllFileResp;
+import com.theokanning.openai.service.FileUtil;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.MediaType;
 
@@ -145,7 +145,7 @@ public class LarkClientUtils {
             }
             ByteArrayOutputStream stream = resp.getData();
             String fileName = resp.getFileName();
-            MediaType mimeType = FileUtils.extraMediaType(fileName);
+            MediaType mimeType = FileUtil.getFileUploadMediaType(fileName);
             return "data:" + mimeType + ";base64," + Base64.getEncoder().encodeToString(stream.toByteArray());
         } catch (Exception e) {
             log.warn(e.getMessage(), e);
