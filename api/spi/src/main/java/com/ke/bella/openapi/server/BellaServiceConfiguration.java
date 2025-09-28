@@ -1,14 +1,10 @@
 package com.ke.bella.openapi.server;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ke.bella.openapi.client.OpenapiClient;
 import com.ke.bella.openapi.request.BellaRequestFilter;
 import com.ke.bella.openapi.server.intercept.AuthorizationInterceptor;
 import com.ke.bella.openapi.server.intercept.ConcurrentStartInterceptor;
 import com.ke.bella.openapi.utils.HttpUtils;
-import com.theokanning.openai.client.OpenAiApi;
-import com.theokanning.openai.service.OpenAiService;
-import okhttp3.OkHttpClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -18,9 +14,6 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.core.Ordered;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
-import retrofit2.Retrofit;
-
-import java.util.concurrent.ExecutorService;
 
 @EnableConfigurationProperties(OpenapiProperties.class)
 @Configuration
