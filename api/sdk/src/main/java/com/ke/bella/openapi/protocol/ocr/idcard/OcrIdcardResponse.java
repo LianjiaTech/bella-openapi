@@ -1,4 +1,4 @@
-package com.ke.bella.openapi.protocol.ocr;
+package com.ke.bella.openapi.protocol.ocr.idcard;
 
 import java.io.Serializable;
 
