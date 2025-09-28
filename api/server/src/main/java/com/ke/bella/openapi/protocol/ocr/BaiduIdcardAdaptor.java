@@ -1,6 +1,5 @@
 package com.ke.bella.openapi.protocol.ocr;
 
-import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Base64;
 import java.util.Date;
@@ -17,9 +16,7 @@ import com.ke.bella.openapi.protocol.ocr.idcard.BaiduOcrIdcardResponse;
 import com.ke.bella.openapi.protocol.ocr.idcard.OcrIdcardRequest;
 import com.ke.bella.openapi.protocol.ocr.idcard.OcrIdcardResponse;
 import com.ke.bella.openapi.protocol.ocr.util.ImageConverter;
-import com.ke.bella.openapi.server.OpenAiServiceFactory;
 import com.ke.bella.openapi.utils.HttpUtils;
-import com.theokanning.openai.service.OpenAiService;
 
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.FormBody;
@@ -55,7 +52,7 @@ public class BaiduIdcardAdaptor implements OcrIdcardAdaptor<BaiduOcrProperty> {
     private static final String FIELD_EXPIRE_DATE = "失效日期";
 
     @Autowired
-    private OpenAiServiceFactory openAiServiceFactory;
+    private ImageRetrievalService imageRetrievalService;
 
     @Override
     public String getDescription() {
@@ -89,7 +86,7 @@ public class BaiduIdcardAdaptor implements OcrIdcardAdaptor<BaiduOcrProperty> {
                 base64Data = ImageConverter.cleanBase64DataHeader(request.getImageBase64());
             } else {
                 // 如果有fileId，先获取文件内容然后转为base64
-                byte[] imageData = getImageFromFileId(request.getFileId());
+                byte[] imageData = imageRetrievalService.getImageFromFileId(request.getFileId());
                 base64Data = Base64.getEncoder().encodeToString(imageData);
             }
             builder.image(base64Data);
@@ -135,18 +132,6 @@ public class BaiduIdcardAdaptor implements OcrIdcardAdaptor<BaiduOcrProperty> {
                 .add("detect_screenshot", request.getDetectScreenshot());
 
         return builder.build();
-    }
-
-    /**
-     * 从文件ID获取图片数据
-     */
-    private byte[] getImageFromFileId(String fileId) {
-        OpenAiService openAiService = openAiServiceFactory.create(10, 60);
-        try {
-            return openAiService.retrieveDomTreeContent(fileId).bytes();
-        } catch (IOException e) {
-            throw new IllegalStateException(e);
-        }
     }
 
     /**
