@@ -1,31 +1,37 @@
 package com.ke.bella.openapi.protocol.ocr;
 
-import com.ke.bella.openapi.protocol.OpenapiResponse;
-import com.ke.bella.openapi.protocol.ocr.util.ImageConverter;
-import com.ke.bella.openapi.server.OpenAiServiceFactory;
-import com.ke.bella.openapi.utils.HttpUtils;
-import com.theokanning.openai.service.OpenAiService;
-import lombok.extern.slf4j.Slf4j;
-import okhttp3.FormBody;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
-
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Base64;
 import java.util.Date;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
+
+import com.ke.bella.openapi.protocol.OpenapiResponse;
+import com.ke.bella.openapi.protocol.ocr.idcard.BaiduOcrIdcardRequest;
+import com.ke.bella.openapi.protocol.ocr.idcard.BaiduOcrIdcardResponse;
+import com.ke.bella.openapi.protocol.ocr.idcard.OcrIdcardRequest;
+import com.ke.bella.openapi.protocol.ocr.idcard.OcrIdcardResponse;
+import com.ke.bella.openapi.protocol.ocr.util.ImageConverter;
+import com.ke.bella.openapi.server.OpenAiServiceFactory;
+import com.ke.bella.openapi.utils.HttpUtils;
+import com.theokanning.openai.service.OpenAiService;
+
+import lombok.extern.slf4j.Slf4j;
+import okhttp3.FormBody;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+
 /**
  * 百度OCR适配器
  */
 @Slf4j
-@Component("baiduOcr")
-public class BaiduOcrAdaptor implements OcrIdcardAdaptor<BaiduOcrProperty> {
+@Component("baiduIdcard")
+public class BaiduIdcardAdaptor implements OcrIdcardAdaptor<BaiduOcrProperty> {
 
     private static final String FRONT_SIDE = "front";
     private static final String IMAGE_STATUS_REVERSED = "reversed_side";
