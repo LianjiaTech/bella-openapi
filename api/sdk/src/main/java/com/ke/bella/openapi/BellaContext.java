@@ -107,17 +107,28 @@ public class BellaContext {
         return map;
     }
 
+    @SuppressWarnings({"unchecked"})
     public static void replace(Map<String, Object> map) {
-        operatorLocal.set((Operator) map.get("oper"));
-        akThreadLocal.set((ApikeyInfo) map.get("ak"));
-        headersThreadLocal.set((Map<String, String>) map.get("headers"));
+        operatorLocal.set((Operator) map.getOrDefault("oper", new Operator()));
+        akThreadLocal.set((ApikeyInfo) map.getOrDefault("ak", new ApikeyInfo()));
+        headersThreadLocal.set((Map<String, String>) map.getOrDefault("headers", new HashMap<>()));
     }
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public static void replace(String json) {
-        Map map = JacksonUtils.deserialize(json, Map.class);
-        map.put("oper", JacksonUtils.convertValue((Map) map.get("oper"), Operator.class));
-        map.put("ak", JacksonUtils.convertValue((Map) map.get("ak"), ApikeyInfo.class));
-        replace(map);
+        Map<String, Object> map = JacksonUtils.deserialize(json, Map.class);
+        if(map != null) {
+            if(map.containsKey("oper")) {
+                map.put("oper", JacksonUtils.convertValue((Map) map.get("oper"), Operator.class));
+            }
+            if(map.containsKey("ak")) {
+                map.put("ak", JacksonUtils.convertValue((Map) map.get("ak"), ApikeyInfo.class));
+            }
+            if(map.containsKey("headers")) {
+                map.put("headers", JacksonUtils.convertValue((Map) map.get("headers"), ApikeyInfo.class));
+            }
+            replace(map);
+        }
     }
 
     public static final Operator SYS = Operator.builder()
