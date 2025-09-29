@@ -14,9 +14,12 @@ import com.ke.bella.openapi.annotations.EndpointAPI;
 import com.ke.bella.openapi.protocol.AdaptorManager;
 import com.ke.bella.openapi.protocol.ChannelRouter;
 import com.ke.bella.openapi.protocol.limiter.LimiterManager;
+import com.ke.bella.openapi.protocol.ocr.OcrBankcardAdaptor;
 import com.ke.bella.openapi.protocol.ocr.OcrIdcardAdaptor;
-import com.ke.bella.openapi.protocol.ocr.idcard.OcrIdcardRequest;
 import com.ke.bella.openapi.protocol.ocr.OcrProperty;
+import com.ke.bella.openapi.protocol.ocr.OcrRequest;
+import com.ke.bella.openapi.protocol.ocr.bankcard.OcrBankcardRequest;
+import com.ke.bella.openapi.protocol.ocr.idcard.OcrIdcardRequest;
 import com.ke.bella.openapi.tables.pojos.ChannelDB;
 import com.ke.bella.openapi.utils.JacksonUtils;
 
@@ -70,7 +73,39 @@ public class OcrController {
         return adaptor.idcard(request, url, property);
     }
 
-    private void validateRequest(OcrIdcardRequest request) {
+    @PostMapping("/bankcard")
+    public Object bankcard(@RequestBody OcrBankcardRequest request) {
+        // 1. 设置请求上下文
+        String endpoint = EndpointContext.getRequest().getRequestURI();
+        String model = request.getModel();
+        EndpointContext.setEndpointData(endpoint, model, request);
+        EndpointProcessData processData = EndpointContext.getProcessData();
+
+        // 2. 参数校验
+        validateRequest(request);
+
+        // 3. 渠道路由选择
+        ChannelDB channel = router.route(endpoint, model, EndpointContext.getApikey(), processData.isMock());
+        EndpointContext.setEndpointData(channel);
+
+        // 4. 并发限制管理
+        if(!EndpointContext.getProcessData().isPrivate()) {
+            limiterManager.incrementConcurrentCount(EndpointContext.getProcessData().getAkCode(), model);
+        }
+
+        // 5. 获取协议适配器
+        String protocol = processData.getProtocol();
+        String url = processData.getForwardUrl();
+        String channelInfo = channel.getChannelInfo();
+        OcrBankcardAdaptor adaptor = adaptorManager.getProtocolAdaptor(endpoint, protocol, OcrBankcardAdaptor.class);
+        OcrProperty property = (OcrProperty) JacksonUtils.deserialize(channelInfo, adaptor.getPropertyClass());
+        EndpointContext.setEncodingType(property.getEncodingType());
+
+        // 6. 调用适配器处理
+        return adaptor.bankcard(request, url, property);
+    }
+
+    private void validateRequest(OcrRequest request) {
         // 校验模型参数
         Assert.hasText(request.getModel(), "model参数不能为空");
 
