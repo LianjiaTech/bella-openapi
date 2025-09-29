@@ -15,7 +15,7 @@ import com.ke.bella.openapi.protocol.AdaptorManager;
 import com.ke.bella.openapi.protocol.ChannelRouter;
 import com.ke.bella.openapi.protocol.limiter.LimiterManager;
 import com.ke.bella.openapi.protocol.ocr.OcrIdcardAdaptor;
-import com.ke.bella.openapi.protocol.ocr.OcrIdcardRequest;
+import com.ke.bella.openapi.protocol.ocr.idcard.OcrIdcardRequest;
 import com.ke.bella.openapi.protocol.ocr.OcrProperty;
 import com.ke.bella.openapi.tables.pojos.ChannelDB;
 import com.ke.bella.openapi.utils.JacksonUtils;
