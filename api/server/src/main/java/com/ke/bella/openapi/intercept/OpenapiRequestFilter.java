@@ -1,11 +1,10 @@
 package com.ke.bella.openapi.intercept;
 
-import com.ke.bella.openapi.EndpointContext;
 import com.ke.bella.openapi.BellaContext;
+import com.ke.bella.openapi.EndpointContext;
 import com.ke.bella.openapi.request.BellaRequestFilter;
 import com.ke.bella.openapi.utils.DateTimeUtils;
 import org.springframework.stereotype.Component;
-import org.springframework.web.util.ContentCachingRequestWrapper;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
@@ -30,9 +29,8 @@ public class OpenapiRequestFilter extends BellaRequestFilter {
             EndpointContext.setHeaderInfo(BellaContext.getHeaders());
             EndpointContext.getProcessData().setRequestMillis(DateTimeUtils.getCurrentMills());
             EndpointContext.getProcessData().setRequestTime(DateTimeUtils.getCurrentSeconds());
-            ContentCachingRequestWrapper wrappedRequest = new ContentCachingRequestWrapper(request);
-            EndpointContext.setRequest(wrappedRequest);
-            chain.doFilter(wrappedRequest, response);
+            EndpointContext.setRequest(request);
+            chain.doFilter(request, response);
         } finally {
             BellaContext.clearAll();
             EndpointContext.clearAll();
