@@ -34,6 +34,7 @@ import com.ke.bella.openapi.protocol.speaker.SpeakerEmbeddingResponse;
 import com.ke.bella.openapi.protocol.tts.TtsAdaptor;
 import com.ke.bella.openapi.protocol.tts.TtsProperty;
 import com.ke.bella.openapi.protocol.tts.TtsRequest;
+import com.ke.bella.openapi.service.EndpointDataService;
 import com.ke.bella.openapi.tables.pojos.ChannelDB;
 import com.ke.bella.openapi.utils.JacksonUtils;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -87,6 +88,8 @@ public class AudioController {
     private EndpointLogger logger;
     @Autowired
     private JobQueueProperties jobQueueProperties;
+    @Autowired
+    private EndpointDataService endpointDataService;
 
     /**
      * 实时语音识别WebSocket接口
@@ -101,11 +104,11 @@ public class AudioController {
         }
 
         String endpoint = EndpointContext.getRequest().getRequestURI();
-        EndpointContext.setEndpointData(endpoint, model, null);
+        endpointDataService.setEndpointData(endpoint, model, null);
         EndpointProcessData processData = EndpointContext.getProcessData();
 
         ChannelDB channel = router.route(endpoint, model, EndpointContext.getApikey(), processData.isMock());
-        EndpointContext.setEndpointData(channel);
+        endpointDataService.setChannel(channel);
 
         if(!EndpointContext.getProcessData().isPrivate()) {
             limiterManager.incrementConcurrentCount(EndpointContext.getProcessData().getAkCode(), model);
@@ -130,10 +133,10 @@ public class AudioController {
     public void speech(@RequestBody TtsRequest request, HttpServletRequest httpRequest, HttpServletResponse response) throws IOException {
         String ttsEndpoint = EndpointContext.getRequest().getRequestURI();
         String ttsModel = request.getModel();
-        EndpointContext.setEndpointData(ttsEndpoint, ttsModel, request);
+        endpointDataService.setEndpointData(ttsEndpoint, ttsModel, request);
         EndpointProcessData processData = EndpointContext.getProcessData();
         ChannelDB ttsChannel = router.route(ttsEndpoint, ttsModel, EndpointContext.getApikey(), processData.isMock());
-        EndpointContext.setEndpointData(ttsChannel);
+        endpointDataService.setChannel(ttsChannel);
         if(!EndpointContext.getProcessData().isPrivate()) {
             limiterManager.incrementConcurrentCount(EndpointContext.getProcessData().getAkCode(), ttsModel);
         }
@@ -178,10 +181,10 @@ public class AudioController {
 
         String endpoint = "/v1/audio/asr/flash"; // 使用 Flash ASR 能力点
         String model = request.getModel();
-        EndpointContext.setEndpointData(endpoint, model, request);
+        endpointDataService.setEndpointData(endpoint, model, request.summary());
         EndpointProcessData processData = EndpointContext.getProcessData();
         ChannelDB channel = router.route(endpoint, model, EndpointContext.getApikey(), processData.isMock());
-        EndpointContext.setEndpointData(channel);
+        endpointDataService.setChannel(channel);
 
         if(!EndpointContext.getProcessData().isPrivate()) {
             limiterManager.incrementConcurrentCount(EndpointContext.getProcessData().getAkCode(), model);
@@ -308,10 +311,10 @@ public class AudioController {
                 .hotWordsTableId(hotWordsTableId)
                 .content(StreamUtils.copyToByteArray(inputStream))
                 .build();
-        EndpointContext.setEndpointData(endpoint, model, request);
+        endpointDataService.setEndpointData(endpoint, model, request.summary());
         EndpointProcessData processData = EndpointContext.getProcessData();
         ChannelDB channel = router.route(endpoint, model, EndpointContext.getApikey(), processData.isMock());
-        EndpointContext.setEndpointData(channel);
+        endpointDataService.setChannel(channel);
         if(!EndpointContext.getProcessData().isPrivate()) {
             limiterManager.incrementConcurrentCount(EndpointContext.getProcessData().getAkCode(), model);
         }
@@ -328,10 +331,10 @@ public class AudioController {
     public SpeakerEmbeddingResponse speakerEmbedding(@RequestBody SpeakerEmbeddingRequest request) {
         String endpoint = EndpointContext.getRequest().getRequestURI();
         String model = request.getModel();
-        EndpointContext.setEndpointData(endpoint, model, request);
+        endpointDataService.setEndpointData(endpoint, model, request);
         EndpointProcessData processData = EndpointContext.getProcessData();
         ChannelDB channel = router.route(endpoint, model, EndpointContext.getApikey(), processData.isMock());
-        EndpointContext.setEndpointData(channel);
+        endpointDataService.setChannel(channel);
         if(!EndpointContext.getProcessData().isPrivate()) {
             limiterManager.incrementConcurrentCount(EndpointContext.getProcessData().getAkCode(), model);
         }
@@ -349,10 +352,10 @@ public class AudioController {
     public SpeakerDiarizationResponse speakerDiarization(@RequestBody AudioTranscriptionReq audioTranscriptionReq) {
         String endpoint = EndpointContext.getRequest().getRequestURI();
         String model = audioTranscriptionReq.getModel();
-        EndpointContext.setEndpointData(endpoint, model, audioTranscriptionReq);
+        endpointDataService.setEndpointData(endpoint, model, audioTranscriptionReq);
         EndpointProcessData processData = EndpointContext.getProcessData();
         ChannelDB channel = router.route(endpoint, model, EndpointContext.getApikey(), processData.isMock());
-        EndpointContext.setEndpointData(channel);
+        endpointDataService.setChannel(channel);
         if(!EndpointContext.getProcessData().isPrivate()) {
             limiterManager.incrementConcurrentCount(EndpointContext.getProcessData().getAkCode(), model);
         }

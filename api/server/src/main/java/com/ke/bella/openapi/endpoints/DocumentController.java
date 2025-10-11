@@ -10,9 +10,9 @@ import com.ke.bella.openapi.protocol.document.parse.DocParseCallbackService;
 import com.ke.bella.openapi.protocol.document.parse.DocParseProperty;
 import com.ke.bella.openapi.protocol.document.parse.DocParseRequest;
 import com.ke.bella.openapi.protocol.document.parse.DocParseResponse;
-import com.ke.bella.openapi.protocol.document.parse.DocParseTaskInfo;
 import com.ke.bella.openapi.protocol.document.parse.TaskIdUtils;
 import com.ke.bella.openapi.protocol.limiter.LimiterManager;
+import com.ke.bella.openapi.service.EndpointDataService;
 import com.ke.bella.openapi.tables.pojos.ChannelDB;
 import com.ke.bella.openapi.utils.JacksonUtils;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -39,6 +39,8 @@ public class DocumentController {
     @Autowired
     private LimiterManager limiterManager;
     @Autowired
+    private EndpointDataService endpointDataService;
+    @Autowired
     private DocParseCallbackService docParseCallbackService;
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
@@ -46,10 +48,10 @@ public class DocumentController {
     public Object parse(@RequestBody DocParseRequest request) {
         String endpoint = EndpointContext.getRequest().getRequestURI();
         String model = request.getModel();
-        EndpointContext.setEndpointData(endpoint, model, request);
+        endpointDataService.setEndpointData(endpoint, model, request);
         EndpointProcessData processData = EndpointContext.getProcessData();
         ChannelDB channel = channelRouter.route(endpoint, model, EndpointContext.getApikey(), processData.isMock());
-        EndpointContext.setEndpointData(channel);
+        endpointDataService.setChannel(channel);
         if(!EndpointContext.getProcessData().isPrivate()) {
             limiterManager.incrementConcurrentCount(EndpointContext.getProcessData().getAkCode(), model);
         }
@@ -68,7 +70,7 @@ public class DocumentController {
         String[] taskInfo = TaskIdUtils.extractTaskId(taskId);
         String channelCode = taskInfo[0];
         ChannelDB channel = channelRouter.route(channelCode);
-        EndpointContext.setEndpointData(channel);
+        endpointDataService.setChannel(channel);
         EndpointProcessData processData = EndpointContext.getProcessData();
         String protocol = processData.getProtocol();
         String url = processData.getForwardUrl();

@@ -34,6 +34,10 @@ public class EndpointContext {
         return requestCache.get();
     }
 
+    public static HttpServletRequest getRequestIgnoreNull() {
+        return requestCache.get();
+    }
+
     public static void setRequest(HttpServletRequest request) {
         requestCache.set(request);
     }
