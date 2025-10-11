@@ -67,6 +67,10 @@ public class EndpointProcessData {
 
     // 保存副本，防止日志处理中对response的修改影响返回结果
     public void setResponse(OpenapiResponse response) {
+        if(response == null) {
+            this.response = null;
+            return;
+        }
         if(response.supportClone()) {
             try {
                 this.response = SerializationUtils.clone(response);
