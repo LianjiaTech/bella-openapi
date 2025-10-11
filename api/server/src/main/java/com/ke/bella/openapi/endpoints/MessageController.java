@@ -12,11 +12,11 @@ import com.ke.bella.openapi.protocol.log.EndpointLogger;
 import com.ke.bella.openapi.protocol.message.MessageAdaptor;
 import com.ke.bella.openapi.protocol.message.MessageRequest;
 import com.ke.bella.openapi.safety.ISafetyCheckService;
+import com.ke.bella.openapi.service.EndpointDataService;
 import com.ke.bella.openapi.tables.pojos.ChannelDB;
 import com.ke.bella.openapi.utils.JacksonUtils;
 import com.ke.bella.openapi.utils.SseHelper;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -36,6 +36,8 @@ public class MessageController {
     @Autowired
     private LimiterManager limiterManager;
     @Autowired
+    private EndpointDataService endpointDataService;
+    @Autowired
     private EndpointLogger logger;
     @Autowired
     private ISafetyCheckService.IChatSafetyCheckService safetyCheckService;
@@ -45,10 +47,10 @@ public class MessageController {
     public Object message(@RequestBody MessageRequest request) {
         String endpoint = EndpointContext.getRequest().getRequestURI();
         String model = request.getModel();
-        EndpointContext.setEndpointData(endpoint, model, request);
+        endpointDataService.setEndpointData(endpoint, model, request);
         boolean isMock = EndpointContext.getProcessData().isMock();
         ChannelDB channel = router.route(endpoint, model, EndpointContext.getApikey(), isMock);
-        EndpointContext.setEndpointData(channel);
+        endpointDataService.setChannel(channel);
         if(!EndpointContext.getProcessData().isPrivate()) {
             limiterManager.incrementConcurrentCount(EndpointContext.getProcessData().getAkCode(), model);
         }

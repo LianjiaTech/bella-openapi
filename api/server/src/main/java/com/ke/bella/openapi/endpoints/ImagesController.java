@@ -15,6 +15,7 @@ import com.ke.bella.openapi.protocol.images.ImagesEditRequest;
 import com.ke.bella.openapi.protocol.images.ImagesVariationRequest;
 import com.ke.bella.openapi.protocol.images.ImagesResponse;
 import com.ke.bella.openapi.protocol.limiter.LimiterManager;
+import com.ke.bella.openapi.service.EndpointDataService;
 import com.ke.bella.openapi.tables.pojos.ChannelDB;
 import com.ke.bella.openapi.utils.ImagesEditRequestUtils;
 import com.ke.bella.openapi.utils.JacksonUtils;
@@ -42,15 +43,17 @@ public class ImagesController {
     private AdaptorManager adaptorManager;
     @Autowired
     private LimiterManager limiterManager;
+    @Autowired
+    private EndpointDataService endpointDataService;
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @PostMapping("/generations")
     public ImagesResponse generateImages(@RequestBody ImagesRequest request) {
         String endpoint = EndpointContext.getRequest().getRequestURI();
         String model = request.getModel();
-        EndpointContext.setEndpointData(endpoint, model, request);
+        endpointDataService.setEndpointData(endpoint, model, request);
         boolean isMock = EndpointContext.getProcessData().isMock();
         ChannelDB channel = router.route(endpoint, model, EndpointContext.getApikey(), isMock);
-        EndpointContext.setEndpointData(channel);
+        endpointDataService.setChannel(channel);
         if(!EndpointContext.getProcessData().isPrivate()) {
             limiterManager.incrementConcurrentCount(EndpointContext.getProcessData().getAkCode(), model);
         }
@@ -80,10 +83,10 @@ public class ImagesController {
         ImagesEditRequest request = ImagesEditRequestUtils.readFromMultipartRequest(multipartRequest);
         String endpoint = EndpointContext.getRequest().getRequestURI();
         String model = request.getModel();
-        EndpointContext.setEndpointData(endpoint, model, request);
+        endpointDataService.setEndpointData(endpoint, model, request.summary());
         boolean isMock = EndpointContext.getProcessData().isMock();
         ChannelDB channel = router.route(endpoint, model, EndpointContext.getApikey(), isMock);
-        EndpointContext.setEndpointData(channel);
+        endpointDataService.setChannel(channel);
         if(!EndpointContext.getProcessData().isPrivate()) {
             limiterManager.incrementConcurrentCount(EndpointContext.getProcessData().getAkCode(), model);
         }
@@ -106,10 +109,10 @@ public class ImagesController {
     public ImagesResponse createVariations(ImagesVariationRequest request) {
         String endpoint = EndpointContext.getRequest().getRequestURI();
         String model = request.getModel();
-        EndpointContext.setEndpointData(endpoint, model, request);
+        endpointDataService.setEndpointData(endpoint, model, request.summary());
         boolean isMock = EndpointContext.getProcessData().isMock();
         ChannelDB channel = router.route(endpoint, model, EndpointContext.getApikey(), isMock);
-        EndpointContext.setEndpointData(channel);
+        endpointDataService.setChannel(channel);
         if(!EndpointContext.getProcessData().isPrivate()) {
             limiterManager.incrementConcurrentCount(EndpointContext.getProcessData().getAkCode(), model);
         }

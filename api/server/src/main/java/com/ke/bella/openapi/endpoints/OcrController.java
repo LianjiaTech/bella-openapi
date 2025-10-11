@@ -20,6 +20,7 @@ import com.ke.bella.openapi.protocol.ocr.OcrProperty;
 import com.ke.bella.openapi.protocol.ocr.OcrRequest;
 import com.ke.bella.openapi.protocol.ocr.bankcard.OcrBankcardRequest;
 import com.ke.bella.openapi.protocol.ocr.idcard.OcrIdcardRequest;
+import com.ke.bella.openapi.service.EndpointDataService;
 import com.ke.bella.openapi.tables.pojos.ChannelDB;
 import com.ke.bella.openapi.utils.JacksonUtils;
 
@@ -39,14 +40,15 @@ public class OcrController {
     private AdaptorManager adaptorManager;
     @Autowired
     private LimiterManager limiterManager;
-
+    @Autowired
+    private EndpointDataService endpointDataService;
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @PostMapping("/idcard")
     public Object idcard(@RequestBody OcrIdcardRequest request) {
         // 1. 设置请求上下文
         String endpoint = EndpointContext.getRequest().getRequestURI();
         String model = request.getModel();
-        EndpointContext.setEndpointData(endpoint, model, request);
+        endpointDataService.setEndpointData(endpoint, model, request);
         EndpointProcessData processData = EndpointContext.getProcessData();
 
         // 2. 参数校验
@@ -54,7 +56,7 @@ public class OcrController {
 
         // 3. 渠道路由选择
         ChannelDB channel = router.route(endpoint, model, EndpointContext.getApikey(), processData.isMock());
-        EndpointContext.setEndpointData(channel);
+        endpointDataService.setChannel(channel);
 
         // 4. 并发限制管理
         if(!EndpointContext.getProcessData().isPrivate()) {
@@ -78,7 +80,7 @@ public class OcrController {
         // 1. 设置请求上下文
         String endpoint = EndpointContext.getRequest().getRequestURI();
         String model = request.getModel();
-        EndpointContext.setEndpointData(endpoint, model, request);
+        endpointDataService.setEndpointData(endpoint, model, request.summary());
         EndpointProcessData processData = EndpointContext.getProcessData();
 
         // 2. 参数校验
@@ -86,7 +88,7 @@ public class OcrController {
 
         // 3. 渠道路由选择
         ChannelDB channel = router.route(endpoint, model, EndpointContext.getApikey(), processData.isMock());
-        EndpointContext.setEndpointData(channel);
+        endpointDataService.setChannel(channel);
 
         // 4. 并发限制管理
         if(!EndpointContext.getProcessData().isPrivate()) {

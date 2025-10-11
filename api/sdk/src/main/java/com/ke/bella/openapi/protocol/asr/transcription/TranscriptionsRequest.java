@@ -2,6 +2,7 @@ package com.ke.bella.openapi.protocol.asr.transcription;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.ke.bella.openapi.ISummary;
 import com.theokanning.openai.assistants.IUssrRequest;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -14,7 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class TranscriptionsRequest implements IUssrRequest {
+public class TranscriptionsRequest implements IUssrRequest, ISummary {
 
     /**
      * The audio file to transcribe
@@ -49,4 +50,9 @@ public class TranscriptionsRequest implements IUssrRequest {
     private Double temperature;
 
     private String user;
+
+    @Override
+    public String[] ignoreFields() {
+        return new String[] {"file"};
+    }
 }

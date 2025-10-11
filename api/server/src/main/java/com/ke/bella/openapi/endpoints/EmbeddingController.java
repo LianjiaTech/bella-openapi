@@ -9,6 +9,7 @@ import com.ke.bella.openapi.protocol.embedding.EmbeddingAdaptor;
 import com.ke.bella.openapi.protocol.embedding.EmbeddingProperty;
 import com.ke.bella.openapi.protocol.embedding.EmbeddingRequest;
 import com.ke.bella.openapi.protocol.limiter.LimiterManager;
+import com.ke.bella.openapi.service.EndpointDataService;
 import com.ke.bella.openapi.tables.pojos.ChannelDB;
 import com.ke.bella.openapi.utils.JacksonUtils;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -29,16 +30,18 @@ public class EmbeddingController {
     private AdaptorManager adaptorManager;
     @Autowired
     private LimiterManager limiterManager;
+    @Autowired
+    private EndpointDataService endpointDataService;
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @PostMapping
     public Object embedding(@RequestBody EmbeddingRequest request) {
         String endpoint = EndpointContext.getRequest().getRequestURI();
         String model = request.getModel();
-        EndpointContext.setEndpointData(endpoint, model, request);
+        endpointDataService.setEndpointData(endpoint, model, request);
         EndpointProcessData processData = EndpointContext.getProcessData();
         ChannelDB channel = router.route(endpoint, model, EndpointContext.getApikey(), processData.isMock());
-        EndpointContext.setEndpointData(channel);
+        endpointDataService.setChannel(channel);
         if(!EndpointContext.getProcessData().isPrivate()) {
             limiterManager.incrementConcurrentCount(EndpointContext.getProcessData().getAkCode(), model);
         }

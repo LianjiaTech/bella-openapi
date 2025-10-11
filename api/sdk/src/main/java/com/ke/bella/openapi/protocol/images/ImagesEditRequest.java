@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.ke.bella.openapi.ISummary;
 import com.ke.bella.openapi.protocol.UserRequest;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -24,7 +25,7 @@ import java.util.Map;
 @SuperBuilder
 @NoArgsConstructor
 @JsonInclude(Include.NON_NULL)
-public class ImagesEditRequest implements UserRequest, Serializable {
+public class ImagesEditRequest implements UserRequest, ISummary, Serializable {
     private static final long serialVersionUID = 1L;
     
     /**
@@ -130,4 +131,9 @@ public class ImagesEditRequest implements UserRequest, Serializable {
 		}
 		extra_body.put(key, value);
 	}
+
+    @Override
+    public String[] ignoreFields() {
+        return new String[] {"image", "image_b64_json", "mask"};
+    }
 }
