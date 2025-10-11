@@ -1,0 +1,101 @@
+{
+  "generationsRequests": [
+    {
+      "scenarioName": "DALL-E-3标准请求",
+      "description": "DALL-E-3标准请求",
+      "request": {
+        "model": "dall-e-3",
+        "prompt": "一只可爱的小猫在草地上玩耍，阳光明媚"
+      },
+      "expectedResponse": {
+        "created": 1757920244,
+        "data": [
+          {
+            "url": "https://dalleprodsec.blob.core.windows.net/private/images/e45bf32d-c690-4b4f-8141-c99e8c201487/generated_00.png?se=2025-09-16T07%3A10%3A53Z&sig=HTKzpLo2D%2B%2BRjR912pDqGvfuf2eOkPc6POrceDPb0Jo%3D&ske=2025-09-19T16%3A28%3A29Z&skoid=e52d5ed7-0657-4f62-bc12-7e5dbb260a96&sks=b&skt=2025-09-12T16%3A28%3A29Z&sktid=33e01921-4d64-4f8c-a055-5bdaffd5e33d&skv=2020-10-02&sp=r&spr=https&sr=b&sv=2020-10-02",
+            "revised_prompt": "A cute kitten playing on a grassy field under bright sunshine. The cat has soft fluffy fur and appears joyful, surrounded by vibrant green grass and colorful wildflowers. The background features a clear blue sky with a few fluffy white clouds and sunlight streaming down, creating a warm and cheerful ambiance."
+          }
+        ]
+      },
+      "mockChannel": {
+        "channelInfo": "{\"apiKey\":\"test-key\",\"deployName\":\"dall-e-3\"}",
+        "protocol": "openai",
+        "url": "https://your-custom-endpoint.com/v1/images/generations"
+      },
+      "parameterValidations": [
+        {"field": "model", "expectedValue": "dall-e-3"}
+      ]
+    },
+    {
+      "scenarioName": "doubao-seedream-3-0-t2i标准请求",
+      "description": "doubao-seedream-3-0-t2i标准请求",
+      "request": {
+        "model": "doubao-seedream-3-0-t2i",
+        "prompt": "一只可爱的小猫在草地上玩耍，阳光明媚"
+      },
+      "expectedResponse": {
+        "created": 1757920416,
+        "data": [
+          {
+            "url": "img_url",
+            "size": "1024x1024"
+          }
+        ],
+        "usage": {
+          "num": 1,
+          "size": "1024x1024",
+          "quality": "high",
+          "output_tokens": 4096,
+          "total_tokens": 4096
+        }
+      },
+      "mockChannel": {
+        "channelInfo": "{\"apiKey\":\"test-key\",\"deployName\":\"doubao-seedream-3-0-t2i\"}",
+        "protocol": "huoshan",
+        "url": "https://your-custom-endpoint.comv1/images/generations"
+      },
+      "parameterValidations": [
+        {"field": "model", "expectedValue": "doubao-seedream-3-0-t2i"}
+      ]
+    },
+    {
+      "scenarioName": "doubao-seedream-4.0-gen标准请求",
+      "description": "使用doubao-seedream-4.0-gen模型进行图像生成，支持2K尺寸和watermark控制",
+      "request": {
+        "model": "doubao-seedream-4.0-gen",
+        "prompt": "生成狗狗趴在草地上的近景画面",
+        "size": "2K",
+        "response_format": "url",
+        "extra_body": {
+          "watermark": false
+        }
+      },
+      "expectedResponse": {
+        "created": 1234567890,
+        "data": [
+          {
+            "url": "https://mock-generated-image.com/seedream4-gen-dog-grass.png",
+            "size": "2K"
+          }
+        ],
+        "usage": {
+          "num": 1,
+          "size": "2K",
+          "quality": "high",
+          "output_tokens": 4096,
+          "total_tokens": 4096
+        }
+      },
+      "mockChannel": {
+        "channelInfo": "{\"apiKey\":\"test-key\",\"deployName\":\"doubao-seedream-4-0-gen\"}",
+        "protocol": "huoshan",
+        "url": "https://your-custom-endpoint.com/v1/images/generations"
+      },
+      "parameterValidations": [
+        {"field": "model", "expectedValue": "doubao-seedream-4.0-gen"},
+        {"field": "prompt", "expectedValue": "生成狗狗趴在草地上的近景画面"},
+        {"field": "size", "expectedValue": "2K"},
+        {"field": "response_format", "expectedValue": "url"}
+      ]
+    }
+  ]
+}

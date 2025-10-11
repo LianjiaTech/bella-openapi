@@ -1,0 +1,239 @@
+{
+  "speakerEmbeddingRequests": [
+    {
+      "scenarioName": "基础音频URL声纹提取",
+      "description": "使用音频URL的基础声纹提取请求",
+      "request": {
+        "user": "test-user",
+        "model": "ke-speaker-embedding-v1",
+        "url": "https://test-audio-bucket.s3.amazonaws.com/sample-speech.wav",
+        "normalize": true,
+        "sample_rate": 16000,
+        "task_id": "task_001"
+      },
+      "expectedResponse": {
+        "task": "speaker_embedding",
+        "task_id": "task_001",
+        "duration": 5.123,
+        "dimensions": 512,
+        "embeddings": [
+          {
+            "id": 0,
+            "start": 0.0,
+            "end": 5.123,
+            "confidence": 0.95,
+            "embedding": [0.1, 0.2, 0.3, 0.4, 0.5]
+          }
+        ]
+      },
+      "mockChannel": {
+        "protocol": "ke",
+        "url": "https://api.speaker-embedding.com/v1",
+        "channelInfo": "{\"encodingType\": \"json\"}"
+      },
+      "parameterValidations": [
+        {
+          "field": "model",
+          "rule": "not_null",
+          "expectedValue": null
+        },
+        {
+          "field": "url",
+          "rule": "not_null",
+          "expectedValue": null
+        }
+      ],
+      "customValidations": [
+        {
+          "type": "task_validation",
+          "expectedValue": "speaker_embedding"
+        },
+        {
+          "type": "dimensions_check",
+          "expectedDimensions": 512
+        },
+        {
+          "type": "embeddings_not_empty"
+        }
+      ]
+    },
+    {
+      "scenarioName": "Base64编码音频声纹提取",
+      "description": "使用Base64编码音频的声纹提取请求",
+      "request": {
+        "user": "test-user",
+        "model": "ke-speaker-embedding-v1",
+        "base64": "UklGRiQAAABXQVZFZm10IBAAAAABAAEAIlYAAESsAAACABAAZGF0YQAAAAA=",
+        "normalize": false,
+        "sample_rate": 22050,
+        "task_id": "task_002"
+      },
+      "expectedResponse": {
+        "task": "speaker_embedding",
+        "task_id": "task_002",
+        "duration": 3.456,
+        "dimensions": 512,
+        "embeddings": [
+          {
+            "id": 0,
+            "start": 0.0,
+            "end": 3.456,
+            "confidence": 0.87,
+            "embedding": [0.2, 0.4, 0.6, 0.8, 1.0]
+          }
+        ]
+      },
+      "mockChannel": {
+        "protocol": "ke",
+        "url": "https://api.speaker-embedding.com/v1",
+        "channelInfo": "{\"encodingType\": \"json\"}"
+      },
+      "parameterValidations": [
+        {
+          "field": "model",
+          "rule": "not_null",
+          "expectedValue": null
+        },
+        {
+          "field": "base64",
+          "rule": "not_null",
+          "expectedValue": null
+        }
+      ],
+      "customValidations": [
+        {
+          "type": "task_validation",
+          "expectedValue": "speaker_embedding"
+        },
+        {
+          "type": "dimensions_check",
+          "expectedDimensions": 512
+        }
+      ]
+    },
+    {
+      "scenarioName": "启用VAD的声纹提取",
+      "description": "启用语音活动检测的声纹提取请求",
+      "request": {
+        "user": "test-user",
+        "model": "ke-speaker-embedding-v1",
+        "url": "https://test-audio-bucket.s3.amazonaws.com/long-speech.wav",
+        "normalize": true,
+        "sample_rate": 16000,
+        "task_id": "task_003",
+        "enable_vad": true,
+        "vad_aggressiveness": 2,
+        "min_speech_duration": 1.5,
+        "max_silence_duration": 0.8
+      },
+      "expectedResponse": {
+        "task": "speaker_embedding",
+        "task_id": "task_003",
+        "duration": 12.789,
+        "dimensions": 512,
+        "embeddings": [
+          {
+            "id": 0,
+            "start": 0.5,
+            "end": 4.2,
+            "confidence": 0.92,
+            "embedding": [0.3, 0.1, 0.8, 0.2, 0.7]
+          },
+          {
+            "id": 1,
+            "start": 5.1,
+            "end": 8.6,
+            "confidence": 0.89,
+            "embedding": [0.4, 0.9, 0.1, 0.6, 0.3]
+          },
+          {
+            "id": 2,
+            "start": 9.2,
+            "end": 12.789,
+            "confidence": 0.94,
+            "embedding": [0.7, 0.2, 0.5, 0.8, 0.1]
+          }
+        ]
+      },
+      "mockChannel": {
+        "protocol": "ke",
+        "url": "https://api.speaker-embedding.com/v1",
+        "channelInfo": "{\"encodingType\": \"json\"}"
+      },
+      "parameterValidations": [
+        {
+          "field": "model",
+          "rule": "not_null",
+          "expectedValue": null
+        },
+        {
+          "field": "url",
+          "rule": "not_null",
+          "expectedValue": null
+        }
+      ],
+      "customValidations": [
+        {
+          "type": "task_validation",
+          "expectedValue": "speaker_embedding"
+        },
+        {
+          "type": "dimensions_check",
+          "expectedDimensions": 512
+        },
+        {
+          "type": "embeddings_not_empty"
+        }
+      ]
+    },
+    {
+      "scenarioName": "最小化声纹提取请求",
+      "description": "仅包含必需字段的最小化声纹提取请求",
+      "request": {
+        "model": "ke-speaker-embedding-v1",
+        "url": "https://test-audio-bucket.s3.amazonaws.com/minimal.wav"
+      },
+      "expectedResponse": {
+        "task": "speaker_embedding",
+        "task_id": "",
+        "duration": 2.1,
+        "dimensions": 512,
+        "embeddings": [
+          {
+            "id": 0,
+            "start": 0.0,
+            "end": 2.1,
+            "confidence": 0.85,
+            "embedding": [0.5, 0.3, 0.7, 0.1, 0.9]
+          }
+        ]
+      },
+      "mockChannel": {
+        "protocol": "ke",
+        "url": "https://api.speaker-embedding.com/v1",
+        "channelInfo": "{\"encodingType\": \"json\"}"
+      },
+      "parameterValidations": [
+        {
+          "field": "model",
+          "rule": "not_null",
+          "expectedValue": null
+        },
+        {
+          "field": "url",
+          "rule": "not_null",
+          "expectedValue": null
+        }
+      ],
+      "customValidations": [
+        {
+          "type": "task_validation",
+          "expectedValue": "speaker_embedding"
+        },
+        {
+          "type": "embeddings_not_empty"
+        }
+      ]
+    }
+  ]
+}

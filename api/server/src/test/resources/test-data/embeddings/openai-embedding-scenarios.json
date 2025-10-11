@@ -1,0 +1,210 @@
+{
+  "embeddingRequests": [
+    {
+      "scenarioName": "OpenAI text-embedding-ada-002 基础请求",
+      "description": "使用OpenAI text-embedding-ada-002模型进行文本嵌入的标准请求",
+      "request": {
+        "model": "text-embedding-ada-002",
+        "input": "The food was delicious and the waiter was very friendly."
+      },
+      "expectedResponse": {
+        "object": "list",
+        "model": "text-embedding-ada-002",
+        "data": [
+          {
+            "object": "embedding",
+            "embedding": [0.1, 0.2, 0.3, 0.4, 0.5],
+            "index": 0
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 13,
+          "total_tokens": 13
+        }
+      },
+      "mockChannel": {
+        "channelInfo": "{\"apiKey\":\"test-key\"}",
+        "protocol": "openai",
+        "url": "https://api.openai.com/v1/embeddings"
+      },
+      "parameterValidations": [
+        {"field": "model", "expectedValue": "text-embedding-ada-002"},
+        {"field": "input", "expectedValue": "The food was delicious and the waiter was very friendly."}
+      ]
+    },
+    {
+      "scenarioName": "OpenAI text-embedding-3-large 多文本请求",
+      "description": "使用OpenAI text-embedding-3-large模型处理多个文本输入",
+      "request": {
+        "model": "text-embedding-3-large",
+        "input": ["Hello world", "How are you today?", "Nice to meet you"],
+        "encoding_format": "float"
+      },
+      "expectedResponse": {
+        "object": "list",
+        "model": "text-embedding-3-large",
+        "data": [
+          {
+            "object": "embedding",
+            "embedding": [0.1, 0.2, 0.3, 0.4, 0.5],
+            "index": 0
+          },
+          {
+            "object": "embedding",
+            "embedding": [0.2, 0.3, 0.4, 0.5, 0.6],
+            "index": 1
+          },
+          {
+            "object": "embedding",
+            "embedding": [0.3, 0.4, 0.5, 0.6, 0.7],
+            "index": 2
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 8,
+          "total_tokens": 8
+        }
+      },
+      "mockChannel": {
+        "channelInfo": "{\"apiKey\":\"test-key\"}",
+        "protocol": "openai",
+        "url": "https://api.openai.com/v1/embeddings"
+      },
+      "parameterValidations": [
+        {"field": "model", "expectedValue": "text-embedding-3-large"},
+        {"field": "encoding_format", "expectedValue": "float"}
+      ],
+      "customValidations": [
+        {
+          "type": "responseCount",
+          "description": "应该返回3个嵌入向量",
+          "expectedValue": 3
+        }
+      ]
+    },
+    {
+      "scenarioName": "OpenAI text-embedding-3-large 指定维度请求",
+      "description": "使用OpenAI text-embedding-3-large模型并指定输出维度",
+      "request": {
+        "model": "text-embedding-3-large",
+        "input": "This is a test sentence for embedding generation.",
+        "encoding_format": "float",
+        "dimensions": 256
+      },
+      "expectedResponse": {
+        "object": "list",
+        "model": "text-embedding-3-large",
+        "data": [
+          {
+            "object": "embedding",
+            "embedding": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8],
+            "index": 0
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 10,
+          "total_tokens": 10
+        }
+      },
+      "mockChannel": {
+        "channelInfo": "{\"apiKey\":\"test-key\"}",
+        "protocol": "openai",
+        "url": "https://api.openai.com/v1/embeddings"
+      },
+      "parameterValidations": [
+        {"field": "model", "expectedValue": "text-embedding-3-large"},
+        {"field": "dimensions", "expectedValue": 256},
+        {"field": "encoding_format", "expectedValue": "float"}
+      ],
+      "customValidations": [
+        {
+          "type": "embeddingDimensions",
+          "description": "嵌入向量维度应该为256",
+          "expectedValue": 8
+        }
+      ]
+    },
+    {
+      "scenarioName": "OpenAI text-embedding-ada-002 多文本用户标识请求",
+      "description": "使用OpenAI text-embedding-ada-002模型进行多文本嵌入并包含用户标识",
+      "request": {
+        "input": [
+          "Hello world!",
+          "今天的天气真不错......"
+        ],
+        "model": "text-embedding-ada-002",
+        "encoding_format": "float",
+        "user": "1000000031454102"
+      },
+      "expectedResponse": {
+        "object": "list",
+        "data": [
+          {
+            "object": "embedding",
+            "embedding": [0.1,0.2,0.3],
+            "index": 0
+          },
+          {
+            "object": "embedding",
+            "embedding": [0.2,0.1,0.3],
+            "index": 1
+          }
+        ],
+        "model": "text-embedding-ada-002",
+        "usage": {
+          "prompt_tokens": 13,
+          "total_tokens": 13
+        }
+      },
+      "mockChannel": {
+        "channelInfo": "{\"apiKey\":\"test-key\"}",
+        "protocol": "openai",
+        "url": "https://api.openai.com/v1/embeddings"
+      },
+      "parameterValidations": [
+        {"field": "model", "expectedValue": "text-embedding-ada-002"},
+        {"field": "user", "expectedValue": "1000000031454102"}
+      ],
+      "customValidations": [
+        {
+          "type": "responseCount",
+          "description": "应该返回2个嵌入向量",
+          "expectedValue": 2
+        }
+      ]
+    },
+    {
+      "scenarioName": "带用户标识的单文本请求",
+      "description": "包含用户标识字段的嵌入请求",
+      "request": {
+        "model": "text-embedding-ada-002",
+        "input": "This is a sample text for embedding.",
+        "user": "user-12345"
+      },
+      "expectedResponse": {
+        "object": "list",
+        "model": "text-embedding-ada-002",
+        "data": [
+          {
+            "object": "embedding",
+            "embedding": [0.2, 0.4, 0.6, 0.8, 1.0],
+            "index": 0
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 8,
+          "total_tokens": 8
+        }
+      },
+      "mockChannel": {
+        "channelInfo": "{\"apiKey\":\"test-key\"}",
+        "protocol": "openai",
+        "url": "https://api.openai.com/v1/embeddings"
+      },
+      "parameterValidations": [
+        {"field": "model", "expectedValue": "text-embedding-ada-002"},
+        {"field": "user", "expectedValue": "user-12345"}
+      ]
+    }
+  ]
+}
