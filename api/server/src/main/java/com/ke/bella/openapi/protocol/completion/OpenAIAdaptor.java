@@ -33,6 +33,10 @@ public class OpenAIAdaptor implements CompletionAdaptorDelegator<OpenAIProperty>
         CompletionResponse response;
         if(delegator == null) {
             Request httpRequest = buildRequest(request, url, property);
+
+            // 清理大型数据以释放内存，在长时间HTTP请求期间避免内存占用
+            clearLargeData(request);
+
             response = HttpUtils.httpRequest(httpRequest, CompletionResponse.class, errorCallback);
         } else {
             response = delegator.request(request, CompletionResponse.class, errorCallback);
@@ -48,6 +52,10 @@ public class OpenAIAdaptor implements CompletionAdaptorDelegator<OpenAIProperty>
         CompletionSseListener listener = new CompletionSseListener(callback, sseConverter);
         if(delegator == null) {
             Request httpRequest = buildRequest(request, url, property);
+
+            // 清理大型数据以释放内存，在长时间HTTP请求期间避免内存占用
+            clearLargeData(request);
+
             HttpUtils.streamRequest(httpRequest, listener);
         } else {
             delegator.request(request, listener);
@@ -76,7 +84,7 @@ public class OpenAIAdaptor implements CompletionAdaptorDelegator<OpenAIProperty>
         }
         Request.Builder builder = authorizationRequestBuilder(property.getAuth())
                 .url(url)
-                .post(RequestBody.create(MediaType.parse("application/json"), JacksonUtils.serialize(request)));
+                .post(RequestBody.create(MediaType.parse("application/json"), JacksonUtils.toByte(request)));
         if(MapUtils.isNotEmpty(property.getExtraHeaders())) {
             property.getExtraHeaders().forEach(builder::addHeader);
         }

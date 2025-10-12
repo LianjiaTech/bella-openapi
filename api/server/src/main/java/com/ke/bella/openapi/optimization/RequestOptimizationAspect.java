@@ -47,7 +47,7 @@ public class RequestOptimizationAspect {
             String requestId = processData.getRequestId();
 
             // 检查是否为大请求
-            if (requestSizeChecker.isLargeRequest()) {
+            if (requestSizeChecker.isLargeRequest(request)) {
                 log.info("Large request detected, starting async optimization. " +
                     "Endpoint: {}, RequestId: {}", endpoint, requestId);
 

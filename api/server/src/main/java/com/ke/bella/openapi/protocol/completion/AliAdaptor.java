@@ -31,17 +31,24 @@ public class AliAdaptor implements CompletionAdaptor<AliProperty> {
     @Override
     public CompletionResponse completion(CompletionRequest request, String url, AliProperty property) {
         AliCompletionRequest aliRequest = rewriteRequest(request, property);
-        AliCompletionResponse response;
         Request httpRequest = buildRequest(aliRequest, url, property);
-        response = HttpUtils.httpRequest(httpRequest, AliCompletionResponse.class, errorCallback);
+
+        // 清理大型数据以释放内存，在长时间HTTP请求期间避免内存占用
+        clearLargeData(request, aliRequest);
+
+        AliCompletionResponse response = HttpUtils.httpRequest(httpRequest, AliCompletionResponse.class, errorCallback);
         return responseConvert(response);
     }
 
     @Override
     public void streamCompletion(CompletionRequest request, String url, AliProperty property, StreamCompletionCallback callback) {
         AliCompletionRequest aliRequest = rewriteRequest(request, property);
-        CompletionSseListener sseListener = new CompletionSseListener(callback, sseConverter);
         Request httpRequest = buildRequest(aliRequest, url, property);
+
+        // 清理大型数据以释放内存，在长时间HTTP请求期间避免内存占用
+        clearLargeData(request, aliRequest);
+
+        CompletionSseListener sseListener = new CompletionSseListener(callback, sseConverter);
         HttpUtils.streamRequest(httpRequest, sseListener);
     }
 
@@ -55,7 +62,7 @@ public class AliAdaptor implements CompletionAdaptor<AliProperty> {
     private Request buildRequest(AliCompletionRequest request, String url, AliProperty property) {
         Request.Builder builder = authorizationRequestBuilder(property.getAuth())
                 .url(url)
-                .post(RequestBody.create(MediaType.parse("application/json"), JacksonUtils.serialize(request)));
+                .post(RequestBody.create(MediaType.parse("application/json"), JacksonUtils.toByte(request)));
         return builder.build();
     }
 

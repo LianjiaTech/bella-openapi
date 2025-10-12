@@ -1,5 +1,6 @@
 package com.ke.bella.openapi.protocol.message;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
@@ -12,6 +13,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import com.ke.bella.openapi.protocol.IMemoryClearable;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -26,7 +28,7 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class MessageRequest {
+public class MessageRequest implements IMemoryClearable {
     private String anthropic_version;
     private String model;
     private List<InputMessage> messages;
@@ -367,5 +369,27 @@ public class MessageRequest {
                 throw new JsonMappingException(p, "Content field must be either String or List<ContentBlock>");
             }
         }
+    }
+
+    // 内存清理相关字段和方法
+    @JsonIgnore
+    private volatile boolean cleared = false;
+
+    @Override
+    public void clearLargeData() {
+        if (!cleared) {
+            // 清理占用大量内存的字段
+            this.messages = null;
+            this.system = null;
+            this.tools = null;
+
+            // 标记为已清理
+            this.cleared = true;
+        }
+    }
+
+    @Override
+    public boolean isCleared() {
+        return cleared;
     }
 }

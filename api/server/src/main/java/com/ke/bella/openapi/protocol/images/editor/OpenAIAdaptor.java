@@ -35,6 +35,7 @@ public class OpenAIAdaptor implements ImagesEditorAdaptor<ImagesEditorProperty> 
     @Override
     public ImagesResponse doEditImages(ImagesEditRequest request, String url, ImagesEditorProperty property, ImageDataType dataType) throws IOException {
         Request httpRequest = buildRequest(request, url, property, dataType);
+        clearLargeData(request);
         return HttpUtils.httpRequest(httpRequest, ImagesResponse.class);
     }
 

@@ -38,6 +38,7 @@ public class VertexAdaptor implements CompletionAdaptor<VertexProperty> {
 
         // Build HTTP request
         Request httpRequest = buildHttpRequest(vertexUrl, geminiRequest, property);
+        clearLargeData(request, geminiRequest);
 
         // Use HttpUtils for request
         GeminiResponse geminiResponse = HttpUtils.httpRequest(httpRequest, GeminiResponse.class);
@@ -57,6 +58,7 @@ public class VertexAdaptor implements CompletionAdaptor<VertexProperty> {
 
         // Build HTTP request
         Request httpRequest = buildHttpRequest(vertexUrl, geminiRequest, property);
+        clearLargeData(request, geminiRequest);
 
         // Create SSE converter and listener
         VertexSseConverter sseConverter = new VertexSseConverter(property.getDeployName());
@@ -79,9 +81,9 @@ public class VertexAdaptor implements CompletionAdaptor<VertexProperty> {
     }
     
     private Request buildHttpRequest(String url, GeminiRequest geminiRequest, VertexProperty property) {
-        String requestJson = JacksonUtils.serialize(geminiRequest);
-        
-        RequestBody body = RequestBody.create(MediaType.parse("application/json"), requestJson);
+        byte[] requestBytes = JacksonUtils.toByte(geminiRequest);
+
+        RequestBody body = RequestBody.create(MediaType.parse("application/json"), requestBytes);
         
         Request.Builder builder = authorizationRequestBuilder(property.getAuth())
                 .url(url)

@@ -36,6 +36,10 @@ public class AwsAdaptor implements CompletionAdaptor<AwsProperty> {
     public CompletionResponse completion(CompletionRequest request, String url, AwsProperty property) {
         request.setModel(property.deployName);
         ConverseRequest awsRequest =  AwsCompletionConverter.convert2AwsRequest(request, property);
+
+        // 清理大型数据以释放内存，在长时间HTTP请求期间避免内存占用
+        clearLargeData(request);
+
         BedrockRuntimeClient client = AwsClientManager.client(property.region, url, property.auth.getApiKey(), property.auth.getSecret());
         try {
             ConverseResponse response = client.converse(awsRequest);
@@ -50,6 +54,10 @@ public class AwsAdaptor implements CompletionAdaptor<AwsProperty> {
             StreamCompletionCallback callback) {
         request.setModel(property.deployName);
         ConverseStreamRequest awsRequest = AwsCompletionConverter.convert2AwsStreamRequest(request, property);
+
+        // 清理大型数据以释放内存，在长时间HTTP请求期间避免内存占用
+        clearLargeData(request);
+
         BedrockRuntimeAsyncClient client = AwsClientManager.asyncClient(property.region, url, property.auth.getApiKey(), property.auth.getSecret());
         AwsSseCompletionCallBack awsCallBack = new AwsSseCompletionCallBack(callback);
         try {

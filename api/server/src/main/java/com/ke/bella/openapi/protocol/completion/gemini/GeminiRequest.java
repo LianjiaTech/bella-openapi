@@ -1,6 +1,9 @@
 package com.ke.bella.openapi.protocol.completion.gemini;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.ke.bella.openapi.protocol.IMemoryClearable;
+import com.ke.bella.openapi.protocol.ITransfer;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,7 +17,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class GeminiRequest {
+public class GeminiRequest implements IMemoryClearable, ITransfer {
     private List<Content> contents;
     private SystemInstruction systemInstruction;
     private List<Tool> tools;
@@ -41,5 +44,35 @@ public class GeminiRequest {
                 .threshold("OFF")
                 .build());
         return this;
+    }
+
+    // 内存清理相关字段和方法
+    @JsonIgnore
+    private volatile boolean cleared = false;
+
+    @Override
+    public void clearLargeData() {
+        if (!cleared) {
+            // 清理最大的内存占用 - 内容列表、工具列表、系统指令等
+            if (this.contents != null) {
+                this.contents.clear();
+            }
+            if (this.tools != null) {
+                this.tools.clear();
+            }
+            if (this.safetySettings != null) {
+                this.safetySettings.clear();
+            }
+            this.systemInstruction = null;
+            this.generationConfig = null;
+
+            // 标记为已清理
+            this.cleared = true;
+        }
+    }
+
+    @Override
+    public boolean isCleared() {
+        return cleared;
     }
 }

@@ -15,9 +15,10 @@ public class KeAdaptor implements SpeakerEmbeddingAdaptor {
     public SpeakerEmbeddingResponse speakerEmbedding(SpeakerEmbeddingRequest request, String url, SpeakerEmbeddingProperty property) {
         Request.Builder builder = new Request.Builder()
                 .url(url)
-                .post(RequestBody.create(MediaType.parse("application/json"), JacksonUtils.serialize(request)));
-        
+                .post(RequestBody.create(MediaType.parse("application/json"), JacksonUtils.toByte(request)));
+
         Request httpRequest = builder.build();
+        clearLargeData(request);
         return doRequest(httpRequest);
     }
 

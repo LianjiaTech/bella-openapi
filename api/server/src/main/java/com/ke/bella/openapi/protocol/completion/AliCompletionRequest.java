@@ -1,5 +1,8 @@
 package com.ke.bella.openapi.protocol.completion;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.ke.bella.openapi.protocol.IMemoryClearable;
+import com.ke.bella.openapi.protocol.ITransfer;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NonNull;
@@ -11,7 +14,7 @@ import java.util.List;
 
 @Data
 @SuperBuilder
-public class AliCompletionRequest {
+public class AliCompletionRequest implements IMemoryClearable, ITransfer {
     @NonNull
     private String model;
     private AliCompletionInput input;
@@ -112,5 +115,31 @@ public class AliCompletionRequest {
          * Specify which tools the model can use.
          */
         private List<Message.Tool> tools;
+    }
+
+    // 内存清理相关字段和方法
+    @JsonIgnore
+    private volatile boolean cleared = false;
+
+    @Override
+    public void clearLargeData() {
+        if (!cleared && input != null) {
+            // 清理输入中的大型数据
+            input.setMessages(null);
+            input.setPrompt(null);
+
+            // 清理参数中的工具定义
+            if (parameters != null) {
+                parameters.setTools(null);
+            }
+
+            // 标记为已清理
+            this.cleared = true;
+        }
+    }
+
+    @Override
+    public boolean isCleared() {
+        return cleared;
     }
 }

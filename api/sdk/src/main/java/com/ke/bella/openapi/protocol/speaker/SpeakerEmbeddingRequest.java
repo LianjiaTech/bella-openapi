@@ -1,7 +1,10 @@
 package com.ke.bella.openapi.protocol.speaker;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.ke.bella.openapi.ISummary;
+import com.ke.bella.openapi.protocol.IMemoryClearable;
 import com.ke.bella.openapi.protocol.UserRequest;
 import lombok.Data;
 
@@ -12,7 +15,7 @@ import java.io.Serializable;
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Data
-public class SpeakerEmbeddingRequest implements UserRequest, Serializable {
+public class SpeakerEmbeddingRequest implements UserRequest, Serializable, IMemoryClearable, ISummary {
     private static final long serialVersionUID = 1L;
     
     private String url;
@@ -34,4 +37,29 @@ public class SpeakerEmbeddingRequest implements UserRequest, Serializable {
     private double minSpeechDuration = 1.0;
     @JsonProperty("max_silence_duration")
     private double maxSilenceDuration = 0.5;
+
+    // 内存清理相关字段和方法
+    @JsonIgnore
+    private volatile boolean cleared = false;
+
+    @Override
+    public void clearLargeData() {
+        if (!cleared) {
+            // 清理最大的内存占用 - base64音频数据
+            this.base64 = null;
+
+            // 标记为已清理
+            this.cleared = true;
+        }
+    }
+
+    @Override
+    public boolean isCleared() {
+        return cleared;
+    }
+
+    @Override
+    public String[] ignoreFields() {
+        return new String[] {"base64"};
+    }
 }

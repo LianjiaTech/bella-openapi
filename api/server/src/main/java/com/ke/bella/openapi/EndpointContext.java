@@ -15,6 +15,7 @@ public class EndpointContext {
 
     private static final ThreadLocal<HttpServletRequest> requestCache = new ThreadLocal<>();
 
+    private static final ThreadLocal<Boolean> isLastRequest = new ThreadLocal<>();
 
     public static EndpointProcessData getProcessData() {
         if(endpointRequestInfo.get() == null) {
@@ -96,9 +97,18 @@ public class EndpointContext {
         setEndpointData(endpoint, Strings.EMPTY, channel, request);
     }
 
+    public static void markLargeRequest() {
+        isLastRequest.set(true);
+    }
+
+    public static boolean isLargeRequest() {
+        return Boolean.TRUE.equals(isLastRequest.get());
+    }
+
     public static void clearAll() {
         endpointRequestInfo.remove();
         requestCache.remove();
+        isLastRequest.remove();
         BellaContext.clearAll();
     }
 

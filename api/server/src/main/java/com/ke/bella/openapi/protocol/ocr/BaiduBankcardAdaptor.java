@@ -52,6 +52,7 @@ public class BaiduBankcardAdaptor implements OcrBankcardAdaptor<BaiduOcrProperty
     public OcrBankcardResponse bankcard(OcrBankcardRequest request, String url, BaiduOcrProperty property) {
         BaiduBankcardRequest baiduBankcardRequest = requestConvert(request);
         Request httpRequest = buildRequest(baiduBankcardRequest, url, property);
+        clearLargeData(request, baiduBankcardRequest);
         BaiduBankcardResponse baiduBankcardResponse = HttpUtils.httpRequest(httpRequest, BaiduBankcardResponse.class);
         return responseConvert(baiduBankcardResponse);
     }

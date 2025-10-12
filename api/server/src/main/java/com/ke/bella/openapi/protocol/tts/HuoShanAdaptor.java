@@ -31,8 +31,9 @@ public class HuoShanAdaptor implements TtsAdaptor<HuoShanProperty> {
         HuoShanRequest huoShanRequest = convertTtsRequestToHuoShanRequest(request, property);
         Request.Builder builder = authorizationRequestBuilder(property.getAuth())
                 .url(url)
-                .post(RequestBody.create(MediaType.parse("application/json"), JacksonUtils.serialize(huoShanRequest)));
+                .post(RequestBody.create(MediaType.parse("application/json"), JacksonUtils.toByte(huoShanRequest)));
         Request httpRequest = builder.build();
+        clearLargeData(request, huoShanRequest);
         return processHuoShanResponse(httpRequest);
     }
 

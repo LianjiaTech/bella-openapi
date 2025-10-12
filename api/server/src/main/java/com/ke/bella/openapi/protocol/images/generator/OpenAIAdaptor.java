@@ -41,9 +41,10 @@ public class OpenAIAdaptor implements ImagesGeneratorAdaptor<ImagesProperty> {
 
         requestBuilder.url(url)
                 .post(RequestBody.create(MediaType.get("application/json; charset=utf-8"),
-                        JacksonUtils.serialize(requestBody)));
+                        JacksonUtils.toByte(requestBody)));
 
         Request httpRequest = requestBuilder.build();
+        clearLargeData(request);
         return HttpUtils.httpRequest(httpRequest, ImagesResponse.class);
     }
 

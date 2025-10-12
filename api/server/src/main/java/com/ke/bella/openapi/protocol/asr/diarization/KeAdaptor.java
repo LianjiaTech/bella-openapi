@@ -18,8 +18,8 @@ public class KeAdaptor implements SpeakerDiarizationAdaptor<SpeakerDiarizationPr
     public SpeakerDiarizationResponse speakerDiarization(AudioTranscriptionReq request, String url, SpeakerDiarizationProperty property) {
         Request.Builder builder = new Request.Builder()
                 .url(url)
-                .post(RequestBody.create(MediaType.parse("application/json"), JacksonUtils.serialize(request)));
-        
+                .post(RequestBody.create(MediaType.parse("application/json"), JacksonUtils.toByte(request)));
+
         Request httpRequest = builder.build();
         return doRequest(httpRequest);
     }
