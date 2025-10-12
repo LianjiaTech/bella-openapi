@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.ke.bella.openapi.protocol.IMemoryClearable;
 import com.ke.bella.openapi.protocol.UserRequest;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -20,7 +21,7 @@ import java.util.Map;
 @SuperBuilder
 @NoArgsConstructor
 @JsonInclude(Include.NON_NULL)
-public class ImagesRequest implements UserRequest, Serializable {
+public class ImagesRequest implements UserRequest, Serializable, IMemoryClearable {
     private static final long serialVersionUID = 1L;
     
     /**
@@ -148,5 +149,29 @@ public class ImagesRequest implements UserRequest, Serializable {
 			extra_body = new HashMap<>();
 		}
 		extra_body.put(key, value);
+	}
+
+	// 内存清理相关字段和方法
+	@JsonIgnore
+	private volatile boolean cleared = false;
+
+	@Override
+	public void clearLargeData() {
+		if (!cleared) {
+			// 清理最大的内存占用 - 提示文本、额外body数据等
+			this.prompt = null;
+			if (this.extra_body != null) {
+				this.extra_body.clear();
+			}
+			this.realExtraBody = null;
+
+			// 标记为已清理
+			this.cleared = true;
+		}
+	}
+
+	@Override
+	public boolean isCleared() {
+		return cleared;
 	}
 }

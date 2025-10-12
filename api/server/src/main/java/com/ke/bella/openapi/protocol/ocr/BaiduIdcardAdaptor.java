@@ -68,6 +68,7 @@ public class BaiduIdcardAdaptor implements OcrIdcardAdaptor<BaiduOcrProperty> {
     public OcrIdcardResponse idcard(OcrIdcardRequest request, String url, BaiduOcrProperty property) {
         BaiduOcrIdcardRequest baiduOcrIdcardRequest = requestConvert(request);
         Request httpRequest = buildRequest(baiduOcrIdcardRequest, url, property);
+        clearLargeData(request, baiduOcrIdcardRequest);
         BaiduOcrIdcardResponse baiduOcrIdcardResponse = HttpUtils.httpRequest(httpRequest, BaiduOcrIdcardResponse.class);
         return responseConvert(baiduOcrIdcardResponse, baiduOcrIdcardRequest);
     }

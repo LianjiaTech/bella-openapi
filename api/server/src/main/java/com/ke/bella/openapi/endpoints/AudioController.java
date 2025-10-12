@@ -331,7 +331,7 @@ public class AudioController {
     public SpeakerEmbeddingResponse speakerEmbedding(@RequestBody SpeakerEmbeddingRequest request) {
         String endpoint = EndpointContext.getRequest().getRequestURI();
         String model = request.getModel();
-        endpointDataService.setEndpointData(endpoint, model, request);
+        endpointDataService.setEndpointData(endpoint, model, request.summary());
         EndpointProcessData processData = EndpointContext.getProcessData();
         ChannelDB channel = router.route(endpoint, model, EndpointContext.getApikey(), processData.isMock());
         endpointDataService.setChannel(channel);

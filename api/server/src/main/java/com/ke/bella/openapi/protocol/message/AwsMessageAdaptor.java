@@ -47,10 +47,15 @@ public class AwsMessageAdaptor implements MessageAdaptor<AwsMessageProperty> {
             request.setMaxTokens(property.getDefaultMaxToken());
         }
         request.setAnthropic_version(property.getAnthropicVersion());
+
+        // 序列化请求并立即清理大型数据以释放内存
+        byte[] requestBytes = JacksonUtils.toByte(request);
+        clearLargeData(request);
+
         BedrockRuntimeClient client = AwsClientManager.client(property.getRegion(), url, property.getAuth().getApiKey(), property.getAuth().getSecret());
         try {
             InvokeModelResponse response = client.invokeModel(InvokeModelRequest.builder()
-                    .body(SdkBytes.fromUtf8String(JacksonUtils.serialize(request)))
+                    .body(SdkBytes.fromByteArray(requestBytes))
                     .modelId(property.getDeployName())
                     .build());
             MessageResponse messageResponse = JacksonUtils.deserialize(response.body().asByteArray(), MessageResponse.class);
@@ -69,9 +74,14 @@ public class AwsMessageAdaptor implements MessageAdaptor<AwsMessageProperty> {
             request.setMaxTokens(property.getDefaultMaxToken());
         }
         request.setAnthropic_version(property.getAnthropicVersion());
+
+        // 序列化请求并立即清理大型数据以释放内存
+        byte[] requestBytes = JacksonUtils.toByte(request);
+        clearLargeData(request);
+
         BedrockRuntimeAsyncClient client = AwsClientManager.asyncClient(property.getRegion(), url, property.getAuth().getApiKey(), property.getAuth().getSecret());
         InvokeModelWithResponseStreamRequest streamRequest = InvokeModelWithResponseStreamRequest.builder()
-                .body(SdkBytes.fromUtf8String(JacksonUtils.serialize(request)))
+                .body(SdkBytes.fromByteArray(requestBytes))
                 .modelId(property.getDeployName())
                 .build();
         EndpointProcessData processData = EndpointContext.getProcessData();

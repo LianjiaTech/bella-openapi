@@ -76,6 +76,7 @@ public class OpenAIVariationAdaptor implements ImagesVariationAdaptor<ImagesProp
             requestBuilder.url(url).post(requestBody);
             
             Request httpRequest = requestBuilder.build();
+            clearLargeData(request);
             return HttpUtils.httpRequest(httpRequest, ImagesResponse.class);
             
         } catch (IOException e) {

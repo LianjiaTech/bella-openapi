@@ -1,6 +1,9 @@
 package com.ke.bella.openapi.protocol.completion;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.ke.bella.openapi.protocol.IMemoryClearable;
+import com.ke.bella.openapi.protocol.ITransfer;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,7 +21,7 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class ResponsesApiRequest {
+public class ResponsesApiRequest implements IMemoryClearable, ITransfer {
 
     /**
      * Model to use
@@ -239,5 +242,33 @@ public class ResponsesApiRequest {
          * Image detail level
          */
         private String detail;
+    }
+
+    // 内存清理相关字段和方法
+    @JsonIgnore
+    private volatile boolean cleared = false;
+
+    @Override
+    public void clearLargeData() {
+        if (!cleared) {
+            // 清理最大的内存占用 - 输入数据、工具列表、元数据等
+            this.input = null;
+            this.instructions = null;
+            if (this.tools != null) {
+                this.tools.clear();
+            }
+            if (this.metadata != null) {
+                this.metadata.clear();
+            }
+            this.reasoning = null;
+
+            // 标记为已清理
+            this.cleared = true;
+        }
+    }
+
+    @Override
+    public boolean isCleared() {
+        return cleared;
     }
 }
