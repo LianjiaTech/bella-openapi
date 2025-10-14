@@ -42,7 +42,7 @@ import okhttp3.sse.EventSources;
  */
 public class HttpUtils {
 
-    private static final ConnectionPool connectionPool = new ConnectionPool(1500, 5, TimeUnit.MINUTES);
+    private static final ConnectionPool connectionPool = new ConnectionPool(100, 2, TimeUnit.MINUTES);
 
     private static final ExecutorService executorService = new ThreadPoolExecutor(0, Integer.MAX_VALUE, 60, TimeUnit.SECONDS,
             new SynchronousQueue<>(), Util.threadFactory("OkHttp Dispatcher", false));

@@ -12,6 +12,9 @@ import com.ke.bella.openapi.protocol.tts.TtsPriceInfo;
 import com.ke.bella.openapi.protocol.images.ImagesPriceInfo;
 import com.ke.bella.openapi.protocol.images.ImagesEditsPriceInfo;
 import com.ke.bella.openapi.protocol.ocr.OcrPriceInfo;
+import com.ke.bella.openapi.protocol.web.WebCrawlPriceInfo;
+import com.ke.bella.openapi.protocol.web.WebExtractPriceInfo;
+import com.ke.bella.openapi.protocol.web.WebSearchPriceInfo;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -32,7 +35,10 @@ public interface IPriceInfo extends IDescription {
         SPEAKER_DIARIZATION("/v1/audio/speaker/diarization", SpeakerDiarizationPriceInfo.class),
         IMAGES("/v1/images/generations", ImagesPriceInfo.class),
         IMAGES_EDIT("/v1/images/edits", ImagesEditsPriceInfo.class),
-        OCR_IDCARD("/v1/ocr/idcard", OcrPriceInfo.class)
+        OCR_IDCARD("/v1/ocr/idcard", OcrPriceInfo.class),
+        WEB_SEARCH("/v1/web/search", WebSearchPriceInfo.class),
+        WEB_CRAWL("/v1/web/crawl", WebCrawlPriceInfo.class),
+        WEB_EXTRACT("/v1/web/extract", WebExtractPriceInfo.class),
         ;
 
         private final String endpoint;

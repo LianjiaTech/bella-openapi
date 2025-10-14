@@ -15,6 +15,12 @@ import com.ke.bella.openapi.protocol.realtime.RealTimePriceInfo;
 import com.ke.bella.openapi.protocol.speaker.SpeakerEmbeddingLogHandler;
 import com.ke.bella.openapi.protocol.speaker.SpeakerEmbeddingPriceInfo;
 import com.ke.bella.openapi.protocol.tts.TtsPriceInfo;
+import com.ke.bella.openapi.protocol.web.WebCrawlPriceInfo;
+import com.ke.bella.openapi.protocol.web.WebCrawlUsage;
+import com.ke.bella.openapi.protocol.web.WebExtractPriceInfo;
+import com.ke.bella.openapi.protocol.web.WebExtractUsage;
+import com.ke.bella.openapi.protocol.web.WebSearchPriceInfo;
+import com.ke.bella.openapi.protocol.web.WebSearchUsage;
 import com.ke.bella.openapi.utils.JacksonUtils;
 import com.ke.bella.openapi.utils.MatchUtils;
 import lombok.AllArgsConstructor;
@@ -66,7 +72,10 @@ public class CostCalculator  {
         SPEAKER_DIARIZATION("/v*/audio/speaker/diarization", speakerDiarization),
         IMAGES("/v*/images/generations", images),
         IMAGES_EDITS("/v*/images/edits", images_edits),
-        IMAGES_VARIATIONS("/v*/images/variations", images)
+        IMAGES_VARIATIONS("/v*/images/variations", images),
+        WEB_SEARCH("/v*/web/search", webSearch),
+        WEB_CRAWL("/v*/web/crawl", webCrawl),
+        WEB_EXTRACT("/v*/web/extract", webExtract)
         ;
         final String endpoint;
         final EndpointCostCalculator calculator;
@@ -319,6 +328,102 @@ public class CostCalculator  {
             SpeakerDiarizationPriceInfo priceConfig = JacksonUtils.deserialize(priceInfo, SpeakerDiarizationPriceInfo.class);
             return priceConfig != null && priceConfig.getPrice() != null && 
                    priceConfig.getPrice().compareTo(BigDecimal.ZERO) >= 0;
+        }
+    };
+
+    static EndpointCostCalculator webSearch = new EndpointCostCalculator() {
+        @Override
+        public BigDecimal calculate(String priceInfo, Object usage) {
+            WebSearchPriceInfo price = JacksonUtils.deserialize(priceInfo, WebSearchPriceInfo.class);
+            WebSearchUsage searchUsage = (WebSearchUsage) usage;
+
+            // Determine search depth from usage and calculate cost
+            // Basic Search: 1 API credit per request
+            // Advanced Search: 2 API credits per request
+            String searchDepth = searchUsage.getSearchDepth();
+            if ("advanced".equalsIgnoreCase(searchDepth)) {
+                return price.getAdvancedSearchPrice();
+            } else {
+                return price.getBasicSearchPrice();
+            }
+        }
+
+        @Override
+        public boolean checkPriceInfo(String priceInfo) {
+            WebSearchPriceInfo price = JacksonUtils.deserialize(priceInfo, WebSearchPriceInfo.class);
+            return price != null && price.getBasicSearchPrice() != null && price.getAdvancedSearchPrice() != null;
+        }
+    };
+
+    static EndpointCostCalculator webCrawl = new EndpointCostCalculator() {
+        @Override
+        public BigDecimal calculate(String priceInfo, Object usage) {
+            WebCrawlPriceInfo price = JacksonUtils.deserialize(priceInfo, WebCrawlPriceInfo.class);
+            WebCrawlUsage crawlUsage = (WebCrawlUsage) usage;
+
+            BigDecimal totalCost = BigDecimal.ZERO;
+
+            // Calculate mapping cost based on pages mapped
+            int pagesMapped = crawlUsage.getPagesMapped();
+            boolean hasInstructions = crawlUsage.isHasInstructions();
+
+            if (hasInstructions) {
+                totalCost = totalCost.add(price.getInstructionMappingPrice().multiply(BigDecimal.valueOf(pagesMapped)));
+            } else {
+                totalCost = totalCost.add(price.getBasicMappingPrice().multiply(BigDecimal.valueOf(pagesMapped)));
+            }
+
+            // Calculate extraction cost based on successful extractions
+            int successfulExtractions = crawlUsage.getSuccessfulExtractions();
+            String extractDepth = crawlUsage.getExtractDepth();
+
+            if ("advanced".equalsIgnoreCase(extractDepth)) {
+                totalCost = totalCost.add(price.getAdvancedExtractionPrice().multiply(BigDecimal.valueOf(successfulExtractions)));
+            } else {
+                totalCost = totalCost.add(price.getBasicExtractionPrice().multiply(BigDecimal.valueOf(successfulExtractions)));
+            }
+
+            return totalCost;
+        }
+
+        @Override
+        public boolean checkPriceInfo(String priceInfo) {
+            WebCrawlPriceInfo price = JacksonUtils.deserialize(priceInfo, WebCrawlPriceInfo.class);
+            return price != null &&
+                   price.getBasicMappingPrice() != null &&
+                   price.getInstructionMappingPrice() != null &&
+                   price.getBasicExtractionPrice() != null &&
+                   price.getAdvancedExtractionPrice() != null;
+        }
+    };
+
+    static EndpointCostCalculator webExtract = new EndpointCostCalculator() {
+        @Override
+        public BigDecimal calculate(String priceInfo, Object usage) {
+            WebExtractPriceInfo price = JacksonUtils.deserialize(priceInfo, WebExtractPriceInfo.class);
+            WebExtractUsage extractUsage = (WebExtractUsage) usage;
+
+            BigDecimal totalCost = BigDecimal.ZERO;
+
+            // Calculate extraction cost based on successful extractions
+            int successfulExtractions = extractUsage.getSuccessfulExtractions();
+            String extractDepth = extractUsage.getExtractDepth();
+
+            if ("advanced".equalsIgnoreCase(extractDepth)) {
+                totalCost = totalCost.add(price.getAdvancedExtractionPrice().multiply(BigDecimal.valueOf(successfulExtractions)));
+            } else {
+                totalCost = totalCost.add(price.getBasicExtractionPrice().multiply(BigDecimal.valueOf(successfulExtractions)));
+            }
+
+            return totalCost;
+        }
+
+        @Override
+        public boolean checkPriceInfo(String priceInfo) {
+            WebExtractPriceInfo price = JacksonUtils.deserialize(priceInfo, WebExtractPriceInfo.class);
+            return price != null &&
+                   price.getBasicExtractionPrice() != null &&
+                   price.getAdvancedExtractionPrice() != null;
         }
     };
 
