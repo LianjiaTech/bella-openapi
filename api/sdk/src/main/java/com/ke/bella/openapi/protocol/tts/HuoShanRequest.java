@@ -1,6 +1,9 @@
 package com.ke.bella.openapi.protocol.tts;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.ke.bella.openapi.protocol.IMemoryClearable;
+import com.ke.bella.openapi.protocol.ITransfer;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -10,7 +13,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class HuoShanRequest {
+public class HuoShanRequest implements IMemoryClearable, ITransfer {
     private App app;
     private User user;
     private Audio audio;
@@ -60,4 +63,26 @@ public class HuoShanRequest {
         private String textType="";
         private String operation="query";
      }
+
+    // 内存清理相关字段和方法
+    @JsonIgnore
+    private volatile boolean cleared = false;
+
+    @Override
+    public void clearLargeData() {
+        if (!cleared) {
+            // 清理最大的内存占用 - 文本请求中的文本数据
+            if (this.request != null) {
+                this.request.text = null;
+            }
+
+            // 标记为已清理
+            this.cleared = true;
+        }
+    }
+
+    @Override
+    public boolean isCleared() {
+        return cleared;
+    }
 }

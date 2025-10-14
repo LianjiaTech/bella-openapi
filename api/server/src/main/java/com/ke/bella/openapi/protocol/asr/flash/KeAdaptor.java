@@ -25,6 +25,7 @@ public class KeAdaptor implements FlashAsrAdaptor<AsrProperty> {
                 .header("hot_words", UriUtils.encode(request.getHotWords(), StandardCharsets.UTF_8))
                 .post(RequestBody.create(MediaType.parse(AudioFormat.getContentType(request.getFormat())), request.getContent()))
                 .build();
+        clearLargeData(request);
         return HttpUtils.httpRequest(httpRequest, FlashAsrResponse.class);
     }
 

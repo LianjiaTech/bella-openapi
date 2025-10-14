@@ -1,21 +1,21 @@
 package com.ke.bella.openapi;
 
-import java.util.Map;
-
-import org.apache.commons.lang3.StringUtils;
-import org.apache.logging.log4j.util.Strings;
-import org.springframework.util.Assert;
-import org.springframework.web.util.ContentCachingRequestWrapper;
-
 import com.ke.bella.openapi.apikey.ApikeyInfo;
 import com.ke.bella.openapi.common.EntityConstants;
 import com.ke.bella.openapi.tables.pojos.ChannelDB;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.util.Strings;
+import org.springframework.util.Assert;
+
+import javax.servlet.http.HttpServletRequest;
+import java.util.Map;
 
 public class EndpointContext {
     private static final ThreadLocal<EndpointProcessData> endpointRequestInfo = new ThreadLocal<>();
 
-    private static final ThreadLocal<ContentCachingRequestWrapper> requestCache = new ThreadLocal<>();
+    private static final ThreadLocal<HttpServletRequest> requestCache = new ThreadLocal<>();
 
+    private static final ThreadLocal<Boolean> isLastRequest = new ThreadLocal<>();
 
     public static EndpointProcessData getProcessData() {
         if(endpointRequestInfo.get() == null) {
@@ -30,12 +30,16 @@ public class EndpointContext {
     }
 
 
-    public static ContentCachingRequestWrapper getRequest() {
+    public static HttpServletRequest getRequest() {
         Assert.notNull(requestCache.get(), "requestCache is empty");
         return requestCache.get();
     }
 
-    public static void setRequest(ContentCachingRequestWrapper request) {
+    public static HttpServletRequest getRequestIgnoreNull() {
+        return requestCache.get();
+    }
+
+    public static void setRequest(HttpServletRequest request) {
         requestCache.set(request);
     }
 
@@ -93,9 +97,18 @@ public class EndpointContext {
         setEndpointData(endpoint, Strings.EMPTY, channel, request);
     }
 
+    public static void markLargeRequest() {
+        isLastRequest.set(true);
+    }
+
+    public static boolean isLargeRequest() {
+        return Boolean.TRUE.equals(isLastRequest.get());
+    }
+
     public static void clearAll() {
         endpointRequestInfo.remove();
         requestCache.remove();
+        isLastRequest.remove();
         BellaContext.clearAll();
     }
 

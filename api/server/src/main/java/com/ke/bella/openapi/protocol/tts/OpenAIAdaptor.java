@@ -19,12 +19,14 @@ public class OpenAIAdaptor implements TtsAdaptor<OpenAIProperty> {
     @Override
     public byte[] tts(TtsRequest request, String url, OpenAIProperty property) {
         Request httpRequest = buildRequest(request, url, property);
+        clearLargeData(request);
         return HttpUtils.doHttpRequest(httpRequest);
     }
 
     @Override
     public void streamTts(TtsRequest request, String url, OpenAIProperty property, Callbacks.StreamCallback callback) {
         Request httpRequest = buildRequest(request, url, property);
+        clearLargeData(request);
         HttpUtils.streamRequest(httpRequest, new BellaStreamCallback((Callbacks.HttpStreamTtsCallback) callback));
     }
 
@@ -50,7 +52,7 @@ public class OpenAIAdaptor implements TtsAdaptor<OpenAIProperty> {
         }
         Request.Builder builder = authorizationRequestBuilder(property.getAuth())
                 .url(url)
-                .post(RequestBody.create(MediaType.parse("application/json"), JacksonUtils.serialize(request)));
+                .post(RequestBody.create(MediaType.parse("application/json"), JacksonUtils.toByte(request)));
         return builder.build();
     }
 }

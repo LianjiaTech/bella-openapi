@@ -37,6 +37,7 @@ public class HuoshanAdaptor implements ImagesEditorAdaptor<ImagesEditorProperty>
 	@Override
 	public ImagesResponse doEditImages(ImagesEditRequest request, String url, ImagesEditorProperty property, ImageDataType dataType) throws IOException {
 		Request httpRequest = buildRequest(request, url, property, dataType);
+		clearLargeData(request);
 		return HttpUtils.httpRequest(httpRequest, ImagesResponse.class);
 	}
 
@@ -87,7 +88,7 @@ public class HuoshanAdaptor implements ImagesEditorAdaptor<ImagesEditorProperty>
 		Request.Builder requestBuilder = authorizationRequestBuilder(property.getAuth());
 		requestBuilder.url(url)
 			.post(RequestBody.create(MediaType.get("application/json; charset=utf-8"),
-				JacksonUtils.serialize(requestMap)));
+				JacksonUtils.toByte(requestMap)));
 
 		return requestBuilder.build();
 	}

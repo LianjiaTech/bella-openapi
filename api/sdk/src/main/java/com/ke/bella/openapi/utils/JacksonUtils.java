@@ -1,23 +1,5 @@
 package com.ke.bella.openapi.utils;
 
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.TimeZone;
-
-import org.apache.commons.lang3.StringUtils;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
-
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -38,6 +20,23 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.ser.std.DateSerializer;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
+
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.TimeZone;
 
 /**
  * Author: Stan Sai Date: 2024/4/11 11:55 description:
@@ -57,6 +56,9 @@ public class JacksonUtils {
     }
 
     public static String serialize(Object obj) {
+        if (obj == null) {
+            return "";
+        }
         try {
             return MAPPER.writeValueAsString(obj);
         } catch (JsonProcessingException e) {
@@ -66,6 +68,9 @@ public class JacksonUtils {
     }
 
     public static byte[] toByte(Object obj) {
+        if (obj == null) {
+            return new byte[0];
+        }
         try {
             return MAPPER.writeValueAsBytes(obj);
         } catch (JsonProcessingException e) {
@@ -75,6 +80,9 @@ public class JacksonUtils {
     }
 
     public static <T> T deserialize(String jsonText, TypeReference<T> type) {
+        if (StringUtils.isBlank(jsonText)) {
+            return null;
+        }
         try {
             return MAPPER.readValue(jsonText, type);
         } catch (Exception e) {
@@ -84,6 +92,9 @@ public class JacksonUtils {
     }
 
     public static <T> T deserialize(String jsonText, Class<T> beanClass) {
+        if (StringUtils.isBlank(jsonText)) {
+            return null;
+        }
         try {
             return MAPPER.readValue(jsonText, beanClass);
         } catch (Exception e) {
@@ -93,6 +104,9 @@ public class JacksonUtils {
     }
 
     public static <T> T deserialize(byte[] bytes, Class<T> beanClass) {
+        if (bytes.length == 0) {
+            return null;
+        }
         try {
             return MAPPER.readValue(bytes, beanClass);
         } catch (Exception e) {
@@ -102,6 +116,9 @@ public class JacksonUtils {
     }
 
     public static <T> T deserialize(byte[] bytes, TypeReference<T> tTypeReference) {
+        if (bytes.length == 0) {
+            return null;
+        }
         try {
             return MAPPER.readValue(bytes, tTypeReference);
         } catch (Exception e) {
@@ -111,6 +128,9 @@ public class JacksonUtils {
     }
 
     public static JsonNode deserialize(String jsonText) {
+        if (StringUtils.isBlank(jsonText)) {
+            return null;
+        }
         try {
             return MAPPER.readTree(jsonText);
         } catch (Exception e) {
@@ -120,6 +140,9 @@ public class JacksonUtils {
     }
 
     public static JsonNode toJsonNode(Object obj) {
+        if (obj == null) {
+            return null;
+        }
         try {
             return MAPPER.readTree(serialize(obj));
         } catch (Exception e) {
@@ -146,43 +169,46 @@ public class JacksonUtils {
         return null;
     }
 
-    public static Map toMap(byte[] bytes) {
-        Map map = new HashMap();
+    public static Map<String, Object> toMap(byte[] bytes) {
+        if (bytes.length == 0) {
+            return null;
+        }
+        Map<String, Object> map = new HashMap<>();
         try {
-            map = MAPPER.readValue(bytes, Map.class);
+            map = MAPPER.readValue(bytes, new TypeReference<Map<String, Object>>() {});
         } catch (IOException e) {
             LOGGER.warn(e.getMessage(), e);
         }
         return map;
     }
 
-    public static Map toMap(String jsonStr) {
+    public static Map<String, Object> toMap(String jsonStr) {
         if(jsonStr == null) {
             return null;
         }
-        Map map = new HashMap();
+        Map<String, Object> map = new HashMap<>();
         try {
-            map = MAPPER.readValue(jsonStr, Map.class);
+            map = MAPPER.readValue(jsonStr, new TypeReference<Map<String, Object>>() {});
         } catch (IOException e) {
             LOGGER.warn(e.getMessage(), e);
         }
         return map;
     }
 
-    public static Map toMap(Object objEntity) {
+    public static Map<String, Object> toMap(Object objEntity) {
         if(Objects.isNull(objEntity)) {
             return null;
         }
-        Map map = new HashMap();
+        Map<String, Object> map = new HashMap<>();
         try {
-            map = MAPPER.readValue(MAPPER.writeValueAsString(objEntity), Map.class);
+            map = MAPPER.readValue(MAPPER.writeValueAsString(objEntity), new TypeReference<Map<String, Object>>() {});
         } catch (IOException e) {
             LOGGER.error(e.getMessage(), e);
         }
         return map;
     }
 
-    public static <T> T convertValue(Map source, Class<T> clazz) {
+    public static <T> T convertValue(Map<String, Object> source, Class<T> clazz) {
         return MAPPER.convertValue(source, clazz);
     }
 

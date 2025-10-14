@@ -3,6 +3,7 @@ package com.ke.bella.openapi.protocol.completion;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.ke.bella.openapi.protocol.IMemoryClearable;
 import com.ke.bella.openapi.protocol.UserRequest;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -17,7 +18,7 @@ import java.util.Map;
 @Data
 @SuperBuilder
 @NoArgsConstructor
-public class CompletionRequest implements UserRequest, Serializable {
+public class CompletionRequest implements UserRequest, Serializable, IMemoryClearable {
     private static final long serialVersionUID = 1L;
     /**
      * ID of the model to use. Can be a comma-separated list of models.
@@ -222,5 +223,29 @@ public class CompletionRequest implements UserRequest, Serializable {
          * All other chunks will also include a usage field, but with a null value.
          */
         private boolean include_usage = true;
+    }
+
+    // 内存清理相关字段和方法
+    @JsonIgnore
+    private volatile boolean cleared = false;
+
+    @Override
+    public void clearLargeData() {
+        if (!cleared) {
+            // 清理占用最多内存的字段
+            this.messages = null;
+            this.extra_body = null;
+            this.realExtraBody = null;
+            this.functions = null;
+            this.tools = null;
+
+            // 标记为已清理
+            this.cleared = true;
+        }
+    }
+
+    @Override
+    public boolean isCleared() {
+        return cleared;
     }
 }

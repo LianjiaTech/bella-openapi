@@ -3,6 +3,8 @@ package com.ke.bella.openapi.protocol.images;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.ke.bella.openapi.ISummary;
+import com.ke.bella.openapi.protocol.IMemoryClearable;
 import com.ke.bella.openapi.protocol.UserRequest;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -20,7 +22,7 @@ import java.io.Serializable;
 @SuperBuilder
 @NoArgsConstructor
 @JsonInclude(Include.NON_NULL)
-public class ImagesVariationRequest implements UserRequest, Serializable {
+public class ImagesVariationRequest implements UserRequest, ISummary, Serializable, IMemoryClearable {
     private static final long serialVersionUID = 1L;
     
     /**
@@ -59,4 +61,29 @@ public class ImagesVariationRequest implements UserRequest, Serializable {
      */
     @Nullable
     private String user;
+
+    @Override
+    public String[] ignoreFields() {
+        return new String[] { "image" };
+    }
+
+    // 内存清理相关字段和方法
+    @JsonIgnore
+    private volatile boolean cleared = false;
+
+    @Override
+    public void clearLargeData() {
+        if (!cleared) {
+            // 清理最大的内存占用 - 图片文件
+            this.image = null;
+
+            // 标记为已清理
+            this.cleared = true;
+        }
+    }
+
+    @Override
+    public boolean isCleared() {
+        return cleared;
+    }
 }

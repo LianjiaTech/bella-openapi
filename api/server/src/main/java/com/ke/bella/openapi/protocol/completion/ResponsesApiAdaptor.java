@@ -39,6 +39,7 @@ public class ResponsesApiAdaptor implements CompletionAdaptor<ResponsesApiProper
 
         // 构建HTTP请求
         Request httpRequest = buildResponsesApiRequest(responsesRequest, url, property);
+        clearLargeData(request, responsesRequest);
         // 发送请求并获取Responses API响应
         ResponsesApiResponse responsesResponse = HttpUtils.httpRequest(httpRequest, ResponsesApiResponse.class,
                 (errorResponse, res) -> {
@@ -68,6 +69,7 @@ public class ResponsesApiAdaptor implements CompletionAdaptor<ResponsesApiProper
         CompletionSseListener listener = new CompletionSseListener(callback, sseConverter);
 
         Request httpRequest = buildResponsesApiRequest(responsesRequest, url, property);
+        clearLargeData(request, responsesRequest);
         // 发送流式请求
         HttpUtils.streamRequest(httpRequest, listener);
 
@@ -93,7 +95,7 @@ public class ResponsesApiAdaptor implements CompletionAdaptor<ResponsesApiProper
         // 构建请求
         Request.Builder builder = authorizationRequestBuilder(property.getAuth())
                 .url(url)
-                .post(RequestBody.create(MediaType.parse("application/json"), JacksonUtils.serialize(request)));
+                .post(RequestBody.create(MediaType.parse("application/json"), JacksonUtils.toByte(request)));
         
         // 添加额外的请求头
         if (MapUtils.isNotEmpty(property.getExtraHeaders())) {

@@ -58,7 +58,6 @@ public class TransferFromCompletionsUtils {
         }
     }
 
-    @SuppressWarnings({"unchecked", "rawTypes"})
     public static CompletionRequest convertRequest(MessageRequest messageRequest, boolean nativeSupport) {
         if (messageRequest == null) {
             return null;
@@ -111,6 +110,7 @@ public class TransferFromCompletionsUtils {
         builder.stream(Boolean.TRUE.equals(request.getStream()));
     }
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     private static void processSystemMessage(MessageRequest messageRequest, List<Message> chatMessages, boolean nativeSupport) {
         if (messageRequest.getSystem() == null) return;
         
@@ -145,6 +145,7 @@ public class TransferFromCompletionsUtils {
         }
     }
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     private static List<Message> convertSingleInputMessage(MessageRequest.InputMessage inputMessage, boolean nativeSupport) {
         Message.MessageBuilder chatMessageBuilder = Message.builder().role(inputMessage.getRole());
         Object contentObj = inputMessage.getContent();

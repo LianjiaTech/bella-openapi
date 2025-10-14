@@ -2,7 +2,10 @@ package com.ke.bella.openapi.protocol.ocr;
 
 import java.io.Serializable;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.ke.bella.openapi.ISummary;
+import com.ke.bella.openapi.protocol.IMemoryClearable;
 import com.ke.bella.openapi.protocol.UserRequest;
 
 import lombok.Data;
@@ -12,7 +15,7 @@ import lombok.experimental.SuperBuilder;
 @Data
 @SuperBuilder
 @NoArgsConstructor
-public class OcrRequest implements UserRequest, Serializable {
+public class OcrRequest implements UserRequest, ISummary, Serializable, IMemoryClearable {
     private static final long serialVersionUID = 1L;
 
     private String user;                    // 用户标识
@@ -25,4 +28,21 @@ public class OcrRequest implements UserRequest, Serializable {
     private String imageUrl;               // 图片URL
     @JsonProperty("file_id")
     private String fileId;                 // 文件服务中的文件ID
+
+    // 内存清理相关字段和方法
+    @JsonIgnore
+    private volatile boolean cleared = false;
+
+    @Override
+    public String[] ignoreFields() {
+        return new String[] {"imageBase64"};
+    }
+
+    @Override
+    public void clearLargeData() {
+        if (!cleared) {
+            this.imageBase64 = null;
+            this.cleared = true;
+        }
+    }
 }
