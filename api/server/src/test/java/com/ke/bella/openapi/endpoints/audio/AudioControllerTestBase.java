@@ -7,6 +7,7 @@ import com.ke.bella.openapi.EndpointContext;
 import com.ke.bella.openapi.BellaContext;
 import com.ke.bella.openapi.apikey.ApikeyInfo;
 import com.ke.bella.openapi.endpoints.AudioController;
+import com.ke.bella.openapi.service.EndpointDataService;
 import com.ke.bella.job.queue.JobQueueClient;
 import com.ke.bella.job.queue.config.JobQueueProperties;
 import org.junit.After;
@@ -66,6 +67,9 @@ public abstract class AudioControllerTestBase {
     @Mock
     protected JobQueueProperties mockJobQueueProperties;
 
+    @Mock
+    protected EndpointDataService endpointDataService;
+
     @InjectMocks
     protected AudioController audioController;
 
@@ -98,6 +102,11 @@ public abstract class AudioControllerTestBase {
         rolePath.getIncluded().add("/v1/**");
         testApikey.setRolePath(rolePath);
         BellaContext.setApikey(testApikey);
+
+        // Setup EndpointDataService mock behavior
+        // These methods need to actually execute to set EndpointContext state
+        lenient().doCallRealMethod().when(endpointDataService).setEndpointData(anyString(), anyString(), any());
+        lenient().doCallRealMethod().when(endpointDataService).setChannel(any());
     }
 
     /**
