@@ -461,9 +461,11 @@ public class AwsCompletionConverter {
         return ContentBlock.fromText(text);
     }
 
-	@SuppressWarnings({ "unchecked", "rawtypes" })
     private static ContentBlock convert2ToolUseBlock(String toolUseId, String name, String arguments) {
-        Map argumentMap = StringUtils.isEmpty(arguments) ? new HashMap<>() : JacksonUtils.deserialize(arguments, Map.class);
+        Map<String, Object> argumentMap = JacksonUtils.toMap(arguments);
+        if(argumentMap == null) {
+            argumentMap = new HashMap<>();
+        }
         return ContentBlock.fromToolUse(ToolUseBlock
                 .builder()
                 .toolUseId(toolUseId)
@@ -472,7 +474,6 @@ public class AwsCompletionConverter {
                 .build());
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
     private static List<ContentBlock> convert2TextBlock(Map<String, Object> contentMap, AwsProperty property) {
 		List<ContentBlock> contentBlocks = new ArrayList<>();
 
@@ -490,7 +491,6 @@ public class AwsCompletionConverter {
         return contentBlocks;
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
     private static List<ContentBlock> convert2ImageBlock(String image, Map<String, Object> cacheControl, AwsProperty property) {
         if(!ImageUtils.isDateBase64(image)) {
             throw new IllegalArgumentException("aws的图片仅支持data base64String");
@@ -638,13 +638,14 @@ public class AwsCompletionConverter {
         } else if(value instanceof Map) {
             return convertMapToDocument((Map<String, Object>) value);
         } else {
-            return convertMapToDocument(JacksonUtils.toMap(value));
+            Map<String, Object> map = JacksonUtils.toMap(value);
+            return convertMapToDocument(map == null ? new HashMap<>() : map);
         }
     }
 
     private static Document convertMapToDocument(Map<String, Object> value) {
         Map<String, Document> attr = value.entrySet().stream()
-                .collect(Collectors.toMap(e -> e.getKey(), e -> convertObjectToDocument(e.getValue())));
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> convertObjectToDocument(e.getValue())));
         return Document.fromMap(attr);
     }
 
@@ -669,7 +670,7 @@ public class AwsCompletionConverter {
     private static Map<String, Object> convertDocumentToMap(MapDocument document) {
         Map<String, Document> documentMap = document.asMap();
         Map<String, Object> map = new HashMap<>();
-        documentMap.entrySet().forEach(x -> map.put(x.getKey(), convertDocumentToObject(x.getValue())));
+        documentMap.forEach((key, value) -> map.put(key, convertDocumentToObject(value)));
         return map;
     }
 
