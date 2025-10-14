@@ -14,6 +14,7 @@ import com.ke.bella.openapi.EndpointContext;
 import com.ke.bella.openapi.BellaContext;
 import com.ke.bella.openapi.apikey.ApikeyInfo;
 import com.ke.bella.openapi.endpoints.testdata.ImagesHistoricalDataLoader;
+import com.ke.bella.openapi.service.EndpointDataService;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -57,6 +58,9 @@ public class ImagesControllerTest {
 
     @Mock
     private ImagesEditorAdaptor<ImagesEditorProperty> mockEditorAdaptor;
+
+    @Mock
+    private EndpointDataService endpointDataService;
 
     @Mock
     private ContentCachingRequestWrapper mockWrappedRequest;
@@ -188,7 +192,7 @@ public class ImagesControllerTest {
         validateGenerationsServiceCallParameters(testCase);
 
         // 6. Reset Mock state for next test
-        reset(channelRouter, adaptorManager, mockGeneratorAdaptor);
+        reset(channelRouter, adaptorManager, mockGeneratorAdaptor, endpointDataService);
     }
 
     /**
@@ -214,13 +218,18 @@ public class ImagesControllerTest {
         validateEditsServiceCallParameters(testCase);
 
         // 7. Reset Mock state for next test
-        reset(channelRouter, adaptorManager, mockEditorAdaptor);
+        reset(channelRouter, adaptorManager, mockEditorAdaptor, endpointDataService);
     }
 
     /**
      * Setup Mock for image generation test scenarios
      */
     private void setupMockForGenerationsTestCase(ImagesHistoricalDataLoader.GenerationsTestCase testCase) {
+        // Re-setup EndpointDataService mock for this test case
+        // These methods need to actually execute to set EndpointContext state
+        lenient().doCallRealMethod().when(endpointDataService).setEndpointData(anyString(), anyString(), any());
+        lenient().doCallRealMethod().when(endpointDataService).setChannel(any());
+
         // Setup ChannelRouter Mock
         when(channelRouter.route(eq("/v1/images/generations"), eq(testCase.getRequest().getModel()), any(), eq(false)))
             .thenReturn(testCase.getMockChannel());
@@ -245,6 +254,11 @@ public class ImagesControllerTest {
      * Setup Mock for image editing test scenarios
      */
     private void setupMockForEditsTestCase(ImagesHistoricalDataLoader.EditsTestCase testCase) {
+        // Re-setup EndpointDataService mock for this test case
+        // These methods need to actually execute to set EndpointContext state
+        lenient().doCallRealMethod().when(endpointDataService).setEndpointData(anyString(), anyString(), any());
+        lenient().doCallRealMethod().when(endpointDataService).setChannel(any());
+
         // Setup ChannelRouter Mock
         when(channelRouter.route(eq("/v1/images/edits"), eq(testCase.getRequest().getModel()), any(), eq(false)))
             .thenReturn(testCase.getMockChannel());
@@ -409,6 +423,11 @@ public class ImagesControllerTest {
         rolePath.getIncluded().add("/v1/**");
         testApikey.setRolePath(rolePath);
         BellaContext.setApikey(testApikey);
+
+        // Setup EndpointDataService mock behavior
+        // These methods need to actually execute to set EndpointContext state
+        doCallRealMethod().when(endpointDataService).setEndpointData(anyString(), anyString(), any());
+        doCallRealMethod().when(endpointDataService).setChannel(any());
     }
 
     /**

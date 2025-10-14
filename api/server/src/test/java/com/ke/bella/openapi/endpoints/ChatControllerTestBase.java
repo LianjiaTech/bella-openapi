@@ -2,30 +2,31 @@ package com.ke.bella.openapi.endpoints;
 
 import com.ke.bella.job.queue.JobQueueClient;
 import com.ke.bella.job.queue.config.JobQueueProperties;
+import com.ke.bella.openapi.BellaContext;
+import com.ke.bella.openapi.EndpointContext;
+import com.ke.bella.openapi.apikey.ApikeyInfo;
 import com.ke.bella.openapi.protocol.AdaptorManager;
 import com.ke.bella.openapi.protocol.ChannelRouter;
 import com.ke.bella.openapi.protocol.limiter.LimiterManager;
 import com.ke.bella.openapi.protocol.log.EndpointLogger;
 import com.ke.bella.openapi.safety.ISafetyCheckService;
-import com.ke.bella.openapi.EndpointContext;
-import com.ke.bella.openapi.BellaContext;
-import com.ke.bella.openapi.apikey.ApikeyInfo;
+import com.ke.bella.openapi.service.EndpointDataService;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.web.util.ContentCachingRequestWrapper;
 
-import java.util.Arrays;
-import java.util.Collections;
-
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
-
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Base class for ChatController tests providing common mock setup and utilities
@@ -53,6 +54,9 @@ public abstract class ChatControllerTestBase {
 
     @Mock
     protected ContentCachingRequestWrapper mockWrappedRequest;
+
+    @Mock
+    protected EndpointDataService endpointDataService;
 
     @InjectMocks
     protected ChatController chatController;
@@ -101,6 +105,11 @@ public abstract class ChatControllerTestBase {
         rolePath.getIncluded().add("/v1/**");
         testApikey.setRolePath(rolePath);
         BellaContext.setApikey(testApikey);
+
+        // Setup EndpointDataService mock behavior
+        // These methods need to actually execute to set EndpointContext state
+        lenient().doCallRealMethod().when(endpointDataService).setEndpointData(anyString(), anyString(), any());
+        lenient().doCallRealMethod().when(endpointDataService).setChannel(any());
     }
 
     /**

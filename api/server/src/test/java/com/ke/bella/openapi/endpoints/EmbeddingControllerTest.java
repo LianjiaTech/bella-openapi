@@ -11,6 +11,7 @@ import com.ke.bella.openapi.EndpointContext;
 import com.ke.bella.openapi.BellaContext;
 import com.ke.bella.openapi.apikey.ApikeyInfo;
 import com.ke.bella.openapi.endpoints.testdata.EmbeddingHistoricalDataLoader;
+import com.ke.bella.openapi.service.EndpointDataService;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -52,6 +53,9 @@ public class EmbeddingControllerTest {
 
     @Mock
     private ContentCachingRequestWrapper mockWrappedRequest;
+
+    @Mock
+    private EndpointDataService endpointDataService;
 
     @InjectMocks
     private EmbeddingController embeddingController;
@@ -130,13 +134,18 @@ public class EmbeddingControllerTest {
         validateEmbeddingServiceCallParameters(testCase);
 
         // 6. Reset Mock state for next test
-        reset(channelRouter, adaptorManager, mockEmbeddingAdaptor);
+        reset(channelRouter, adaptorManager, mockEmbeddingAdaptor, endpointDataService);
     }
 
     /**
      * Setup Mock for embedding test scenarios
      */
     private void setupMockForEmbeddingTestCase(EmbeddingHistoricalDataLoader.EmbeddingTestCase testCase) {
+        // Re-setup EndpointDataService mock for this test case
+        // These methods need to actually execute to set EndpointContext state
+        lenient().doCallRealMethod().when(endpointDataService).setEndpointData(anyString(), anyString(), any());
+        lenient().doCallRealMethod().when(endpointDataService).setChannel(any());
+
         // Setup ChannelRouter Mock
         when(channelRouter.route(eq("/v1/embeddings"), eq(testCase.getRequest().getModel()), any(), eq(false)))
             .thenReturn(testCase.getMockChannel());
@@ -244,6 +253,11 @@ public class EmbeddingControllerTest {
         rolePath.getIncluded().add("/v1/**");
         testApikey.setRolePath(rolePath);
         BellaContext.setApikey(testApikey);
+
+        // Setup EndpointDataService mock behavior
+        // These methods need to actually execute to set EndpointContext state
+        lenient().doCallRealMethod().when(endpointDataService).setEndpointData(anyString(), anyString(), any());
+        lenient().doCallRealMethod().when(endpointDataService).setChannel(any());
     }
 
     /**
