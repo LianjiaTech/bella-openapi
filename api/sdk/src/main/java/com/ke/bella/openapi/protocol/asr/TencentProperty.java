@@ -5,7 +5,6 @@ import lombok.Data;
 @Data
 public class TencentProperty extends AsrProperty {
 	String appid;
-	String secretid;
 	String engineModelType = "16k_zh"; // 引擎模型类型
 	int chunkSize = 3200; // 音频数据块大小（字节）
 	int intervalMs = 40; // 发送间隔（毫秒），建议40ms
