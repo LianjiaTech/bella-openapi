@@ -26,6 +26,7 @@ import com.ke.bella.openapi.service.EndpointDataService;
 import com.ke.bella.openapi.tables.pojos.ChannelDB;
 import com.ke.bella.openapi.utils.JacksonUtils;
 import com.ke.bella.openapi.utils.SseHelper;
+import com.ke.bella.openapi.worker.ChannelIdleDetector;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -59,6 +60,8 @@ public class ChatController {
     private JobQueueProperties jobQueueProperties;
     @Autowired
     private EndpointDataService endpointDataService;
+    @Autowired
+    private ChannelIdleDetector channelIdleDetector;
     @Value("${bella.openapi.max-models-per-request:3}")
     private Integer maxModelsPerRequest;
 
@@ -113,6 +116,7 @@ public class ChatController {
         boolean isMock = EndpointContext.getProcessData().isMock();
         ChannelDB channel = router.route(endpoint, model, EndpointContext.getApikey(), isMock);
         endpointDataService.setChannel(channel);
+        channelIdleDetector.recordRpm(EndpointContext.getProcessData());
         if(!EndpointContext.getProcessData().isPrivate()) {
             limiterManager.incrementConcurrentCount(EndpointContext.getProcessData().getAkCode(), model);
         }
@@ -141,6 +145,28 @@ public class ChatController {
         Object responseRiskData = safetyCheckService.safetyCheck(SafetyCheckRequest.Chat.convertFrom(response, EndpointContext.getProcessData(), EndpointContext.getApikey()), isMock);
         response.setSensitives(responseRiskData);
         response.setRequestRiskData(requestRiskData);
+        return response;
+    }
+
+    @SuppressWarnings("all")
+    public CompletionResponse processCompletionRequest(String endpoint, Map<String, Object> requestData, ChannelDB channel) {
+        String model = channel.getEntityCode();
+        CompletionRequest request = JacksonUtils.deserialize(JacksonUtils.serialize(requestData)
+                , CompletionRequest.class);
+        EndpointContext.setEndpointData(endpoint, model, request);
+        EndpointContext.setEndpointData(channel);
+        EndpointProcessData processData = EndpointContext.getProcessData();
+
+        channelIdleDetector.recordRpm(processData);
+
+        String protocol = processData.getProtocol();
+        String url = processData.getForwardUrl();
+        String channelInfo = channel.getChannelInfo();
+
+        CompletionAdaptor adaptor = adaptorManager.getProtocolAdaptor(endpoint, protocol, CompletionAdaptor.class);
+        CompletionProperty property = (CompletionProperty) JacksonUtils.deserialize(channelInfo, adaptor.getPropertyClass());
+        EndpointContext.setEncodingType(property.getEncodingType());
+        CompletionResponse response = adaptor.completion(request, url, property);
         return response;
     }
 

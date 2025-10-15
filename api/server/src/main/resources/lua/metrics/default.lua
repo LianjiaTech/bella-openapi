@@ -122,6 +122,12 @@ local function update_channel_status()
         redis.call("SET", mark_key, "true", "EX", channel_unavailable_expire_time)
         redis.call("INCRBY", unavailable_time_key, channel_unavailable_expire_time)
         redis.call("EXPIRE", unavailable_time_key, UNAVAILABLE_EXPIRY_TIME)
+
+        -- 记录当前RPM作为阈值（24小时有效期）
+        local total_key = prefix_key .. ":total"
+        local current_rpm = tonumber(redis.call("HGET", total_key, "completed") or 0)
+        local rpm_threshold_key = prefix_key .. ":rpm_threshold"
+        redis.call("SET", rpm_threshold_key, current_rpm, "EX", 86400)
     end
     redis.call("HSET", current_status_key, current_timestamp, status)
 end

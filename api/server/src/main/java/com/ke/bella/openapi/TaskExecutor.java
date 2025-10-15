@@ -1,10 +1,14 @@
 package com.ke.bella.openapi;
 
+import org.apache.commons.lang3.RandomUtils;
+
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class TaskExecutor {
@@ -15,6 +19,11 @@ public class TaskExecutor {
 
     public static CompletableFuture<Void> submit(Runnable r) {
         return CompletableFuture.runAsync(r, executor);
+    }
+
+    public static ScheduledFuture<?> scheduleAtFixedRate(Runnable r, int period) {
+        int initialDelay = period + RandomUtils.nextInt(1, period);
+        return executor.scheduleAtFixedRate(r, initialDelay, period, TimeUnit.SECONDS);
     }
 
     public static class NamedThreadFactory implements ThreadFactory {
