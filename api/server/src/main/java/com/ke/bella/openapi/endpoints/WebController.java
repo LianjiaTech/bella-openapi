@@ -80,6 +80,7 @@ public class WebController {
     /**
      * Web Crawl endpoint Performs web crawling using Tavily Crawl API
      */
+    @PostMapping("/crawl")
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public WebCrawlResponse webCrawl(@RequestBody WebCrawlRequest request) {
         String endpoint = EndpointContext.getRequest().getRequestURI();
