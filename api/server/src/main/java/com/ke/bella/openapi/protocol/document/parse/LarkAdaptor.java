@@ -1,5 +1,6 @@
 package com.ke.bella.openapi.protocol.document.parse;
 
+import com.ke.bella.openapi.TaskExecutor;
 import com.ke.bella.openapi.common.exception.BizParamCheckException;
 import com.ke.bella.openapi.common.exception.ChannelException;
 import com.ke.bella.openapi.server.OpenAiServiceFactory;
@@ -24,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static com.ke.bella.openapi.protocol.document.parse.LarkClientUtils.deleteFile;
 import static com.ke.bella.openapi.protocol.document.parse.LarkClientUtils.getImageUrl;
 import static com.ke.bella.openapi.protocol.document.parse.LarkClientUtils.importTask;
 import static com.ke.bella.openapi.protocol.document.parse.LarkClientUtils.queryTaskResult;
@@ -71,6 +73,7 @@ public class LarkAdaptor implements DocParseAdaptor<LarkProperty> {
             DocParseResult result = getDocParseResult(client, response.getToken());
             response.setResult(result);
         }
+        response.setCallback(() -> deleteFile(client, response.getToken(), "docx"));
         return response;
     }
 
