@@ -1,5 +1,6 @@
 package com.ke.bella.openapi.protocol.document.parse;
 
+import com.ke.bella.openapi.TaskExecutor;
 import com.ke.bella.openapi.protocol.AdaptorManager;
 import com.ke.bella.openapi.task.CallbackTaskService;
 import com.ke.bella.openapi.task.TaskCompletionCallback;
@@ -161,6 +162,9 @@ public class DocParseCallbackService extends CallbackTaskService<DocParseCallbac
                 if (callbackSuccess) {
                     log.info("Successfully sent callback for taskId: {}, protocol: {}, callbackUrl: {}",
                         taskData.getTaskId(), taskData.getProtocol(), taskData.getCallbackUrl());
+                    if(response.getCallback() != null) {
+                        TaskExecutor.submit(response.getCallback());
+                    }
                 } else {
                     log.warn("Failed to send callback for taskId: {}, protocol: {}, callbackUrl: {}",
                         taskData.getTaskId(), taskData.getProtocol(), taskData.getCallbackUrl());

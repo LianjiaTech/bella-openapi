@@ -1,5 +1,6 @@
 package com.ke.bella.openapi.protocol.document.parse;
 
+import com.ke.bella.openapi.TaskExecutor;
 import com.ke.bella.openapi.common.exception.ChannelException;
 import com.ke.bella.openapi.protocol.IProtocolAdaptor;
 import com.ke.bella.openapi.utils.JacksonUtils;
@@ -55,7 +56,11 @@ public interface DocParseAdaptor<T extends DocParseProperty> extends IProtocolAd
                 if (isCompletion(taskId, url, property)) {
                     long elapsedTime = System.currentTimeMillis() - startTime;
                     log.info("Task completed in block mode - taskId: {}, elapsed time: {}ms", taskId, elapsedTime);
-                    return queryResult(taskId, url, property);
+                    DocParseResponse response = queryResult(taskId, url, property);
+                    if(response.getCallback() != null) {
+                        TaskExecutor.submit(response.getCallback());
+                    }
+                    return response;
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
