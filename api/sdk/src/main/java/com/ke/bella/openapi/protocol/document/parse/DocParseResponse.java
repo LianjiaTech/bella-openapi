@@ -10,4 +10,6 @@ public class DocParseResponse {
     private String message;
     @JsonIgnore
     private String token;
+    @JsonIgnore
+    private Runnable callback;
 }

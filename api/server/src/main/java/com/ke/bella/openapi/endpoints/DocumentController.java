@@ -2,6 +2,7 @@ package com.ke.bella.openapi.endpoints;
 
 import com.ke.bella.openapi.EndpointContext;
 import com.ke.bella.openapi.EndpointProcessData;
+import com.ke.bella.openapi.TaskExecutor;
 import com.ke.bella.openapi.annotations.EndpointAPI;
 import com.ke.bella.openapi.protocol.AdaptorManager;
 import com.ke.bella.openapi.protocol.ChannelRouter;
@@ -24,6 +25,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import static com.ke.bella.openapi.protocol.document.parse.LarkClientUtils.deleteFile;
 
 @EndpointAPI
 @RestController
@@ -77,6 +80,10 @@ public class DocumentController {
         String channelInfo = channel.getChannelInfo();
         DocParseAdaptor adaptor = adaptorManager.getProtocolAdaptor(endpoint, protocol, DocParseAdaptor.class);
         DocParseProperty property = (DocParseProperty) JacksonUtils.deserialize(channelInfo, adaptor.getPropertyClass());
-        return adaptor.queryResult(taskInfo[1], url, property);
+        DocParseResponse response = adaptor.queryResult(taskInfo[1], url, property);
+        if(response.getCallback() != null) {
+            TaskExecutor.submit(response.getCallback());
+        }
+        return response;
     }
 }
