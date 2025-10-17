@@ -126,15 +126,17 @@ public class TencentAdaptor implements RealTimeAsrAdaptor<TencentProperty> {
 			if (request.getFilterPunc() != null) {
 				params.put("filter_punc", String.valueOf(request.getFilterPunc()));
 			}
-			if (request.getFilterEmpty() != null) {
-				params.put("filter_empty_result", String.valueOf(request.getFilterEmpty()));
-			}
-			if (request.getHotwordId() != null && !request.getHotwordId().isEmpty()) {
-				params.put("hotword_id", request.getHotwordId());
-			}
-			if (request.getConvertNumMode() != null) {
-				params.put("convert_num_mode", String.valueOf(request.getConvertNumMode()));
-			}
+		if (request.getFilterEmpty() != null) {
+			params.put("filter_empty_result", String.valueOf(request.getFilterEmpty()));
+		}
+
+		if (request.getHotwordList() != null && !request.getHotwordList().isEmpty()) {
+			params.put("hotword_list", request.getHotwordList());
+		}
+
+		if (request.getConvertNumMode() != null) {
+			params.put("convert_num_mode", String.valueOf(request.getConvertNumMode()));
+		}
 		if (request.getWordInfo() != null) {
 			params.put("word_info", String.valueOf(request.getWordInfo()));
 		}

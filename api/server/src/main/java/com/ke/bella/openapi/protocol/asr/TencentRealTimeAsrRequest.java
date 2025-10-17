@@ -2,7 +2,9 @@ package com.ke.bella.openapi.protocol.asr;
 
 import com.ke.bella.openapi.protocol.realtime.RealTimeMessage;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Data
 public class TencentRealTimeAsrRequest {
 	private boolean async; // 是否异步（流式）
@@ -22,7 +24,7 @@ public class TencentRealTimeAsrRequest {
 	private Integer filterModal; // 是否过滤语气词
 	private Integer filterPunc; // 是否过滤标点符号
 	private Integer filterEmpty; // 是否过滤空结果
-	private String hotwordId; // 热词表ID
+	private String hotwordList; // 临时热词表
 	private Integer convertNumMode; // 数字转换模式
 	private Integer wordInfo; // 是否返回词级别时间戳
 
@@ -40,11 +42,7 @@ public class TencentRealTimeAsrRequest {
 		this.chunkSize = property.getChunkSize();
 		this.intervalMs = property.getIntervalMs();
 		this.needvad = property.getNeedvad();
-		this.filterDirty = property.getFilterDirty();
-		this.filterModal = property.getFilterModal();
-		this.filterPunc = property.getFilterPunc();
-		this.filterEmpty = property.getFilterEmpty();
-		this.hotwordId = property.getHotwordId();
+		this.hotwordList = property.getHotwordList();
 		this.convertNumMode = property.getConvertNumMode();
 		this.wordInfo = property.getWordInfo();
 	}
@@ -62,11 +60,20 @@ public class TencentRealTimeAsrRequest {
 		this.chunkSize = property.getChunkSize();
 		this.intervalMs = property.getIntervalMs();
 		this.needvad = property.getNeedvad();
-		this.filterDirty = property.getFilterDirty();
-		this.filterModal = property.getFilterModal();
-		this.filterPunc = property.getFilterPunc();
-		this.filterEmpty = property.getFilterEmpty();
-		this.hotwordId = property.getHotwordId();
+
+	// 热词优先级：请求中的热词 > 渠道配置的热词
+	// 如果请求中传入了hotWords，使用请求中的；否则使用渠道配置
+	if (request.getPayload() != null && request.getPayload().getHotWords() != null
+			&& !request.getPayload().getHotWords().isEmpty()) {
+		this.hotwordList = request.getPayload().getHotWords();
+		log.info("使用请求中的热词: {}", this.hotwordList);
+	} else {
+		this.hotwordList = property.getHotwordList();
+		if (this.hotwordList != null && !this.hotwordList.isEmpty()) {
+			log.info("使用渠道配置的临时热词表: {}", this.hotwordList);
+		}
+	}
+
 		this.convertNumMode = property.getConvertNumMode();
 		this.wordInfo = property.getWordInfo();
 	}
