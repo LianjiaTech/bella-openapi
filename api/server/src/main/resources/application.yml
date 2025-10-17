@@ -1,6 +1,7 @@
 server:
   tomcat:
-    max-threads: 500
+    threads:
+      max: 300
   max-http-header-size: 10240
 
 spring:
