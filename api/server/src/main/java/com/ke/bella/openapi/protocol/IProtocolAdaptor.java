@@ -24,7 +24,7 @@ public interface IProtocolAdaptor {
 			case CUSTOM:
 				return builder.header(property.getHeader(), property.getApiKey());
 			default:
-				return builder.header("Authorization", "Bearer; " + property.getApiKey());
+				return builder.header("Authorization", "Bearer " + property.getApiKey());
 		}
 	}
 

@@ -1,39 +1,37 @@
 services:
-  # API 服务已禁用，请在 PyCharm 中单独启动
-  # api:
-  #   image: ${REGISTRY:-bellatop}/bella-openapi-api:${VERSION:-latest}
-  #   build:
-  #     context: ./api
-  #   container_name: bella-openapi-api
-  #   expose:
-  #     - "8080"
-  #   environment:
-  #     - TZ=Asia/Shanghai
-  #     - JAVA_OPTS=-server -Xms2048m -Xmx2048m -XX:MetaspaceSize=512m -XX:MaxMetaspaceSize=512m -Dbella.proxy.host=${PROXY_HOST:-} -Dbella.proxy.port=${PROXY_PORT:-} -Dbella.proxy.type=${PROXY_TYPE:-} -Dbella.proxy.domains=${PROXY_DOMAINS:-}
-  #     - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-docker}
-  #     - SERVER_DOMAIN=${SERVER_DOMAIN:-localhost}
-  #     - SERVER=${SERVER:-http://localhost}
-  #     - login.type=${LOGIN_TYPE:-}
-  #     - google.enable=${GOOGLE_ENABLE:-false}
-  #     - google.clientId=${GOOGLE_CLIENT_ID:-}
-  #     - google.secret=${GOOGLE_CLIENT_SECRET:-}
-  #     - github.enable=${GITHUB_ENABLE:-false}
-  #     - github.clientId=${GITHUB_CLIENT_ID:-}
-  #     - github.secret=${GITHUB_CLIENT_SECRET:-}
-  #     - redirect.baseUrl=${REDIRECT_BASE_URL:-localhost}
-  #     - cas.server=${CAS_SERVER:-}
-  #     - cas.server.login=${CAS_LOGIN:-}
-  #   volumes:
-  #     - ./api/applogs:/opt/bella-openapi/applogs
-  #     - ./api/logs:/opt/bella-openapi/logs
-  #     - ./api/cache:/opt/bella-openapi/cache
-  #     - ./api/privdata:/opt/bella-openapi/privdata
-  #     - ./api/config-cache:/opt/bella-openapi/config-cache
-  #   depends_on:
-  #     mysql:
-  #       condition: service_healthy
-  #     redis:
-  #       condition: service_healthy
+  api:
+    image: ${REGISTRY:-bellatop}/bella-openapi-api:${VERSION:-latest}
+    build:
+      context: ./api
+    container_name: bella-openapi-api
+    expose:
+      - "8080"
+    environment:
+      - JAVA_OPTS=-server -Xms2048m -Xmx2048m -XX:MetaspaceSize=512m -XX:MaxMetaspaceSize=512m -Dbella.proxy.host=${PROXY_HOST:-} -Dbella.proxy.port=${PROXY_PORT:-} -Dbella.proxy.type=${PROXY_TYPE:-} -Dbella.proxy.domains=${PROXY_DOMAINS:-}
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-docker}
+      - SERVER_DOMAIN=${SERVER_DOMAIN:-localhost}
+      - SERVER=${SERVER:-http://localhost}
+      - login.type=${LOGIN_TYPE:-}
+      - google.enable=${GOOGLE_ENABLE:-false}
+      - google.clientId=${GOOGLE_CLIENT_ID:-}
+      - google.secret=${GOOGLE_CLIENT_SECRET:-}
+      - github.enable=${GITHUB_ENABLE:-false}
+      - github.clientId=${GITHUB_CLIENT_ID:-}
+      - github.secret=${GITHUB_CLIENT_SECRET:-}
+      - redirect.baseUrl=${REDIRECT_BASE_URL:-localhost}
+      - cas.server=${CAS_SERVER:-}
+      - cas.server.login=${CAS_LOGIN:-}
+    volumes:
+      - ./api/applogs:/opt/bella-openapi/applogs
+      - ./api/logs:/opt/bella-openapi/logs
+      - ./api/cache:/opt/bella-openapi/cache
+      - ./api/privdata:/opt/bella-openapi/privdata
+      - ./api/config-cache:/opt/bella-openapi/config-cache
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   web:
     image: ${REGISTRY:-bellatop}/bella-openapi-web:${VERSION:-latest}
@@ -42,14 +40,11 @@ services:
       args:
         - NODE_ENV=${NODE_ENV:-production}
         - DEPLOY_ENV=${DEPLOY_ENV:-production}
-        - NEXT_PUBLIC_API_HOST=${SERVER_DOMAIN:-localhost}
     container_name: bella-openapi-web
-    environment:
-      - TZ=Asia/Shanghai
     expose:
       - "3000"
-    # depends_on:
-    #   - api  # API 服务已在 PyCharm 中启动
+    depends_on:
+      - api
 
   nginx:
     image: nginx:latest
@@ -59,18 +54,16 @@ services:
     volumes:
       - ./nginx/conf.d:/etc/nginx/conf.d
     environment:
-      - TZ=Asia/Shanghai
       - SERVER_DOMAIN=${SERVER_DOMAIN:-localhost}
     depends_on:
+      - api
       - web
-      # - api  # API 服务已在 PyCharm 中启动
 
   mysql:
     image: mysql:8.0
     container_name: bella-openapi-mysql
     command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_0900_ai_ci
     environment:
-      TZ: Asia/Shanghai
       MYSQL_ROOT_PASSWORD: 123456
       MYSQL_DATABASE: bella_openapi
       MYSQL_USER: bella_user
@@ -90,8 +83,6 @@ services:
   redis:
     image: redis:6
     container_name: bella-openapi-redis
-    environment:
-      - TZ=Asia/Shanghai
     command: redis-server --requirepass 123456
     ports:
       - "127.0.0.1:6379:6379"

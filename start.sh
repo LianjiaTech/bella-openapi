@@ -178,7 +178,7 @@ pre_pull_images() {
     
     # 拉取基础镜像（如果本地不存在）
     pull_image_if_not_exists "openjdk:8" "拉取 OpenJDK 镜像..."
-    pull_image_if_not_exists "node:20.11-alpine3.19" "拉取 Node.js 镜像..."
+    pull_image_if_not_exists "docker.ipigsy.com/library/node:20.11-alpine3.19" "拉取 Node.js 镜像..."
     if [ "$PUSH" == "false" ]; then
         pull_image_if_not_exists "nginx:latest" "拉取 Nginx 镜像..."
         pull_image_if_not_exists "mysql:8.0" "拉取 MySQL 镜像..."
@@ -189,8 +189,8 @@ pre_pull_images() {
     if [ -z "$BUILD" ]; then
         echo "检查是否需要拉取应用镜像..."
 
-        # 只拉取 Web 镜像，API 服务在 PyCharm 中启动
-        # pull_app_image_if_not_exists "api"  # API 服务已在 PyCharm 中启动
+        # 拉取 API 和 Web 镜像
+        pull_app_image_if_not_exists "api"
         pull_app_image_if_not_exists "web"
     else
         echo "检测到 --build 参数，跳过拉取应用镜像，将使用本地构建"
@@ -280,8 +280,14 @@ build_services() {
         CACHE_OPT="--no-cache"
     fi
 
-    # API 服务编译已跳过，在 PyCharm 中单独启动
-    echo "跳过 API 服务编译，请在 PyCharm 中单独启动 API 服务"
+    # 执行 API 服务的 Maven 编译
+    echo "执行 API 服务的 Maven 编译..."
+    chmod +x api/build.sh
+    ./api/build.sh
+    if [ $? -ne 0 ]; then
+        echo "错误: API 服务编译失败，退出执行"
+        exit 1
+    fi
 
     # 根据是否需要推送镜像选择构建方式
     if [ "$PUSH" = true ] && [ -n "$REGISTRY" ]; then
@@ -306,8 +312,15 @@ build_services() {
             PLATFORMS="linux/amd64,linux/arm64"
             echo "推送多架构镜像，支持平台: $PLATFORMS"
 
-            # API 服务构建已跳过，在 PyCharm 中单独启动
-            echo "跳过 API 服务构建，请在 PyCharm 中单独启动 API 服务"
+            # 构建并推送 API 多架构镜像
+            echo "构建并推送 API 多架构镜像..."
+            docker buildx build $CACHE_OPT \
+                --platform $PLATFORMS \
+                --build-arg VERSION=${VERSION:-v1.0.0} \
+                --build-arg REGISTRY=${REGISTRY:-bellatop} \
+                -t ${REGISTRY:-bellatop}/bella-openapi-api:${VERSION:-v1.0.0} \
+                -t ${REGISTRY:-bellatop}/bella-openapi-api:latest \
+                --push ./api
 
             # 构建并推送 Web 多架构镜像
             echo "构建并推送 Web 多架构镜像..."
@@ -320,7 +333,7 @@ build_services() {
                 --push ./web
 
             echo "验证多架构镜像..."
-            # docker buildx imagetools inspect ${REGISTRY:-bellatop}/bella-openapi-api:${VERSION:-v1.0.0}  # API 服务已跳过
+            docker buildx imagetools inspect ${REGISTRY:-bellatop}/bella-openapi-api:${VERSION:-v1.0.0}
             docker buildx imagetools inspect ${REGISTRY:-bellatop}/bella-openapi-web:${VERSION:-v1.0.0}
 
             echo "✅ 多架构镜像已成功推送到 ${REGISTRY:-bellatop}"
@@ -652,8 +665,12 @@ sleep 5  # 等待服务启动
 # 获取服务状态
 SERVICES_STATUS=$(docker-compose -f "$COMPOSE_FILE_PATH" ps --services --filter "status=running")
 
-# API 服务检查已跳过，在 PyCharm 中单独启动
-echo "API 服务已在 PyCharm 中启动，跳过 Docker 容器检查"
+# 检查 API 服务
+if ! echo "$SERVICES_STATUS" | grep -q "api"; then
+    echo "错误: API 服务启动失败"
+    echo "查看日志: docker-compose logs api"
+    exit 1
+fi
 
 # 检查 Web 服务
 if ! echo "$SERVICES_STATUS" | grep -q "web"; then
@@ -664,12 +681,6 @@ fi
 
 echo "✅ 所有服务启动成功！"
 echo "服务域名: $SERVER"
-echo ""
-echo "📝 重要提示："
-echo "   API 服务已在 PyCharm 中单独启动，请确保："
-echo "   1. 在 PyCharm 中启动 API 服务（端口 8080）"
-echo "   2. 确保 API 服务连接到 MySQL 和 Redis"
-echo "   3. 检查 Nginx 配置是否正确转发到 localhost:8080"
 echo ""
 echo "查看日志: docker-compose logs -f"
 echo "停止服务: ./stop.sh"
