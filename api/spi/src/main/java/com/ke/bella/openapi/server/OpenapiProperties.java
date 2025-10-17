@@ -2,8 +2,10 @@ package com.ke.bella.openapi.server;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.stereotype.Component;
 
 @Data
+@Component
 @ConfigurationProperties("bella.openapi")
 public class OpenapiProperties {
     public String host;
