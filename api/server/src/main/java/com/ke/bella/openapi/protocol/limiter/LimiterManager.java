@@ -73,14 +73,14 @@ public class LimiterManager {
 
 	public void incrementConcurrentCount(String akCode, String entityCode) {
 		String concurrentKey = String.format(CONCURRENT_KEY_FORMAT, entityCode, akCode);
-//        List<Object> keys = Lists.newArrayList(concurrentKey);
-//        List<Object> params = new ArrayList<>();
-//        params.add("INCR");
-//        try {
-//            executor.execute("/concurrent", ScriptType.limiter, keys, params);
-//        } catch (IOException e) {
-//            log.warn(e.getMessage(), e);
-//        }
+		List<Object> keys = Lists.newArrayList(concurrentKey);
+		List<Object> params = new ArrayList<>();
+		params.add("INCR");
+		try {
+			executor.execute("/concurrent", ScriptType.limiter, keys, params);
+		} catch (IOException e) {
+			log.warn(e.getMessage(), e);
+		}
 	}
 
 	public void decrementConcurrentCount(String akCode, String entityCode) {
