@@ -468,3 +468,9 @@ values ('console', '{"included":["/v*/**", "/console/**"], "excluded":[]}', 0, '
 insert into apikey_role(role_code, path, cuid, cu_name, muid, mu_name)
 values ('all', '{"included":["/**"], "excluded":[]}', 0, 'system', 0, 'system');
 
+insert into model (model_name, document_url, visibility, owner_type, owner_code, owner_name, properties, features, cuid, cu_name, muid, mu_name)
+values ('tencent-realtime-asr', 'https://cloud.tencent.com/document/product/1093/48982', 'public', 'system', '0', 'system',
+        '{}','{}',0, 'system', 0, 'system');
+
+insert into model_endpoint_rel (model_name, endpoint, cuid, cu_name, muid, mu_name)
+values ('tencent-realtime-asr', '/v1/audio/asr/stream', 0, 'system', 0, 'system');
