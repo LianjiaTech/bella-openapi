@@ -5,6 +5,7 @@ import com.alicp.jetcache.CacheManager;
 import com.alicp.jetcache.anno.CacheType;
 import com.alicp.jetcache.anno.Cached;
 import com.alicp.jetcache.template.QuickConfig;
+import com.google.common.collect.Sets;
 import com.ke.bella.openapi.db.repo.ChannelRepo;
 import com.ke.bella.openapi.db.repo.Page;
 import com.ke.bella.openapi.metadata.Condition;
@@ -17,6 +18,7 @@ import com.ke.bella.openapi.tables.pojos.ChannelDB;
 import com.ke.bella.openapi.tables.pojos.EndpointDB;
 import com.ke.bella.openapi.tables.pojos.ModelDB;
 import com.ke.bella.openapi.utils.JacksonUtils;
+import com.ke.bella.queue.QueueMode;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -150,6 +152,13 @@ public class ChannelService {
                 .status(ACTIVE)
                 .entityType(entityType)
                 .entityCode(entityCode)
+                .build());
+    }
+
+    public List<ChannelDB> listAllWorkerChannels() {
+        return listByCondition(Condition.ChannelCondition.builder()
+                .status(ACTIVE)
+                .queueModes(Sets.newHashSet(QueueMode.PULL.getCode(), QueueMode.BOTH.getCode()))
                 .build());
     }
 

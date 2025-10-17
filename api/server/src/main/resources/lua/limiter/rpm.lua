@@ -21,7 +21,7 @@ end
 local success, result = pcall(function()
     -- 计算一分钟前的时间戳
     local min_timestamp = current_timestamp - WINDOW_SIZE
-    
+
     -- 获取要删除的过期数据数量
     local expired_count = redis.call("ZCOUNT", key, 0, min_timestamp)
 
@@ -29,10 +29,10 @@ local success, result = pcall(function()
     if expired_count > 0 then
         redis.call("ZREMRANGEBYSCORE", key, 0, min_timestamp)
     end
-    
+
     -- 添加当前时间戳到有序集合，使用requestId作为member防止重复
     local added = redis.call("ZADD", key, current_timestamp, request_id)
-    
+
     -- 计算需要更新的计数值
     local count_change = (added == 1 and 1 or 0) - (expired_count or 0)
     if count_change ~= 0 then
