@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import okhttp3.Request;
 import okhttp3.WebSocket;
 import org.springframework.stereotype.Component;
+
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.net.URLEncoder;
@@ -36,8 +37,8 @@ public class TencentAdaptor implements RealTimeAsrAdaptor<TencentProperty> {
 
 		// 创建WebSocket请求
 		Request wsRequest = new Request.Builder()
-				.url(wsUrl)
-				.build();
+			.url(wsUrl)
+			.build();
 
 		// 建立WebSocket连接
 		WebSocket webSocket = HttpUtils.websocketRequest(wsRequest, new com.ke.bella.openapi.protocol.BellaWebSocketListener(callback));
@@ -66,12 +67,12 @@ public class TencentAdaptor implements RealTimeAsrAdaptor<TencentProperty> {
 
 	@Override
 	public Callbacks.WebSocketCallback createCallback(
-			Callbacks.Sender sender,
-			EndpointProcessData processData,
-			EndpointLogger logger,
-			String taskId,
-			RealTimeMessage request,
-			TencentProperty property) {
+		Callbacks.Sender sender,
+		EndpointProcessData processData,
+		EndpointLogger logger,
+		String taskId,
+		RealTimeMessage request,
+		TencentProperty property) {
 		TencentRealTimeAsrRequest tencentRequest = new TencentRealTimeAsrRequest(request, property);
 		return new TencentStreamAsrCallback(tencentRequest, sender, processData, logger, new Converter(taskId));
 	}
@@ -114,47 +115,34 @@ public class TencentAdaptor implements RealTimeAsrAdaptor<TencentProperty> {
 			if (request.getVoiceFormat() != null) {
 				params.put("voice_format", String.valueOf(request.getVoiceFormat()));
 			}
-			if (request.getNeedvad() != null) {
-				params.put("needvad", String.valueOf(request.getNeedvad()));
-			}
-			if (request.getFilterDirty() != null) {
-				params.put("filter_dirty", String.valueOf(request.getFilterDirty()));
-			}
-			if (request.getFilterModal() != null) {
-				params.put("filter_modal", String.valueOf(request.getFilterModal()));
-			}
-			if (request.getFilterPunc() != null) {
-				params.put("filter_punc", String.valueOf(request.getFilterPunc()));
-			}
-		if (request.getFilterEmpty() != null) {
-			params.put("filter_empty_result", String.valueOf(request.getFilterEmpty()));
-		}
 
-		if (request.getHotwordList() != null && !request.getHotwordList().isEmpty()) {
-			params.put("hotword_list", request.getHotwordList());
-		}
+			if (request.getHotwordList() != null && !request.getHotwordList().isEmpty()) {
+				params.put("hotword_list", request.getHotwordList());
+			}
+			if (request.getHotwordId() != null && !request.getHotwordId().isEmpty()) {
+				params.put("hotword_id", request.getHotwordId());
+			}
+			if (request.getReplaceTextId() != null && !request.getReplaceTextId().isEmpty()) {
+				params.put("replace_text_id", request.getReplaceTextId());
+			}
+			if (request.getWordInfo() != null) {
+				params.put("word_info", String.valueOf(request.getWordInfo()));
+			}
 
-		if (request.getConvertNumMode() != null) {
-			params.put("convert_num_mode", String.valueOf(request.getConvertNumMode()));
-		}
-		if (request.getWordInfo() != null) {
-			params.put("word_info", String.valueOf(request.getWordInfo()));
-		}
+			// 生成签名
+			String signature = generateSignature(property.getAppid(), params, property.getAuth().getSecret());
+			params.put("signature", signature);
 
-		// 生成签名
-		String signature = generateSignature(property.getAppid(), params, property.getAuth().getSecret());
-		params.put("signature", signature);
-
-		// 构建完整URL
-		String queryString = params.entrySet().stream()
+			// 构建完整URL
+			String queryString = params.entrySet().stream()
 				.map(e -> e.getKey() + "=" + urlEncode(e.getValue()))
 				.collect(Collectors.joining("&"));
 
-		// 腾讯ASR的WebSocket地址格式：wss://asr.cloud.tencent.com/asr/v2/<appid>?{params}
-		String wsUrl = baseUrl + "/" + property.getAppid();
-		String finalUrl = wsUrl + "?" + queryString;
-		log.info("Tencent ASR WebSocket URL: {}", finalUrl);
-		return finalUrl;
+			// 腾讯ASR的WebSocket地址格式：wss://asr.cloud.tencent.com/asr/v2/<appid>?{params}
+			String wsUrl = baseUrl + "/" + property.getAppid();
+			String finalUrl = wsUrl + "?" + queryString;
+			log.info("Tencent ASR WebSocket URL: {}", finalUrl);
+			return finalUrl;
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to build WebSocket URL", e);
 		}
@@ -162,17 +150,17 @@ public class TencentAdaptor implements RealTimeAsrAdaptor<TencentProperty> {
 
 	/**
 	 * 生成签名
-	 *
+	 * <p>
 	 * 签名原文格式：asr.cloud.tencent.com/asr/v2/<appid>?key1=value1&key2=value2...
 	 * 签名方法：HmacSHA1
 	 */
 	private String generateSignature(String appid, Map<String, String> params, String secretKey) throws Exception {
 		// 构建签名原文（除去signature参数）
 		String queryString = params.entrySet().stream()
-				.filter(e -> !"signature".equals(e.getKey()))
-				.sorted(Map.Entry.comparingByKey())
-				.map(e -> e.getKey() + "=" + e.getValue())
-				.collect(Collectors.joining("&"));
+			.filter(e -> !"signature".equals(e.getKey()))
+			.sorted(Map.Entry.comparingByKey())
+			.map(e -> e.getKey() + "=" + e.getValue())
+			.collect(Collectors.joining("&"));
 
 		String signatureText = "asr.cloud.tencent.com/asr/v2/" + appid + "?" + queryString;
 
@@ -242,8 +230,8 @@ public class TencentAdaptor implements RealTimeAsrAdaptor<TencentProperty> {
 				// 转换词列表
 				if (asrResult.getWord_list() != null && !asrResult.getWord_list().isEmpty()) {
 					payload.setWords(asrResult.getWord_list().stream()
-							.map(TencentRealTimeAsrResponse.Result.Word::convert)
-							.collect(Collectors.toList()));
+						.map(TencentRealTimeAsrResponse.Result.Word::convert)
+						.collect(Collectors.toList()));
 				}
 
 				// 如果是识别结束（稳定结果）

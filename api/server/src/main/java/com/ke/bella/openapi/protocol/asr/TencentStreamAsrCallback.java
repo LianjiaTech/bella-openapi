@@ -150,40 +150,8 @@ public class TencentStreamAsrCallback implements Callbacks.WebSocketCallback {
 		log.info("Sent end message to Tencent ASR");
 	}
 
-	/**
-	 * 分块发送音频数据（用于非流式场景）
-	 */
-	public void sendAudioDataInChunks(WebSocket webSocket, byte[] audioData, int chunkSize, int intervalMs) {
-		if (audioData == null || audioData.length == 0) {
-			onProcessError(ChannelException.fromResponse(400, "No audio data to send"));
-			return;
-		}
 
-		TaskExecutor.submit(() -> {
-			try {
-				int offset = 0;
-				while (offset < audioData.length && isRunning) {
-					int length = Math.min(chunkSize, audioData.length - offset);
-					byte[] chunk = new byte[length];
-					System.arraycopy(audioData, offset, chunk, 0, length);
 
-					sendAudioData(webSocket, chunk);
-					offset += length;
-
-					// 如果不是最后一个块，等待指定的间隔时间
-					if (offset < audioData.length && intervalMs > 0) {
-						Thread.sleep(intervalMs);
-					}
-				}
-
-				// 发送完所有数据后，发送结束标识
-				sendEnd(webSocket);
-			} catch (Exception e) {
-				log.error("Error sending audio data in chunks", e);
-				onProcessError(ChannelException.fromException(e));
-			}
-		});
-	}
 
 	/**
 	 * 处理服务端响应
@@ -200,13 +168,8 @@ public class TencentStreamAsrCallback implements Callbacks.WebSocketCallback {
 		if (response.getResult() == null && response.getCode() == 0) {
 			log.info("Tencent ASR handshake success: {}", response.getMessage());
 
-			// 非流式请求直接发送音频文件
-			if (!request.isAsync()) {
-				sendAudioDataInChunks(webSocket, request.getAudioData(), request.getChunkSize(), request.getIntervalMs());
-			} else {
-				// 流式请求等待客户端发送数据
-				startFlag.complete(null);
-			}
+			// 流式请求等待客户端发送数据
+			startFlag.complete(null);
 			return;
 		}
 
@@ -245,9 +208,8 @@ public class TencentStreamAsrCallback implements Callbacks.WebSocketCallback {
 		log.error("Transcription failed: code={}, message={}", code, errorMsg);
 		isRunning = false;
 		sender.onError(ChannelException.fromResponse(getHttpCode(code), errorMsg));
-		if (!request.isAsync()) {
-			complete();
-		}
+
+		complete();
 	}
 
 	/**
@@ -281,7 +243,7 @@ public class TencentStreamAsrCallback implements Callbacks.WebSocketCallback {
 		if (!end) {
 			processData.getMetrics().put("ttlt", DateTimeUtils.getCurrentMills() - startTime);
 			sender.close();
-			if (request.isAsync() && logger != null) {
+			if (logger != null) {
 				logger.log(processData);
 			}
 			end = true;
@@ -303,8 +265,7 @@ public class TencentStreamAsrCallback implements Callbacks.WebSocketCallback {
 	private void onProcessError(ChannelException exception) {
 		log.warn("Tencent ASR process error: {}", exception.getMessage(), exception);
 		sender.onError(exception);
-		if (!request.isAsync()) {
-			complete();
-		}
+		complete();
+
 	}
 }
