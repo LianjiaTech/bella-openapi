@@ -70,7 +70,7 @@ public class LimiterManager {
         Object count = redisson.getBucket(countKey).get();
         return count != null ? Long.parseLong(count.toString()) : 0L;
     }
-
+    
     public void incrementConcurrentCount(String akCode, String entityCode) {
         String concurrentKey = String.format(CONCURRENT_KEY_FORMAT, entityCode, akCode);
         List<Object> keys = Lists.newArrayList(concurrentKey);
@@ -82,7 +82,7 @@ public class LimiterManager {
             log.warn(e.getMessage(), e);
         }
     }
-
+    
     public void decrementConcurrentCount(String akCode, String entityCode) {
         String concurrentKey = String.format(CONCURRENT_KEY_FORMAT, entityCode, akCode);
         List<Object> keys = Lists.newArrayList(concurrentKey);
@@ -94,7 +94,7 @@ public class LimiterManager {
             throw new RuntimeException(e);
         }
     }
-
+    
     public Long getCurrentConcurrentCount(String akCode, String entityCode) {
         String concurrentKey = String.format(CONCURRENT_KEY_FORMAT, entityCode, akCode);
         Object count = redisson.getBucket(concurrentKey).get();
