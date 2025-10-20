@@ -159,28 +159,7 @@ public class TencentAdaptor implements RealTimeAsrAdaptor<TencentProperty> {
 				.collect(Collectors.joining("&"));
 
 		// 腾讯ASR的WebSocket地址格式：wss://asr.cloud.tencent.com/asr/v2/<appid>?{params}
-		String wsUrl;
-		if (baseUrl != null && (baseUrl.startsWith("wss://") || baseUrl.startsWith("ws://"))) {
-			// 如果baseUrl已经包含了完整的协议和路径
-			// 检查是否已经包含了appid
-			if (!baseUrl.endsWith("/" + property.getAppid())) {
-				// 如果URL以/v2结尾，添加appid
-				if (baseUrl.endsWith("/v2")) {
-					wsUrl = baseUrl + "/" + property.getAppid();
-				} else if (baseUrl.endsWith("/asr/v2")) {
-					wsUrl = baseUrl + "/" + property.getAppid();
-				} else {
-					// 否则直接使用baseUrl
-					wsUrl = baseUrl;
-				}
-			} else {
-				wsUrl = baseUrl;
-			}
-		} else {
-			// 使用默认域名
-			wsUrl = "wss://asr.cloud.tencent.com/asr/v2/" + property.getAppid();
-		}
-
+		String wsUrl = baseUrl + "/" + property.getAppid();
 		String finalUrl = wsUrl + "?" + queryString;
 		log.info("Tencent ASR WebSocket URL: {}", finalUrl);
 		return finalUrl;
