@@ -184,18 +184,18 @@ pre_pull_images() {
         pull_image_if_not_exists "mysql:8.0" "拉取 MySQL 镜像..."
         pull_image_if_not_exists "redis:6" "拉取 Redis 镜像..."
     fi
-
+    
     # 如果不需要编译（没有 --build 参数），则拉取应用镜像
     if [ -z "$BUILD" ]; then
         echo "检查是否需要拉取应用镜像..."
-
+        
         # 拉取 API 和 Web 镜像
         pull_app_image_if_not_exists "api"
         pull_app_image_if_not_exists "web"
     else
         echo "检测到 --build 参数，跳过拉取应用镜像，将使用本地构建"
     fi
-
+    
     echo "所有镜像拉取完成"
 }
 
@@ -206,10 +206,10 @@ generate_service_configs() {
         echo "# 没有配置动态服务"
         return
     fi
-
+    
     # 初始化服务配置字符串
     local service_configs=""
-
+    
     # 处理每个服务配置
     IFS=',' read -ra SERVICE_ARRAY <<< "$SERVICES"
     for service_config in "${SERVICE_ARRAY[@]}"; do
@@ -218,15 +218,15 @@ generate_service_configs() {
         local service_name="${CONFIG[0]}"
         local service_domain="${CONFIG[1]}"
         local service_port="${CONFIG[2]:-80}"
-
+        
         if [ -z "$service_name" ] || [ -z "$service_domain" ] || [ -z "$service_port" ]; then
             echo "警告: 服务配置格式不正确: $service_config，应为 服务名:域名:端口"
             continue
         fi
-
+        
         # 获取容器名（服务名加前缀）
         local container_name="$service_name"
-
+        
         # 生成服务配置
         service_configs+=$(cat <<EOF
 
@@ -252,14 +252,14 @@ server {
         proxy_set_header X-Forwarded-Proto \$scheme;
         proxy_set_header X-Forwarded-Host \$host;
         proxy_set_header X-Forwarded-Port \$server_port;
-
+        
         # 添加WebSocket支持
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection "upgrade";
         proxy_read_timeout 3600s;
         proxy_send_timeout 3600s;
-
+        
         # 确保原始请求方法和头信息传递
         proxy_pass_request_headers on;
         proxy_pass_request_body on;
@@ -268,7 +268,7 @@ server {
 EOF
 )
     done
-
+    
     echo "$service_configs"
 }
 
@@ -279,7 +279,7 @@ build_services() {
     if [ -n "$NO_CACHE" ]; then
         CACHE_OPT="--no-cache"
     fi
-
+    
     # 执行 API 服务的 Maven 编译
     echo "执行 API 服务的 Maven 编译..."
     chmod +x api/build.sh
@@ -288,30 +288,30 @@ build_services() {
         echo "错误: API 服务编译失败，退出执行"
         exit 1
     fi
-
+    
     # 根据是否需要推送镜像选择构建方式
     if [ "$PUSH" = true ] && [ -n "$REGISTRY" ]; then
         # 多架构构建并推送
         if docker buildx version >/dev/null 2>&1; then
             echo "使用 buildx 进行多架构构建并推送..."
-
+            
             # 清理 builder 缓存，避免磁盘空间不足
             echo "清理 buildx 缓存..."
             docker buildx prune -f
-
+            
             # 删除并重新创建 builder 实例，确保干净的构建环境
             echo "重新创建 buildx builder 实例..."
             docker buildx rm multibuilder 2>/dev/null || true
             docker buildx create --name multibuilder --driver docker-container --bootstrap --use
-
+            
             # 确认 builder 状态
             echo "检查 builder 状态..."
             docker buildx inspect --bootstrap
-
+            
             # 推送时使用多架构
             PLATFORMS="linux/amd64,linux/arm64"
             echo "推送多架构镜像，支持平台: $PLATFORMS"
-
+            
             # 构建并推送 API 多架构镜像
             echo "构建并推送 API 多架构镜像..."
             docker buildx build $CACHE_OPT \
@@ -321,7 +321,7 @@ build_services() {
                 -t ${REGISTRY:-bellatop}/bella-openapi-api:${VERSION:-v1.0.0} \
                 -t ${REGISTRY:-bellatop}/bella-openapi-api:latest \
                 --push ./api
-
+                
             # 构建并推送 Web 多架构镜像
             echo "构建并推送 Web 多架构镜像..."
             docker buildx build $CACHE_OPT \
@@ -331,16 +331,16 @@ build_services() {
                 -t ${REGISTRY:-bellatop}/bella-openapi-web:${VERSION:-v1.0.0} \
                 -t ${REGISTRY:-bellatop}/bella-openapi-web:latest \
                 --push ./web
-
+                
             echo "验证多架构镜像..."
             docker buildx imagetools inspect ${REGISTRY:-bellatop}/bella-openapi-api:${VERSION:-v1.0.0}
             docker buildx imagetools inspect ${REGISTRY:-bellatop}/bella-openapi-web:${VERSION:-v1.0.0}
-
+                
             echo "✅ 多架构镜像已成功推送到 ${REGISTRY:-bellatop}"
             echo "   这些镜像可以在任何支持的平台上运行，包括:"
             echo "   - x86_64/amd64 系统 (大多数 Linux 服务器、Intel Mac、Windows)"
             echo "   - ARM64 系统 (Apple Silicon Mac、AWS Graviton、树莓派 4 64位)"
-
+            
             # 推送后不自动启动服务，直接退出
             echo ""
             echo "镜像已成功推送，可以在服务器上使用以下命令拉取和启动服务:"
@@ -510,17 +510,17 @@ if [ -n "$GITHUB_OAUTH" ]; then
         echo "错误: GitHub OAuth 参数格式不正确，应为 CLIENT_ID:CLIENT_SECRET"
         exit 1
     fi
-
+    
     # 分割CLIENT_ID和CLIENT_SECRET
     GITHUB_CLIENT_ID=$(echo $GITHUB_OAUTH | cut -d: -f1)
     GITHUB_CLIENT_SECRET=$(echo $GITHUB_OAUTH | cut -d: -f2)
-
+    
     # 导出环境变量
     export GITHUB_ENABLE=true
     export GITHUB_CLIENT_ID=$GITHUB_CLIENT_ID
     export GITHUB_CLIENT_SECRET=$GITHUB_CLIENT_SECRET
     export LOGIN_TYPE=oauth
-
+    
     echo "已配置 GitHub OAuth: CLIENT_ID=$GITHUB_CLIENT_ID"
 fi
 
@@ -530,17 +530,17 @@ if [ -n "$GOOGLE_OAUTH" ]; then
         echo "错误: Google OAuth 参数格式不正确，应为 CLIENT_ID:CLIENT_SECRET"
         exit 1
     fi
-
+    
     # 分割CLIENT_ID和CLIENT_SECRET
     GOOGLE_CLIENT_ID=$(echo $GOOGLE_OAUTH | cut -d: -f1)
     GOOGLE_CLIENT_SECRET=$(echo $GOOGLE_OAUTH | cut -d: -f2)
-
+    
     # 导出环境变量
     export GOOGLE_ENABLE=true
     export GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID
     export GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET
     export LOGIN_TYPE=oauth
-
+    
     echo "已配置 Google OAuth: CLIENT_ID=$GOOGLE_CLIENT_ID"
 fi
 
@@ -551,7 +551,7 @@ if [ -n "$SERVER" ]; then
         echo "错误: --server 参数必须包含协议前缀 (http:// 或 https://)"
         exit 1
     fi
-
+    
     # 无协议前缀的域名
     SERVER_DOMAIN=$(echo $SERVER | sed -e 's|^http://||' -e 's|^https://||')
     export SERVER
@@ -587,7 +587,7 @@ if [ -n "$PROXY_HOST" ] && [ -n "$PROXY_PORT" ] && [ -n "$PROXY_TYPE" ]; then
     export PROXY_PORT=$PROXY_PORT
     export PROXY_TYPE=$PROXY_TYPE
     export PROXY_DOMAINS=$PROXY_DOMAINS
-
+    
     echo "已配置代理: $PROXY_HOST:$PROXY_PORT ($PROXY_TYPE)"
 fi
 

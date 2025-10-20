@@ -1,7 +1,7 @@
 services:
   api:
     image: ${REGISTRY:-bellatop}/bella-openapi-api:${VERSION:-latest}
-    build:
+    build: 
       context: ./api
     container_name: bella-openapi-api
     expose:
