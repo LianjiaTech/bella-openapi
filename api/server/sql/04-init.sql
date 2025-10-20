@@ -467,3 +467,4 @@ values ('console', '{"included":["/v*/**", "/console/**"], "excluded":[]}', 0, '
 
 insert into apikey_role(role_code, path, cuid, cu_name, muid, mu_name)
 values ('all', '{"included":["/**"], "excluded":[]}', 0, 'system', 0, 'system');
+
