@@ -53,24 +53,7 @@ public class TencentRealTimeAsrRequest {
 		this.appid = property.getAppid();
 		this.secretid = property.getAuth().getApiKey();
 		this.secretkey = property.getAuth().getSecret();
-
-		// 引擎模型类型优先级：请求中的 > 渠道配置的
-		if (request.getPayload() != null && request.getPayload().getEngineModelType() != null
-				&& !request.getPayload().getEngineModelType().isEmpty()) {
-			String requestEngineType = request.getPayload().getEngineModelType();
-			// 校验引擎模型类型
-			if (isValidEngineModelType(requestEngineType)) {
-				this.engineModelType = requestEngineType;
-				log.info("使用请求中的引擎模型类型: {}", this.engineModelType);
-			} else {
-				this.engineModelType = property.getEngineModelType();
-				log.warn("无效的引擎模型类型: {}，使用渠道配置的默认值: {}", requestEngineType, this.engineModelType);
-			}
-		} else {
-			this.engineModelType = property.getEngineModelType();
-			log.info("使用渠道配置的引擎模型类型: {}", this.engineModelType);
-		}
-
+		this.engineModelType = property.getEngineModelType();
 		this.format = request.getPayload().getFormat();
 		this.voiceFormat = getVoiceFormat(request.getPayload().getFormat());
 		this.sampleRate = request.getPayload().getSampleRate();
