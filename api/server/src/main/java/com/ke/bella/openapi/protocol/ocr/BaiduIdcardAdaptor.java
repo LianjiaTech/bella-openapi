@@ -13,7 +13,6 @@ import org.springframework.util.StringUtils;
 import com.ke.bella.openapi.protocol.OpenapiResponse;
 import com.ke.bella.openapi.protocol.ocr.idcard.BaiduOcrIdcardRequest;
 import com.ke.bella.openapi.protocol.ocr.idcard.BaiduOcrIdcardResponse;
-import com.ke.bella.openapi.protocol.ocr.idcard.OcrIdcardRequest;
 import com.ke.bella.openapi.protocol.ocr.idcard.OcrIdcardResponse;
 import com.ke.bella.openapi.protocol.ocr.util.ImageConverter;
 import com.ke.bella.openapi.utils.HttpUtils;
@@ -65,7 +64,7 @@ public class BaiduIdcardAdaptor implements OcrIdcardAdaptor<BaiduOcrProperty> {
     }
 
     @Override
-    public OcrIdcardResponse idcard(OcrIdcardRequest request, String url, BaiduOcrProperty property) {
+    public OcrIdcardResponse idcard(OcrRequest request, String url, BaiduOcrProperty property) {
         BaiduOcrIdcardRequest baiduOcrIdcardRequest = requestConvert(request);
         Request httpRequest = buildRequest(baiduOcrIdcardRequest, url, property);
         clearLargeData(request, baiduOcrIdcardRequest);
@@ -73,7 +72,7 @@ public class BaiduIdcardAdaptor implements OcrIdcardAdaptor<BaiduOcrProperty> {
         return responseConvert(baiduOcrIdcardResponse, baiduOcrIdcardRequest);
     }
 
-    private BaiduOcrIdcardRequest requestConvert(OcrIdcardRequest request) {
+    private BaiduOcrIdcardRequest requestConvert(OcrRequest request) {
         BaiduOcrIdcardRequest.BaiduOcrIdcardRequestBuilder builder = BaiduOcrIdcardRequest.builder();
         // 处理图片数据：url和image二选一
         if(StringUtils.hasText(request.getImageUrl())) {

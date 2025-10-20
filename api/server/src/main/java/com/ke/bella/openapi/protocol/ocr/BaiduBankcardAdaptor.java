@@ -10,7 +10,6 @@ import org.springframework.util.StringUtils;
 import com.ke.bella.openapi.protocol.OpenapiResponse;
 import com.ke.bella.openapi.protocol.ocr.bankcard.BaiduBankcardRequest;
 import com.ke.bella.openapi.protocol.ocr.bankcard.BaiduBankcardResponse;
-import com.ke.bella.openapi.protocol.ocr.bankcard.OcrBankcardRequest;
 import com.ke.bella.openapi.protocol.ocr.bankcard.OcrBankcardResponse;
 import com.ke.bella.openapi.protocol.ocr.util.ImageConverter;
 import com.ke.bella.openapi.utils.HttpUtils;
@@ -49,7 +48,7 @@ public class BaiduBankcardAdaptor implements OcrBankcardAdaptor<BaiduOcrProperty
     }
 
     @Override
-    public OcrBankcardResponse bankcard(OcrBankcardRequest request, String url, BaiduOcrProperty property) {
+    public OcrBankcardResponse bankcard(OcrRequest request, String url, BaiduOcrProperty property) {
         BaiduBankcardRequest baiduBankcardRequest = requestConvert(request);
         Request httpRequest = buildRequest(baiduBankcardRequest, url, property);
         clearLargeData(request, baiduBankcardRequest);
@@ -57,7 +56,7 @@ public class BaiduBankcardAdaptor implements OcrBankcardAdaptor<BaiduOcrProperty
         return responseConvert(baiduBankcardResponse);
     }
 
-    private BaiduBankcardRequest requestConvert(OcrBankcardRequest request) {
+    private BaiduBankcardRequest requestConvert(OcrRequest request) {
         BaiduBankcardRequest.BaiduBankcardRequestBuilder builder = BaiduBankcardRequest.builder();
 
         // 处理图片数据：url和image二选一
