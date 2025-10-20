@@ -43,7 +43,7 @@ public class ScheduledWorker {
             } catch (Exception e) {
                 log.error("worker run occur error", e);
             }
-        }, 30, 5, TimeUnit.SECONDS);
+        }, 30, properties.scheduleWorkerDelayMs, TimeUnit.MILLISECONDS);
 
         started = true;
         log.info("worker started successfully");
@@ -90,6 +90,15 @@ public class ScheduledWorker {
         private List<String> queues;
         private String takeStrategy;
         private int size = 1;
+		private int scheduleWorkerDelayMs = 100;
+
+		// Properties类中添加验证
+		public void setScheduleWorkerDelayMs(int scheduleWorkerDelayMs) {
+			if (scheduleWorkerDelayMs < 50) {
+				throw new IllegalArgumentException("scheduleWorkerDelayMs must be at least 50ms");
+			}
+			this.scheduleWorkerDelayMs = scheduleWorkerDelayMs;
+		}
     }
 
 }
