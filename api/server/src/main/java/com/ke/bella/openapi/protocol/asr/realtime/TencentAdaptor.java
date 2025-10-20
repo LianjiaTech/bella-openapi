@@ -107,15 +107,7 @@ public class TencentAdaptor implements RealTimeAsrAdaptor<TencentProperty> {
 			params.put("timestamp", String.valueOf(timestamp));
 			params.put("expired", String.valueOf(expired));
 			params.put("nonce", String.valueOf(nonce));
-			// 引擎模型类型优先级：请求中的 > 渠道配置的
-			String engineModelType = request.getEngineModelType();
-			if (engineModelType == null || engineModelType.trim().isEmpty() || !isValidEngineModelType(engineModelType)) {
-				engineModelType = property.getEngineModelType();
-				log.info("使用渠道配置的引擎模型类型: {}", engineModelType);
-			} else {
-				log.info("使用请求中的引擎模型类型: {}", engineModelType);
-			}
-			params.put("engine_model_type", engineModelType);
+			params.put("engine_model_type", property.getEngineModelType());
 			params.put("voice_id", request.getVoiceId());
 
 			// 可选参数
@@ -274,67 +266,5 @@ public class TencentAdaptor implements RealTimeAsrAdaptor<TencentProperty> {
 
 			return result;
 		}
-	}
-
-	/**
-	 * 校验引擎模型类型是否有效
-	 * @param engineModelType 引擎模型类型
-	 * @return 是否有效
-	 */
-	private boolean isValidEngineModelType(String engineModelType) {
-		if (engineModelType == null || engineModelType.trim().isEmpty()) {
-			return false;
-		}
-
-		// 电话场景
-		if ("8k_zh".equals(engineModelType) ||
-			"8k_en".equals(engineModelType) ||
-			"8k_zh_large".equals(engineModelType)) {
-			return true;
-		}
-
-		// 非电话场景 - 大模型版
-		if ("16k_zh_en".equals(engineModelType) ||
-			"16k_zh_large".equals(engineModelType) ||
-			"16k_multi_lang".equals(engineModelType)) {
-			return true;
-		}
-
-		// 非电话场景 - 中文
-		if ("16k_zh".equals(engineModelType) ||
-			"16k_zh-TW".equals(engineModelType) ||
-			"16k_zh_edu".equals(engineModelType) ||
-			"16k_zh_medical".equals(engineModelType) ||
-			"16k_zh_court".equals(engineModelType) ||
-			"16k_yue".equals(engineModelType)) {
-			return true;
-		}
-
-		// 非电话场景 - 英文
-		if ("16k_en".equals(engineModelType) ||
-			"16k_en_game".equals(engineModelType) ||
-			"16k_en_edu".equals(engineModelType)) {
-			return true;
-		}
-
-		// 非电话场景 - 其他语种
-		if ("16k_ko".equals(engineModelType) ||
-			"16k_ja".equals(engineModelType) ||
-			"16k_th".equals(engineModelType) ||
-			"16k_id".equals(engineModelType) ||
-			"16k_vi".equals(engineModelType) ||
-			"16k_ms".equals(engineModelType) ||
-			"16k_fil".equals(engineModelType) ||
-			"16k_pt".equals(engineModelType) ||
-			"16k_tr".equals(engineModelType) ||
-			"16k_ar".equals(engineModelType) ||
-			"16k_es".equals(engineModelType) ||
-			"16k_hi".equals(engineModelType) ||
-			"16k_fr".equals(engineModelType) ||
-			"16k_de".equals(engineModelType)) {
-			return true;
-		}
-
-		return false;
 	}
 }
