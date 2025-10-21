@@ -11,6 +11,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -26,6 +27,7 @@ import com.ke.bella.openapi.protocol.BellaWebSocketListener;
 import com.ke.bella.openapi.protocol.Callbacks;
 import com.ke.bella.openapi.request.BellaInterceptor;
 
+import lombok.Setter;
 import okhttp3.ConnectionPool;
 import okhttp3.Dispatcher;
 import okhttp3.Interceptor;
@@ -42,15 +44,32 @@ import okhttp3.sse.EventSources;
  */
 public class HttpUtils {
 
-    private static final ConnectionPool connectionPool = new ConnectionPool(100, 2, TimeUnit.MINUTES);
+    // 连接池：100个连接，保持5分钟
+    private static final ConnectionPool connectionPool = new ConnectionPool(200, 5, TimeUnit.MINUTES);
 
-    private static final ExecutorService executorService = new ThreadPoolExecutor(0, Integer.MAX_VALUE, 60, TimeUnit.SECONDS,
-            new SynchronousQueue<>(), Util.threadFactory("OkHttp Dispatcher", false));
+    // 优化线程池配置：针对长时间请求（3-5分钟）场景
+    //
+    // 线程需求计算（Little's Law）：
+    //   所需线程数 = 请求速率 × 平均响应时间
+    //   例如：10 req/s × 180s = 1800 个线程
+    //
+    // 策略：使用有界队列 + 适中的线程池 + 拒绝策略
+    // - 核心线程：50（保持活跃）
+    // - 最大线程：1000（平衡性能和内存，每线程约1MB栈 = 1GB总占用）
+    // - 队列：100（缓冲突发流量）
+    // - 拒绝策略：CallerRunsPolicy（提供背压，由调用线程执行）
+    //
+    // 内存估算：1000线程 × 1MB栈 + 堆外内存(512MB) ≈ 1.5GB
+    private static final ExecutorService executorService = new ThreadPoolExecutor(
+            50, 1000, 60, TimeUnit.SECONDS,
+            new LinkedBlockingQueue<>(100),
+            Util.threadFactory("OkHttp Dispatcher", false),
+            new ThreadPoolExecutor.CallerRunsPolicy()
+    );
 
-    private static final int defaultConnectionTimeout = 120;
+    private static final int defaultConnectionTimeout = 30;
     private static final int defaultReadTimeout = 300;
 
-    private static final List<Interceptor> interceptors = new ArrayList<>();
 
     public static OkHttpClient defaultOkhttpClient() {
         OkHttpClient.Builder builder = clientBuilder()
@@ -59,13 +78,18 @@ public class HttpUtils {
         return builder.build();
     }
 
-    private static AtomicBoolean useBellaInterceptor = new AtomicBoolean(false);
+    @Setter
+    private static String openapiHost;
+
+    /**
+     * 获取连接池实例，用于监控
+     */
+    public static ConnectionPool getConnectionPool() {
+        return connectionPool;
+    }
+
 
     private static OkHttpClient.Builder clientBuilder() {
-        return clientBuilder(useBellaInterceptor.get());
-    }
-    
-    private static OkHttpClient.Builder clientBuilder(boolean useBellaInterceptor) {
         Dispatcher dispatcher = new Dispatcher(executorService);
         dispatcher.setMaxRequests(2000);
         dispatcher.setMaxRequestsPerHost(500);
@@ -73,17 +97,10 @@ public class HttpUtils {
                 .proxySelector(ProxyUtils.getProxySelector())
                 .connectionPool(connectionPool)
                 .dispatcher(dispatcher);
-        
-        if (useBellaInterceptor) {
-            builder.addInterceptor(new BellaInterceptor(BellaContext.snapshot()));
-        }
-        
-        interceptors.forEach(builder::addInterceptor);
-        return builder;
-    }
 
-    public static void useBellaInterceptor() {
-        useBellaInterceptor.set(true);
+        builder.addInterceptor(new BellaInterceptor(openapiHost, BellaContext.snapshot()));
+
+        return builder;
     }
 
 
@@ -95,11 +112,11 @@ public class HttpUtils {
         OkHttpClient.Builder builder = clientBuilder()
                 .connectTimeout(connectionTimeout, TimeUnit.SECONDS)
                 .readTimeout(readTimeout, TimeUnit.SECONDS);
-        
+
         if (interceptor != null) {
             builder.addInterceptor(interceptor);
         }
-        
+
         return builder.build().newCall(request).execute();
     }
 
@@ -244,10 +261,8 @@ public class HttpUtils {
     }
 
     private static <T> T doHttpRequest(Request request, Function<byte[], T> responseConvert, Callbacks.ChannelErrorCallback<T> errorCallback, int connectionTimeout, int readTimeout, Interceptor interceptor) {
-        T result = null;
-        try {
-            Response response = HttpUtils.httpRequest(request, connectionTimeout, readTimeout, interceptor);
-            
+        try (Response response = HttpUtils.httpRequest(request, connectionTimeout, readTimeout, interceptor)) {
+            T result = null;
             if(response.body() != null) {
                 result = responseConvert.apply(response.body().bytes());
             }
@@ -271,15 +286,10 @@ public class HttpUtils {
     }
 
     public static byte[] doHttpRequest(Request request) {
-        Response response = null;
-        ResponseBody body = null;
-        try {
-            response = HttpUtils.httpRequest(request);
-            body = response.body();
-
+        try (Response response = HttpUtils.httpRequest(request)) {
             byte[] bodyBytes = null;
-            if(body != null) {
-                bodyBytes = body.bytes();
+            if(response.body() != null) {
+                bodyBytes = response.body().bytes();
             }
 
             if(!response.isSuccessful()) {
@@ -289,16 +299,8 @@ public class HttpUtils {
             } else {
                 return bodyBytes;
             }
-
         } catch (IOException e) {
             throw new IllegalStateException(e);
-        } finally {
-            if(response != null) {
-                response.close();
-            }
-            if(body != null) {
-                body.close();
-            }
         }
     }
 
@@ -330,15 +332,10 @@ public class HttpUtils {
      * @param <T>
      */
     public static <T> T doHttpRequest(Request request, TypeReference<T> reference) {
-        Response response = null;
-        ResponseBody body = null;
-        try {
-            response = HttpUtils.httpRequest(request);
-            body = response.body();
-
+        try (Response response = HttpUtils.httpRequest(request)) {
             String bodyStr = null;
-            if(body != null) {
-                bodyStr = body.string();
+            if(response.body() != null) {
+                bodyStr = response.body().string();
             }
 
             if(!response.isSuccessful()) {
@@ -348,16 +345,8 @@ public class HttpUtils {
             } else {
                 return JacksonUtils.deserialize(bodyStr, reference);
             }
-
         } catch (IOException e) {
             throw new IllegalStateException(e);
-        } finally {
-            if(response != null) {
-                response.close();
-            }
-            if(body != null) {
-                body.close();
-            }
         }
     }
 
