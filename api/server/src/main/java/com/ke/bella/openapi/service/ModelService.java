@@ -32,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 import javax.annotation.PostConstruct;
@@ -58,6 +59,7 @@ import static com.ke.bella.openapi.console.MetadataValidator.matchPath;
 /**
  * Author: Stan Sai Date: 2024/8/2 11:31 description:
  */
+@Slf4j
 @Component
 public class ModelService {
     @Autowired
@@ -440,6 +442,7 @@ public class ModelService {
             });
         } catch (Exception e) {
             // 价格信息获取失败不影响基础模型信息返回，保持priceDetails为null
+			log.warn("Failed to enrich models with price info: {}", e.getMessage());
         }
     }
 
