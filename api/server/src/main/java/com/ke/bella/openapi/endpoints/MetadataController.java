@@ -87,8 +87,9 @@ public class MetadataController {
     }
 
     @GetMapping("/model/list")
-    public List<ModelDB> listModel(Condition.ModelCondition condition) {
-        return modelService.listByConditionWithPermission(condition, true);
+    public List<ModelDB> listModel(Condition.ModelCondition condition,
+                                 @RequestParam(required = false, defaultValue = "false") Boolean includePrice) {
+        return modelService.listModelDBsWithPermissionAndPrice(condition, true, includePrice);
     }
 
     @GetMapping("/model/page")

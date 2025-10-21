@@ -16,6 +16,8 @@ import com.ke.bella.openapi.metadata.Condition;
 import com.ke.bella.openapi.metadata.MetaDataOps;
 import com.ke.bella.openapi.metadata.Model;
 import com.ke.bella.openapi.metadata.ModelDetails;
+import com.ke.bella.openapi.metadata.PriceDetails;
+import com.ke.bella.openapi.protocol.IPriceInfo;
 import com.ke.bella.openapi.tables.pojos.ChannelDB;
 import com.ke.bella.openapi.tables.pojos.EndpointDB;
 import com.ke.bella.openapi.tables.pojos.ModelAuthorizerRelDB;
@@ -28,11 +30,15 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
+import lombok.Getter;
+import lombok.Setter;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 import javax.annotation.PostConstruct;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -377,6 +383,79 @@ public class ModelService {
         return listByCondition(condition);
     }
 
+    public List<ModelDB> listModelDBsWithPermissionAndPrice(Condition.ModelCondition condition, boolean apikeyFirst, boolean includePrice) {
+
+        List<ModelDB> modelDBs = listByConditionWithPermission(condition, apikeyFirst);
+
+        if (!includePrice || modelDBs.isEmpty()) {
+            return modelDBs;
+        }
+
+        List<ModelDBWithPrice> modelDBsWithPrice = modelDBs.stream()
+                .map(ModelDBWithPrice::new)
+                .collect(Collectors.toList());
+
+        enrichModelDBsWithPriceInfo(modelDBsWithPrice);
+
+        return new ArrayList<ModelDB>(modelDBsWithPrice);
+    }
+
+    private Model convertModelDBToModel(ModelDB db) {
+        Model model = new Model();
+        model.setModelName(db.getModelName());
+        model.setDocumentUrl(db.getDocumentUrl());
+        model.setVisibility(db.getVisibility());
+        model.setOwnerType(db.getOwnerType());
+        model.setOwnerCode(db.getOwnerCode());
+        model.setOwnerName(db.getOwnerName());
+        model.setStatus(db.getStatus());
+        model.setProperties(db.getProperties());
+        model.setFeatures(db.getFeatures());
+        model.setLinkedTo(db.getLinkedTo());
+        return model;
+    }
+
+    private String getPrimaryEndpoint(String modelName) {
+        List<String> endpoints = getAllEndpoints(modelName);
+        return CollectionUtils.isNotEmpty(endpoints) ? endpoints.get(0) : null;
+    }
+
+    private void enrichModelDBsWithPriceInfo(List<ModelDBWithPrice> modelDBsWithPrice) {
+        try {
+            Map<String, List<ModelDBWithPrice>> modelsByEndpoint = groupModelDBsByEndpoint(modelDBsWithPrice);
+
+            modelsByEndpoint.forEach((endpoint, modelsOfSameEndpoint) -> {
+                List<Model> models = modelsOfSameEndpoint.stream()
+                        .map(this::convertModelDBToModel)
+                        .collect(Collectors.toList());
+
+                Class<? extends IPriceInfo> priceType = IPriceInfo.EndpointPriceInfoType.fetchType(endpoint);
+                if (priceType != null) {
+                    endpointService.enrichModelsWithPriceInfo(models, priceType);
+
+                    for (int i = 0; i < models.size(); i++) {
+                        modelsOfSameEndpoint.get(i).setPriceDetails(models.get(i).getPriceDetails());
+                    }
+                }
+            });
+        } catch (Exception e) {
+            // 价格信息获取失败不影响基础模型信息返回，保持priceDetails为null
+        }
+    }
+
+    private Map<String, List<ModelDBWithPrice>> groupModelDBsByEndpoint(List<ModelDBWithPrice> modelDBs) {
+        Map<String, List<ModelDBWithPrice>> modelsByEndpoint = new HashMap<>();
+
+        for (ModelDBWithPrice modelDB : modelDBs) {
+            String primaryEndpoint = getPrimaryEndpoint(modelDB.getModelName());
+            if (primaryEndpoint != null) {
+                modelsByEndpoint.computeIfAbsent(primaryEndpoint, k -> new ArrayList<>()).add(modelDB);
+            }
+        }
+
+        return modelsByEndpoint;
+    }
+
     public Page<ModelDB> pageByConditionWithPermission(Condition.ModelCondition condition, boolean apikeyFirst) {
         apikeyService.fillPermissionCode(condition, apikeyFirst);
         if(!fillModelNames(condition)) {
@@ -403,5 +482,17 @@ public class ModelService {
         condition.setModelNames(modelNames);
         condition.setIncludeLinkedTo(true);
         return CollectionUtils.isNotEmpty(modelNames);
+    }
+
+    @Setter
+    @Getter
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public static class ModelDBWithPrice extends ModelDB {
+
+        private PriceDetails priceDetails;
+
+        public ModelDBWithPrice(ModelDB modelDB) {
+            super(modelDB);
+        }
     }
 }
