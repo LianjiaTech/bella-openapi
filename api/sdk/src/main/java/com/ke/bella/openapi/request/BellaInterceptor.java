@@ -20,6 +20,9 @@ import java.util.Optional;
 @AllArgsConstructor
 @NoArgsConstructor
 public class BellaInterceptor implements Interceptor {
+
+    private String openapiHost;
+
     //在异步线程中使用时需要传入context
     private Map<String, Object> context;
 
@@ -27,9 +30,12 @@ public class BellaInterceptor implements Interceptor {
     @SuppressWarnings("unchecked")
     @Override
     public Response intercept(@NotNull Chain chain) throws IOException {
+        Request originalRequest = chain.request();
+        if(!originalRequest.url().host().equals(openapiHost)) {
+            return chain.proceed(originalRequest);
+        }
         Map<String, Object> context = this.context;
         Map<String, String> headers = (Map<String, String>) Optional.ofNullable(context.get("headers")).orElse(new HashMap<>());
-        Request originalRequest = chain.request();
         Request.Builder bellaRequest = originalRequest.newBuilder();
         if(MapUtils.isNotEmpty(headers)) {
             headers.forEach(bellaRequest::header);

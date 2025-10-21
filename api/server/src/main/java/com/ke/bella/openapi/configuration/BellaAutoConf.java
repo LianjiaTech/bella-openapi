@@ -4,8 +4,6 @@ import java.util.List;
 
 import javax.annotation.PreDestroy;
 
-import com.ke.bella.openapi.server.OpenAiServiceFactory;
-import com.ke.bella.openapi.server.OpenapiProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -23,6 +21,7 @@ import com.ke.bella.openapi.protocol.log.LogExceptionHandler;
 import com.ke.bella.openapi.protocol.log.LogRecordHandler;
 import com.ke.bella.openapi.protocol.log.MetricsLogHandler;
 import com.ke.bella.openapi.protocol.metrics.MetricsManager;
+import com.ke.bella.openapi.server.OpenapiProperties;
 import com.ke.bella.openapi.service.ApikeyService;
 import com.ke.bella.openapi.service.EndpointService;
 import com.lmax.disruptor.RingBuffer;
@@ -85,10 +84,5 @@ public class BellaAutoConf {
         if(costCounter != null) {
             costCounter.flush();
         }
-    }
-
-    @Bean
-    public OpenAiServiceFactory openAiServiceFactory(OpenapiProperties openapiProperties) {
-        return new OpenAiServiceFactory(openapiProperties);
     }
 }

@@ -44,7 +44,7 @@ public class OpenAiServiceFactory {
         
         // 创建带有自定义超时的client
         OkHttpClient client = new OkHttpClient.Builder()
-                .addInterceptor(new BellaInterceptor(BellaContext.snapshot()))
+                .addInterceptor(new BellaInterceptor(openapiProperties.getHost(), BellaContext.snapshot()))
                 .connectTimeout(connectTimeoutSeconds, TimeUnit.SECONDS)
                 .readTimeout(readTimeoutSeconds, TimeUnit.SECONDS)
                 .build();
@@ -68,7 +68,7 @@ public class OpenAiServiceFactory {
 
         // 创建带有自定义超时的client
         OkHttpClient client = new OkHttpClient.Builder()
-                .addInterceptor(new BellaInterceptor(BellaContext.snapshot()))
+                .addInterceptor(new BellaInterceptor(openapiProperties.getHost(), BellaContext.snapshot()))
                 .addInterceptor(chain -> {
                     Request originalRequest = chain.request();
                     Request.Builder bellaRequest = originalRequest.newBuilder();

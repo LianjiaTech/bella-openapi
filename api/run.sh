@@ -7,6 +7,8 @@ JAVA_COMMENT="java"
 # JVM 参数
 JAVA_OPTS="$JAVA_OPTS -server -Xms2048m -Xmx2048m"
 JAVA_OPTS="$JAVA_OPTS -XX:MetaspaceSize=512m -XX:MaxMetaspaceSize=512m"
+JAVA_OPTS="$JAVA_OPTS -XX:MaxDirectMemorySize=1024m"
+# 确保 System.gc() 可以被响应，用于堆外内存回收（不要添加 -XX:+DisableExplicitGC）
 JAVA_OPTS="$JAVA_OPTS -Dlogging.path=${MATRIX_APPLOGS_DIR}"
 JAVA_OPTS="$JAVA_OPTS -Dsun.net.inetaddr.ttl=1 -Dsun.net.inetaddr.negative.ttl=1"
 JAVA_OPTS="$JAVA_OPTS -XX:+PrintGCDetails -XX:+PrintGCDateStamps -Xloggc:${MATRIX_ACCESSLOGS_DIR}/gc-%t.log"

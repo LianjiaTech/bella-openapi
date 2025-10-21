@@ -1,18 +1,14 @@
 package com.ke.bella.openapi;
 
-import com.alicp.jetcache.anno.config.EnableMethodCache;
-import com.ke.bella.job.queue.config.EnableJobQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.FilterType;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-@ComponentScan(basePackages = { "com.ke.bella.openapi" }, 
-    excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, 
-    classes = com.ke.bella.openapi.server.BellaServiceConfiguration.class))
+import com.alicp.jetcache.anno.config.EnableMethodCache;
+import com.ke.bella.job.queue.config.EnableJobQueue;
+
 @SpringBootApplication
 @EnableMethodCache(basePackages = "com.ke.bella.openapi")
 @EnableScheduling

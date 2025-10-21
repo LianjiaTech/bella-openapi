@@ -1,11 +1,9 @@
 package com.ke.bella.openapi.server;
 
-import com.ke.bella.openapi.client.OpenapiClient;
-import com.ke.bella.openapi.request.BellaRequestFilter;
-import com.ke.bella.openapi.server.intercept.AuthorizationInterceptor;
-import com.ke.bella.openapi.server.intercept.ConcurrentStartInterceptor;
-import com.ke.bella.openapi.utils.HttpUtils;
+import javax.annotation.PostConstruct;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
@@ -15,8 +13,16 @@ import org.springframework.core.Ordered;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-@EnableConfigurationProperties(OpenapiProperties.class)
+import com.ke.bella.openapi.client.OpenapiClient;
+import com.ke.bella.openapi.request.BellaRequestFilter;
+import com.ke.bella.openapi.server.intercept.AuthorizationInterceptor;
+import com.ke.bella.openapi.server.intercept.ConcurrentStartInterceptor;
+import com.ke.bella.openapi.utils.HttpUtils;
+
+import io.micrometer.core.instrument.MeterRegistry;
+
 @Configuration
+@EnableConfigurationProperties(OpenapiProperties.class)
 public class BellaServiceConfiguration implements WebMvcConfigurer {
 
     @Autowired
@@ -26,10 +32,23 @@ public class BellaServiceConfiguration implements WebMvcConfigurer {
     @Lazy
     private AuthorizationInterceptor authorizationInterceptor;
 
-    public BellaServiceConfiguration() {
-        HttpUtils.useBellaInterceptor();
-    }
+    @Autowired
+    @Lazy
+    private OpenapiProperties openapiProperties;
 
+    @Autowired(required = false)
+    @Lazy
+    private MeterRegistry meterRegistry;
+
+    @PostConstruct
+    public void postConstruct() {
+        HttpUtils.setOpenapiHost(openapiProperties.getHost());
+
+        // 注册连接池监控
+        if (meterRegistry != null) {
+            new ConnectionPoolMetrics(HttpUtils.getConnectionPool(), "http-client").bindTo(meterRegistry);
+        }
+    }
 
     @Bean
     public OpenapiClient openapiClient(OpenapiProperties properties) {
@@ -37,6 +56,12 @@ public class BellaServiceConfiguration implements WebMvcConfigurer {
     }
 
     @Bean
+    public OpenAiServiceFactory openAiServiceFactory(OpenapiProperties openapiProperties) {
+        return new OpenAiServiceFactory(openapiProperties);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
     public FilterRegistrationBean<BellaRequestFilter> bellaRequestFilter(OpenapiClient openapiClient, OpenapiProperties properties) {
         FilterRegistrationBean<BellaRequestFilter> filterRegistrationBean = new FilterRegistrationBean<>();
         BellaRequestFilter bellaRequestFilter = new BellaRequestFilter(properties.getService(), openapiClient);
@@ -51,13 +76,9 @@ public class BellaServiceConfiguration implements WebMvcConfigurer {
     }
 
     @Bean
+    @ConditionalOnMissingBean
     public AuthorizationInterceptor authorizationInterceptor() {
         return new AuthorizationInterceptor();
-    }
-
-    @Bean
-    public OpenAiServiceFactory openAiServiceFactory(OpenapiProperties openapiProperties) {
-        return new OpenAiServiceFactory(openapiProperties);
     }
 
 
