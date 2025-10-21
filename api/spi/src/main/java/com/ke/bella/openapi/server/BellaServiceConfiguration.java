@@ -44,9 +44,10 @@ public class BellaServiceConfiguration implements WebMvcConfigurer {
     public void postConstruct() {
         HttpUtils.setOpenapiHost(openapiProperties.getHost());
 
-        // 注册连接池监控
+        // 注册连接池和线程池监控
         if (meterRegistry != null) {
             new ConnectionPoolMetrics(HttpUtils.getConnectionPool(), "http-client").bindTo(meterRegistry);
+            new ThreadPoolMetrics(HttpUtils.getExecutorService(), "http-client").bindTo(meterRegistry);
         }
     }
 
