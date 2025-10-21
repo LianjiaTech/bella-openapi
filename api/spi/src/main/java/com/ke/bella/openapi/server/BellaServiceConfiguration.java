@@ -50,7 +50,7 @@ public class BellaServiceConfiguration implements WebMvcConfigurer {
     }
 
     @Bean
-    @ConditionalOnMissingBean
+    @ConditionalOnMissingBean(BellaRequestFilter.class)
     public FilterRegistrationBean<BellaRequestFilter> bellaRequestFilter(OpenapiClient openapiClient, OpenapiProperties properties) {
         FilterRegistrationBean<BellaRequestFilter> filterRegistrationBean = new FilterRegistrationBean<>();
         BellaRequestFilter bellaRequestFilter = new BellaRequestFilter(properties.getService(), openapiClient);
