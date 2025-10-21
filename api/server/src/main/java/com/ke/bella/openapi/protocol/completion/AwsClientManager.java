@@ -61,24 +61,6 @@ public class AwsClientManager {
     // 配置 4 个线程，足够处理大多数并发场景，减少堆外内存占用
     private static final SdkEventLoopGroup SHARED_EVENT_LOOP_GROUP = SdkEventLoopGroup.create(new NioEventLoopGroup(4));
 
-    // JVM 关闭时优雅释放所有资源
-    static {
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            log.info("Shutting down AWS client manager...");
-            try {
-                // 关闭所有异步客户端
-                asyncCache.invalidateAll();
-                asyncCache.cleanUp();
-
-                // 关闭共享 EventLoopGroup
-                SHARED_EVENT_LOOP_GROUP.eventLoopGroup().shutdownGracefully(100, 5000, TimeUnit.MILLISECONDS).sync();
-                log.info("AWS client manager shutdown completed");
-            } catch (Exception e) {
-                log.error("Error during AWS client manager shutdown", e);
-            }
-        }, "aws-client-manager-shutdown"));
-    }
-
     public static BedrockRuntimeClient client(String region, String endpoint, String accessKeyId, String secretKey) {
         return httpCache.computeIfAbsent(region, k -> new ConcurrentHashMap<>())
                 .computeIfAbsent(accessKeyId, k -> BedrockRuntimeClient.builder()
@@ -107,12 +89,8 @@ public class AwsClientManager {
                     .credentialsProvider(provide(accessKeyId, secretKey))
                     .region(Region.of(region))
                     .httpClient(NettyNioAsyncHttpClient.builder()
-                            // 使用共享 EventLoopGroup，大幅减少线程和堆外内存占用
+                            // 使用共享 EventLoopGroup，减少线程和堆外内存占用
                             .eventLoopGroup(SHARED_EVENT_LOOP_GROUP)
-                            // 限制每个客户端的最大并发连接数，防止堆外内存无限增长
-                            .maxConcurrency(50)
-                            // 限制等待获取连接的最大请求数
-                            .maxPendingConnectionAcquires(100)
                             // 连接超时配置
                             .connectionTimeout(Duration.ofSeconds(30))
                             .connectionAcquisitionTimeout(Duration.ofSeconds(10))
