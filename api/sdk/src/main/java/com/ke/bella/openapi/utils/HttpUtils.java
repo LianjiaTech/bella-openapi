@@ -5,17 +5,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -27,7 +23,9 @@ import com.ke.bella.openapi.protocol.BellaWebSocketListener;
 import com.ke.bella.openapi.protocol.Callbacks;
 import com.ke.bella.openapi.request.BellaInterceptor;
 
+import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import okhttp3.ConnectionPool;
 import okhttp3.Dispatcher;
 import okhttp3.Interceptor;
@@ -42,30 +40,42 @@ import okhttp3.sse.EventSources;
 /**
  * Author: Stan Sai Date: 2024/8/14 12:09 description:
  */
+@Slf4j
 public class HttpUtils {
 
-    // 连接池：100个连接，保持5分钟
+    /**
+     * -- GETTER --
+     *  获取连接池实例，用于监控
+     */
+    @Getter
     private static final ConnectionPool connectionPool = new ConnectionPool(200, 5, TimeUnit.MINUTES);
 
-    // 优化线程池配置：针对长时间请求（3-5分钟）场景
-    //
-    // 线程需求计算（Little's Law）：
-    //   所需线程数 = 请求速率 × 平均响应时间
-    //   例如：10 req/s × 180s = 1800 个线程
-    //
-    // 策略：使用有界队列 + 适中的线程池 + 拒绝策略
-    // - 核心线程：50（保持活跃）
-    // - 最大线程：1000（平衡性能和内存，每线程约1MB栈 = 1GB总占用）
-    // - 队列：100（缓冲突发流量）
-    // - 拒绝策略：CallerRunsPolicy（提供背压，由调用线程执行）
-    //
-    // 内存估算：1000线程 × 1MB栈 + 堆外内存(512MB) ≈ 1.5GB
-    private static final ExecutorService executorService = new ThreadPoolExecutor(
-            50, 1000, 60, TimeUnit.SECONDS,
-            new LinkedBlockingQueue<>(100),
-            Util.threadFactory("OkHttp Dispatcher", false),
-            new ThreadPoolExecutor.CallerRunsPolicy()
-    );
+    private static final ExecutorService executorService = createDynamicThreadPool();
+
+    /**
+     * 根据可用内存动态创建线程池，防止内存溢出
+     * 由于请求耗时长，因此使用较小的队列长度
+     */
+    private static ExecutorService createDynamicThreadPool() {
+        int availableMemoryMB = (int) MemoryUtils.getAvailableMemoryMB();
+
+        int maxThreads;
+        int queueSize;
+
+        maxThreads = (int) (availableMemoryMB / 1.5);
+        queueSize = maxThreads / 10;
+
+        log.info("[HttpUtils] 线程池配置 - 可用内存: {} MB, 最大线程: {}, 队列大小: {}", availableMemoryMB, maxThreads, queueSize);
+
+        return new ThreadPoolExecutor(
+                0,
+                maxThreads,
+                60, TimeUnit.SECONDS,
+                new LinkedBlockingQueue<>(queueSize),
+                Util.threadFactory("OkHttp Dispatcher", false),
+                new ThreadPoolExecutor.AbortPolicy()
+        );
+    }
 
     private static final int defaultConnectionTimeout = 30;
     private static final int defaultReadTimeout = 300;
@@ -80,14 +90,6 @@ public class HttpUtils {
 
     @Setter
     private static String openapiHost;
-
-    /**
-     * 获取连接池实例，用于监控
-     */
-    public static ConnectionPool getConnectionPool() {
-        return connectionPool;
-    }
-
 
     private static OkHttpClient.Builder clientBuilder() {
         Dispatcher dispatcher = new Dispatcher(executorService);
