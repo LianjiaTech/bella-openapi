@@ -19,8 +19,6 @@ import com.ke.bella.openapi.server.intercept.AuthorizationInterceptor;
 import com.ke.bella.openapi.server.intercept.ConcurrentStartInterceptor;
 import com.ke.bella.openapi.utils.HttpUtils;
 
-import io.micrometer.core.instrument.MeterRegistry;
-
 @Configuration
 @EnableConfigurationProperties(OpenapiProperties.class)
 public class BellaServiceConfiguration implements WebMvcConfigurer {
@@ -36,19 +34,9 @@ public class BellaServiceConfiguration implements WebMvcConfigurer {
     @Lazy
     private OpenapiProperties openapiProperties;
 
-    @Autowired(required = false)
-    @Lazy
-    private MeterRegistry meterRegistry;
-
     @PostConstruct
     public void postConstruct() {
         HttpUtils.setOpenapiHost(openapiProperties.getHost());
-
-        // 注册连接池和线程池监控
-        if (meterRegistry != null) {
-            new ConnectionPoolMetrics(HttpUtils.getConnectionPool(), "http-client").bindTo(meterRegistry);
-            new ThreadPoolMetrics(HttpUtils.getExecutorService(), "http-client").bindTo(meterRegistry);
-        }
     }
 
     @Bean
