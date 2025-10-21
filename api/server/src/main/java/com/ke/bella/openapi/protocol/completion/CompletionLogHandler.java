@@ -23,19 +23,24 @@ public class CompletionLogHandler implements EndpointLogHandler {
         if(processData.getResponse() instanceof CompletionResponse) {
             response = (CompletionResponse) processData.getResponse();
         }
+
         long created = response == null || response.getCreated() <= 0 ? DateTimeUtils.getCurrentSeconds() : response.getCreated();
         long firstPackageTime = processData.getFirstPackageTime();
         String encodingType = processData.getEncodingType();
+        CompletionResponse.TokenUsage usage;
+        if(response == null || response.getUsage() == null) {
+            // 分别计算request和response的token
+            int inputTokens = calculateInputTokens(processData, encodingType);
+            int outputTokens = calculateOutputTokens(response, encodingType);
 
-        // 分别计算request和response的token
-        int inputTokens = calculateInputTokens(processData, encodingType);
-        int outputTokens = calculateOutputTokens(response, encodingType);
-
-        // 构建TokenUsage
-        CompletionResponse.TokenUsage usage = new CompletionResponse.TokenUsage();
-        usage.setPrompt_tokens(inputTokens);
-        usage.setCompletion_tokens(outputTokens);
-        usage.setTotal_tokens(inputTokens + outputTokens);
+            // 构建TokenUsage
+            usage = new CompletionResponse.TokenUsage();
+            usage.setPrompt_tokens(inputTokens);
+            usage.setCompletion_tokens(outputTokens);
+            usage.setTotal_tokens(inputTokens + outputTokens);
+        } else {
+            usage = response.getUsage();
+        }
 
         processData.setUsage(usage);
         processData.setMetrics(countMetrics(startTime, processData.getRequestMillis(), created, firstPackageTime, usage));
@@ -105,14 +110,6 @@ public class CompletionLogHandler implements EndpointLogHandler {
      * 计算输出token数量
      */
     private int calculateOutputTokens(CompletionResponse response, String encodingType) {
-        // 1. 优先使用response中的usage
-        if (response != null && response.getUsage() != null) {
-            int outputTokens = response.getUsage().getCompletion_tokens();
-            log.debug("Using response usage outputTokens: {}", outputTokens);
-            return outputTokens;
-        }
-
-        // 2. 从response choices计算
         if (response != null && response.getChoices() != null) {
             EncodingType encoding = EncodingType.fromName(encodingType).orElse(EncodingType.CL100K_BASE);
             int tokens = TokenCalculationUtils.calculateCompletionOutputTokens(response, encoding);
