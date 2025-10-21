@@ -1,23 +1,21 @@
 package com.ke.bella.openapi.request;
 
-import com.ke.bella.openapi.BellaContext;
-import com.ke.bella.openapi.Operator;
-import com.ke.bella.openapi.apikey.ApikeyInfo;
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
-import okhttp3.Interceptor;
-import okhttp3.Request;
-import okhttp3.Response;
-import org.apache.commons.collections4.MapUtils;
-import org.jetbrains.annotations.NotNull;
-import org.springframework.util.Assert;
-
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-@AllArgsConstructor
+import org.apache.commons.collections4.MapUtils;
+import org.jetbrains.annotations.NotNull;
+
+import com.ke.bella.openapi.Operator;
+import com.ke.bella.openapi.apikey.ApikeyInfo;
+
+import lombok.NoArgsConstructor;
+import okhttp3.Interceptor;
+import okhttp3.Request;
+import okhttp3.Response;
+
 @NoArgsConstructor
 public class BellaInterceptor implements Interceptor {
 
@@ -25,6 +23,24 @@ public class BellaInterceptor implements Interceptor {
 
     //在异步线程中使用时需要传入context
     private Map<String, Object> context;
+
+    public BellaInterceptor(String openapiHost, Map<String, Object> context) {
+        this.openapiHost = stripProtocol(openapiHost);
+        this.context = context;
+    }
+
+    private String stripProtocol(String url) {
+        if (url == null) {
+            return null;
+        }
+        if (url.startsWith("https://")) {
+            return url.substring(8);
+        }
+        if (url.startsWith("http://")) {
+            return url.substring(7);
+        }
+        return url;
+    }
 
     @NotNull
     @SuppressWarnings("unchecked")
