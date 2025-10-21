@@ -8,7 +8,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -50,32 +50,14 @@ public class HttpUtils {
     private static final ConnectionPool connectionPool = new ConnectionPool(200, 5, TimeUnit.MINUTES);
 
     @Getter
-    private static final ThreadPoolExecutor executorService = createDynamicThreadPool();
-
-    /**
-     * 根据可用内存动态创建线程池，防止内存溢出
-     * 由于请求耗时长，因此使用较小的队列长度
-     */
-    private static ThreadPoolExecutor createDynamicThreadPool() {
-        int availableMemoryMB = (int) MemoryUtils.getAvailableMemoryMB();
-
-        int maxThreads;
-        int queueSize;
-
-        maxThreads = (int) (availableMemoryMB / 1.5);
-        queueSize = maxThreads / 10;
-
-        log.info("[HttpUtils] 线程池配置 - 可用内存: {} MB, 最大线程: {}, 队列大小: {}", availableMemoryMB, maxThreads, queueSize);
-
-        return new ThreadPoolExecutor(
-                0,
-                maxThreads,
-                60, TimeUnit.SECONDS,
-                new LinkedBlockingQueue<>(queueSize),
-                Util.threadFactory("OkHttp Dispatcher", false),
-                new ThreadPoolExecutor.AbortPolicy()
-        );
-    }
+    private static final ThreadPoolExecutor executorService = new ThreadPoolExecutor(
+            0,
+            Integer.MAX_VALUE,
+            60, TimeUnit.SECONDS,
+            new SynchronousQueue<>(),
+            Util.threadFactory("OkHttp Dispatcher", false),
+            new ThreadPoolExecutor.CallerRunsPolicy()
+    );
 
     private static final int defaultConnectionTimeout = 30;
     private static final int defaultReadTimeout = 300;
