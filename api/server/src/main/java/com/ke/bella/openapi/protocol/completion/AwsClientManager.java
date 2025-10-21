@@ -1,20 +1,6 @@
 package com.ke.bella.openapi.protocol.completion;
 
-import java.net.URI;
-import java.time.Duration;
-import java.time.temporal.ChronoUnit;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
-
 import org.apache.commons.lang3.StringUtils;
-
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
-import com.github.benmanes.caffeine.cache.RemovalCause;
-
-import io.netty.channel.nio.NioEventLoopGroup;
-import lombok.extern.slf4j.Slf4j;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
@@ -25,7 +11,6 @@ import software.amazon.awssdk.http.Protocol;
 import software.amazon.awssdk.http.SdkHttpConfigurationOption;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient;
-import software.amazon.awssdk.http.nio.netty.SdkEventLoopGroup;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.retries.StandardRetryStrategy;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient;
@@ -33,33 +18,19 @@ import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
 import software.amazon.awssdk.utils.AttributeMap;
 import software.amazon.awssdk.utils.ToString;
 
-@Slf4j
+import java.net.URI;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 public class AwsClientManager {
 
     private static final Map<String, ConcurrentHashMap<String, BedrockRuntimeClient>> httpCache = new ConcurrentHashMap<>();
 
-    // 使用 Caffeine Cache 自动管理 asyncClient 生命周期，避免无限制增长
-    // 配置：30分钟无访问自动过期，最多缓存100个客户端，过期时自动关闭释放资源
-    private static final Cache<String, BedrockRuntimeAsyncClient> asyncCache = Caffeine.newBuilder()
-            .maximumSize(20)
-            .expireAfterAccess(30, TimeUnit.MINUTES)
-            .removalListener((String key, BedrockRuntimeAsyncClient client, RemovalCause cause) -> {
-                if (client != null) {
-                    try {
-                        client.close();
-                        log.info("Closed AWS async client for key: {}, cause: {}", key, cause);
-                    } catch (Exception e) {
-                        log.warn("Failed to close AWS async client for key: {}", key, e);
-                    }
-                }
-            })
-            .build();
+    private static final Map<String, ConcurrentHashMap<String, BedrockRuntimeAsyncClient>> asyncCache = new ConcurrentHashMap<>();
 
     private static final Map<String, AwsAuthorizationProvider> authCache = new ConcurrentHashMap<>();
-
-    // 共享 EventLoopGroup，避免为每个客户端创建独立线程池
-    // 配置 4 个线程，足够处理大多数并发场景，减少堆外内存占用
-    private static final SdkEventLoopGroup SHARED_EVENT_LOOP_GROUP = SdkEventLoopGroup.create(new NioEventLoopGroup(4));
 
     public static BedrockRuntimeClient client(String region, String endpoint, String accessKeyId, String secretKey) {
         return httpCache.computeIfAbsent(region, k -> new ConcurrentHashMap<>())
@@ -81,30 +52,22 @@ public class AwsClientManager {
     }
 
     public static BedrockRuntimeAsyncClient asyncClient(String region, String endpoint, String accessKeyId, String secretKey) {
-        String cacheKey = region + ":" + accessKeyId;
-        return asyncCache.get(cacheKey, key -> {
-            log.info("Creating new AWS async client for region: {}, accessKeyId: {}", region, accessKeyId);
-            return BedrockRuntimeAsyncClient.builder()
-                    .endpointOverride(URI.create(endpoint))
-                    .credentialsProvider(provide(accessKeyId, secretKey))
-                    .region(Region.of(region))
-                    .httpClient(NettyNioAsyncHttpClient.builder()
-                            // 使用共享 EventLoopGroup，减少线程和堆外内存占用
-                            .eventLoopGroup(SHARED_EVENT_LOOP_GROUP)
-                            // 连接超时配置
-                            .connectionTimeout(Duration.ofSeconds(30))
-                            .connectionAcquisitionTimeout(Duration.ofSeconds(10))
-                            .buildWithDefaults(AttributeMap.builder()
-                                    .put(SdkHttpConfigurationOption.PROTOCOL, Protocol.HTTP1_1)
-                                    .put(SdkHttpConfigurationOption.READ_TIMEOUT, Duration.ofSeconds(120))
-                                    .build()))
-                    .overrideConfiguration(ClientOverrideConfiguration.builder()
-                            .retryStrategy(StandardRetryStrategy.builder().maxAttempts(1).build())
-                            .apiCallTimeout(Duration.of(300, ChronoUnit.SECONDS))
-                            .apiCallAttemptTimeout(Duration.of(300, ChronoUnit.SECONDS))
-                            .build())
-                    .build();
-        });
+        return asyncCache.computeIfAbsent(region, k -> new ConcurrentHashMap<>())
+                .computeIfAbsent(accessKeyId, k -> BedrockRuntimeAsyncClient.builder()
+                        .endpointOverride(URI.create(endpoint))
+                        .credentialsProvider(provide(accessKeyId, secretKey))
+                        .region(Region.of(region))
+                        .httpClient(NettyNioAsyncHttpClient.builder()
+                                .buildWithDefaults(AttributeMap.builder()
+                                        .put(SdkHttpConfigurationOption.PROTOCOL, Protocol.HTTP1_1)
+                                        .put(SdkHttpConfigurationOption.READ_TIMEOUT, Duration.ofSeconds(120))
+                                        .build()))
+                        .overrideConfiguration(ClientOverrideConfiguration.builder()
+                                .retryStrategy(StandardRetryStrategy.builder().maxAttempts(1).build())
+                                .apiCallTimeout(Duration.of(300, ChronoUnit.SECONDS))
+                                .apiCallAttemptTimeout(Duration.of(300, ChronoUnit.SECONDS))
+                                .build())
+                        .build());
     }
 
     private static AwsAuthorizationProvider provide(String accessKeyId, String secretKey) {
