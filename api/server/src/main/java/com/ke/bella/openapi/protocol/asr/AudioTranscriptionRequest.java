@@ -164,6 +164,9 @@ public class AudioTranscriptionRequest {
 
         @JsonProperty("embedding_model")
         private String embeddingModel;
+
+        @JsonProperty("context")
+        private String context;
     }
 
     @Data

@@ -18,8 +18,6 @@ import com.ke.bella.openapi.protocol.ocr.OcrBankcardAdaptor;
 import com.ke.bella.openapi.protocol.ocr.OcrIdcardAdaptor;
 import com.ke.bella.openapi.protocol.ocr.OcrProperty;
 import com.ke.bella.openapi.protocol.ocr.OcrRequest;
-import com.ke.bella.openapi.protocol.ocr.bankcard.OcrBankcardRequest;
-import com.ke.bella.openapi.protocol.ocr.idcard.OcrIdcardRequest;
 import com.ke.bella.openapi.service.EndpointDataService;
 import com.ke.bella.openapi.tables.pojos.ChannelDB;
 import com.ke.bella.openapi.utils.JacksonUtils;
@@ -42,9 +40,10 @@ public class OcrController {
     private LimiterManager limiterManager;
     @Autowired
     private EndpointDataService endpointDataService;
+
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @PostMapping("/idcard")
-    public Object idcard(@RequestBody OcrIdcardRequest request) {
+    public Object idcard(@RequestBody OcrRequest request) {
         // 1. 设置请求上下文
         String endpoint = EndpointContext.getRequest().getRequestURI();
         String model = request.getModel();
@@ -76,7 +75,7 @@ public class OcrController {
     }
 
     @PostMapping("/bankcard")
-    public Object bankcard(@RequestBody OcrBankcardRequest request) {
+    public Object bankcard(@RequestBody OcrRequest request) {
         // 1. 设置请求上下文
         String endpoint = EndpointContext.getRequest().getRequestURI();
         String model = request.getModel();

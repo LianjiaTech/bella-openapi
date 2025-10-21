@@ -5,16 +5,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -26,6 +23,9 @@ import com.ke.bella.openapi.protocol.BellaWebSocketListener;
 import com.ke.bella.openapi.protocol.Callbacks;
 import com.ke.bella.openapi.request.BellaInterceptor;
 
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import okhttp3.ConnectionPool;
 import okhttp3.Dispatcher;
 import okhttp3.Interceptor;
@@ -40,17 +40,46 @@ import okhttp3.sse.EventSources;
 /**
  * Author: Stan Sai Date: 2024/8/14 12:09 description:
  */
+@Slf4j
 public class HttpUtils {
 
-    private static final ConnectionPool connectionPool = new ConnectionPool(100, 2, TimeUnit.MINUTES);
+    /**
+     * -- GETTER --
+     *  获取连接池实例，用于监控
+     */
+    @Getter
+    private static final ConnectionPool connectionPool = new ConnectionPool(200, 5, TimeUnit.MINUTES);
 
-    private static final ExecutorService executorService = new ThreadPoolExecutor(0, Integer.MAX_VALUE, 60, TimeUnit.SECONDS,
-            new SynchronousQueue<>(), Util.threadFactory("OkHttp Dispatcher", false));
+    private static final ExecutorService executorService = createDynamicThreadPool();
 
-    private static final int defaultConnectionTimeout = 120;
+    /**
+     * 根据可用内存动态创建线程池，防止内存溢出
+     * 由于请求耗时长，因此使用较小的队列长度
+     */
+    private static ExecutorService createDynamicThreadPool() {
+        int availableMemoryMB = (int) MemoryUtils.getAvailableMemoryMB();
+
+        int maxThreads;
+        int queueSize;
+
+        maxThreads = (int) (availableMemoryMB / 1.5);
+        queueSize = maxThreads / 10;
+
+        log.info("[HttpUtils] 线程池配置 - 可用内存: {} MB, 最大线程: {}, 队列大小: {}", availableMemoryMB, maxThreads, queueSize);
+
+        return new ThreadPoolExecutor(
+                0,
+                maxThreads,
+                60, TimeUnit.SECONDS,
+                new LinkedBlockingQueue<>(queueSize),
+                Util.threadFactory("OkHttp Dispatcher", false),
+                new ThreadPoolExecutor.AbortPolicy()
+        );
+    }
+
+    private static final int defaultConnectionTimeout = 30;
     private static final int defaultReadTimeout = 300;
 
-    private static final List<Interceptor> interceptors = new ArrayList<>();
 
     public static OkHttpClient defaultOkhttpClient() {
         OkHttpClient.Builder builder = clientBuilder()
@@ -59,13 +88,10 @@ public class HttpUtils {
         return builder.build();
     }
 
-    private static AtomicBoolean useBellaInterceptor = new AtomicBoolean(false);
+    @Setter
+    private static String openapiHost;
 
     private static OkHttpClient.Builder clientBuilder() {
-        return clientBuilder(useBellaInterceptor.get());
-    }
-    
-    private static OkHttpClient.Builder clientBuilder(boolean useBellaInterceptor) {
         Dispatcher dispatcher = new Dispatcher(executorService);
         dispatcher.setMaxRequests(2000);
         dispatcher.setMaxRequestsPerHost(500);
@@ -73,17 +99,10 @@ public class HttpUtils {
                 .proxySelector(ProxyUtils.getProxySelector())
                 .connectionPool(connectionPool)
                 .dispatcher(dispatcher);
-        
-        if (useBellaInterceptor) {
-            builder.addInterceptor(new BellaInterceptor(BellaContext.snapshot()));
-        }
-        
-        interceptors.forEach(builder::addInterceptor);
-        return builder;
-    }
 
-    public static void useBellaInterceptor() {
-        useBellaInterceptor.set(true);
+        builder.addInterceptor(new BellaInterceptor(openapiHost, BellaContext.snapshot()));
+
+        return builder;
     }
 
 
@@ -95,11 +114,11 @@ public class HttpUtils {
         OkHttpClient.Builder builder = clientBuilder()
                 .connectTimeout(connectionTimeout, TimeUnit.SECONDS)
                 .readTimeout(readTimeout, TimeUnit.SECONDS);
-        
+
         if (interceptor != null) {
             builder.addInterceptor(interceptor);
         }
-        
+
         return builder.build().newCall(request).execute();
     }
 
@@ -244,10 +263,8 @@ public class HttpUtils {
     }
 
     private static <T> T doHttpRequest(Request request, Function<byte[], T> responseConvert, Callbacks.ChannelErrorCallback<T> errorCallback, int connectionTimeout, int readTimeout, Interceptor interceptor) {
-        T result = null;
-        try {
-            Response response = HttpUtils.httpRequest(request, connectionTimeout, readTimeout, interceptor);
-            
+        try (Response response = HttpUtils.httpRequest(request, connectionTimeout, readTimeout, interceptor)) {
+            T result = null;
             if(response.body() != null) {
                 result = responseConvert.apply(response.body().bytes());
             }
@@ -271,15 +288,10 @@ public class HttpUtils {
     }
 
     public static byte[] doHttpRequest(Request request) {
-        Response response = null;
-        ResponseBody body = null;
-        try {
-            response = HttpUtils.httpRequest(request);
-            body = response.body();
-
+        try (Response response = HttpUtils.httpRequest(request)) {
             byte[] bodyBytes = null;
-            if(body != null) {
-                bodyBytes = body.bytes();
+            if(response.body() != null) {
+                bodyBytes = response.body().bytes();
             }
 
             if(!response.isSuccessful()) {
@@ -289,16 +301,8 @@ public class HttpUtils {
             } else {
                 return bodyBytes;
             }
-
         } catch (IOException e) {
             throw new IllegalStateException(e);
-        } finally {
-            if(response != null) {
-                response.close();
-            }
-            if(body != null) {
-                body.close();
-            }
         }
     }
 
@@ -330,15 +334,10 @@ public class HttpUtils {
      * @param <T>
      */
     public static <T> T doHttpRequest(Request request, TypeReference<T> reference) {
-        Response response = null;
-        ResponseBody body = null;
-        try {
-            response = HttpUtils.httpRequest(request);
-            body = response.body();
-
+        try (Response response = HttpUtils.httpRequest(request)) {
             String bodyStr = null;
-            if(body != null) {
-                bodyStr = body.string();
+            if(response.body() != null) {
+                bodyStr = response.body().string();
             }
 
             if(!response.isSuccessful()) {
@@ -348,16 +347,8 @@ public class HttpUtils {
             } else {
                 return JacksonUtils.deserialize(bodyStr, reference);
             }
-
         } catch (IOException e) {
             throw new IllegalStateException(e);
-        } finally {
-            if(response != null) {
-                response.close();
-            }
-            if(body != null) {
-                body.close();
-            }
         }
     }
 
