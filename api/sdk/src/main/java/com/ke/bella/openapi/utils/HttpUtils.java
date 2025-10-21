@@ -8,7 +8,6 @@ import java.nio.file.StandardCopyOption;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -50,13 +49,14 @@ public class HttpUtils {
     @Getter
     private static final ConnectionPool connectionPool = new ConnectionPool(200, 5, TimeUnit.MINUTES);
 
-    private static final ExecutorService executorService = createDynamicThreadPool();
+    @Getter
+    private static final ThreadPoolExecutor executorService = createDynamicThreadPool();
 
     /**
      * 根据可用内存动态创建线程池，防止内存溢出
      * 由于请求耗时长，因此使用较小的队列长度
      */
-    private static ExecutorService createDynamicThreadPool() {
+    private static ThreadPoolExecutor createDynamicThreadPool() {
         int availableMemoryMB = (int) MemoryUtils.getAvailableMemoryMB();
 
         int maxThreads;
