@@ -20,6 +20,7 @@ public class CompletionModelFeatures implements IModelFeatures {
     private boolean prompt_cache;
     private boolean support_temperature = true;
     private boolean support_top_P = true;
+    private boolean support_max_tokens = true;
 
     @Override
     public Map<String, String> description() {
@@ -36,6 +37,7 @@ public class CompletionModelFeatures implements IModelFeatures {
         desc.put("prompt_cache", "是否支持提示词缓存");
         desc.put("support_temperature", "是否支持温度参数");
         desc.put("support_top_P", "是否支持top_p参数");
+        desc.put("support_max_tokens", "是否支持max_tokens参数");
         return desc;
     }
 }
