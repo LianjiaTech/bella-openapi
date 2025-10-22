@@ -18,6 +18,8 @@ public class CompletionModelFeatures implements IModelFeatures {
     private boolean reason_content;
     private boolean reason_content_input;
     private boolean prompt_cache;
+    private boolean support_temperature = true;
+    private boolean support_top_P = true;
 
     @Override
     public Map<String, String> description() {
@@ -32,6 +34,8 @@ public class CompletionModelFeatures implements IModelFeatures {
         desc.put("reason_content", "是否支持思考过程的输出");
         desc.put("reason_content_input", "是否支持思考过程的输入");
         desc.put("prompt_cache", "是否支持提示词缓存");
+        desc.put("support_temperature", "是否支持温度参数");
+        desc.put("support_top_P", "是否支持top_p参数");
         return desc;
     }
 }
