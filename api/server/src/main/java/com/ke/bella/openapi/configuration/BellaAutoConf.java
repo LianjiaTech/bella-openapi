@@ -4,6 +4,7 @@ import java.util.List;
 
 import javax.annotation.PreDestroy;
 
+import com.ke.bella.openapi.client.OpenapiClient;
 import com.ke.bella.openapi.server.OpenAiServiceFactory;
 import com.ke.bella.openapi.server.OpenapiProperties;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,7 +32,6 @@ import com.lmax.disruptor.dsl.Disruptor;
 import com.lmax.disruptor.dsl.ProducerType;
 import com.lmax.disruptor.util.DaemonThreadFactory;
 
-
 @EnableConfigurationProperties(OpenapiProperties.class)
 @Configuration
 public class BellaAutoConf {
@@ -42,6 +42,7 @@ public class BellaAutoConf {
     private MetricsManager metricsManager;
     @Autowired
     private LimiterManager limiterManager;
+
     @Bean
     public AdaptorManager adaptorManager(@Autowired List<IProtocolAdaptor> adaptors) {
         AdaptorManager manager = new AdaptorManager();
@@ -90,5 +91,10 @@ public class BellaAutoConf {
     @Bean
     public OpenAiServiceFactory openAiServiceFactory(OpenapiProperties openapiProperties) {
         return new OpenAiServiceFactory(openapiProperties);
+    }
+
+    @Bean
+    public OpenapiClient openapiClient(OpenapiProperties openapiProperties) {
+        return new OpenapiClient(openapiProperties.getHost(), openapiProperties.getServiceAk());
     }
 }

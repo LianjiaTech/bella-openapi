@@ -2,7 +2,6 @@ package com.ke.bella.openapi.protocol.limiter;
 
 import com.google.common.collect.Lists;
 import com.ke.bella.openapi.EndpointProcessData;
-
 import com.ke.bella.openapi.script.LuaScriptExecutor;
 import com.ke.bella.openapi.script.ScriptType;
 import com.ke.bella.openapi.utils.DateTimeUtils;
@@ -35,7 +34,7 @@ public class LimiterManager {
         String entityCode = processData.getModel() != null ? processData.getModel() : processData.getEndpoint();
         String akCode = processData.getAkCode();
         String requestId = processData.getRequestId();
-        if (entityCode == null || akCode == null) {
+        if(entityCode == null || akCode == null) {
             return;
         }
         long currentTimestamp = DateTimeUtils.getCurrentSeconds();
@@ -44,7 +43,7 @@ public class LimiterManager {
             incrementRequestCountPerMinute(akCode, entityCode, requestId, currentTimestamp);
         }
 
-        // 减少并发请求计数
+        // 减少并发请求计数 - API Key维度和Channel维度
         decrementConcurrentCount(akCode, entityCode);
     }
 
@@ -64,16 +63,15 @@ public class LimiterManager {
         }
     }
 
-
     public Long getRequestCountPerMinute(String akCode, String entityCode) {
         String countKey = String.format(RPM_COUNT_KEY_FORMAT, entityCode, akCode);
         Object count = redisson.getBucket(countKey).get();
         return count != null ? Long.parseLong(count.toString()) : 0L;
     }
-    
+
     public void incrementConcurrentCount(String akCode, String entityCode) {
         String concurrentKey = String.format(CONCURRENT_KEY_FORMAT, entityCode, akCode);
-        List<Object> keys = Lists.newArrayList(concurrentKey);
+        List<Object> keys = Lists.newArrayList(concurrentKey, entityCode);
         List<Object> params = new ArrayList<>();
         params.add("INCR");
         try {
@@ -82,10 +80,10 @@ public class LimiterManager {
             log.warn(e.getMessage(), e);
         }
     }
-    
+
     public void decrementConcurrentCount(String akCode, String entityCode) {
         String concurrentKey = String.format(CONCURRENT_KEY_FORMAT, entityCode, akCode);
-        List<Object> keys = Lists.newArrayList(concurrentKey);
+        List<Object> keys = Lists.newArrayList(concurrentKey, entityCode);
         List<Object> params = new ArrayList<>();
         params.add("DECR");
         try {
@@ -94,7 +92,7 @@ public class LimiterManager {
             throw new RuntimeException(e);
         }
     }
-    
+
     public Long getCurrentConcurrentCount(String akCode, String entityCode) {
         String concurrentKey = String.format(CONCURRENT_KEY_FORMAT, entityCode, akCode);
         Object count = redisson.getBucket(concurrentKey).get();
