@@ -71,6 +71,7 @@ public class OcrResidencePermitResponse extends OpenapiResponse {
         private String issue_authority;     // 签发机关
         private String valid_date_start;    // 有效期开始日期
         private String valid_date_end;      // 有效期结束日期
+		private String issue_times;         // 签发次数
         private String eep_number;          // 通行证号
     }
 }
