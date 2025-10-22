@@ -19,6 +19,7 @@ public class CompletionsCalHelper {
     @Getter
     @AllArgsConstructor
     public enum CompletionsCalElement {
+        CACHE_READ(CompletionPriceInfo::getCachedRead, CompletionResponse.TokensDetail::getCached_tokens),
         IMAGE_INPUT(CompletionPriceInfo::getImageInput, CompletionResponse.TokensDetail::getImage_tokens),
         IMAGE_OUTPUT(CompletionPriceInfo::getImageOutput, CompletionResponse.TokensDetail::getImage_tokens),
         ;

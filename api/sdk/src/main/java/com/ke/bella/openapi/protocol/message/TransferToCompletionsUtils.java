@@ -513,6 +513,11 @@ public class TransferToCompletionsUtils {
             CompletionResponse.TokenUsage usage = new CompletionResponse.TokenUsage();
             usage.setCache_creation_tokens(messageResponse.getUsage().getCacheCreationInputTokens());
             usage.setCache_read_tokens(messageResponse.getUsage().getCacheReadInputTokens());
+            if(usage.getCache_creation_tokens() > 0 || usage.getCache_read_tokens() > 0) {
+                CompletionResponse.TokensDetail tokensDetail = new CompletionResponse.TokensDetail();
+                tokensDetail.setCached_tokens(usage.getCache_creation_tokens() + usage.getCache_read_tokens());
+                usage.setPrompt_tokens_details(tokensDetail);
+            }
             usage.setPrompt_tokens(messageResponse.getUsage().getInputTokens());
             usage.setCompletion_tokens(messageResponse.getUsage().getOutputTokens());
             usage.setTotal_tokens(messageResponse.getUsage().getInputTokens() + messageResponse.getUsage().getOutputTokens());
@@ -628,6 +633,11 @@ public class TransferToCompletionsUtils {
                     usage.setCache_read_tokens(tokenUsage.getCacheReadInputTokens() + usage.getCache_read_tokens());
                     usage.setPrompt_tokens(tokenUsage.getInputTokens() + usage.getPrompt_tokens());
                     usage.setCompletion_tokens(tokenUsage.getOutputTokens() + usage.getCompletion_tokens());
+                }
+                if(usage.getCache_creation_tokens() > 0 || usage.getCache_read_tokens() > 0) {
+                    CompletionResponse.TokensDetail tokensDetail = new CompletionResponse.TokensDetail();
+                    tokensDetail.setCached_tokens(usage.getCache_creation_tokens() + usage.getCache_read_tokens());
+                    usage.setPrompt_tokens_details(tokensDetail);
                 }
                 usage.setTotal_tokens(usage.getPrompt_tokens() + usage.getCompletion_tokens());
                 responseBuilder.usage(usage);
