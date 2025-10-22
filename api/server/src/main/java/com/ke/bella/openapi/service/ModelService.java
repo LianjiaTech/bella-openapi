@@ -16,13 +16,13 @@ import com.ke.bella.openapi.metadata.Condition;
 import com.ke.bella.openapi.metadata.MetaDataOps;
 import com.ke.bella.openapi.metadata.Model;
 import com.ke.bella.openapi.metadata.ModelDetails;
-import com.ke.bella.openapi.metadata.PriceDetails;
 import com.ke.bella.openapi.protocol.IPriceInfo;
 import com.ke.bella.openapi.tables.pojos.ChannelDB;
 import com.ke.bella.openapi.tables.pojos.EndpointDB;
 import com.ke.bella.openapi.tables.pojos.ModelAuthorizerRelDB;
 import com.ke.bella.openapi.tables.pojos.ModelDB;
 import com.ke.bella.openapi.tables.pojos.ModelEndpointRelDB;
+import com.ke.bella.openapi.utils.JacksonUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -382,14 +382,9 @@ public class ModelService {
         if(!fillModelNames(condition)) {
             return Lists.newArrayList();
         }
-        return listByCondition(condition);
-    }
+        List<ModelDB> modelDBs = listByCondition(condition);
 
-    public List<ModelDB> listModelDBsWithPermissionAndPrice(Condition.ModelCondition condition, boolean apikeyFirst, boolean includePrice) {
-
-        List<ModelDB> modelDBs = listByConditionWithPermission(condition, apikeyFirst);
-
-        if (!includePrice || modelDBs.isEmpty()) {
+        if (!condition.isIncludePrice() || modelDBs.isEmpty()) {
             return modelDBs;
         }
 
@@ -399,64 +394,65 @@ public class ModelService {
 
         enrichModelDBsWithPriceInfo(modelDBsWithPrice);
 
-        return new ArrayList<ModelDB>(modelDBsWithPrice);
-    }
-
-    private Model convertModelDBToModel(ModelDB db) {
-        Model model = new Model();
-        model.setModelName(db.getModelName());
-        model.setDocumentUrl(db.getDocumentUrl());
-        model.setVisibility(db.getVisibility());
-        model.setOwnerType(db.getOwnerType());
-        model.setOwnerCode(db.getOwnerCode());
-        model.setOwnerName(db.getOwnerName());
-        model.setStatus(db.getStatus());
-        model.setProperties(db.getProperties());
-        model.setFeatures(db.getFeatures());
-        model.setLinkedTo(db.getLinkedTo());
-        return model;
-    }
-
-    private String getPrimaryEndpoint(String modelName) {
-        List<String> endpoints = getAllEndpoints(modelName);
-        return CollectionUtils.isNotEmpty(endpoints) ? endpoints.get(0) : null;
+        return new ArrayList<>(modelDBsWithPrice);
     }
 
     private void enrichModelDBsWithPriceInfo(List<ModelDBWithPrice> modelDBsWithPrice) {
         try {
-            Map<String, List<ModelDBWithPrice>> modelsByEndpoint = groupModelDBsByEndpoint(modelDBsWithPrice);
+            List<String> modelNames = modelDBsWithPrice.stream()
+                    .map(ModelDB::getModelName)
+                    .collect(Collectors.toList());
 
-            modelsByEndpoint.forEach((endpoint, modelsOfSameEndpoint) -> {
-                List<Model> models = modelsOfSameEndpoint.stream()
-                        .map(this::convertModelDBToModel)
-                        .collect(Collectors.toList());
+            Map<String, String> priceJsonMap = fetchAllPriceInfoAsJson(modelNames);
+
+            for (ModelDBWithPrice modelDB : modelDBsWithPrice) {
+                String priceJson = priceJsonMap.get(modelDB.getModelName());
+                if (priceJson != null) {
+                    modelDB.setPriceInfo(priceJson);
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to enrich models with price info: {}", e.getMessage());
+        }
+    }
+
+    private Map<String, String> fetchAllPriceInfoAsJson(List<String> modelNames) {
+        Map<String, String> priceJsonMap = new HashMap<>();
+
+        Map<String, List<String>> modelNamesByEndpoint = new HashMap<>();
+        for (String modelName : modelNames) {
+            List<String> endpoints = getAllEndpoints(modelName);
+            if (CollectionUtils.isNotEmpty(endpoints)) {
+                String primaryEndpoint = endpoints.get(0);
+                modelNamesByEndpoint.computeIfAbsent(primaryEndpoint, k -> new ArrayList<>()).add(modelName);
+            }
+        }
+
+        modelNamesByEndpoint.forEach((endpoint, namesForEndpoint) -> {
+            try {
+                List<Model> models = namesForEndpoint.stream().map(modelName -> {
+                    Model model = new Model();
+                    model.setModelName(modelName);
+                    return model;
+                }).collect(Collectors.toList());
 
                 Class<? extends IPriceInfo> priceType = IPriceInfo.EndpointPriceInfoType.fetchType(endpoint);
                 if (priceType != null) {
                     endpointService.enrichModelsWithPriceInfo(models, priceType);
 
-                    for (int i = 0; i < models.size(); i++) {
-                        modelsOfSameEndpoint.get(i).setPriceDetails(models.get(i).getPriceDetails());
+                    for (Model model : models) {
+                        if (model.getPriceDetails() != null) {
+                            String priceJson = JacksonUtils.serialize(model.getPriceDetails());
+                            priceJsonMap.put(model.getModelName(), priceJson);
+                        }
                     }
                 }
-            });
-        } catch (Exception e) {
-            // 价格信息获取失败不影响基础模型信息返回，保持priceDetails为null
-			log.warn("Failed to enrich models with price info: {}", e.getMessage());
-        }
-    }
-
-    private Map<String, List<ModelDBWithPrice>> groupModelDBsByEndpoint(List<ModelDBWithPrice> modelDBs) {
-        Map<String, List<ModelDBWithPrice>> modelsByEndpoint = new HashMap<>();
-
-        for (ModelDBWithPrice modelDB : modelDBs) {
-            String primaryEndpoint = getPrimaryEndpoint(modelDB.getModelName());
-            if (primaryEndpoint != null) {
-                modelsByEndpoint.computeIfAbsent(primaryEndpoint, k -> new ArrayList<>()).add(modelDB);
+            } catch (Exception e) {
+                log.warn("Failed to fetch price info for endpoint {}: {}", endpoint, e.getMessage());
             }
-        }
+        });
 
-        return modelsByEndpoint;
+        return priceJsonMap;
     }
 
     public Page<ModelDB> pageByConditionWithPermission(Condition.ModelCondition condition, boolean apikeyFirst) {
@@ -491,8 +487,7 @@ public class ModelService {
     @Getter
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class ModelDBWithPrice extends ModelDB {
-
-        private PriceDetails priceDetails;
+        private String priceInfo;
 
         public ModelDBWithPrice(ModelDB modelDB) {
             super(modelDB);
