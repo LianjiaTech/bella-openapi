@@ -4,7 +4,7 @@
     <parent>
         <groupId>top.bella</groupId>
         <artifactId>bella-openapi</artifactId>
-        <version>1.2.13</version>
+        <version>1.2.15</version>
     </parent>
     <artifactId>openapi-server</artifactId>
     <name>bella-openapi-server</name>

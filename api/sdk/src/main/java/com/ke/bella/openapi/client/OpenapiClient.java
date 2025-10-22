@@ -1,34 +1,28 @@
 package com.ke.bella.openapi.client;
 
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.util.Assert;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.net.HttpHeaders;
 import com.ke.bella.openapi.BellaResponse;
 import com.ke.bella.openapi.EndpointProcessData;
-import com.ke.bella.openapi.Order;
 import com.ke.bella.openapi.apikey.ApikeyInfo;
 import com.ke.bella.openapi.common.exception.ChannelException;
 import com.ke.bella.openapi.metadata.Model;
-import com.ke.bella.openapi.protocol.OpenapiListResponse;
-import com.ke.bella.openapi.protocol.files.File;
-import com.ke.bella.openapi.protocol.files.FileUrl;
 import com.ke.bella.openapi.protocol.route.RouteRequest;
 import com.ke.bella.openapi.protocol.route.RouteResult;
 import com.ke.bella.openapi.utils.HttpUtils;
 import com.ke.bella.openapi.utils.JacksonUtils;
+
 import okhttp3.MediaType;
 import okhttp3.Request;
 import okhttp3.RequestBody;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.util.Assert;
-import org.springframework.web.util.UriComponentsBuilder;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 
 public class OpenapiClient {
     private final String openapiHost;
