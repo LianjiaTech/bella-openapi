@@ -13,7 +13,7 @@ import java.util.function.Function;
 
 public class CompletionsCalHelper {
 
-    public final static List<CompletionsCalElement> INPUT = Lists.newArrayList(CompletionsCalElement.IMAGE_INPUT);
+    public final static List<CompletionsCalElement> INPUT = Lists.newArrayList(CompletionsCalElement.IMAGE_INPUT, CompletionsCalElement.CACHE_READ);
     public final static List<CompletionsCalElement> OUTPUT = Lists.newArrayList(CompletionsCalElement.IMAGE_OUTPUT);
 
     @Getter
