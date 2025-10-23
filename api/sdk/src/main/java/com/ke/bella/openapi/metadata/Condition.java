@@ -55,6 +55,7 @@ public class Condition {
         private String dataDestination;
         private String supplier;
         private boolean includeLinkedTo;
+        private boolean includePrice = false;
     }
 
     @EqualsAndHashCode(callSuper = true)

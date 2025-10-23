@@ -87,7 +87,7 @@ public class MetadataController {
     }
 
     @GetMapping("/model/list")
-    public List<ModelDB> listModel(Condition.ModelCondition condition) {
+    public List<Model> listModel(Condition.ModelCondition condition) {
         return modelService.listByConditionWithPermission(condition, true);
     }
 
