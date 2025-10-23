@@ -22,6 +22,7 @@ public class AsrRequest implements ISummary, IMemoryClearable {
     Integer sampleRate;
     String hotWords;
     String hotWordsTableId;
+    Boolean convertNumbers;
 
     @Override
     public String[] ignoreFields() {
