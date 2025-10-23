@@ -27,11 +27,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.BeanUtils;
 import org.springframework.util.Assert;
-import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import com.fasterxml.jackson.annotation.JsonInclude;
 
 import javax.annotation.PostConstruct;
 import java.time.Duration;
@@ -375,38 +373,39 @@ public class ModelService {
                 .collect(Collectors.toList());
     }
 
-    public List<ModelDB> listByConditionWithPermission(Condition.ModelCondition condition, boolean apikeyFirst) {
+    public List<Model> listByConditionWithPermission(Condition.ModelCondition condition, boolean apikeyFirst) {
         apikeyService.fillPermissionCode(condition, apikeyFirst);
         if(!fillModelNames(condition)) {
             return Lists.newArrayList();
         }
-        List<ModelDB> modelDBs = listByCondition(condition);
 
-        if (!condition.isIncludePrice() || modelDBs.isEmpty()) {
-            return modelDBs;
-        }
-
-        List<ModelDBWithPrice> modelDBsWithPrice = modelDBs.stream()
-                .map(ModelDBWithPrice::new)
+        List<Model> models = listByCondition(condition).stream()
+                .map(db -> {
+                    Model model = new Model();
+                    BeanUtils.copyProperties(db, model);
+                    return model;
+                })
                 .collect(Collectors.toList());
 
-        enrichModelDBsWithPriceInfo(modelDBsWithPrice);
+        if (condition.isIncludePrice() && !models.isEmpty()) {
+            convertToModelInfo(models);
+        }
 
-        return new ArrayList<>(modelDBsWithPrice);
+        return models;
     }
 
-    private void enrichModelDBsWithPriceInfo(List<ModelDBWithPrice> modelDBsWithPrice) {
+    private void convertToModelInfo(List<Model> models) {
         try {
-            Map<String, String> priceJsonMap = fetchAllPriceInfoAsJson(
-                modelDBsWithPrice.stream()
-                    .map(ModelDB::getModelName)
+            Map<String, String> priceJsonMap = fetchModelPriceInfos(
+                models.stream()
+                    .map(Model::getModelName)
                     .collect(Collectors.toList())
             );
 
-            modelDBsWithPrice.forEach(modelDB -> {
-                String priceJson = priceJsonMap.get(modelDB.getModelName());
+            models.forEach(model -> {
+                String priceJson = priceJsonMap.get(model.getModelName());
                 if (priceJson != null) {
-                    modelDB.setPriceInfo(priceJson);
+                    model.setPriceInfo(priceJson);
                 }
             });
         } catch (Exception e) {
@@ -414,7 +413,7 @@ public class ModelService {
         }
     }
 
-    private Map<String, String> fetchAllPriceInfoAsJson(List<String> modelNames) {
+    private Map<String, String> fetchModelPriceInfos(List<String> modelNames) {
         if (CollectionUtils.isEmpty(modelNames)) {
             return new HashMap<>();
         }
@@ -473,16 +472,5 @@ public class ModelService {
         condition.setModelNames(modelNames);
         condition.setIncludeLinkedTo(true);
         return CollectionUtils.isNotEmpty(modelNames);
-    }
-
-    @Setter
-    @Getter
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    public static class ModelDBWithPrice extends ModelDB {
-        private String priceInfo;
-
-        public ModelDBWithPrice(ModelDB modelDB) {
-            super(modelDB);
-        }
     }
 }
