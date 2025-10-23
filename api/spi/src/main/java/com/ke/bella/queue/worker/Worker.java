@@ -9,7 +9,6 @@ import com.theokanning.openai.queue.Task;
 import com.theokanning.openai.service.OpenAiService;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.MapUtils;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
@@ -21,6 +20,7 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.stream.Collectors;
 
@@ -30,13 +30,37 @@ public class Worker {
     private final OpenAiService openAiService;
     private JedisPool jedisPool;
     private EventbusConfig eventbus;
+    private volatile boolean initialized = false;
 
     private final LinkedBlockingQueue<Task> retryQueue = new LinkedBlockingQueue<>(1000);
 
     public Worker(TaskExecutor taskExecutor, OpenAiService openAiService) {
         this.openAiService = openAiService;
         this.taskExecutor = taskExecutor;
-        init();
+        CompletableFuture.runAsync(this::initWithRetry);
+    }
+
+    @SneakyThrows
+    private void initWithRetry() {
+        final int maxRetries = 60;
+        final long baseDelay = 1000L;
+
+        for (int attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                init();
+                initialized = true;
+                return;
+            } catch (Exception e) {
+                log.warn("Redis connection attempt {}/{} failed: {}",
+                        attempt, maxRetries, e.getMessage());
+
+                if(attempt < maxRetries) {
+                    Thread.sleep(baseDelay * attempt);
+                }
+            }
+        }
+
+        log.error("Redis connection failed after {} attempts", maxRetries);
     }
 
     @SneakyThrows
@@ -47,6 +71,11 @@ public class Worker {
     }
 
     public int takeAndRun(Take take) {
+        if(!initialized) {
+            log.warn("Worker not initialized, cannot take tasks");
+            return 0;
+        }
+
         while (!retryQueue.isEmpty()) {
             run(retryQueue.poll());
         }
