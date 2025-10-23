@@ -289,6 +289,7 @@ public class AudioController {
             @RequestHeader(value = "model", required = false) String model,
             @RequestHeader(value = "hot_words", defaultValue = "") String hotWords,
             @RequestHeader(value = "hot_words_table_id", defaultValue = "") String hotWordsTableId,
+            @RequestHeader(value = "convert_numbers", defaultValue = "false") boolean convertNumbers,
             InputStream inputStream) throws IOException {
         String endpoint = EndpointContext.getRequest().getRequestURI();
         // 手动解码hot_words中的中文字符
@@ -309,6 +310,7 @@ public class AudioController {
                 .sampleRate(sampleRate)
                 .hotWords(decodedHotWords)
                 .hotWordsTableId(hotWordsTableId)
+                .convertNumbers(convertNumbers)
                 .content(StreamUtils.copyToByteArray(inputStream))
                 .build();
         endpointDataService.setEndpointData(endpoint, model, request.summary());
