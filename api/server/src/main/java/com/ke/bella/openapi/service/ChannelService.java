@@ -192,6 +192,10 @@ public class ChannelService {
         return channelRepo.page(condition);
     }
 
+    public Map<String, String> getPriceInfoAsJson(List<String> entityCodes) {
+        return channelRepo.queryPriceInfo(entityCodes);
+    }
+
     public Map<String, PriceDetails> getPriceInfo(List<String> entityCodes, Class<? extends IPriceInfo> type) {
         Map<String, String> prices = channelRepo.queryPriceInfo(entityCodes);
         Map<String, Field> fields = Arrays.stream(type.getDeclaredFields()).map(field -> {

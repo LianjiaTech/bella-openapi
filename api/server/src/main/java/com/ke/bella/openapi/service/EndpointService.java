@@ -156,10 +156,17 @@ public class EndpointService {
         endpoint.setModels(models);
         Class<? extends IPriceInfo> priceType = IPriceInfo.EndpointPriceInfoType.fetchType(endpoint.getEndpoint());
         if(priceType != null) {
+            Map<String, PriceDetails> priceDetails;
             if(CollectionUtils.isNotEmpty(models)) {
-                enrichModelsWithPriceInfo(models, priceType);
+                priceDetails = channelService.getPriceInfo(models.stream()
+                        .map(model -> modelService.fetchTerminalModelName(model.getModelName()))
+                        .collect(Collectors.toList()), priceType);
+                endpoint.getModels().forEach(model -> {
+                    String terminal = modelService.fetchTerminalModelName(model.getModelName());
+                    model.setPriceDetails(priceDetails.get(terminal));
+                });
             } else {
-                Map<String, PriceDetails> priceDetails = channelService.getPriceInfo(Lists.newArrayList(endpoint.getEndpoint()), priceType);
+                priceDetails = channelService.getPriceInfo(Lists.newArrayList(endpoint.getEndpoint()), priceType);
                 endpoint.setPriceDetails(priceDetails.get(endpoint.getEndpoint()));
             }
         }
@@ -293,21 +300,6 @@ public class EndpointService {
         } else {
             return modelService.getAllEndpoints(entityCode).get(0);
         }
-    }
-
-    public void enrichModelsWithPriceInfo(List<Model> models, Class<? extends IPriceInfo> priceType) {
-        if (CollectionUtils.isEmpty(models) || priceType == null) {
-            return;
-        }
-
-        Map<String, PriceDetails> priceDetails = channelService.getPriceInfo(models.stream()
-                .map(model -> modelService.fetchTerminalModelName(model.getModelName()))
-                .collect(Collectors.toList()), priceType);
-
-        models.forEach(model -> {
-            String terminal = modelService.fetchTerminalModelName(model.getModelName());
-            model.setPriceDetails(priceDetails.get(terminal));
-        });
     }
 
     @Data
