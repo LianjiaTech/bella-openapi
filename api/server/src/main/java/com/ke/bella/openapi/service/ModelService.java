@@ -27,12 +27,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.BeanUtils;
 import org.springframework.util.Assert;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.PostConstruct;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -52,6 +55,7 @@ import static com.ke.bella.openapi.console.MetadataValidator.matchPath;
 /**
  * Author: Stan Sai Date: 2024/8/2 11:31 description:
  */
+@Slf4j
 @Component
 public class ModelService {
     @Autowired
@@ -369,12 +373,77 @@ public class ModelService {
                 .collect(Collectors.toList());
     }
 
-    public List<ModelDB> listByConditionWithPermission(Condition.ModelCondition condition, boolean apikeyFirst) {
+    public List<Model> listByConditionWithPermission(Condition.ModelCondition condition, boolean apikeyFirst) {
         apikeyService.fillPermissionCode(condition, apikeyFirst);
         if(!fillModelNames(condition)) {
             return Lists.newArrayList();
         }
-        return listByCondition(condition);
+
+        List<Model> models = listByCondition(condition).stream()
+                .map(db -> {
+                    Model model = new Model();
+                    BeanUtils.copyProperties(db, model);
+                    return model;
+                })
+                .collect(Collectors.toList());
+
+        if (condition.isIncludePrice() && !models.isEmpty()) {
+            convertToModelInfo(models);
+        }
+
+        return models;
+    }
+
+    private void convertToModelInfo(List<Model> models) {
+        try {
+            Map<String, String> priceJsonMap = fetchModelPriceInfos(
+                models.stream()
+                    .map(Model::getModelName)
+                    .collect(Collectors.toList())
+            );
+
+            models.forEach(model -> {
+                String priceJson = priceJsonMap.get(model.getModelName());
+                if (priceJson != null) {
+                    model.setPriceInfo(priceJson);
+                }
+            });
+        } catch (Exception e) {
+            log.warn("Failed to enrich models with price info: {}", e.getMessage());
+        }
+    }
+
+    private Map<String, String> fetchModelPriceInfos(List<String> modelNames) {
+        if (CollectionUtils.isEmpty(modelNames)) {
+            return new HashMap<>();
+        }
+
+        Map<String, String> modelToTerminalMap = new HashMap<>();
+        for (String modelName : modelNames) {
+            String terminal = fetchTerminalModelName(modelName);
+            modelToTerminalMap.put(modelName, terminal);
+        }
+
+        List<String> terminalModelNames = modelToTerminalMap.values().stream()
+                .distinct()
+                .collect(Collectors.toList());
+
+        if (terminalModelNames.isEmpty()) {
+            return new HashMap<>();
+        }
+
+        Map<String, String> terminalPriceMap = channelService.getPriceInfoAsJson(terminalModelNames);
+
+        Map<String, String> priceJsonMap = new HashMap<>();
+        for (String modelName : modelNames) {
+            String terminal = modelToTerminalMap.get(modelName);
+            String priceJson = terminalPriceMap.get(terminal);
+            if (priceJson != null) {
+                priceJsonMap.put(modelName, priceJson);
+            }
+        }
+
+        return priceJsonMap;
     }
 
     public Page<ModelDB> pageByConditionWithPermission(Condition.ModelCondition condition, boolean apikeyFirst) {
