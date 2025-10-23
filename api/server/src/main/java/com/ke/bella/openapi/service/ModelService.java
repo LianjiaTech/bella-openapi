@@ -16,13 +16,11 @@ import com.ke.bella.openapi.metadata.Condition;
 import com.ke.bella.openapi.metadata.MetaDataOps;
 import com.ke.bella.openapi.metadata.Model;
 import com.ke.bella.openapi.metadata.ModelDetails;
-import com.ke.bella.openapi.protocol.IPriceInfo;
 import com.ke.bella.openapi.tables.pojos.ChannelDB;
 import com.ke.bella.openapi.tables.pojos.EndpointDB;
 import com.ke.bella.openapi.tables.pojos.ModelAuthorizerRelDB;
 import com.ke.bella.openapi.tables.pojos.ModelDB;
 import com.ke.bella.openapi.tables.pojos.ModelEndpointRelDB;
-import com.ke.bella.openapi.utils.JacksonUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -399,58 +397,52 @@ public class ModelService {
 
     private void enrichModelDBsWithPriceInfo(List<ModelDBWithPrice> modelDBsWithPrice) {
         try {
-            List<String> modelNames = modelDBsWithPrice.stream()
+            Map<String, String> priceJsonMap = fetchAllPriceInfoAsJson(
+                modelDBsWithPrice.stream()
                     .map(ModelDB::getModelName)
-                    .collect(Collectors.toList());
+                    .collect(Collectors.toList())
+            );
 
-            Map<String, String> priceJsonMap = fetchAllPriceInfoAsJson(modelNames);
-
-            for (ModelDBWithPrice modelDB : modelDBsWithPrice) {
+            modelDBsWithPrice.forEach(modelDB -> {
                 String priceJson = priceJsonMap.get(modelDB.getModelName());
                 if (priceJson != null) {
                     modelDB.setPriceInfo(priceJson);
                 }
-            }
+            });
         } catch (Exception e) {
             log.warn("Failed to enrich models with price info: {}", e.getMessage());
         }
     }
 
     private Map<String, String> fetchAllPriceInfoAsJson(List<String> modelNames) {
-        Map<String, String> priceJsonMap = new HashMap<>();
-
-        Map<String, List<String>> modelNamesByEndpoint = new HashMap<>();
-        for (String modelName : modelNames) {
-            List<String> endpoints = getAllEndpoints(modelName);
-            if (CollectionUtils.isNotEmpty(endpoints)) {
-                String primaryEndpoint = endpoints.get(0);
-                modelNamesByEndpoint.computeIfAbsent(primaryEndpoint, k -> new ArrayList<>()).add(modelName);
-            }
+        if (CollectionUtils.isEmpty(modelNames)) {
+            return new HashMap<>();
         }
 
-        modelNamesByEndpoint.forEach((endpoint, namesForEndpoint) -> {
-            try {
-                List<Model> models = namesForEndpoint.stream().map(modelName -> {
-                    Model model = new Model();
-                    model.setModelName(modelName);
-                    return model;
-                }).collect(Collectors.toList());
+        Map<String, String> modelToTerminalMap = new HashMap<>();
+        for (String modelName : modelNames) {
+            String terminal = fetchTerminalModelName(modelName);
+            modelToTerminalMap.put(modelName, terminal);
+        }
 
-                Class<? extends IPriceInfo> priceType = IPriceInfo.EndpointPriceInfoType.fetchType(endpoint);
-                if (priceType != null) {
-                    endpointService.enrichModelsWithPriceInfo(models, priceType);
+        List<String> terminalModelNames = modelToTerminalMap.values().stream()
+                .distinct()
+                .collect(Collectors.toList());
 
-                    for (Model model : models) {
-                        if (model.getPriceDetails() != null) {
-                            String priceJson = JacksonUtils.serialize(model.getPriceDetails());
-                            priceJsonMap.put(model.getModelName(), priceJson);
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                log.warn("Failed to fetch price info for endpoint {}: {}", endpoint, e.getMessage());
+        if (terminalModelNames.isEmpty()) {
+            return new HashMap<>();
+        }
+
+        Map<String, String> terminalPriceMap = channelService.getPriceInfoAsJson(terminalModelNames);
+
+        Map<String, String> priceJsonMap = new HashMap<>();
+        for (String modelName : modelNames) {
+            String terminal = modelToTerminalMap.get(modelName);
+            String priceJson = terminalPriceMap.get(terminal);
+            if (priceJson != null) {
+                priceJsonMap.put(modelName, priceJson);
             }
-        });
+        }
 
         return priceJsonMap;
     }
