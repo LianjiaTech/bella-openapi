@@ -89,7 +89,8 @@ export default function ModelConsolePage({ searchParams }: { searchParams: { mod
                 console.error('Channel not found');
                 return;
             }
-            await updateChannel(channelCode, {...channelToUpdate, [field]: value});
+            const updatedChannel = {...channelToUpdate, [field]: value};
+            await updateChannel(channelCode, updatedChannel);
             setModelDetails(prev => prev ? {
                 ...prev,
                 channels: prev.channels.map(ch =>
@@ -98,6 +99,29 @@ export default function ModelConsolePage({ searchParams }: { searchParams: { mod
             } : null);
         } catch (error) {
             console.error('Failed to update channel:', error);
+            // @ts-ignore
+            toast({ title: "修改失败", description: error.error, variant: "destructive" })
+        }
+    };
+
+    const handleChannelBatchUpdate = async (channelCode: string, updates: Partial<Channel>) => {
+        try {
+            const channelToUpdate = modelDetails.channels.find(ch => ch.channelCode === channelCode);
+            if (!channelToUpdate) {
+                console.error('Channel not found');
+                return;
+            }
+            
+            const updatedChannel = {...channelToUpdate, ...updates};
+            await updateChannel(channelCode, updatedChannel);
+            setModelDetails(prev => prev ? {
+                ...prev,
+                channels: prev.channels.map(ch =>
+                    ch.channelCode === channelCode ? {...ch, ...updates} : ch
+                )
+            } : null);
+        } catch (error) {
+            console.error('Failed to batch update channel:', error);
             // @ts-ignore
             toast({ title: "修改失败", description: error.error, variant: "destructive" })
         }
@@ -136,6 +160,7 @@ export default function ModelConsolePage({ searchParams }: { searchParams: { mod
                 <ChannelList
                     channels={modelDetails.channels}
                     onUpdate={handleChannelUpdate}
+                    onBatchUpdate={handleChannelBatchUpdate}
                     onToggleStatus={handleChannelStatusUpdate}
                     entityType="model"
                     entityCode={modelName}

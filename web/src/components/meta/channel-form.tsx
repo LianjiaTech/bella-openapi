@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {Channel} from '@/lib/types/openapi';
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {EditableField} from './editable-field';
@@ -7,16 +7,28 @@ import {Badge} from "@/components/ui/badge";
 import {ConfirmDialog} from '@/components/ui/confirm-dialog';
 import {Label} from "@/components/ui/label";
 import {Switch} from "@/components/ui/switch";
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
+import {Input} from "@/components/ui/input";
 
 interface ChannelFormProps {
     channel: Channel;
     onUpdate: (channelCode: string, field: keyof Channel, value: string | number) => void;
+    onBatchUpdate?: (channelCode: string, updates: Partial<Channel>) => void;
     onToggleStatus: (channelCode: string) => void;
 }
 
-export function ChannelForm({ channel, onUpdate, onToggleStatus }: ChannelFormProps) {
+export function ChannelForm({ channel, onUpdate, onBatchUpdate, onToggleStatus }: ChannelFormProps) {
     const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
     const [isTrialDialogOpen, setIsTrialDialogOpen] = useState(false);
+    const [isQueueEditing, setIsQueueEditing] = useState(false);
+    const [queueMode, setQueueMode] = useState(channel.queueMode ?? 0);
+    const [queueName, setQueueName] = useState(channel.queueName ?? '');
+
+    // 同步props变化到本地状态
+    useEffect(() => {
+        setQueueMode(channel.queueMode ?? 0);
+        setQueueName(channel.queueName ?? '');
+    }, [channel.queueMode, channel.queueName]);
 
     const handleToggleStatus = () => {
         setIsStatusDialogOpen(true);
@@ -24,6 +36,47 @@ export function ChannelForm({ channel, onUpdate, onToggleStatus }: ChannelFormPr
 
     const handleToggleTrial = () => {
         setIsTrialDialogOpen(true);
+    };
+
+    const handleQueueEdit = () => {
+        // 确保编辑开始时本地状态与props同步
+        setQueueMode(channel.queueMode ?? 0);
+        setQueueName(channel.queueName ?? '');
+        setIsQueueEditing(true);
+    };
+
+    const handleQueueSave = () => {
+        const finalQueueName = queueMode !== 0 ? queueName.trim() : '';
+        
+        if (onBatchUpdate) {
+            // 使用批量更新，一次性更新两个字段
+            onBatchUpdate(channel.channelCode, {
+                queueMode,
+                queueName: finalQueueName
+            });
+        } else {
+            // 回退到分别更新
+            onUpdate(channel.channelCode, 'queueMode', queueMode);
+            onUpdate(channel.channelCode, 'queueName', finalQueueName);
+        }
+        
+        setIsQueueEditing(false);
+    };
+
+    const handleQueueCancel = () => {
+        setQueueMode(channel.queueMode ?? 0);
+        setQueueName(channel.queueName ?? '');
+        setIsQueueEditing(false);
+    };
+
+    const getQueueModeText = (mode: number) => {
+        switch (mode) {
+            case 0: return 'NONE';
+            case 1: return 'PULL';
+            case 2: return 'ROUTE';
+            case 3: return 'BOTH';
+            default: return 'NONE';
+        }
     };
 
     return (
@@ -86,6 +139,89 @@ export function ChannelForm({ channel, onUpdate, onToggleStatus }: ChannelFormPr
                     value={channel.priority}
                     onUpdate={(value) => onUpdate(channel.channelCode, 'priority', value)}
                 />
+                
+                {/* 队列信息 */}
+                <div className="space-y-4 bg-white bg-opacity-50 p-4 rounded-lg">
+                    <div className="flex items-center justify-between">
+                        <Label className="text-sm font-medium text-gray-700">队列配置</Label>
+                        {!isQueueEditing && (
+                            <Button 
+                                onClick={handleQueueEdit}
+                                size="sm"
+                                variant="outline"
+                            >
+                                编辑
+                            </Button>
+                        )}
+                        {isQueueEditing && (
+                            <div className="flex space-x-2">
+                                <Button 
+                                    onClick={handleQueueSave}
+                                    size="sm"
+                                    variant="outline"
+                                >
+                                    保存
+                                </Button>
+                                <Button 
+                                    onClick={handleQueueCancel}
+                                    size="sm"
+                                    variant="ghost"
+                                >
+                                    取消
+                                </Button>
+                            </div>
+                        )}
+                    </div>
+                    
+                    {!isQueueEditing ? (
+                        <div className="space-y-2">
+                            <div className="space-y-1">
+                                <Label className="text-sm text-gray-600">队列模式</Label>
+                                <div className="text-sm font-medium text-gray-700">
+                                    {getQueueModeText(channel.queueMode ?? 0)}
+                                </div>
+                            </div>
+                            <div className="space-y-1">
+                                <Label className="text-sm text-gray-600">队列名称</Label>
+                                <div className="text-sm font-medium text-gray-700">
+                                    {channel.queueName || '未设置'}
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="queueMode">队列模式</Label>
+                                <Select 
+                                    value={queueMode.toString()}
+                                    onValueChange={(value) => setQueueMode(parseInt(value))}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="选择队列模式"/>
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="0">NONE</SelectItem>
+                                        <SelectItem value="1">PULL</SelectItem>
+                                        <SelectItem value="2">ROUTE</SelectItem>
+                                        <SelectItem value="3">BOTH</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            {queueMode !== 0 && (
+                                <div className="space-y-2">
+                                    <Label htmlFor="queueName">队列名称</Label>
+                                    <Input
+                                        id="queueName"
+                                        value={queueName}
+                                        onChange={(e) => setQueueName(e.target.value)}
+                                        placeholder="输入队列名称"
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+
                 <ConfirmDialog
                     isOpen={isStatusDialogOpen}
                     onClose={() => setIsStatusDialogOpen(false)}

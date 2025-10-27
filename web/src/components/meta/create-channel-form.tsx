@@ -26,10 +26,10 @@ interface Props {
 }
 
 export function CreateChannelForm({
-                                     entityType,
-                                     entityCode,
-                                     isPrivate = false
-                                 }: Props) {
+                                      entityType,
+                                      entityCode,
+                                      isPrivate = false
+                                  }: Props) {
     const { toast } = useToast();
     const searchParams = useSearchParams();
     const [channel, setChannel] = useState<Channel>({
@@ -45,6 +45,8 @@ export function CreateChannelForm({
         channelInfo: '{}',
         priceInfo: '{}',
         trialEnabled: 1,
+        queueMode: 0,
+        queueName: '',
     });
     const [protocols, setProtocols] = useState<Record<string, string>>({})
     const [selectedProtocol, setSelectedProtocol] = useState<string>('')
@@ -248,6 +250,34 @@ export function CreateChannelForm({
                                 placeholder="输入转发url"
                             />
                         </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="queueMode">队列模式</Label>
+                            <Select value={channel.queueMode?.toString()}
+                                    onValueChange={(value) => handleChange('queueMode', parseInt(value))}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="选择队列模式"/>
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="0">NONE</SelectItem>
+                                    <SelectItem value="1">PULL</SelectItem>
+                                    <SelectItem value="2">ROUTE</SelectItem>
+                                    <SelectItem value="3">BOTH</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        {channel.queueMode !== undefined && channel.queueMode !== null && channel.queueMode !== 0 ? (
+                            <div className="space-y-2">
+                                <Label htmlFor="queueName">队列名称</Label>
+                                <Input
+                                    id="queueName"
+                                    value={channel.queueName || ''}
+                                    onChange={(e) => handleChange('queueName', e.target.value)}
+                                    placeholder="输入队列名称"
+                                />
+                            </div>
+                        ) : null}
+
                         {channelInfoSchema && (
                             <div className="space-y-2">
                                 <Label htmlFor="channelInfo">渠道信息</Label>

@@ -18,6 +18,7 @@ import com.ke.bella.openapi.tables.pojos.ChannelDB;
 import com.ke.bella.openapi.tables.pojos.EndpointDB;
 import com.ke.bella.openapi.tables.pojos.ModelDB;
 import com.ke.bella.openapi.utils.JacksonUtils;
+import com.ke.bella.queue.QueueMode;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -37,6 +38,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static com.ke.bella.openapi.common.EntityConstants.ACTIVE;
@@ -96,6 +98,9 @@ public class ChannelService {
             op.setVisibility(PUBLIC);
         }
         
+        // 验证队列配置
+        validateQueueConfig(op.getQueueMode(), op.getQueueName());
+        
         //todo: 根据协议检查channelInfo
         ChannelDB channelDB = channelRepo.insert(op);
         updateCache(channelDB.getEntityType(), channelDB.getEntityCode());
@@ -116,6 +121,9 @@ public class ChannelService {
             }
             endpoints.forEach(endpoint -> Assert.isTrue(CostCalculator.validate(endpoint, op.getPriceInfo()), "priceInfo invalid"));
         }
+
+        validateQueueConfig(op.getQueueMode(), op.getQueueName());
+
         //todo: 根据协议检查channelInfo
         channelRepo.update(op, op.getChannelCode());
         updateCache(op.getChannelCode());
@@ -237,6 +245,17 @@ public class ChannelService {
             }
         });
         return result;
+    }
+
+    private void validateQueueConfig(Integer queueMode, String queueName) {
+        if(queueMode != null) {
+            boolean isValid = QueueMode.isValid(queueMode);
+            Assert.isTrue(isValid, "无效的队列模式：" + queueMode);
+
+            if(!Objects.equals(QueueMode.NONE.getCode(), queueMode)) {
+                Assert.hasText(queueName, "queueName不能为空");
+            }
+        }
     }
 
     @Data
