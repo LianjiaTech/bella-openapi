@@ -41,4 +41,13 @@ public enum QueueMode {
         return getCode().equals(targetMode) || (getCode() & targetMode) != 0;
     }
 
+    public static boolean isValid(Integer code) {
+        for (QueueMode mode : values()) {
+            if(mode.code.equals(code)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 }
