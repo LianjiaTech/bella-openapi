@@ -139,6 +139,8 @@ public class MetaDataOps {
         private String ownerCode;
         private String ownerName;
         private String visibility;
+        private String queueName;
+        private Integer queueMode;
     }
 
     @EqualsAndHashCode(callSuper = true)
@@ -152,6 +154,8 @@ public class MetaDataOps {
         private String channelInfo;
         private String priceInfo;
         private Byte trialEnabled;
+        private String queueName;
+        private Integer queueMode;
     }
 
     @EqualsAndHashCode(callSuper = true)

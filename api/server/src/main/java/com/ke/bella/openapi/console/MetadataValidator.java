@@ -5,6 +5,7 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.ke.bella.openapi.metadata.MetaDataOps;
 import com.ke.bella.openapi.utils.JacksonUtils;
+import com.ke.bella.queue.QueueMode;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.Assert;
@@ -174,7 +175,9 @@ public class MetadataValidator {
         Assert.hasText(op.getChannelCode(), "通道编码不可为空");
         Assert.isTrue(StringUtils.isNotBlank(op.getPriority())
                 || StringUtils.isNotBlank(op.getChannelInfo())
-                || StringUtils.isNotBlank(op.getPriceInfo()), "可修改字段全部为空，无法修改");
+                || StringUtils.isNotBlank(op.getPriceInfo())
+                || StringUtils.isNotBlank(op.getQueueName())
+                || op.getQueueMode() != null, "可修改字段全部为空，无法修改");
         if(op.getPriority() != null) {
             Assert.isTrue(CHANNEL_PRIORITY.contains(op.getPriority()),
                     "通道的优先级只能是：" + String.join("或", CHANNEL_PRIORITY));

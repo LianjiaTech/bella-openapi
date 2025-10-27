@@ -8,13 +8,14 @@ import { useSearchParams } from 'next/navigation';
 interface ChannelListProps {
     channels: Channel[];
     onUpdate: (channelCode: string, field: keyof Channel, value: string | number) => void;
+    onBatchUpdate?: (channelCode: string, updates: Partial<Channel>) => void;
     onToggleStatus: (channelCode: string) => void;
     entityType: string;
     entityCode: string;
     isPrivate: boolean;
 }
 
-export function ChannelList({ channels, onUpdate, onToggleStatus, entityType, entityCode, isPrivate }: ChannelListProps) {
+export function ChannelList({ channels, onUpdate, onBatchUpdate, onToggleStatus, entityType, entityCode, isPrivate }: ChannelListProps) {
     const [showActiveOnly, setShowActiveOnly] = useState(true);
 
     const displayChannels = showActiveOnly
@@ -70,6 +71,7 @@ export function ChannelList({ channels, onUpdate, onToggleStatus, entityType, en
                             <ChannelForm
                                 channel={channel}
                                 onUpdate={onUpdate}
+                                onBatchUpdate={onBatchUpdate}
                                 onToggleStatus={onToggleStatus}
                             />
                         </div>
