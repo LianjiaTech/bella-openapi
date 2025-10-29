@@ -7,4 +7,5 @@ import lombok.Data;
 public class LogEvent {
     private EndpointProcessData data;
     private String repositoryCode;
+    private boolean costOnly;
 }
