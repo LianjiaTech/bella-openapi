@@ -2,6 +2,7 @@ package com.ke.bella.openapi.console;
 
 import com.ke.bella.openapi.JsonSchema;
 import com.ke.bella.openapi.annotations.BellaAPI;
+import com.ke.bella.openapi.metadata.Channel;
 import com.ke.bella.openapi.metadata.Condition;
 import com.ke.bella.openapi.metadata.MetaDataOps;
 import com.ke.bella.openapi.metadata.ModelDetails;
@@ -17,6 +18,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -149,6 +151,11 @@ public class MetadataConsoleController {
         checkChannelUpdateOp(op);
         channelService.updateChannel(op);
         return true;
+    }
+
+    @GetMapping("/channels/{queueName}")
+    public Channel getChannelByQueue(@PathVariable String queueName) {
+        return channelService.getByQueueName(queueName);
     }
 
     @PostMapping("/channel/activate")
