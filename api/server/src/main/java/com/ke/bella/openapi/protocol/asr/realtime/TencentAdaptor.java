@@ -110,6 +110,7 @@ public class TencentAdaptor implements RealTimeAsrAdaptor<TencentProperty> {
 			params.put("nonce", String.valueOf(nonce));
 			params.put("engine_model_type", property.getEngineModelType());
 			params.put("voice_id", request.getVoiceId());
+			params.put("needvad", "1");
 
 			// 可选参数
 			if (request.getVoiceFormat() != null) {
