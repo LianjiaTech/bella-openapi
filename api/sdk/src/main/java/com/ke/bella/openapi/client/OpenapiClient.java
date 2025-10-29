@@ -3,6 +3,7 @@ package com.ke.bella.openapi.client;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
+import com.ke.bella.openapi.metadata.Channel;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.Assert;
 
@@ -58,6 +59,7 @@ public class OpenapiClient {
             throw ChannelException.fromException(e);
         }
     }
+
     public boolean validate(String apikey) {
         return whoami(apikey) != null;
     }
@@ -158,6 +160,24 @@ public class OpenapiClient {
                 .build();
         BellaResponse<RouteResult> bellaResp = HttpUtils.httpRequest(request, new TypeReference<BellaResponse<RouteResult>>() {
         });
+        if(bellaResp.getCode() != 200) {
+            throw ChannelException.fromResponse(bellaResp.getCode(), bellaResp.getMessage());
+        }
+        return bellaResp.getData();
+    }
+
+    public Channel getChannelByQueue(String queueName) {
+        Assert.hasText(serviceAk, "serviceAk is null");
+        Assert.hasText(queueName, "queueName can not be null");
+        String url = openapiHost + "/console/channels/" + queueName;
+        Request request = new Request.Builder()
+                .url(url)
+                .addHeader(HttpHeaders.AUTHORIZATION, "Bearer " + serviceAk)
+                .get()
+                .build();
+        BellaResponse<Channel> bellaResp = HttpUtils.httpRequest(request,
+                new TypeReference<BellaResponse<Channel>>() {
+                });
         if(bellaResp.getCode() != 200) {
             throw ChannelException.fromResponse(bellaResp.getCode(), bellaResp.getMessage());
         }

@@ -7,6 +7,7 @@ import com.alicp.jetcache.anno.Cached;
 import com.alicp.jetcache.template.QuickConfig;
 import com.ke.bella.openapi.db.repo.ChannelRepo;
 import com.ke.bella.openapi.db.repo.Page;
+import com.ke.bella.openapi.metadata.Channel;
 import com.ke.bella.openapi.metadata.Condition;
 import com.ke.bella.openapi.metadata.MetaDataOps;
 import com.ke.bella.openapi.metadata.PriceDetails;
@@ -143,6 +144,18 @@ public class ChannelService {
     public ChannelDB getActiveByChannelCode(String channelCode) {
         ChannelDB db = getOne(channelCode);
         return db == null || db.getStatus().equals(INACTIVE) ? null : db;
+    }
+
+    public Channel getByQueueName(String queueName) {
+        if(StringUtils.isEmpty(queueName)) {
+            return null;
+        }
+        return listByCondition(Condition.ChannelCondition.builder()
+                .queueName(queueName)
+                .build(), Channel.class)
+                .stream()
+                .findFirst()
+                .orElse(null);
     }
 
     public List<ChannelDB> listActivesWithDb(String entityType, String entityCode) {
