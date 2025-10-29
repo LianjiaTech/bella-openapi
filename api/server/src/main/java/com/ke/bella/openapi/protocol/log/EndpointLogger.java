@@ -31,13 +31,17 @@ public class EndpointLogger {
             return;
         }
         EndpointLogHandler handler = handlerMap.get(log.getEndpoint());
-        if(handler != null) {
+        if(handler != null && !log.isBatch()) {
             handler.process(log);
         }
         long sequence = ringBuffer.next();
         LogEvent event = ringBuffer.get(sequence);
         event.setData(log);
         event.setRepositoryCode(logRepo);
+        if(log.isBatch()) {
+            log.setInnerLog(true);
+            event.setCostOnly(true);
+        }
         ringBuffer.publish(sequence);
     }
 }
