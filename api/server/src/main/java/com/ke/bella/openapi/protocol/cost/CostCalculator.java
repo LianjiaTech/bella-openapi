@@ -19,6 +19,7 @@ import com.ke.bella.openapi.protocol.embedding.EmbeddingResponse;
 import com.ke.bella.openapi.protocol.images.ImagesEditsPriceInfo;
 import com.ke.bella.openapi.protocol.images.ImagesPriceInfo;
 import com.ke.bella.openapi.protocol.images.ImagesResponse;
+import com.ke.bella.openapi.protocol.ocr.OcrPriceInfo;
 import com.ke.bella.openapi.protocol.realtime.RealTimePriceInfo;
 import com.ke.bella.openapi.protocol.speaker.SpeakerEmbeddingLogHandler;
 import com.ke.bella.openapi.protocol.speaker.SpeakerEmbeddingPriceInfo;
@@ -77,7 +78,8 @@ public class CostCalculator  {
         IMAGES_VARIATIONS("/v*/images/variations", images),
         WEB_SEARCH("/v*/web/search", webSearch),
         WEB_CRAWL("/v*/web/crawl", webCrawl),
-        WEB_EXTRACT("/v*/web/extract", webExtract)
+        WEB_EXTRACT("/v*/web/extract", webExtract),
+        OCR("/v*/ocr/*", ocr),
         ;
         final String endpoint;
         final EndpointCostCalculator calculator;
@@ -426,6 +428,20 @@ public class CostCalculator  {
             return price != null &&
                    price.getBasicExtractionPrice() != null &&
                    price.getAdvancedExtractionPrice() != null;
+        }
+    };
+    static EndpointCostCalculator ocr = new EndpointCostCalculator() {
+        @Override
+        public BigDecimal calculate(String priceInfo, Object usage) {
+            OcrPriceInfo price = JacksonUtils.deserialize(priceInfo, OcrPriceInfo.class);
+            int times = Integer.parseInt(usage.toString());
+            return price.getPricePerRequest().multiply(BigDecimal.valueOf(times));
+        }
+
+        @Override
+        public boolean checkPriceInfo(String priceInfo) {
+            OcrPriceInfo price = JacksonUtils.deserialize(priceInfo, OcrPriceInfo.class);
+            return price != null && price.getPricePerRequest() != null;
         }
     };
 
