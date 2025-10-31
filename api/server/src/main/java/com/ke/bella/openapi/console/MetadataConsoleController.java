@@ -1,6 +1,5 @@
 package com.ke.bella.openapi.console;
 
-import com.ke.bella.openapi.JsonSchema;
 import com.ke.bella.openapi.annotations.BellaAPI;
 import com.ke.bella.openapi.metadata.Channel;
 import com.ke.bella.openapi.metadata.Condition;
@@ -27,8 +26,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import static com.ke.bella.openapi.console.MetadataValidator.checkCategoryCreateOp;
 import static com.ke.bella.openapi.console.MetadataValidator.checkCategoryStatus;

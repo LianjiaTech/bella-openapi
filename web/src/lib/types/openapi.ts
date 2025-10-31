@@ -123,6 +123,8 @@ export interface Channel {
     ownerCode?: string;
     ownerName?: string;
     visibility?: string;
+    queueMode?: number;
+    queueName?: string;
 }
 
 export interface ModelDetails {
