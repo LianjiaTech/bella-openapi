@@ -87,7 +87,13 @@ public class CostCalculator  {
         @Override
         public BigDecimal calculate(String priceInfo, Object usage) {
             CompletionPriceInfo price = JacksonUtils.deserialize(priceInfo, CompletionPriceInfo.class);
-            CompletionResponse.TokenUsage tokenUsage = (CompletionResponse.TokenUsage) usage;
+            CompletionResponse.TokenUsage tokenUsage;
+            if(usage instanceof CompletionResponse.TokenUsage) {
+                tokenUsage = (CompletionResponse.TokenUsage) usage;
+            } else {
+                String usageJson = JacksonUtils.serialize(usage);
+                tokenUsage = JacksonUtils.deserialize(usageJson, CompletionResponse.TokenUsage.class);
+            }
             int promptTokens = tokenUsage.getPrompt_tokens();
             int completionsTokens = tokenUsage.getCompletion_tokens();
             Pair<BigDecimal, Integer> inputParts = CompletionsCalHelper.calculateAllElements(CompletionsCalHelper.INPUT, price, tokenUsage.getPrompt_tokens_details());
