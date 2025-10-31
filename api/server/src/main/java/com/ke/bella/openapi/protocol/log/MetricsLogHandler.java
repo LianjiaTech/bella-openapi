@@ -17,7 +17,7 @@ public class MetricsLogHandler implements EventHandler<LogEvent> {
     @Override
     public void onEvent(LogEvent event, long sequence, boolean endOfBatch) throws Exception {
         EndpointProcessData log = event.getData();
-        if(!log.isInnerLog()) {
+        if(!log.isInnerLog() || event.isCostOnly()) {
             return;
         }
         metricsManager.record(log);
