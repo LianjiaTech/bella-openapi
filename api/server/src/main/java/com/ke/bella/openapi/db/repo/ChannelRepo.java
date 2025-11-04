@@ -63,6 +63,7 @@ public class ChannelRepo extends StatusRepo<ChannelDB, ChannelRecord, String> im
                 .and(StringUtils.isEmpty(op.getVisibility()) ? DSL.noCondition() : CHANNEL.VISIBILITY.eq(op.getVisibility()))
                 .and(StringUtils.isEmpty(op.getOwnerType()) ? DSL.noCondition() : CHANNEL.OWNER_TYPE.eq(op.getOwnerType()))
                 .and(StringUtils.isEmpty(op.getOwnerCode()) ? DSL.noCondition() : CHANNEL.OWNER_CODE.eq(op.getOwnerCode()))
+                .and(StringUtils.isEmpty(op.getQueueName()) ? DSL.noCondition() : CHANNEL.QUEUE_NAME.eq(op.getQueueName()))
                 .orderBy(CHANNEL.ID.desc());
     }
 

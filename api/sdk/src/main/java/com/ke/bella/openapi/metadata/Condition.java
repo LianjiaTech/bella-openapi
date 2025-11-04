@@ -75,6 +75,7 @@ public class Condition {
         private String visibility;
         private String ownerType;
         private String ownerCode;
+        private String queueName;
     }
 
     @NoArgsConstructor

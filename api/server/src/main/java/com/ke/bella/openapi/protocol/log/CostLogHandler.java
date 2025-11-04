@@ -7,6 +7,7 @@ import com.ke.bella.openapi.protocol.cost.CostCounter;
 import com.ke.bella.openapi.utils.GroovyExecutor;
 import com.ke.bella.openapi.utils.JacksonUtils;
 import com.lmax.disruptor.EventHandler;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,6 +41,11 @@ public class CostLogHandler implements EventHandler<LogEvent> {
                 return;
             }
             cost = CostCalculator.calculate(log.getEndpoint(), log.getPriceInfo(), log.getUsage());
+            if(log.isBatch()) {
+                Map<String, Object> priceInfoMap = JacksonUtils.deserialize(log.getPriceInfo(), Map.class);
+                double batchDiscount = MapUtils.getDoubleValue(priceInfoMap, "batchDiscount", 1.0);
+                cost = cost.multiply(BigDecimal.valueOf(batchDiscount));
+            }
         } else {
             String script = costScripFetcher.fetchCosetScript(log.getEndpoint());
             if(script != null) {
