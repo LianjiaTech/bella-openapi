@@ -21,6 +21,35 @@ import {Model} from '@/lib/types/openapi';
 // 默认system prompt
 const DEFAULT_SYSTEM_PROMPT = '你是一个智能助手，可以回答各种问题并提供帮助。请尽量提供准确、有帮助的信息。';
 
+// 文件上传配置常量
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_VIDEO_SIZE = 10 * 1024 * 1024; // 10MB
+const SUPPORTED_VIDEO_FORMATS = ['video/mp4', 'video/avi', 'video/mov', 'video/quicktime'];
+const SUPPORTED_VIDEO_MIME_TYPES = {
+  'video/mp4': 'MP4',
+  'video/avi': 'AVI',
+  'video/mov': 'MOV',
+  'video/quicktime': 'MOV'
+};
+const DEFAULT_VIDEO_FPS = '1';
+const VIDEO_FPS_OPTIONS = [
+  { value: '0.2', label: '0.2 (低)' },
+  { value: '0.5', label: '0.5' },
+  { value: '1', label: '1 (默认)' },
+  { value: '2', label: '2' },
+  { value: '3', label: '3' },
+  { value: '5', label: '5 (高)' }
+];
+
+// 工具函数：格式化文件大小
+const formatFileSize = (bytes: number): string => {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+};
+
 // 增强版消息类型定义，包含ID
 // 参照MessageHandler.ts的实现
 interface EnhancedChatMessage extends ChatMessage {
@@ -85,7 +114,7 @@ export default function ChatCompletions() {
   // 视频上传相关状态
   const [uploadedVideos, setUploadedVideos] = useState<{id: string, file: File, base64: string, objectUrl?: string}[]>([]);
   const [hasVideoCapability, setHasVideoCapability] = useState(false);
-  const [videoFps, setVideoFps] = useState<string>('1'); // 默认每秒1帧
+  const [videoFps, setVideoFps] = useState<string>(DEFAULT_VIDEO_FPS);
   
   // 新增状态：用于处理内联数据
   const [isReceivingInline, setIsReceivingInline] = useState(false);
@@ -109,9 +138,9 @@ export default function ChatCompletions() {
         return;
       }
 
-      // 检查文件大小 (限制为10MB)
-      if (file.size > 10 * 1024 * 1024) {
-        setError('图片大小不能超过10MB');
+      // 检查文件大小
+      if (file.size > MAX_IMAGE_SIZE) {
+        setError(`图片大小不能超过${MAX_IMAGE_SIZE / 1024 / 1024}MB`);
         return;
       }
 
@@ -154,16 +183,16 @@ export default function ChatCompletions() {
         return;
       }
 
-      // 支持的视频格式
-      const supportedFormats = ['video/mp4', 'video/avi', 'video/mov', 'video/quicktime'];
-      if (!supportedFormats.includes(file.type)) {
-        setError(`不支持的视频格式。支持的格式：MP4、AVI、MOV`);
+      // 检查是否是支持的视频格式
+      if (!SUPPORTED_VIDEO_FORMATS.includes(file.type)) {
+        const supportedFormats = Object.values(SUPPORTED_VIDEO_MIME_TYPES).join('、');
+        setError(`不支持的视频格式。支持的格式：${supportedFormats}`);
         return;
       }
 
-      // 检查文件大小 (限制为10MB，因为base64会增加约33%大小)
-      if (file.size > 10 * 1024 * 1024) {
-        setError('视频大小不能超过10MB（建议使用较短的视频片段）');
+      // 检查文件大小
+      if (file.size > MAX_VIDEO_SIZE) {
+        setError(`视频大小不能超过${MAX_VIDEO_SIZE / 1024 / 1024}MB（建议使用较短的视频片段）`);
         return;
       }
 
@@ -171,7 +200,6 @@ export default function ChatCompletions() {
 
       reader.onloadstart = () => {
         setError(''); // 清除之前的错误
-        // 可以添加加载提示
       };
 
       reader.onload = (e) => {
@@ -1133,12 +1161,11 @@ export default function ChatCompletions() {
                     className="text-xs px-2 py-1 border border-blue-300 rounded bg-white"
                     disabled={isLoading}
                   >
-                    <option value="0.2">0.2 (低)</option>
-                    <option value="0.5">0.5</option>
-                    <option value="1">1 (默认)</option>
-                    <option value="2">2</option>
-                    <option value="3">3</option>
-                    <option value="5">5 (高)</option>
+                    {VIDEO_FPS_OPTIONS.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -1154,7 +1181,7 @@ export default function ChatCompletions() {
                       controls
                     />
                     <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-60 text-white text-xs px-1 py-0.5 text-center">
-                      {(video.file.size / 1024 / 1024).toFixed(2)} MB
+                      {formatFileSize(video.file.size)}
                     </div>
                     <button
                       onClick={() => removeVideo(video.id)}
@@ -1248,7 +1275,7 @@ export default function ChatCompletions() {
           <input
             ref={videoInputRef}
             type="file"
-            accept="video/mp4,video/avi,video/mov,video/quicktime"
+            accept={SUPPORTED_VIDEO_FORMATS.join(',')}
             onChange={handleVideoUpload}
             className="hidden"
           />
