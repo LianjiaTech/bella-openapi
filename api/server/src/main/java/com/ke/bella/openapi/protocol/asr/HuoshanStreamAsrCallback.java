@@ -67,6 +67,9 @@ public class HuoshanStreamAsrCallback implements Callbacks.WebSocketCallback {
         static final int CUSTOM_COMPRESS = 0b1111;
     }
 
+	// 默认自定义工作流
+	private static String DEFAULT_WORKFLOW = "audio_in,resample,partition,vad,fe,decode";
+
     private final HuoshanRealTimeAsrRequest request;
     private final Sender sender;
     private final EndpointProcessData processData;
@@ -237,7 +240,17 @@ public class HuoshanStreamAsrCallback implements Callbacks.WebSocketCallback {
         modelRequest.setShow_utterances(true);
         modelRequest.setResult_type(request.getResultType());
 		modelRequest.setSequence(1);
-		modelRequest.setWorkflow("audio_in,resample,partition,vad,fe,decode,nlu_punctuate"); // 启用标点符号
+
+		// 设置自定义工作流
+		StringBuilder workflowBuilder = new StringBuilder();
+		workflowBuilder.append(DEFAULT_WORKFLOW);
+		if (request.isEnable_itn()) {
+			workflowBuilder.append(",itn");
+		}
+		if (request.isEnable_punc()) {
+			workflowBuilder.append(",nlu_punctuate");
+		}
+		modelRequest.setWorkflow(workflowBuilder.toString());
         clientRequest.setRequest(modelRequest);
 
         // 设置音频信息

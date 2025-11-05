@@ -15,9 +15,12 @@ public class HuoshanRealTimeAsrRequest {
     private byte[] audioData;
     private int chunkSize;
     private int intervalMs;
-    private String resultType; //full single
-    private String hotWords; // 热词字符串
-    private String hotWordsTableId; // 热词表id
+    private String resultType; 			// full single
+    private String hotWords; 			// 热词字符串
+    private String hotWordsTableId; 	// 热词表id
+
+	private boolean enable_punc;		// 启用 标点预测
+	private boolean enable_itn;			// 启用 逆文本规范化
 
     public HuoshanRealTimeAsrRequest(AsrRequest request, HuoshanProperty property) {
         this.async = false;
@@ -48,5 +51,8 @@ public class HuoshanRealTimeAsrRequest {
         this.resultType = "single";
         this.hotWords = request.getPayload().getHotWords();
         this.hotWordsTableId = request.getPayload().getHotWordsTableId();
+
+		this.enable_punc = request.getPayload().getEnablePunctuationPrediction();
+		this.enable_itn = request.getPayload().getEnableInverseTextNormalization();
     }
 }
