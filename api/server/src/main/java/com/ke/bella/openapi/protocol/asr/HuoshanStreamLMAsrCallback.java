@@ -123,13 +123,13 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
         private Integer bits;
         private Integer channel;
     }
-    
+
     @Data
     private static class Corpus {
         private String boosting_table_id;
         private String context;
     }
-    
+
 
     @Override
     public void onOpen(WebSocket webSocket, Response response) {
@@ -264,7 +264,7 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
         modelRequest.setEnable_punc(true); // 启用标点
         modelRequest.setEnable_itn(false); // 是否启用ITN
         modelRequest.setEnable_ddc(false); // 是否启用顺滑
-        
+
         // 设置corpus和热词
         Corpus corpus = new Corpus();
         if (StringUtils.isNotBlank(request.getHotWords())) {
@@ -274,7 +274,7 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
             corpus.setBoosting_table_id(request.getHotWordsTableId());
         }
         modelRequest.setCorpus(corpus);
-        
+
         clientRequest.setRequest(modelRequest);
 
         // 设置音频信息
@@ -311,7 +311,7 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
         System.arraycopy(payloadSizeBytes, 0, fullClientRequest, destPos, payloadSizeBytes.length);
         destPos += payloadSizeBytes.length;
         System.arraycopy(compressedPayload, 0, fullClientRequest, destPos, compressedPayload.length);
-        
+
         return fullClientRequest;
     }
 
@@ -321,28 +321,28 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
     public void sendAudioData(WebSocket webSocket, byte[] audioData, boolean isLast) {
         try {
             audioSequence++;
-            
+
             // 如果是最后一块，将序列号设为负值
             int seq = audioSequence;
             if (isLast) {
                 seq = -seq;
             }
-            
+
             // 构造音频数据负载
             byte messageTypeSpecificFlags = isLast ? NEG_WITH_SEQUENCE : POS_SEQUENCE;
-            
+
             // 构建header
             byte[] header = getHeader(AUDIO_ONLY_REQUEST, messageTypeSpecificFlags, JSON, GZIP, (byte) 0);
-            
+
             // 构建序列号
             byte[] sequenceBytes = intToBytes(seq);
-            
+
             // 压缩音频数据
             byte[] compressedAudio = gzipCompress(audioData);
-            
+
             // 构建payload长度字节
             byte[] payloadSizeBytes = intToBytes(compressedAudio.length);
-            
+
             // 拼接header、序列号、payload长度和payload
             byte[] audioOnlyRequest = new byte[header.length + sequenceBytes.length + payloadSizeBytes.length + compressedAudio.length];
             int destPos = 0;
@@ -353,7 +353,7 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
             System.arraycopy(payloadSizeBytes, 0, audioOnlyRequest, destPos, payloadSizeBytes.length);
             destPos += payloadSizeBytes.length;
             System.arraycopy(compressedAudio, 0, audioOnlyRequest, destPos, compressedAudio.length);
-            
+
             webSocket.send(ByteString.of(audioOnlyRequest));
         } catch (Exception e) {
             onProcessError(ChannelException.fromException(e));
@@ -372,12 +372,12 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
                     int length = Math.min(chunkSize, remaining);
                     byte[] chunk = new byte[length];
                     System.arraycopy(audioData, offset, chunk, 0, length);
-                    
+
                     boolean isLast = (offset + length >= audioData.length);
                     sendAudioData(webSocket, chunk, isLast);
-                    
+
                     offset += length;
-                    
+
                     if (!isLast && intervalMs > 0) {
                         Thread.sleep(intervalMs);
                     }
@@ -391,74 +391,144 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
 
     /**
      * 解析服务器响应
+     * 按照官方样例的逻辑：先解析结构，最后才解压缩
      */
     private void parseResponse(byte[] message, WebSocket webSocket) {
-        // 解析头部
-        int headerLen = 4; // 固定头部长度为4字节
+        if (message == null || message.length == 0) {
+            log.warn("收到空消息");
+            return;
+        }
+
+        // 解析头部 - 按照官方样例的逻辑
+        int headerSize = message[0] & 0x0f; // 从header第一个字节读取headerSize
+        int headerLen = headerSize * 4; // header实际长度
         int messageType = (message[1] & 0xf0) >> 4;
         int messageTypeFlag = message[1] & 0x0f;
         int messageSerial = (message[2] & 0xf0) >> 4;
         int messageCompress = message[2] & 0x0f;
 
-        // 解析负载大小
-        byte[] payloadSizeBytes = new byte[4];
-        System.arraycopy(message, headerLen + 4, payloadSizeBytes, 0, 4);
-        int payloadSize = bytesToInt(payloadSizeBytes);
-
-        // 提取负载数据
-        byte[] payload = new byte[payloadSize];
-        System.arraycopy(message, headerLen + 8, payload, 0, payloadSize);
-
-        // 解压缩负载
-        if (messageCompress == GZIP) {
-            payload = gzipDecompress(payload);
+        // 从headerLen位置开始提取剩余数据（payload区域）
+        if (message.length < headerLen) {
+            log.error("消息长度不足，无法解析header: messageLength={}, headerLen={}", message.length, headerLen);
+            return;
         }
 
-        // 处理不同类型的消息
-        if (messageType == FULL_SERVER_RESPONSE) {
-            // 解析JSON响应
-            HuoshanLMRealTimeAsrResponse response = JacksonUtils.deserialize(payload, HuoshanLMRealTimeAsrResponse.class);
+        byte[] payload = Arrays.copyOfRange(message, headerLen, message.length);
 
-            // 检查响应状态
-            if (response == null) {
-                log.error("大模型ASR响应错误: {}", new String(payload));
-                handleTranscriptionFailed(503, new String(payload));
+        // 根据messageTypeSpecificFlags动态解析序列号等字段（按照官方样例）
+        boolean isLastPackage = false;
+
+        if ((messageTypeFlag & 0x01) != 0) {
+            // 有序列号
+            if (payload.length < 4) {
+                log.error("消息长度不足，无法解析序列号: payloadLength={}", payload.length);
                 return;
             }
+            payload = Arrays.copyOfRange(payload, 4, payload.length);
+        }
 
-            // 处理响应
-            if (!isRunning) {
-                // 首次响应，设置运行标志
-                isRunning = true;
+        if ((messageTypeFlag & 0x02) != 0) {
+            // 是最后包
+            isLastPackage = true;
+        }
 
-                // 非流式请求直接发送文件，流式请求由客户端发送文件
-                if (!request.isAsync()) {
-                    sendAudioDataInChunks(webSocket, request.getAudioData(), request.getChunkSize(), request.getIntervalMs());
+        if ((messageTypeFlag & 0x04) != 0) {
+            // 有event字段
+            if (payload.length < 4) {
+                log.error("消息长度不足，无法解析event: payloadLength={}", payload.length);
+                return;
+            }
+            payload = Arrays.copyOfRange(payload, 4, payload.length);
+        }
+
+        if (messageType == SERVER_ERROR_RESPONSE) {
+            // SERVER_ERROR_RESPONSE: errorCode(4) + payloadSize(4)
+            if (payload.length < 8) {
+                log.error("错误消息长度不足: payloadLength={}", payload.length);
+                return;
+            }
+            int errorCode = bytesToInt(Arrays.copyOfRange(payload, 0, 4));
+            int actualPayloadSize = bytesToInt(Arrays.copyOfRange(payload, 4, 8));
+            payload = Arrays.copyOfRange(payload, 8, payload.length);
+
+            // 提取实际的payload数据
+            if (actualPayloadSize > 0 && payload.length >= actualPayloadSize) {
+                payload = Arrays.copyOfRange(payload, 0, actualPayloadSize);
+
+                // 解压缩并处理错误
+                if (messageCompress == GZIP) {
+                    payload = gzipDecompress(payload);
+                }
+
+                String errorMsg = new String(payload);
+                log.error("服务器错误: code={}, message={}", errorCode, errorMsg);
+                handleTranscriptionFailed(500, errorMsg);
+            }
+        } else if (messageType == FULL_SERVER_RESPONSE) {
+            // FULL_SERVER_RESPONSE: payloadSize在payload的开头（已跳过序列号）
+            if (payload.length < 4) {
+                log.error("消息长度不足，无法解析payloadSize: payloadLength={}", payload.length);
+                return;
+            }
+            int actualPayloadSize = bytesToInt(Arrays.copyOfRange(payload, 0, 4));
+            payload = Arrays.copyOfRange(payload, 4, payload.length);
+
+            // 提取实际的payload数据
+            if (actualPayloadSize > 0) {
+                if (payload.length < actualPayloadSize) {
+                    log.error("payload长度不足: payloadLength={}, expectedSize={}", payload.length, actualPayloadSize);
+                    return;
+                }
+                payload = Arrays.copyOfRange(payload, 0, actualPayloadSize);
+            }
+
+            // 最后才解压缩（按照官方样例的顺序）
+            if (messageCompress == GZIP && payload.length > 0) {
+                payload = gzipDecompress(payload);
+            }
+
+            // 处理FULL_SERVER_RESPONSE消息
+            if (payload.length > 0) {
+                // 解析JSON响应
+                HuoshanLMRealTimeAsrResponse response = JacksonUtils.deserialize(payload, HuoshanLMRealTimeAsrResponse.class);
+
+                // 检查响应状态
+                if (response == null) {
+                    log.error("大模型ASR响应错误: {}", new String(payload));
+                    handleTranscriptionFailed(503, new String(payload));
+                    return;
+                }
+
+                // 处理响应
+                if (!isRunning) {
+                    // 首次响应，设置运行标志
+                    isRunning = true;
+
+                    // 非流式请求直接发送文件，流式请求由客户端发送文件
+                    if (!request.isAsync()) {
+                        sendAudioDataInChunks(webSocket, request.getAudioData(), request.getChunkSize(), request.getIntervalMs());
+                    } else {
+                        startFlag.complete(null);
+                    }
+                }
+
+                // 检查响应码
+                if (response.getCode() != 0) {
+                    log.error("大模型ASR响应错误: code={}, message={}", response.getCode(), response.getMessage());
+                    handleTranscriptionFailed(getHttpCode(response.getCode()), response.getMessage());
+                    return;
+                }
+
+                // 判断是中间响应还是最终响应
+                if (isLastPackage) {
+                    response.setCompletion(true);
+                    handleFinalResponse(response);
                 } else {
-                    startFlag.complete(null);
+                    handleIntermediateResponse(response);
                 }
             }
-
-            // 检查响应码
-            if (response.getCode() != 0) {
-                log.error("大模型ASR响应错误: code={}, message={}", response.getCode(), response.getMessage());
-                handleTranscriptionFailed(getHttpCode(response.getCode()), response.getMessage());
-                return;
-            }
-
-            // 判断是中间响应还是最终响应
-            boolean isFinal = messageTypeFlag == (NEG_WITH_SEQUENCE & 0x0f);
-            if (isFinal) {
-                response.setCompletion(true);
-                handleFinalResponse(response);
-            } else {
-                handleIntermediateResponse(response);
-            }
-        } else if (messageType == SERVER_ERROR_RESPONSE) {
-            // 处理服务器错误响应
-            String errorMsg = new String(payload);
-            log.error("服务器错误: {}", errorMsg);
-            handleTranscriptionFailed(500, errorMsg);
+        } else {
+            log.warn("收到未知消息类型: messageType={}, messageLength={}", messageType, message.length);
         }
     }
 
@@ -608,7 +678,7 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
         }
         return out.toByteArray();
     }
-    
+
     /**
      * 将逗号分隔的热词字符串转换为JSON格式
      * 输入: "热词1号,热词2号"
@@ -618,27 +688,27 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
         if (StringUtils.isBlank(hotWords)) {
             return null;
         }
-        
+
         // 使用Stream API简化处理
         List<HotWord> hotWordList = Arrays.stream(hotWords.split(","))
                 .map(String::trim)
                 .filter(StringUtils::isNotBlank)
                 .map(HotWord::new)
                 .collect(Collectors.toList());
-        
+
         if (hotWordList.isEmpty()) {
             return null;
         }
-        
+
         return JacksonUtils.serialize(new HotWordsWrapper(hotWordList));
     }
-    
+
     @Data
     @AllArgsConstructor
     private static class HotWordsWrapper {
         private final List<HotWord> hotwords;
     }
-    
+
     @Data
     @AllArgsConstructor
     private static class HotWord {
