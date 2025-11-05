@@ -5,9 +5,11 @@ import com.ke.bella.openapi.EndpointProcessData;
 import com.ke.bella.openapi.RequestMetrics;
 import com.ke.bella.openapi.protocol.log.EndpointLogHandler;
 import com.ke.bella.openapi.utils.DateTimeUtils;
+import com.ke.bella.openapi.utils.JacksonUtils;
 import com.ke.bella.openapi.utils.TokenCalculationUtils;
 import com.knuddels.jtokkit.api.EncodingType;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -24,6 +26,13 @@ public class CompletionLogHandler implements EndpointLogHandler {
             response = (CompletionResponse) processData.getResponse();
         }
 
+        if(StringUtils.isNotBlank(processData.getResponseRaw()) && processData.getResponse() == null) {
+            response = JacksonUtils.deserialize(processData.getResponseRaw(), CompletionResponse.class);
+        }
+        if(StringUtils.isNotBlank(processData.getRequestRaw())) {
+            CompletionRequest request = JacksonUtils.deserialize(processData.getRequestRaw(), CompletionRequest.class);
+            processData.setRequest(request);
+        }
         long created = response == null || response.getCreated() <= 0 ? DateTimeUtils.getCurrentSeconds() : response.getCreated();
         long firstPackageTime = processData.getFirstPackageTime();
         String encodingType = processData.getEncodingType();

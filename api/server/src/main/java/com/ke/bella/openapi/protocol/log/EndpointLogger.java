@@ -31,7 +31,7 @@ public class EndpointLogger {
             return;
         }
         EndpointLogHandler handler = handlerMap.get(log.getEndpoint());
-        if(handler != null && !log.isBatch()) {
+        if(handler != null) {
             handler.process(log);
         }
         long sequence = ringBuffer.next();
