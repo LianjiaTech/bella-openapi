@@ -41,6 +41,8 @@ public class EndpointProcessData {
     private long transcriptionDuration;
     private long duration;
     private Object request;
+    private String responseRaw;
+    private String requestRaw;
 
     // ========== 请求优化相关字段 ==========
     /**
