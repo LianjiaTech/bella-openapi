@@ -261,9 +261,9 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
         modelRequest.setSequence(1);
         // 大模型特有参数
         modelRequest.setModel_name("bigmodel"); // 大模型名称
-        modelRequest.setEnable_punc(true); // 启用标点
-        modelRequest.setEnable_itn(false); // 是否启用ITN
-        modelRequest.setEnable_ddc(false); // 是否启用顺滑
+        modelRequest.setEnable_punc(request.isEnable_punc()); // 是否启用标点
+        modelRequest.setEnable_itn(request.isEnable_itn()); // 是否启用ITN
+        modelRequest.setEnable_ddc(false); 	// 默认关闭顺滑
 
         // 设置corpus和热词
         Corpus corpus = new Corpus();
