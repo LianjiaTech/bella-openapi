@@ -116,14 +116,6 @@ public class CostCalculator  {
         }
     };
 
-
-    public static void main(String[] args) {
-        CompletionResponse.TokenUsage usage = JacksonUtils.deserialize("{\"completion_tokens\":1235,\"prompt_tokens\":3372,\"total_tokens\":4607,\"cache_creation_tokens\":1155,\"cache_read_tokens\":69157,\"prompt_tokens_details\":{\"reasoning_tokens\":0,\"cached_tokens\":70312,\"audio_tokens\":0,\"image_tokens\":0}}"
-                , CompletionResponse.TokenUsage.class);
-        BigDecimal decimal = completion.calculate("{\"output\":10.5,\"input\":2.1,\"cachedRead\":0.21}", usage);
-        System.out.println(decimal);
-    }
-
     static EndpointCostCalculator embedding = new EndpointCostCalculator() {
         @Override
         public BigDecimal calculate(String priceInfo, Object usage) {
