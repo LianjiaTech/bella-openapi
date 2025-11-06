@@ -1,5 +1,12 @@
 package com.ke.bella.openapi.protocol.message;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.ke.bella.openapi.common.exception.BizParamCheckException;
@@ -10,17 +17,11 @@ import com.ke.bella.openapi.protocol.completion.Message;
 import com.ke.bella.openapi.protocol.completion.StreamCompletionResponse;
 import com.ke.bella.openapi.utils.DateTimeUtils;
 import com.ke.bella.openapi.utils.JacksonUtils;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 public class TransferToCompletionsUtils {
@@ -516,7 +517,6 @@ public class TransferToCompletionsUtils {
             if(usage.getCache_creation_tokens() > 0 || usage.getCache_read_tokens() > 0) {
                 CompletionResponse.TokensDetail tokensDetail = new CompletionResponse.TokensDetail();
                 tokensDetail.setCached_tokens(usage.getCache_creation_tokens() + usage.getCache_read_tokens());
-                usage.setPrompt_tokens(usage.getPrompt_tokens() + tokensDetail.getCached_tokens());
                 usage.setPrompt_tokens_details(tokensDetail);
             }
             usage.setPrompt_tokens(messageResponse.getUsage().getInputTokens());
@@ -638,7 +638,6 @@ public class TransferToCompletionsUtils {
                 if(usage.getCache_creation_tokens() > 0 || usage.getCache_read_tokens() > 0) {
                     CompletionResponse.TokensDetail tokensDetail = new CompletionResponse.TokensDetail();
                     tokensDetail.setCached_tokens(usage.getCache_creation_tokens() + usage.getCache_read_tokens());
-                    usage.setPrompt_tokens(usage.getPrompt_tokens() + tokensDetail.getCached_tokens());
                     usage.setPrompt_tokens_details(tokensDetail);
                 }
                 usage.setTotal_tokens(usage.getPrompt_tokens() + usage.getCompletion_tokens());

@@ -1,17 +1,18 @@
 package com.ke.bella.openapi.protocol.message;
 
+import java.util.List;
+import java.util.Map;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-
-import java.util.List;
-import java.util.Map;
 
 @Data
 @NoArgsConstructor
@@ -249,6 +250,10 @@ public class MessageResponse {
         private ServerToolUsage serverToolUse; // Nullable
         @JsonProperty("service_tier")
         private String serviceTier; // Nullable
+
+        public int getInputTokens() {
+            return inputTokens + cacheCreationInputTokens + cacheReadInputTokens;
+        }
     }
 
     @Data
