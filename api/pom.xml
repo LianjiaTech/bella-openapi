@@ -17,7 +17,7 @@
 
   <groupId>top.bella</groupId>
   <artifactId>bella-openapi</artifactId>
-  <version>1.2.21</version>
+  <version>1.2.22</version>
   <name>bella-openapi</name>
   <description>Bella OpenAPI SDK</description>
   <url>https://github.com/LianjiaTech/bella-openapi</url>
@@ -32,7 +32,7 @@
     <redisson.version>3.9.1</redisson.version>
     <apollo.version>2.1.0</apollo.version>
     <awssdk.version>2.31.65</awssdk.version>
-    <bella-openai.version>0.23.86</bella-openai.version>
+    <bella-openai.version>0.23.96</bella-openai.version>
   </properties>
 
   <licenses>
