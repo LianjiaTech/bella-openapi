@@ -10,12 +10,12 @@ import lombok.EqualsAndHashCode;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class YidaoResponse extends YidaoBaseResponse<YidaoResponse.Result> {
+public class YidaoResponse extends YidaoBaseResponse<YidaoResponse.ResultData> {
     private static final long serialVersionUID = 1L;
 
     @Data
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    public static class Result implements Serializable {
+    public static class ResultData implements Serializable {
         private static final long serialVersionUID = 1L;
 
         private FieldData name;

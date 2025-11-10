@@ -19,6 +19,7 @@ import com.ke.bella.openapi.protocol.ocr.OcrIdcardAdaptor;
 import com.ke.bella.openapi.protocol.ocr.OcrProperty;
 import com.ke.bella.openapi.protocol.ocr.OcrRequest;
 import com.ke.bella.openapi.protocol.ocr.residence_permit.ResidencePermitAdaptor;
+import com.ke.bella.openapi.protocol.ocr.tmp_idcard.TmpIdcardAdaptor;
 import com.ke.bella.openapi.service.EndpointDataService;
 import com.ke.bella.openapi.tables.pojos.ChannelDB;
 import com.ke.bella.openapi.utils.JacksonUtils;
@@ -138,6 +139,39 @@ public class OcrController {
 
         // 6. 调用适配器处理
         return adaptor.hmtResidencePermit(request, url, property);
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @PostMapping("/tmp-idcard")
+    public Object tmpIdcard(@RequestBody OcrRequest request) {
+        // 1. 设置请求上下文
+        String endpoint = EndpointContext.getRequest().getRequestURI();
+        String model = request.getModel();
+        endpointDataService.setEndpointData(endpoint, model, request);
+        EndpointProcessData processData = EndpointContext.getProcessData();
+
+        // 2. 参数校验
+        validateRequest(request);
+
+        // 3. 渠道路由选择
+        ChannelDB channel = router.route(endpoint, model, EndpointContext.getApikey(), processData.isMock());
+        endpointDataService.setChannel(channel);
+
+        // 4. 并发限制管理
+        if(!EndpointContext.getProcessData().isPrivate()) {
+            limiterManager.incrementConcurrentCount(EndpointContext.getProcessData().getAkCode(), model);
+        }
+
+        // 5. 获取协议适配器
+        String protocol = processData.getProtocol();
+        String url = processData.getForwardUrl();
+        String channelInfo = channel.getChannelInfo();
+        TmpIdcardAdaptor adaptor = adaptorManager.getProtocolAdaptor(endpoint, protocol, TmpIdcardAdaptor.class);
+        OcrProperty property = (OcrProperty) JacksonUtils.deserialize(channelInfo, adaptor.getPropertyClass());
+        EndpointContext.setEncodingType(property.getEncodingType());
+
+        // 6. 调用适配器处理
+        return adaptor.tmpIdcard(request, url, property);
     }
 
     private void validateRequest(OcrRequest request) {
