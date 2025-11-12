@@ -107,6 +107,52 @@ export async function getApiKeyBalance(akCode: string): Promise<ApiKeyBalance | 
     }
 }
 
+// QPS limiter admin APIs
+export interface QpsRankingItem {
+    akCode: string;
+    currentQps: number;
+    currentRpm: number;
+    limitQps: number;
+}
+
+export type QpsDetail = QpsRankingItem;
+
+export async function getQpsRanking(top: number = 20): Promise<QpsRankingItem[]> {
+    const response = await openapi.get<QpsRankingItem[]>('/console/limiter/qps/ranking', {
+        params: { top }
+    });
+    return response.data || [];
+}
+
+export async function getQpsDetail(akCode: string): Promise<QpsDetail | null> {
+    const response = await openapi.get<QpsDetail>(`/console/limiter/qps/${akCode}`);
+    return response.data || null;
+}
+
+export async function updateQpsLimit(akCode: string, qpsLimit: number): Promise<boolean> {
+    const response = await openapi.post<boolean>(`/console/limiter/qps/limit`, { akCode, qpsLimit });
+    return response.data ?? false;
+}
+
+// QPS配置管理接口（独立于监控）
+export interface QpsConfig {
+    akCode: string;
+    currentRpm: number;
+    currentQps: number;
+    limitQps: number;
+    hasTraffic: boolean;
+}
+
+export async function getQpsConfig(akCode: string): Promise<QpsConfig | null> {
+    const response = await openapi.get<QpsConfig>(`/console/limiter/qps/config/${akCode}`);
+    return response.data || null;
+}
+
+export async function updateQpsConfig(akCode: string, qpsLimit: number): Promise<boolean> {
+    const response = await openapi.post<boolean>('/console/limiter/qps/config', { akCode, qpsLimit });
+    return response.data ?? false;
+}
+
 // 转交apikey
 export async function transferApikey(request: TransferApikeyRequest): Promise<boolean> {
     try {
