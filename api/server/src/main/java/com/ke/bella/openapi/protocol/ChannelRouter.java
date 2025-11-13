@@ -65,6 +65,9 @@ public class ChannelRouter {
             }
         }
         if(!isMock) {
+            if (limiterManager.isGlobalQpsExceeded(EndpointContext.getProcessData().getAkCode())) {
+                throw new ChannelException.RateLimitException("请求过多，请稍后再试");
+            }
             channels = filter(channels, entityCode, apikeyInfo);
         }
         channels = pickMaxPriority(channels);

@@ -56,6 +56,7 @@ const MainNav: React.FC<{ userInfo: any }> = ({ userInfo }) => {
         { href: '/apikey', label: 'API Key管理' },
         { href: '/meta/console', label: '元数据管理', permission: '/console/model/**' },
         { href: '/monitor', label: '能力点监控' },
+        { href: '/admin/limiter/qps', label: '限流管理', permission: '/console/limiter/**' },
         { href: '/logs', label: '日志查询' },
         { href: 'https://doc.bella.top', label: 'Docs' }
     ];
