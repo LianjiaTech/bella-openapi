@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -76,6 +77,7 @@ public class Condition {
         private String ownerType;
         private String ownerCode;
         private String queueName;
+        private HashSet<Integer> queueModes;
     }
 
     @NoArgsConstructor
