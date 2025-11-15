@@ -4,6 +4,8 @@ import com.ke.bella.openapi.EndpointProcessData;
 import com.ke.bella.openapi.protocol.OpenapiResponse;
 import com.ke.bella.openapi.protocol.log.EndpointLogHandler;
 import com.ke.bella.openapi.utils.DateTimeUtils;
+import com.ke.bella.openapi.utils.JacksonUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
@@ -11,20 +13,27 @@ import java.util.Map;
 
 @Component
 public class SpeakerEmbeddingLogHandler implements EndpointLogHandler {
-    
+
     @Override
     public void process(EndpointProcessData processData) {
         // Create usage object for speaker embeddings - 基于音频时长
         SpeakerEmbeddingUsage usage = new SpeakerEmbeddingUsage();
-        
-        if(processData.getResponse() instanceof SpeakerEmbeddingResponse && processData.getResponse().getError() == null) {
-            SpeakerEmbeddingResponse response = (SpeakerEmbeddingResponse) processData.getResponse();
+
+        SpeakerEmbeddingResponse response = null;
+        if(processData.getResponse() instanceof SpeakerEmbeddingResponse) {
+            response = (SpeakerEmbeddingResponse) processData.getResponse();
+        }
+        if(StringUtils.isNotBlank(processData.getResponseRaw()) && response == null) {
+            response = JacksonUtils.deserialize(processData.getResponseRaw(), SpeakerEmbeddingResponse.class);
+        }
+
+        if(response != null && processData.getResponse().getError() == null) {
             int durationUnits = calculateDurationUnits(response);
             usage.setDurationUnits(durationUnits);
         } else {
             usage.setDurationUnits(0);
         }
-        
+
         long startTime = processData.getRequestTime();
         int ttlt = (int) (DateTimeUtils.getCurrentSeconds() - startTime);
         Map<String, Object> map = new HashMap<>();
@@ -43,7 +52,7 @@ public class SpeakerEmbeddingLogHandler implements EndpointLogHandler {
     public String endpoint() {
         return "/v1/audio/speaker/embedding";
     }
-    
+
     /**
      * Speaker embedding usage统计类
      * 专门用于记录音频时长的使用情况
@@ -51,15 +60,15 @@ public class SpeakerEmbeddingLogHandler implements EndpointLogHandler {
     public static class SpeakerEmbeddingUsage {
         /** 音频时长单位（毫秒） */
         private int durationUnits;
-        
-        public int getDurationUnits() { 
-            return durationUnits; 
+
+        public int getDurationUnits() {
+            return durationUnits;
         }
-        
-        public void setDurationUnits(int durationUnits) { 
-            this.durationUnits = durationUnits; 
+
+        public void setDurationUnits(int durationUnits) {
+            this.durationUnits = durationUnits;
         }
-        
+
         /**
          * 获取时长（秒）
          */

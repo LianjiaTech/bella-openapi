@@ -3,10 +3,13 @@ package com.ke.bella.openapi.protocol.tts;
 import com.ke.bella.openapi.EndpointProcessData;
 import com.ke.bella.openapi.RequestMetrics;
 import com.ke.bella.openapi.protocol.OpenapiResponse;
+import com.ke.bella.openapi.protocol.embedding.EmbeddingRequest;
 import com.ke.bella.openapi.protocol.tts.TtsRequest;
 import com.ke.bella.openapi.protocol.log.EndpointLogHandler;
 import com.ke.bella.openapi.utils.DateTimeUtils;
+import com.ke.bella.openapi.utils.JacksonUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
@@ -24,6 +27,11 @@ public class TtsLogHandler implements EndpointLogHandler {
             map.put("ttlt", ttlt);
             processData.setMetrics(map);
             processData.setDuration(ttlt);
+        }
+
+        if(StringUtils.isNotBlank(processData.getRequestRaw())) {
+            TtsRequest request = JacksonUtils.deserialize(processData.getRequestRaw(), TtsRequest.class);
+            processData.setRequest(request);
         }
 
         // 获取inputLength - 优先使用预计算的RequestMetrics

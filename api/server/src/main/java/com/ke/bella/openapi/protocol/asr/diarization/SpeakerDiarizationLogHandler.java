@@ -2,8 +2,11 @@ package com.ke.bella.openapi.protocol.asr.diarization;
 
 import com.ke.bella.openapi.EndpointProcessData;
 import com.ke.bella.openapi.protocol.asr.diarization.SpeakerDiarizationResponse;
+import com.ke.bella.openapi.protocol.embedding.EmbeddingResponse;
 import com.ke.bella.openapi.protocol.log.EndpointLogHandler;
 import com.ke.bella.openapi.utils.DateTimeUtils;
+import com.ke.bella.openapi.utils.JacksonUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
@@ -16,9 +19,15 @@ public class SpeakerDiarizationLogHandler implements EndpointLogHandler {
     public void process(EndpointProcessData processData) {
         // 基于音频时长计费（秒）
         SpeakerDiarizationUsage usage = new SpeakerDiarizationUsage();
-        
-        if(processData.getResponse() instanceof SpeakerDiarizationResponse && processData.getResponse().getError() == null) {
-            SpeakerDiarizationResponse response = (SpeakerDiarizationResponse) processData.getResponse();
+        SpeakerDiarizationResponse response = null;
+        if(processData.getResponse() instanceof SpeakerDiarizationResponse) {
+            response = (SpeakerDiarizationResponse) processData.getResponse();
+        }
+        if(StringUtils.isNotBlank(processData.getResponseRaw()) && response == null) {
+            response = JacksonUtils.deserialize(processData.getResponseRaw(), SpeakerDiarizationResponse.class);
+        }
+
+        if(response != null && processData.getResponse().getError() == null) {
             // 音频时长（秒）
             int audioDurationSeconds = (int) Math.ceil(response.getDuration());
             int speakerCount = response.getNumSpeakers();
