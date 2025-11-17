@@ -97,8 +97,8 @@ public class MetadataController {
     }
 
     @GetMapping("/model/info/{name}")
-    public ModelDB getModel(@PathVariable String name) {
-        return modelService.getOne(name);
+    public Model getModel(@PathVariable String name) {
+        return modelService.getInfo(name);
     }
 
     @GetMapping("/channel/list")

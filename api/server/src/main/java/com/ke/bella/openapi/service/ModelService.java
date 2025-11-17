@@ -349,6 +349,14 @@ public class ModelService {
         return modelRepo.queryByUniqueKeyForUpdate(modelName);
     }
 
+    public Model getInfo(String modelName) {
+        ModelDB db = getOne(modelName);
+        Model model = new Model();
+        BeanUtils.copyProperties(db, model);
+        convertToModelInfo(Lists.newArrayList(model));
+        return model;
+    }
+
     public List<ModelDB> listByCondition(Condition.ModelCondition condition) {
         fillModelNames(condition);
         return modelRepo.list(condition);
