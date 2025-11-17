@@ -3,11 +3,15 @@ package com.ke.bella.openapi.protocol.embedding;
 import com.ke.bella.openapi.EndpointProcessData;
 import com.ke.bella.openapi.RequestMetrics;
 import com.ke.bella.openapi.protocol.OpenapiResponse;
+import com.ke.bella.openapi.protocol.completion.CompletionRequest;
+import com.ke.bella.openapi.protocol.completion.CompletionResponse;
 import com.ke.bella.openapi.protocol.log.EndpointLogHandler;
 import com.ke.bella.openapi.utils.DateTimeUtils;
+import com.ke.bella.openapi.utils.JacksonUtils;
 import com.ke.bella.openapi.utils.TokenCalculationUtils;
 import com.knuddels.jtokkit.api.EncodingType;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
@@ -24,7 +28,13 @@ public class EmbeddingLogHandler implements EndpointLogHandler {
         if(processData.getResponse() instanceof EmbeddingResponse) {
             response = (EmbeddingResponse) processData.getResponse();
         }
-
+        if(StringUtils.isNotBlank(processData.getResponseRaw()) && response == null) {
+            response = JacksonUtils.deserialize(processData.getResponseRaw(), EmbeddingResponse.class);
+        }
+        if(StringUtils.isNotBlank(processData.getRequestRaw())) {
+            EmbeddingRequest request = JacksonUtils.deserialize(processData.getRequestRaw(), EmbeddingRequest.class);
+            processData.setRequest(request);
+        }
         // 获取usage - 优先使用预计算的值
         EmbeddingResponse.TokenUsage usage = getTokenUsage(processData, response, encodingType);
 
