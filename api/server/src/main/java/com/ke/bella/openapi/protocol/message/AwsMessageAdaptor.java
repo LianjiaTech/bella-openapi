@@ -9,6 +9,7 @@ import com.ke.bella.openapi.protocol.completion.AwsMessageProperty;
 import com.ke.bella.openapi.protocol.completion.StreamCompletionResponse;
 import com.ke.bella.openapi.utils.JacksonUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient;
@@ -124,7 +125,20 @@ public class AwsMessageAdaptor implements MessageAdaptor<AwsMessageProperty> {
                 return;
             }
             if(nativeSend) {
-                callback.send(response);
+                if("message_delta".equals(response.getType())) {
+                    StreamMessageResponse copy = new StreamMessageResponse();
+                    BeanUtils.copyProperties(response, copy);
+                    StreamMessageResponse.StreamUsage streamUsage = new StreamMessageResponse.StreamUsage();
+                    BeanUtils.copyProperties(copy.getUsage(), streamUsage);
+                    streamUsage.setInputTokens(usage.getInputTokens());
+                    streamUsage.setOutputTokens(streamUsage.getOutputTokens() + usage.getOutputTokens());
+                    streamUsage.setCacheReadInputTokens(usage.getCacheReadInputTokens());
+                    streamUsage.setCacheCreationInputTokens(usage.getCacheCreationInputTokens());
+                    copy.setUsage(streamUsage);
+                    callback.send(copy);
+                } else {
+                    callback.send(response);
+                }
             }
             if ("message_start".equals(response.getType()) && response.getMessage() != null) {
                 model = response.getMessage().getModel();
