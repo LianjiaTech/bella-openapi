@@ -45,6 +45,7 @@ public class EntityConstants {
     @Getter
     public enum SystemBasicEndpoint {
         COMPLETION_ENDPOINT("/v*/chat/completions", "智能问答", CHAT),
+        MESSAGES_ENDPOINT("/v*/messages", "智能问答", CHAT),
         EMBEDDING_ENDPOINT("/v*/embeddings", "向量化", CHAT),
         SPEECH_ENDPOINT("/v*/audio/speech", "语音合成", TEXT2SPEECH),
         ASR_ENDPOINT("/v*/audio/transcriptions", "语音识别", AUDIO2TEXT),

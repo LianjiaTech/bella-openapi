@@ -10,7 +10,7 @@ import {
   ChatMessage
 } from '@/components/playground/ChatCompletionsProcessor';
 import {api_host} from '@/config';
-import {SendIcon, ImageIcon, X} from 'lucide-react';
+import {SendIcon, ImageIcon, X, VideoIcon} from 'lucide-react';
 import {Textarea} from '@/components/ui/textarea';
 import {ChatMessage as MessageComponent} from '@/components/ui/ChatMessage';
 import {v4 as uuidv4} from 'uuid';
@@ -20,6 +20,35 @@ import {Model} from '@/lib/types/openapi';
 
 // 默认system prompt
 const DEFAULT_SYSTEM_PROMPT = '你是一个智能助手，可以回答各种问题并提供帮助。请尽量提供准确、有帮助的信息。';
+
+// 文件上传配置常量
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_VIDEO_SIZE = 10 * 1024 * 1024; // 10MB
+const SUPPORTED_VIDEO_FORMATS = ['video/mp4', 'video/avi', 'video/mov', 'video/quicktime'];
+const SUPPORTED_VIDEO_MIME_TYPES = {
+  'video/mp4': 'MP4',
+  'video/avi': 'AVI',
+  'video/mov': 'MOV',
+  'video/quicktime': 'MOV'
+};
+const DEFAULT_VIDEO_FPS = '1';
+const VIDEO_FPS_OPTIONS = [
+  { value: '0.2', label: '0.2 (低)' },
+  { value: '0.5', label: '0.5' },
+  { value: '1', label: '1 (默认)' },
+  { value: '2', label: '2' },
+  { value: '3', label: '3' },
+  { value: '5', label: '5 (高)' }
+];
+
+// 工具函数：格式化文件大小
+const formatFileSize = (bytes: number): string => {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+};
 
 // 增强版消息类型定义，包含ID
 // 参照MessageHandler.ts的实现
@@ -53,6 +82,10 @@ interface MultimodalContentItem {
   image_url?: {
     url: string;
   };
+  video_url?: {
+    url: string;
+  };
+  fps?: string;
 }
 
 export default function ChatCompletions() {
@@ -77,6 +110,11 @@ export default function ChatCompletions() {
   const [uploadedImages, setUploadedImages] = useState<{id: string, file: File, base64: string}[]>([]);
   const [hasVisionCapability, setHasVisionCapability] = useState(false);
   const [currentModelInfo, setCurrentModelInfo] = useState<Model | null>(null);
+
+  // 视频上传相关状态
+  const [uploadedVideos, setUploadedVideos] = useState<{id: string, file: File, base64: string, objectUrl?: string}[]>([]);
+  const [hasVideoCapability, setHasVideoCapability] = useState(false);
+  const [videoFps, setVideoFps] = useState<string>(DEFAULT_VIDEO_FPS);
   
   // 新增状态：用于处理内联数据
   const [isReceivingInline, setIsReceivingInline] = useState(false);
@@ -86,6 +124,7 @@ export default function ChatCompletions() {
   const chatCompletionsWriterRef = useRef<ChatCompletionsProcessor | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
 
   // 图像处理函数
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -99,9 +138,9 @@ export default function ChatCompletions() {
         return;
       }
 
-      // 检查文件大小 (限制为10MB)
-      if (file.size > 10 * 1024 * 1024) {
-        setError('图片大小不能超过10MB');
+      // 检查文件大小
+      if (file.size > MAX_IMAGE_SIZE) {
+        setError(`图片大小不能超过${MAX_IMAGE_SIZE / 1024 / 1024}MB`);
         return;
       }
 
@@ -130,6 +169,93 @@ export default function ChatCompletions() {
 
   const openImageSelector = () => {
     fileInputRef.current?.click();
+  };
+
+  // 视频处理函数
+  const handleVideoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files) return;
+
+    Array.from(files).forEach(file => {
+      // 检查文件类型
+      if (!file.type.startsWith('video/')) {
+        setError('请选择视频文件');
+        return;
+      }
+
+      // 检查是否是支持的视频格式
+      if (!SUPPORTED_VIDEO_FORMATS.includes(file.type)) {
+        const supportedFormats = Object.values(SUPPORTED_VIDEO_MIME_TYPES).join('、');
+        setError(`不支持的视频格式。支持的格式：${supportedFormats}`);
+        return;
+      }
+
+      // 检查文件大小
+      if (file.size > MAX_VIDEO_SIZE) {
+        setError(`视频大小不能超过${MAX_VIDEO_SIZE / 1024 / 1024}MB（建议使用较短的视频片段）`);
+        return;
+      }
+
+      const reader = new FileReader();
+
+      reader.onloadstart = () => {
+        setError(''); // 清除之前的错误
+      };
+
+      reader.onload = (e) => {
+        const base64 = e.target?.result as string;
+
+        // 验证base64格式
+        if (!base64 || !base64.startsWith('data:video/')) {
+          setError('视频编码失败，请重试');
+          return;
+        }
+
+        // 对于MOV格式，需要特殊处理
+        let processedBase64 = base64;
+        if (file.type === 'video/quicktime' && base64.startsWith('data:video/quicktime;base64,')) {
+          // 根据文档要求，base64编码时使用 video/mov
+          processedBase64 = base64.replace('data:video/quicktime;base64,', 'data:video/mov;base64,');
+        }
+
+        // 创建Object URL用于预览（更高效，浏览器兼容性更好）
+        const objectUrl = URL.createObjectURL(file);
+
+        const newVideo = {
+          id: uuidv4(),
+          file,
+          base64: processedBase64,
+          objectUrl: objectUrl
+        };
+        setUploadedVideos(prev => [...prev, newVideo]);
+      };
+
+      reader.onerror = () => {
+        setError('视频读取失败，请重试');
+      };
+
+      reader.readAsDataURL(file);
+    });
+
+    // 清空input以允许重复选择同一文件
+    if (event.target) {
+      event.target.value = '';
+    }
+  };
+
+  const removeVideo = (videoId: string) => {
+    setUploadedVideos(prev => {
+      const videoToRemove = prev.find(vid => vid.id === videoId);
+      // 清理Object URL以释放内存
+      if (videoToRemove?.objectUrl) {
+        URL.revokeObjectURL(videoToRemove.objectUrl);
+      }
+      return prev.filter(vid => vid.id !== videoId);
+    });
+  };
+
+  const openVideoSelector = () => {
+    videoInputRef.current?.click();
   };
 
   // 处理内联内容的函数
@@ -290,10 +416,11 @@ export default function ChatCompletions() {
         const modelInfo: Model = JSON.parse(decodeURIComponent(modelDataParam));
         setCurrentModelInfo(modelInfo);
 
-        // 检查模型是否支持vision功能
+        // 检查模型是否支持vision和video功能
         if (modelInfo.features) {
           const features = JSON.parse(modelInfo.features);
           setHasVisionCapability(features.vision === true);
+          setHasVideoCapability(features.video === true);
         }
       } catch (error) {
         console.error('Failed to parse model data:', error);
@@ -315,9 +442,10 @@ export default function ChatCompletions() {
       const modelInfo = endpointDetails.models.find(m => m.modelName === modelParam || m.terminalModel === modelParam);
       if (modelInfo) {
         setCurrentModelInfo(modelInfo);
-        // 检查模型是否支持vision功能
+        // 检查模型是否支持vision和video功能
         const features = JSON.parse(modelInfo.features || '{}');
         setHasVisionCapability(features.vision === true);
+        setHasVideoCapability(features.video === true);
       }
     } catch (error) {
       console.error('Failed to fetch model info:', error);
@@ -581,6 +709,17 @@ export default function ChatCompletions() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, streamingResponse]);
 
+  // 组件卸载时清理所有Object URLs
+  useEffect(() => {
+    return () => {
+      uploadedVideos.forEach(video => {
+        if (video.objectUrl) {
+          URL.revokeObjectURL(video.objectUrl);
+        }
+      });
+    };
+  }, [uploadedVideos]);
+
   // 更新系统提示词
   const updateSystemPrompt = () => {
     // 更新messages中的system消息
@@ -607,13 +746,22 @@ export default function ChatCompletions() {
     // 重置内联数据状态
     setIsReceivingInline(false);
     setInlineBuffer('');
-    // 清除上传的图片
+
+    // 清除上传的视频并释放Object URLs
+    uploadedVideos.forEach(video => {
+      if (video.objectUrl) {
+        URL.revokeObjectURL(video.objectUrl);
+      }
+    });
+
+    // 清除上传的图片和视频
     setUploadedImages([]);
+    setUploadedVideos([]);
   };
 
   // 发送消息 - 支持多模态格式
   const sendMessage = async () => {
-    if ((!input.trim() && uploadedImages.length === 0) || isLoading) return;
+    if ((!input.trim() && uploadedImages.length === 0 && uploadedVideos.length === 0) || isLoading) return;
 
     // 如果正在编辑系统提示词，先保存
     if (isEditingPrompt) {
@@ -633,8 +781,8 @@ export default function ChatCompletions() {
     let userMessageHasImage = false;
     let userMessageMultimodalContent: MultimodalContentItem[] = [];
 
-    // 如果有上传的图片，创建多模态内容
-    if (uploadedImages.length > 0) {
+    // 如果有上传的图片或视频，创建多模态内容
+    if (uploadedImages.length > 0 || uploadedVideos.length > 0) {
       userMessageHasImage = true;
 
       // 添加文本内容（如果有）
@@ -644,6 +792,17 @@ export default function ChatCompletions() {
           text: input.trim()
         });
       }
+
+      // 添加视频内容（视频在前）
+      uploadedVideos.forEach(video => {
+        userMessageMultimodalContent.push({
+          type: "video_url",
+          video_url: {
+            url: video.base64
+          },
+          fps: videoFps
+        });
+      });
 
       // 添加图片内容
       uploadedImages.forEach(image => {
@@ -672,9 +831,17 @@ export default function ChatCompletions() {
     setIsReceivingInline(false);
     setInlineBuffer('');
 
-    // 清空输入和图片
+    // 清空输入、图片和视频，并清理Object URLs
     setInput('');
     setUploadedImages([]);
+
+    // 释放视频的Object URLs
+    uploadedVideos.forEach(video => {
+      if (video.objectUrl) {
+        URL.revokeObjectURL(video.objectUrl);
+      }
+    });
+    setUploadedVideos([]);
 
     try {
       // 重要：先获取当前所有消息的副本
@@ -792,6 +959,12 @@ export default function ChatCompletions() {
                 支持图像
               </span>
             )}
+            {hasVideoCapability && (
+              <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
+                <VideoIcon className="w-3 h-3" />
+                支持视频
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -888,10 +1061,11 @@ export default function ChatCompletions() {
                     const needsLoadingIndicator = isLoading && !isUser &&
                       msg.id === lastAssistantMessage?.id;
 
-                    // 对于有图片的用户消息，使用自定义显示
+                    // 对于有图片或视频的用户消息，使用自定义显示
                     if (isUser && msg.hasImage && msg.multimodalContent) {
                       const textContent = msg.multimodalContent.find(item => item.type === 'text')?.text || '';
                       const imageItems = msg.multimodalContent.filter(item => item.type === 'image_url');
+                      const videoItems = msg.multimodalContent.filter(item => item.type === 'video_url');
 
                       return (
                         <div key={msg.id} className={`flex justify-end mb-3`}>
@@ -903,6 +1077,17 @@ export default function ChatCompletions() {
                             </div>
                             <div className={`py-2 px-3 rounded-lg bg-blue-100 text-blue-900`}>
                               <div className="whitespace-pre-wrap text-sm">
+                                {videoItems.map((item, idx) => (
+                                  <div key={idx} className="mb-2 p-2 border border-blue-300 rounded-lg bg-blue-50 flex items-center gap-2">
+                                    <VideoIcon className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                                    <div className="text-xs">
+                                      <div className="font-medium text-blue-800">视频内容</div>
+                                      <div className="text-blue-600">
+                                        FPS: {item.fps || '1'}
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
                                 {imageItems.map((item, idx) => (
                                   <img
                                     key={idx}
@@ -963,6 +1148,54 @@ export default function ChatCompletions() {
 
       <div className="flex items-end gap-3 mt-3 flex-shrink-0">
         <div className="flex-grow">
+          {/* 视频预览区域 */}
+          {uploadedVideos.length > 0 && (
+            <div className="mb-2 p-2 border border-blue-200 rounded-lg bg-blue-50">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-medium text-blue-800">视频内容</span>
+                <div className="flex items-center gap-2">
+                  <label className="text-xs text-blue-700">帧率(fps):</label>
+                  <select
+                    value={videoFps}
+                    onChange={(e) => setVideoFps(e.target.value)}
+                    className="text-xs px-2 py-1 border border-blue-300 rounded bg-white"
+                    disabled={isLoading}
+                  >
+                    {VIDEO_FPS_OPTIONS.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="text-xs text-blue-600 mb-2">
+                提示：较高的fps可以捕捉更多画面细节，但会消耗更多token
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {uploadedVideos.map((video) => (
+                  <div key={video.id} className="relative group">
+                    <video
+                      src={video.objectUrl || video.base64}
+                      className="w-32 h-20 object-cover rounded border"
+                      controls
+                    />
+                    <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-60 text-white text-xs px-1 py-0.5 text-center">
+                      {formatFileSize(video.file.size)}
+                    </div>
+                    <button
+                      onClick={() => removeVideo(video.id)}
+                      className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      disabled={isLoading}
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* 图片预览区域 */}
           {uploadedImages.length > 0 && (
             <div className="mb-2 p-2 border border-gray-200 rounded-lg bg-gray-50">
@@ -992,16 +1225,36 @@ export default function ChatCompletions() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={hasVisionCapability ? "输入问题或上传图片..." : "输入问题..."}
-              className="h-20 resize-none rounded-xl shadow-sm focus:border-blue-400 focus:ring-blue-400 pr-12"
+              placeholder={
+                hasVideoCapability && hasVisionCapability
+                  ? "输入问题或上传图片/视频..."
+                  : hasVideoCapability
+                  ? "输入问题或上传视频..."
+                  : hasVisionCapability
+                  ? "输入问题或上传图片..."
+                  : "输入问题..."
+              }
+              className="h-20 resize-none rounded-xl shadow-sm focus:border-blue-400 focus:ring-blue-400 pr-24"
               disabled={isLoading}
             />
+
+            {/* 视频上传按钮 */}
+            {hasVideoCapability && (
+              <button
+                onClick={openVideoSelector}
+                className="absolute bottom-2 right-12 p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                disabled={isLoading}
+                title="上传视频"
+              >
+                <VideoIcon className="w-5 h-5" />
+              </button>
+            )}
 
             {/* 图片上传按钮 */}
             {hasVisionCapability && (
               <button
                 onClick={openImageSelector}
-                className="absolute bottom-2 right-2 p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                className="absolute bottom-2 right-2 p-2 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
                 disabled={isLoading}
                 title="上传图片"
               >
@@ -1019,6 +1272,13 @@ export default function ChatCompletions() {
             onChange={handleImageUpload}
             className="hidden"
           />
+          <input
+            ref={videoInputRef}
+            type="file"
+            accept={SUPPORTED_VIDEO_FORMATS.join(',')}
+            onChange={handleVideoUpload}
+            className="hidden"
+          />
         </div>
 
         {isLoading ? (
@@ -1031,7 +1291,7 @@ export default function ChatCompletions() {
         ) : (
           <Button
             onClick={sendMessage}
-            disabled={!input.trim() && uploadedImages.length === 0}
+            disabled={!input.trim() && uploadedImages.length === 0 && uploadedVideos.length === 0}
             className="h-12 px-6 rounded-full shadow-sm bg-blue-600 hover:bg-blue-700">
             <SendIcon className="h-5 w-5 mr-2" /> 发送
           </Button>
