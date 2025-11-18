@@ -183,6 +183,8 @@ public class CompletionRequest implements UserRequest, Serializable, IMemoryClea
 
     private Object thinking;
 
+    private String prompt_cache_key;
+
     /**
      * Flatten extra_body fields to the outer JSON during serialization
      */

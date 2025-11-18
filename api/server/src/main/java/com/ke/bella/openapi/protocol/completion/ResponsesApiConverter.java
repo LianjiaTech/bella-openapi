@@ -17,16 +17,14 @@ public class ResponsesApiConverter {
 
     /**
      * 将 Chat Completion 请求转换为 Responses API 请求
-     * 
-     * @param chatRequest Chat Completion 请求
-     * @param property    Responses API 属性配置
      * @return Responses API 请求
      */
-    public static ResponsesApiRequest convertChatCompletionToResponses(CompletionRequest chatRequest, ResponsesApiProperty property) {
+    public static ResponsesApiRequest convertChatCompletionToResponses(CompletionRequest chatRequest, String akCode) {
         ResponsesApiRequest.ResponsesApiRequestBuilder builder = ResponsesApiRequest.builder();
 
         // 基本参数映射
         builder.model(chatRequest.getModel())
+                .prompt_cache_key(chatRequest.getPrompt_cache_key() == null ? akCode : chatRequest.getPrompt_cache_key())
                 .temperature(chatRequest.getTemperature())
                 .max_tokens(chatRequest.getMax_tokens())
                 .top_p(chatRequest.getTop_p())
@@ -214,6 +212,12 @@ public class ResponsesApiConverter {
                 .completion_tokens(usage.getOutput_tokens())
                 .total_tokens(usage.getTotal_tokens())
                 .build();
+        if(usage.getInput_tokens_details() != null) {
+            CompletionResponse.TokensDetail detail = new CompletionResponse.TokensDetail();
+            detail.setCached_tokens(usage.getInput_tokens_details().getCached_tokens());
+            tokenUsage.setPrompt_tokens_details(detail);
+            tokenUsage.setCache_read_tokens(detail.getCached_tokens());
+        }
         if(usage.getOutput_tokens_details() != null) {
             CompletionResponse.TokensDetail detail = new CompletionResponse.TokensDetail();
             detail.setReasoning_tokens(usage.getOutput_tokens_details().getReasoning_tokens());
