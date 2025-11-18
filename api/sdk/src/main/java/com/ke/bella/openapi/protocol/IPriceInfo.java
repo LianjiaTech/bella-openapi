@@ -15,6 +15,7 @@ import com.ke.bella.openapi.protocol.ocr.OcrPriceInfo;
 import com.ke.bella.openapi.protocol.web.WebCrawlPriceInfo;
 import com.ke.bella.openapi.protocol.web.WebExtractPriceInfo;
 import com.ke.bella.openapi.protocol.web.WebSearchPriceInfo;
+import com.ke.bella.openapi.utils.MatchUtils;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -35,7 +36,7 @@ public interface IPriceInfo extends IDescription {
         SPEAKER_DIARIZATION("/v1/audio/speaker/diarization", SpeakerDiarizationPriceInfo.class),
         IMAGES("/v1/images/generations", ImagesPriceInfo.class),
         IMAGES_EDIT("/v1/images/edits", ImagesEditsPriceInfo.class),
-        OCR_IDCARD("/v1/ocr/idcard", OcrPriceInfo.class),
+        OCR("/v1/ocr/*", OcrPriceInfo.class),
         WEB_SEARCH("/v1/web/search", WebSearchPriceInfo.class),
         WEB_CRAWL("/v1/web/crawl", WebCrawlPriceInfo.class),
         WEB_EXTRACT("/v1/web/extract", WebExtractPriceInfo.class),
@@ -46,7 +47,7 @@ public interface IPriceInfo extends IDescription {
 
         public static Class<? extends IPriceInfo> fetchType(String endpoint) {
             for (EndpointPriceInfoType t : EndpointPriceInfoType.values()) {
-                if (t.endpoint.equals(endpoint)) {
+                if (MatchUtils.matchUrl(t.endpoint, endpoint)) {
                     return t.type;
                 }
             }
