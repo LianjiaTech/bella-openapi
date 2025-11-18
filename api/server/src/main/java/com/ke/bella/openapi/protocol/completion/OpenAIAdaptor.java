@@ -1,5 +1,6 @@
 package com.ke.bella.openapi.protocol.completion;
 
+import com.ke.bella.openapi.EndpointContext;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -31,6 +32,9 @@ public class OpenAIAdaptor implements CompletionAdaptorDelegator<OpenAIProperty>
     @Override
     public CompletionResponse completion(CompletionRequest request, String url, OpenAIProperty property, Callbacks.HttpDelegator delegator) {
         CompletionResponse response;
+        if(request.getPrompt_cache_key() == null) {
+            request.setPrompt_cache_key(EndpointContext.getProcessData().getAkCode());
+        }
         if(delegator == null) {
             Request httpRequest = buildRequest(request, url, property);
 
@@ -49,6 +53,9 @@ public class OpenAIAdaptor implements CompletionAdaptorDelegator<OpenAIProperty>
     @Override
     public void streamCompletion(CompletionRequest request, String url, OpenAIProperty property, StreamCompletionCallback callback,
             Callbacks.StreamDelegator delegator) {
+        if(request.getPrompt_cache_key() == null) {
+            request.setPrompt_cache_key(EndpointContext.getProcessData().getAkCode());
+        }
         CompletionSseListener listener = new CompletionSseListener(callback, sseConverter);
         if(delegator == null) {
             Request httpRequest = buildRequest(request, url, property);
