@@ -1,5 +1,6 @@
 package com.ke.bella.openapi.protocol.completion;
 
+import com.ke.bella.openapi.EndpointContext;
 import com.ke.bella.openapi.protocol.Callbacks;
 import com.ke.bella.openapi.utils.DateTimeUtils;
 import com.ke.bella.openapi.utils.HttpUtils;
@@ -35,7 +36,7 @@ public class ResponsesApiAdaptor implements CompletionAdaptor<ResponsesApiProper
         log.debug("Converting Chat Completion request to Responses API format");
         
         // 转换请求格式
-        ResponsesApiRequest responsesRequest = ResponsesApiConverter.convertChatCompletionToResponses(request, property);
+        ResponsesApiRequest responsesRequest = ResponsesApiConverter.convertChatCompletionToResponses(request, EndpointContext.getProcessData().getAkCode());
 
         // 构建HTTP请求
         Request httpRequest = buildResponsesApiRequest(responsesRequest, url, property);
@@ -61,7 +62,7 @@ public class ResponsesApiAdaptor implements CompletionAdaptor<ResponsesApiProper
         log.debug("Converting Chat Completion stream request to Responses API format");
         
         // 转换请求格式
-        ResponsesApiRequest responsesRequest = ResponsesApiConverter.convertChatCompletionToResponses(request, property);
+        ResponsesApiRequest responsesRequest = ResponsesApiConverter.convertChatCompletionToResponses(request, EndpointContext.getProcessData().getAkCode());
         responsesRequest.setStream(true);  // 确保启用流式
 
         // 创建 SSE 转换器和监听器

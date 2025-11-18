@@ -195,9 +195,23 @@ public class ResponsesApiResponse extends OpenapiResponse {
         private Integer total_tokens;
 
         /**
+         * Cached Tokens
+         */
+        private InputTokensDetail input_tokens_details;
+
+        /**
          * Reasoning tokens (for reasoning models)
          */
         private OutputTokensDetail output_tokens_details;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public static class InputTokensDetail {
+        private Integer cached_tokens;
     }
 
     @Data
