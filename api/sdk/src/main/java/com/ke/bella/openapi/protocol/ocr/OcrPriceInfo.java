@@ -23,8 +23,6 @@ public class OcrPriceInfo implements IPriceInfo, Serializable {
 
     @Override
     public Map<String, String> description() {
-        return ImmutableSortedMap.of(
-                "pricePerRequest", "OCR识别单次请求价格（元/次）",
-                "unit", "计费单位");
+        return ImmutableSortedMap.of("pricePerRequest", "请求价格");
     }
 }
