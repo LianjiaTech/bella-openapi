@@ -111,6 +111,11 @@ public class ResponsesApiRequest implements IMemoryClearable, ITransfer {
      */
     private ReasoningConfig reasoning;
 
+    /**
+     * Use prompt cache key to enable cache
+     */
+    private String prompt_cache_key;
+
     @Data
     @NoArgsConstructor
     @Builder
