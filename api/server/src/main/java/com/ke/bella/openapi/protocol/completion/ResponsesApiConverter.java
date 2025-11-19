@@ -25,9 +25,6 @@ public class ResponsesApiConverter {
         // 基本参数映射
         builder.model(chatRequest.getModel())
                 .prompt_cache_key(chatRequest.getPrompt_cache_key() == null ? akCode : chatRequest.getPrompt_cache_key())
-                .temperature(chatRequest.getTemperature())
-                .max_tokens(chatRequest.getMax_tokens())
-                .top_p(chatRequest.getTop_p())
                 .frequency_penalty(chatRequest.getFrequency_penalty())
                 .presence_penalty(chatRequest.getPresence_penalty())
                 .stream(chatRequest.isStream())
@@ -101,7 +98,9 @@ public class ResponsesApiConverter {
                         .role(message.getRole())
                         .content(convertMessageContent(message))
                         .build();
-                inputItems.add(messageItem);
+                if(messageItem.getContent() != null) {
+                    inputItems.add(messageItem);
+                }
             }
         }
 
@@ -133,7 +132,11 @@ public class ResponsesApiConverter {
 
                 switch (type) {
                     case "text":
-                        builder.type("input_text").text((String) item.get("text"));
+                        if(message.getRole().equals("assistant")) {
+                            builder.type("output_text").text((String) item.get("text"));
+                        } else {
+                            builder.type("input_text").text((String) item.get("text"));
+                        }
                         break;
                     case "image_url":
                         @SuppressWarnings("unchecked")
