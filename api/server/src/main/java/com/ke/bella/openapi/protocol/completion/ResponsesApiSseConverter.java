@@ -29,7 +29,7 @@ public class ResponsesApiSseConverter implements Callbacks.SseEventConverter<Str
     public StreamCompletionResponse convert(String eventId, String eventType, String eventData) {
         try {
             ResponsesApiStreamEvent event = JacksonUtils.deserialize(eventData, ResponsesApiStreamEvent.class);
-            if (event != null) {
+            if (event != null && event.getType() != null) {
                 return processStreamEvent(event);
             }
             return null;
