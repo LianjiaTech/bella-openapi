@@ -44,7 +44,8 @@ public class LarkAdaptor implements DocParseAdaptor<LarkProperty> {
     public DocParseTaskInfo doParse(DocParseRequest request, String url, String channelCode, LarkProperty property) {
         try {
             SourceFile sourceFile = request.getFile();
-            String fileType = FileUtil.getFileExtension(sourceFile.getName());
+            String dotFileType = FileUtil.getFileExtension(sourceFile.getName());
+            String fileType = dotFileType.isEmpty() ? dotFileType : dotFileType.substring(1);
             if(property.getSupportTypes() != null && Arrays.stream(property.getSupportTypes()).noneMatch(support -> support.equals(fileType))) {
                 throw new BizParamCheckException("File type must be any one of: " + String.join(",", property.getSupportTypes()));
             }
