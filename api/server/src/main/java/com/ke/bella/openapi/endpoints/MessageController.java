@@ -3,6 +3,7 @@ package com.ke.bella.openapi.endpoints;
 import com.ke.bella.openapi.EndpointContext;
 import com.ke.bella.openapi.EndpointProcessData;
 import com.ke.bella.openapi.annotations.EndpointAPI;
+import com.ke.bella.openapi.common.exception.BizParamCheckException;
 import com.ke.bella.openapi.protocol.AdaptorManager;
 import com.ke.bella.openapi.protocol.ChannelRouter;
 import com.ke.bella.openapi.protocol.completion.CompletionProperty;
@@ -59,6 +60,9 @@ public class MessageController {
         String url = processData.getForwardUrl();
         String channelInfo = channel.getChannelInfo();
         MessageAdaptor adaptor = adaptorManager.getProtocolAdaptor(endpoint, protocol, MessageAdaptor.class);
+        if(adaptor == null) {
+            throw new BizParamCheckException("Unsupported protocol.");
+        }
         CompletionProperty property = (CompletionProperty) JacksonUtils.deserialize(channelInfo, adaptor.getPropertyClass());
         EndpointContext.setEncodingType(property.getEncodingType());
         if(Boolean.TRUE.equals(request.getStream())) {
