@@ -7,9 +7,9 @@ import {DateTimeRangePicker, DateTimeRangePickerRef} from "@/components/ui/date-
 import {ModelSelect} from "@/components/ui/model-select";
 import {format, subDays, subMinutes} from 'date-fns';
 import {Sidebar} from '@/components/meta/sidebar';
-import {getAllCategoryTrees, listModels} from '@/lib/api/meta';
-import {CategoryTree, Model, MonitorData} from "@/lib/types/openapi";
-import { useSearchParams } from 'next/navigation';
+import {listModels} from '@/lib/api/meta';
+import {Model, MonitorData} from "@/lib/types/openapi";
+import {SidebarProvider, useSidebar} from '@/lib/context/sidebar-context';
 
 // 预定义的颜色数组
 const colors = [
@@ -96,15 +96,12 @@ const getUniqueChannels = (data: MonitorData[]) => {
 };
 
 function MonitorPageContent({ params }: { params: { model: string } }) {
-  const searchParams = useSearchParams();
-  const endpointParam = searchParams.get('endpoint');
-  const [selectedEndpoint, setSelectedEndpoint] = useState<string>(endpointParam || '/v1/chat/completions');
+  const {selectedEndpoint} = useSidebar();
   const [models, setModels] = useState<Model[]>([]);
   const [filteredModels, setFilteredModels] = useState<Model[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedModel, setSelectedModel] = useState<string>(params.model);
   const [selectedDisplayModel, setSelectedDisplayModel] = useState<string>(params.model);
-  const [categoryTrees, setCategoryTrees] = useState<CategoryTree[]>([]);
   const [currentStartDate, setCurrentStartDate] = useState(subMinutes(new Date(), 30));
   const [currentEndDate, setCurrentEndDate] = useState(new Date());
   const [currentData, setCurrentData] = useState<MonitorData[]>([]);
@@ -118,14 +115,6 @@ function MonitorPageContent({ params }: { params: { model: string } }) {
   const [isRelativeTime, setIsRelativeTime] = useState<boolean>(false);
   const getTimeRangeRef = useRef<(() => { startDate: Date; endDate: Date }) | null>(null);
   const dateTimePickerRef = useRef<DateTimeRangePickerRef>(null);
-
-  useEffect(() => {
-    async function fetchCategoryTrees() {
-      const trees = await getAllCategoryTrees();
-      setCategoryTrees(trees);
-    }
-    fetchCategoryTrees();
-  }, []);
 
   useEffect(() => {
     async function fetchModels() {
@@ -300,11 +289,7 @@ function MonitorPageContent({ params }: { params: { model: string } }) {
     <div className="min-h-screen bg-white dark:bg-white">
       <ClientHeader title="能力点监控" />
       <div className="flex">
-        <Sidebar
-          categoryTrees={categoryTrees}
-          onEndpointSelect={setSelectedEndpoint}
-          defaultEndpoint={endpointParam || '/v1/chat/completions'}
-        />
+        <Sidebar />
         <main className="flex-1">
           <div className="p-6">
             {isServiceUnavailable ? (
@@ -515,7 +500,9 @@ function MonitorPageContent({ params }: { params: { model: string } }) {
 export default function MonitorPage(props: { params: { model: string } }) {
   return (
     <Suspense fallback={<div>Loading...</div>}>
-      <MonitorPageContent {...props} />
+      <SidebarProvider>
+        <MonitorPageContent {...props} />
+      </SidebarProvider>
     </Suspense>
   );
 }

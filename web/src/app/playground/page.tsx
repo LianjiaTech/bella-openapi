@@ -4,34 +4,17 @@ import {useEffect, useState, Suspense} from 'react';
 import {ClientHeader} from "@/components/user/client-header";
 import {ModelSelect} from "@/components/ui/model-select";
 import {Sidebar} from '@/components/meta/sidebar';
-import {getAllCategoryTrees, getEndpointDetails} from '@/lib/api/meta';
-import {CategoryTree, Model} from "@/lib/types/openapi";
-import { useSearchParams } from 'next/navigation';
+import {getEndpointDetails} from '@/lib/api/meta';
+import {Model} from "@/lib/types/openapi";
+import {SidebarProvider, useSidebar} from '@/lib/context/sidebar-context';
 
 
 function PlaygroundContent() {
-    const searchParams = useSearchParams();
-    const endpointParam = searchParams.get('endpoint');
-    const [selectedEndpoint, setSelectedEndpoint] = useState<string>(endpointParam || '/v1/chat/completions');
+    const {selectedEndpoint} = useSidebar();
     const [models, setModels] = useState<Model[]>([]);
     const [loading, setLoading] = useState(true);
-    const [filteredModels, setFilteredModels] = useState<Model[]>([]);
-    const [searchQuery, setSearchQuery] = useState('');
     const [selectedModel, setSelectedModel] = useState<string>('');
     const [selectedDisplayModel, setSelectedDisplayModel] = useState<string>('');
-    const [categoryTrees, setCategoryTrees] = useState<CategoryTree[]>([]);
-
-    useEffect(() => {
-        async function fetchCategoryTrees() {
-            try {
-                const trees = await getAllCategoryTrees();
-                setCategoryTrees(trees);
-            } catch (error) {
-                console.error('Error fetching category trees:', error);
-            }
-        }
-        fetchCategoryTrees();
-    }, []);
 
     useEffect(() => {
         async function fetchModels() {
@@ -50,22 +33,11 @@ function PlaygroundContent() {
         fetchModels();
     }, [selectedEndpoint]);
 
-    useEffect(() => {
-        const filtered = models.filter((model) =>
-            model.modelName.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-        setFilteredModels(filtered);
-    }, [searchQuery, models]);
-
     return (
-        <div className="min-h-screen bg-white dark:bg-white">
+        <div className="h-screen bg-white dark:bg-white flex flex-col">
             <ClientHeader title="Playground" />
-            <div className="flex h-screen">
-                <Sidebar
-                    categoryTrees={categoryTrees}
-                    onEndpointSelect={setSelectedEndpoint}
-                    defaultEndpoint={endpointParam || '/v1/chat/completions'}
-                />
+            <div className="flex flex-1 overflow-hidden">
+                <Sidebar />
                 <main className="flex-1 flex flex-col overflow-hidden">
                     {models.length > 0 &&  (
                     <div className="bg-white p-3">
@@ -100,7 +72,9 @@ function PlaygroundContent() {
 function Playground() {
     return (
         <Suspense fallback={<div>Loading...</div>}>
-            <PlaygroundContent />
+            <SidebarProvider>
+                <PlaygroundContent />
+            </SidebarProvider>
         </Suspense>
     );
 }
