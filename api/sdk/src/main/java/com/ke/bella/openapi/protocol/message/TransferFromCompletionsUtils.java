@@ -504,9 +504,7 @@ public class TransferFromCompletionsUtils {
             if(finishReasonStr != null) {
                 StreamMessageResponse.StreamUsage streamUsage = null;
                 if(streamChatResponse.getUsage() != null) { // Full usage might be on the LAST chunk with finish_reason
-                    streamUsage = StreamMessageResponse.StreamUsage.builder()
-                            .outputTokens(streamChatResponse.getUsage().getCompletion_tokens())
-                            .build();
+                    streamUsage = convertToStreamUsage(streamChatResponse.getUsage());
                 } else { // More typical for intermediate deltas, no usage reported per token
                     streamUsage = StreamMessageResponse.StreamUsage.builder().outputTokens(0).build();
                 }
@@ -520,10 +518,7 @@ public class TransferFromCompletionsUtils {
                 responseList.add(StreamMessageResponse.messageDelta(messageInfo, streamUsage));
             }
         } else if (streamChatResponse.getUsage() != null) {
-            StreamMessageResponse.StreamUsage streamUsage = StreamMessageResponse.StreamUsage.builder()
-                    .outputTokens(streamChatResponse.getUsage().getCompletion_tokens())
-                    .inputTokens(streamChatResponse.getUsage().getPrompt_tokens())
-                    .build();
+            StreamMessageResponse.StreamUsage streamUsage = convertToStreamUsage(streamChatResponse.getUsage());
             StreamMessageResponse.MessageDeltaInfo messageInfo = StreamMessageResponse.MessageDeltaInfo.builder()
                     .stopReason(isToolCall ? "tool_use" : "end_turn")
                     .build();
@@ -531,6 +526,17 @@ public class TransferFromCompletionsUtils {
         }
 
         return responseList;
+    }
+
+    private static StreamMessageResponse.StreamUsage convertToStreamUsage(CompletionResponse.TokenUsage chatUsage) {
+        StreamMessageResponse.StreamUsage streamUsage = StreamMessageResponse.StreamUsage.builder()
+                .outputTokens(chatUsage.getCompletion_tokens())
+                .inputTokens(chatUsage.getPrompt_tokens())
+                .build();
+        if(chatUsage.getPrompt_tokens_details() != null) {
+            streamUsage.setCacheReadInputTokens(chatUsage.getPrompt_tokens_details().getCached_tokens());
+        }
+        return streamUsage;
     }
 
     private static String mapFinishReason(String finishReason) {
