@@ -516,7 +516,8 @@ public class TransferToCompletionsUtils {
             usage.setCache_read_tokens(messageResponse.getUsage().getCacheReadInputTokens());
             if(usage.getCache_creation_tokens() > 0 || usage.getCache_read_tokens() > 0) {
                 CompletionResponse.TokensDetail tokensDetail = new CompletionResponse.TokensDetail();
-                tokensDetail.setCached_tokens(usage.getCache_creation_tokens() + usage.getCache_read_tokens());
+                tokensDetail.setCached_tokens(usage.getCache_read_tokens());
+                tokensDetail.setCache_creation_tokens(usage.getCache_creation_tokens());
                 usage.setPrompt_tokens_details(tokensDetail);
             }
             usage.setPrompt_tokens(messageResponse.getUsage().getInputTokens());
@@ -637,7 +638,8 @@ public class TransferToCompletionsUtils {
                 }
                 if(usage.getCache_creation_tokens() > 0 || usage.getCache_read_tokens() > 0) {
                     CompletionResponse.TokensDetail tokensDetail = new CompletionResponse.TokensDetail();
-                    tokensDetail.setCached_tokens(usage.getCache_creation_tokens() + usage.getCache_read_tokens());
+                    tokensDetail.setCached_tokens(usage.getCache_read_tokens());
+                    tokensDetail.setCache_creation_tokens(usage.getCache_creation_tokens());
                     usage.setPrompt_tokens_details(tokensDetail);
                 }
                 usage.setTotal_tokens(usage.getPrompt_tokens() + usage.getCompletion_tokens());
