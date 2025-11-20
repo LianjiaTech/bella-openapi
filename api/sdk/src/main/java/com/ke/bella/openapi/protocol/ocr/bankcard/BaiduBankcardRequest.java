@@ -1,6 +1,7 @@
 package com.ke.bella.openapi.protocol.ocr.bankcard;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ke.bella.openapi.protocol.IMemoryClearable;
 import com.ke.bella.openapi.protocol.ITransfer;
 import lombok.Builder;
@@ -14,6 +15,7 @@ public class BaiduBankcardRequest implements IMemoryClearable, ITransfer {
     @Builder.Default
     String location = "false";
     @Builder.Default
+    @JsonProperty("detect_quality")
     String detectQuality = "false";
 
     // 内存清理相关字段和方法
