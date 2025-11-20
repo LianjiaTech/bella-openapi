@@ -130,7 +130,7 @@ public class AwsMessageAdaptor implements MessageAdaptor<AwsMessageProperty> {
                     BeanUtils.copyProperties(response, copy);
                     StreamMessageResponse.StreamUsage streamUsage = new StreamMessageResponse.StreamUsage();
                     BeanUtils.copyProperties(copy.getUsage(), streamUsage);
-                    streamUsage.setInputTokens(usage.getInputTokens());
+                    streamUsage.setInputTokens(usage.getInputTokens() - usage.getCacheCreationInputTokens() - usage.getCacheReadInputTokens());
                     streamUsage.setOutputTokens(streamUsage.getOutputTokens() + usage.getOutputTokens());
                     streamUsage.setCacheReadInputTokens(usage.getCacheReadInputTokens());
                     streamUsage.setCacheCreationInputTokens(usage.getCacheCreationInputTokens());
