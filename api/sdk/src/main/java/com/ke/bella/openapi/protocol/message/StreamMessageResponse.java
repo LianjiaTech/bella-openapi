@@ -215,7 +215,7 @@ public class StreamMessageResponse {
     }
 
 
-    public static MessageResponse initial(StreamCompletionResponse streamCompletionResponse) {
+    public static MessageResponse initial(StreamCompletionResponse streamCompletionResponse, String model) {
         String messageId = streamCompletionResponse.getId();
         if (messageId == null || messageId.isEmpty()) {
             messageId = UUID.randomUUID().toString();
@@ -229,7 +229,7 @@ public class StreamMessageResponse {
                 .type("message")
                 .role("assistant")
                 .content(Collections.emptyList())
-                .model(streamCompletionResponse.getModel() == null ? "LLM" : streamCompletionResponse.getModel())
+                .model(streamCompletionResponse.getModel() == null ? model : streamCompletionResponse.getModel())
                 .stopReason(null)
                 .stopSequence(null)
                 .usage(initialUsage)
