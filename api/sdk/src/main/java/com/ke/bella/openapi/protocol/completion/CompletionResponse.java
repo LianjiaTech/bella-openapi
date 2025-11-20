@@ -184,6 +184,7 @@ public class CompletionResponse extends OpenapiResponse {
     public static class TokensDetail implements Serializable {
         private int reasoning_tokens;
         private int cached_tokens;
+        private int cache_creation_tokens;
         private int audio_tokens;
         private int image_tokens;
     }

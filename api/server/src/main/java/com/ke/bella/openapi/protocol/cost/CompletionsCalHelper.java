@@ -13,19 +13,20 @@ import java.util.function.Function;
 
 public class CompletionsCalHelper {
 
-    public final static List<CompletionsCalElement> INPUT = Lists.newArrayList(CompletionsCalElement.IMAGE_INPUT, CompletionsCalElement.CACHE_READ);
+    public final static List<CompletionsCalElement> INPUT = Lists.newArrayList(CompletionsCalElement.IMAGE_INPUT, CompletionsCalElement.CACHE_READ, CompletionsCalElement.CACHE_CREATION);
     public final static List<CompletionsCalElement> OUTPUT = Lists.newArrayList(CompletionsCalElement.IMAGE_OUTPUT);
 
     @Getter
     @AllArgsConstructor
     public enum CompletionsCalElement {
         CACHE_READ(CompletionPriceInfo::getCachedRead, CompletionResponse.TokensDetail::getCached_tokens),
+        CACHE_CREATION(CompletionPriceInfo::getCachedCreation, CompletionResponse.TokensDetail::getCache_creation_tokens),
         IMAGE_INPUT(CompletionPriceInfo::getImageInput, CompletionResponse.TokensDetail::getImage_tokens),
         IMAGE_OUTPUT(CompletionPriceInfo::getImageOutput, CompletionResponse.TokensDetail::getImage_tokens),
         ;
 
-        Function<CompletionPriceInfo, BigDecimal> priceGetter;
-        Function<CompletionResponse.TokensDetail, Integer> tokensGetter;
+        final Function<CompletionPriceInfo, BigDecimal> priceGetter;
+        final Function<CompletionResponse.TokensDetail, Integer> tokensGetter;
     }
 
     public static Pair<BigDecimal, Integer> calculateAllElements(List<CompletionsCalElement> elements, CompletionPriceInfo priceInfo, CompletionResponse.TokensDetail tokensDetail) {
