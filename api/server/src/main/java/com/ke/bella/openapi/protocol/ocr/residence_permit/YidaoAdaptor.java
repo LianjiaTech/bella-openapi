@@ -27,7 +27,8 @@ public class YidaoAdaptor implements ResidencePermitAdaptor<YidaoOcrProperty> {
 
     private static final String YIDAO_OCR_ERROR_TYPE = "YIDAO_OCR_ERROR";
     private static final int SUCCESS_CODE = 0;
-    private static final String VALID_DATE_SEPARATOR = "-"; // U+002D，Hyphen-Minus
+    // U+2014 (Em Dash "—") 和 U+002D (Hyphen-Minus "-")
+    private static final String VALID_DATE_SEPARATOR_REGEX = "[—\\-]";
 
     @Autowired
     private ImageRetrievalService imageRetrievalService;
@@ -162,15 +163,16 @@ public class YidaoAdaptor implements ResidencePermitAdaptor<YidaoOcrProperty> {
     }
 
     private String[] parseValidDate(String validDate) {
-        if(validDate == null) {
+        if(StringUtils.hasText(validDate)) {
             return new String[] { null, null };
         }
 
-        String[] parts = validDate.split(VALID_DATE_SEPARATOR);
+        String[] parts = validDate.split(VALID_DATE_SEPARATOR_REGEX);
         if(parts.length == 2) {
             return new String[] { parts[0].trim(), parts[1].trim() };
         }
 
+        log.warn("Unexpected valid date format: {}", validDate);
         return new String[] { validDate, null };
     }
 
