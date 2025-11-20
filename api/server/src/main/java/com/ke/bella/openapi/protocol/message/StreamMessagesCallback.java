@@ -51,7 +51,7 @@ public class StreamMessagesCallback extends StreamCompletionCallback {
         List<StreamMessageResponse> messages = TransferFromCompletionsUtils.convertStreamResponse(msg, isToolCall);
         if(CollectionUtils.isNotEmpty(messages)) {
             if(first) {
-                send(StreamMessageResponse.messageStart(StreamMessageResponse.initial(msg)));
+                send(StreamMessageResponse.messageStart(StreamMessageResponse.initial(msg, processData.getModel())));
                 first = false;
             }
             if(CollectionUtils.isNotEmpty(msg.getChoices())) {

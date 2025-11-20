@@ -3,6 +3,7 @@ package com.ke.bella.openapi.protocol.message;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
@@ -236,7 +237,7 @@ public class MessageResponse {
     @Builder
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class Usage {
-        @JsonProperty("input_tokens")
+        @JsonIgnore
         private int inputTokens;
         @JsonProperty("output_tokens")
         private int outputTokens;
@@ -251,8 +252,14 @@ public class MessageResponse {
         @JsonProperty("service_tier")
         private String serviceTier; // Nullable
 
+        @JsonIgnore
         public int getInputTokens() {
             return inputTokens + cacheCreationInputTokens + cacheReadInputTokens;
+        }
+
+        @JsonProperty("input_tokens")
+        public int inputTokens() {
+            return inputTokens;
         }
     }
 

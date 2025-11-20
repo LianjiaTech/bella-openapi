@@ -42,6 +42,7 @@ public class AwsMessageAdaptor implements MessageAdaptor<AwsMessageProperty> {
 
     @Override
     public MessageResponse createMessages(MessageRequest request, String url, AwsMessageProperty property) {
+        String model = request.getModel();
         request.setModel(null);
         request.setStream(null);
         if(request.getMaxTokens() == null) {
@@ -60,6 +61,7 @@ public class AwsMessageAdaptor implements MessageAdaptor<AwsMessageProperty> {
                     .modelId(property.getDeployName())
                     .build());
             MessageResponse messageResponse = JacksonUtils.deserialize(response.body().asByteArray(), MessageResponse.class);
+            messageResponse.setModel(model);
             EndpointContext.getProcessData().setResponse(TransferToCompletionsUtils.convertResponse(messageResponse));
             return messageResponse;
         } catch (BedrockRuntimeException bedrockException) {
@@ -69,6 +71,7 @@ public class AwsMessageAdaptor implements MessageAdaptor<AwsMessageProperty> {
 
     @Override
     public void streamMessages(MessageRequest request, String url, AwsMessageProperty property, Callbacks.StreamCompletionCallback callback) {
+        String model = request.getModel();
         request.setModel(null);
         request.setStream(null);
         if(request.getMaxTokens() == null) {
@@ -87,7 +90,7 @@ public class AwsMessageAdaptor implements MessageAdaptor<AwsMessageProperty> {
                 .build();
         EndpointProcessData processData = EndpointContext.getProcessData();
         processData.setNativeSend(endpoint().equals(processData.getEndpoint()));
-        AwsSseCompletionCallBack awsCallBack = new AwsSseCompletionCallBack(callback, processData.isNativeSend());
+        AwsSseCompletionCallBack awsCallBack = new AwsSseCompletionCallBack(callback, processData.isNativeSend(), model);
         InvokeModelWithResponseStreamResponseHandler handler = InvokeModelWithResponseStreamResponseHandler.builder()
                 .subscriber(awsCallBack)
                 .onComplete(awsCallBack)
@@ -101,16 +104,17 @@ public class AwsMessageAdaptor implements MessageAdaptor<AwsMessageProperty> {
     }
 
     static class AwsSseCompletionCallBack implements InvokeModelWithResponseStreamResponseHandler.Visitor, Consumer<Throwable>, Runnable {
-        public AwsSseCompletionCallBack(Callbacks.StreamCompletionCallback callback, boolean nativeSend) {
+        public AwsSseCompletionCallBack(Callbacks.StreamCompletionCallback callback, boolean nativeSend, String model) {
             this.callback = callback;
             this.nativeSend = nativeSend;
+            this.model = model;
         }
 
         private final Callbacks.StreamCompletionCallback callback;
         private final Boolean nativeSend;
+        private String model;
         private final AtomicInteger toolNum = new AtomicInteger(0);
         private boolean isFirst = true;
-        private String model = "LLM";
         private String id = UUID.randomUUID().toString();
         private MessageResponse.Usage usage;
 
@@ -130,7 +134,7 @@ public class AwsMessageAdaptor implements MessageAdaptor<AwsMessageProperty> {
                     BeanUtils.copyProperties(response, copy);
                     StreamMessageResponse.StreamUsage streamUsage = new StreamMessageResponse.StreamUsage();
                     BeanUtils.copyProperties(copy.getUsage(), streamUsage);
-                    streamUsage.setInputTokens(usage.getInputTokens() - usage.getCacheCreationInputTokens() - usage.getCacheReadInputTokens());
+                    streamUsage.setInputTokens(usage.inputTokens());
                     streamUsage.setOutputTokens(streamUsage.getOutputTokens() + usage.getOutputTokens());
                     streamUsage.setCacheReadInputTokens(usage.getCacheReadInputTokens());
                     streamUsage.setCacheCreationInputTokens(usage.getCacheCreationInputTokens());
