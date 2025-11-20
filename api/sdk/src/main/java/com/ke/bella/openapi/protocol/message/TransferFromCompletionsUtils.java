@@ -382,14 +382,14 @@ public class TransferFromCompletionsUtils {
         }
     }
 
-    public static MessageResponse convertResponse(CompletionResponse chatResponse) {
+    public static MessageResponse convertResponse(CompletionResponse chatResponse, String model) {
         if (chatResponse == null || chatResponse.getChoices() == null || chatResponse.getChoices().isEmpty()) {
             return null;
         }
 
         MessageResponse.MessageResponseBuilder responseBuilder = MessageResponse.builder();
         responseBuilder.id(chatResponse.getId());
-        responseBuilder.model(chatResponse.getModel());
+        responseBuilder.model(model);
         responseBuilder.type("message");
         responseBuilder.role("assistant");
 
@@ -531,11 +531,13 @@ public class TransferFromCompletionsUtils {
     private static StreamMessageResponse.StreamUsage convertToStreamUsage(CompletionResponse.TokenUsage chatUsage) {
         StreamMessageResponse.StreamUsage streamUsage = StreamMessageResponse.StreamUsage.builder()
                 .outputTokens(chatUsage.getCompletion_tokens())
-                .inputTokens(chatUsage.getPrompt_tokens())
                 .build();
+        int inputTokens = chatUsage.getPrompt_tokens();
         if(chatUsage.getPrompt_tokens_details() != null) {
             streamUsage.setCacheReadInputTokens(chatUsage.getPrompt_tokens_details().getCached_tokens());
+            inputTokens -= streamUsage.getCacheReadInputTokens();
         }
+        streamUsage.setInputTokens(inputTokens);
         return streamUsage;
     }
 

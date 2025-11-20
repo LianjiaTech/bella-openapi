@@ -21,7 +21,7 @@ public interface MessageDelegatorAdaptor<T extends CompletionProperty> extends M
         request.clearLargeData();
         CompletionResponse completionResponse = delegator.completion(completionRequest, url, property);
         EndpointContext.getProcessData().setResponse(completionResponse);
-        return TransferFromCompletionsUtils.convertResponse(completionResponse);
+        return TransferFromCompletionsUtils.convertResponse(completionResponse, request.getModel());
     }
 
     @Override
