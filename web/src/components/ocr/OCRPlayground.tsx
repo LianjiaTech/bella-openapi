@@ -7,7 +7,7 @@ import {Textarea} from '@/components/ui/textarea';
 import {Input} from '@/components/ui/input';
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
 import {Label} from '@/components/ui/label';
-import {api_host} from '@/config';
+import {ocr_host} from '@/config';
 import {useUser} from "@/lib/context/user-context";
 import {Alert, AlertDescription} from '@/components/ui/alert';
 import {Upload, Link as LinkIcon, FileText, Code} from 'lucide-react';
@@ -146,8 +146,7 @@ export default function OCRPlayground({title, apiEndpoint, description}: OCRPlay
 
         try {
             const protocol = typeof window !== 'undefined' ? window.location.protocol : 'http:';
-            const host = api_host || window.location.host;
-
+            const host = ocr_host
             // 构建请求体
             const requestBody: any = {
                 model: model,
