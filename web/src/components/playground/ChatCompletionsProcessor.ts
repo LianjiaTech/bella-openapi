@@ -162,7 +162,7 @@ export class ChatCompletionsProcessor extends EventEmitter {
   constructor(config: ChatCompletionsConfig) {
     super();
     this.config = {
-      timeoutMs: 30000,
+      timeoutMs: 300000,
       ...config
     };
 
