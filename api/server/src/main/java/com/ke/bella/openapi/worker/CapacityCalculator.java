@@ -77,7 +77,17 @@ public class CapacityCalculator {
     /**
      * Calculate remaining capacity ratio based on current channel utilization.
      *
-     * Formula: remainingCapacity = 1.0 - (currentUtilizationRpm / estimatedCapacityRpm)
+     * Formula: remainingCapacity = 1.0 - (totalUtilization / estimatedCapacity)
+     *
+     * Key Insight: RPM limits are enforced on "request start time" within a 60-second sliding window.
+     * Therefore, total utilization = completed requests (in last 60s) + in-flight requests (not yet completed).
+     * Both dimensions use the same unit (request count), so they can be directly summed.
+     *
+     * Example:
+     * - Completed in last 60s: 500 requests
+     * - Currently processing: 10 requests
+     * - Total utilization: 510 requests started in the last minute
+     * - If capacity is 600 RPM, remaining = 1.0 - (510/600) = 15%
      *
      * Three-tier fallback strategy for capacity estimation:
      * 1. EMA-fitted capacity from 429 rate limit history (most accurate)
@@ -101,21 +111,19 @@ public class CapacityCalculator {
             return 0.2;
         }
 
-        // Calculate current utilization in RPM dimension
-        // Note: We need to convert concurrent requests to RPM estimate
-        long currentConcurrent = getCurrentRequests();
-        long completedRpm = getCompletedRpm();
+        // Calculate current utilization within the 1-minute sliding window
+        // RPM limits are typically enforced on "request start time", meaning:
+        // - Total requests started in the last 60 seconds
+        // - = Completed requests (in last 60s) + In-flight requests (started but not finished)
+        long completedInWindow = getCompletedRpm();  // Completed in last 60 seconds
+        long inFlightRequests = getCurrentRequests(); // Currently processing
 
-        // Estimate RPM contribution from in-flight requests
-        // Assumption: average request takes ~1 second, so concurrent*60 approximates RPM impact
-        // This converts instantaneous concurrency to per-minute rate
-        long estimatedInFlightRpm = currentConcurrent * 60;
-
-        // Total utilization = completed RPM + estimated in-flight RPM contribution
-        long totalUtilizationRpm = completedRpm + estimatedInFlightRpm;
+        // Total utilization = all requests started in the last 60 seconds
+        // This matches how most AI providers enforce RPM limits (by request start time)
+        long totalUtilization = completedInWindow + inFlightRequests;
 
         // Calculate remaining capacity ratio
-        double remainingCapacity = 1.0 - ((double)totalUtilizationRpm / capacity);
+        double remainingCapacity = 1.0 - ((double)totalUtilization / capacity);
 
         // Clamp result to [0.0, 1.0] range
         return Math.max(0.0, Math.min(1.0, remainingCapacity));
@@ -141,12 +149,18 @@ public class CapacityCalculator {
     }
 
     /**
-     * Get completed request count in the last 60 seconds (RPM).
+     * Get completed request count in the last 60 seconds.
+     *
+     * Important: This returns the ABSOLUTE COUNT of completed requests, not a rate.
+     * Example: If 600 requests completed in the last 60 seconds, this returns 600.
+     *
+     * The method name "getCompletedRpm" is somewhat misleading - it's actually
+     * "completed count within the RPM time window (60 seconds)".
      *
      * Calls the get_completed.lua script which automatically purges expired data
      * and returns the sliding window count for the last minute.
      *
-     * @return completed requests per minute (RPM)
+     * @return absolute count of completed requests in the last 60 seconds
      */
     private long getCompletedRpm() {
         try {
