@@ -69,23 +69,55 @@ public class LimiterManager {
         return count != null ? Long.parseLong(count.toString()) : 0L;
     }
 
+    /**
+     * Increment concurrent request count for both API Key and Channel dimensions.
+     *
+     * This method atomically increments counters at two levels:
+     * 1. API Key level: Tracks per-key concurrent requests for quota enforcement
+     * 2. Channel level: Tracks per-channel concurrent requests for capacity calculation
+     *
+     * Both operations are performed atomically in the concurrent.lua script to ensure
+     * data consistency across dimensions.
+     *
+     * @param akCode API Key code for quota tracking
+     * @param entityCode Entity code (model or endpoint) serving as Channel identifier
+     */
     public void incrementConcurrentCount(String akCode, String entityCode) {
         String concurrentKey = String.format(CONCURRENT_KEY_FORMAT, entityCode, akCode);
+
+        // Pass both keys to Lua script for atomic dual-dimension update
         List<Object> keys = Lists.newArrayList(concurrentKey, entityCode);
         List<Object> params = new ArrayList<>();
         params.add("INCR");
+
         try {
             executor.execute("/concurrent", ScriptType.limiter, keys, params);
         } catch (IOException e) {
-            log.warn(e.getMessage(), e);
+            log.warn("Failed to increment concurrent count for ak={}, entity={}: {}",
+                    akCode, entityCode, e.getMessage(), e);
         }
     }
 
+    /**
+     * Decrement concurrent request count for both API Key and Channel dimensions.
+     *
+     * Called when a request completes (success or failure). Must be paired with
+     * incrementConcurrentCount to maintain accurate concurrent tracking.
+     *
+     * Both counters are decremented atomically in the concurrent.lua script to prevent
+     * inconsistencies that could lead to incorrect capacity calculations.
+     *
+     * @param akCode API Key code for quota tracking
+     * @param entityCode Entity code (model or endpoint) serving as Channel identifier
+     */
     public void decrementConcurrentCount(String akCode, String entityCode) {
         String concurrentKey = String.format(CONCURRENT_KEY_FORMAT, entityCode, akCode);
+
+        // Pass both keys to Lua script for atomic dual-dimension update
         List<Object> keys = Lists.newArrayList(concurrentKey, entityCode);
         List<Object> params = new ArrayList<>();
         params.add("DECR");
+
         try {
             executor.execute("/concurrent", ScriptType.limiter, keys, params);
         } catch (IOException e) {
