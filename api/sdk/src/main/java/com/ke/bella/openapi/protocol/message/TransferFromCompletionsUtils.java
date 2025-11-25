@@ -207,12 +207,19 @@ public class TransferFromCompletionsUtils {
         context.getContentParts().add(JacksonUtils.toMap(contentPart));
     }
 
-    private static void processImageContentBlock(MessageRequest.ImageContentBlock block, 
+    private static void processImageContentBlock(MessageRequest.ImageContentBlock block,
                                                MessageProcessingContext context, boolean nativeSupport) {
         if (block.getSource() instanceof MessageRequest.Base64ImageSource) {
             MessageRequest.Base64ImageSource imageSource = (MessageRequest.Base64ImageSource) block.getSource();
             String dataUri = "data:" + imageSource.getMediaType() + ";base64," + imageSource.getData();
             ContentPart contentPart = ContentPart.ofImageUrl(new ImageUrl(dataUri, "auto"));
+            if (nativeSupport) {
+                contentPart.setCache_control(block.getCache_control());
+            }
+            context.getContentParts().add(JacksonUtils.toMap(contentPart));
+        } else if (block.getSource() instanceof MessageRequest.URLImageSource) {
+            MessageRequest.URLImageSource imageSource = (MessageRequest.URLImageSource) block.getSource();
+            ContentPart contentPart = ContentPart.ofImageUrl(new ImageUrl(imageSource.getUrl(), "auto"));
             if (nativeSupport) {
                 contentPart.setCache_control(block.getCache_control());
             }
