@@ -17,6 +17,8 @@ import {v4 as uuidv4} from 'uuid';
 import {useUser} from "@/lib/context/user-context";
 import {getEndpointDetails} from '@/lib/api/meta';
 import {Model} from '@/lib/types/openapi';
+import {CostCalculatorModal} from '@/components/playground/CostCalculatorModal';
+import {Calculator} from 'lucide-react';
 
 // 默认system prompt
 const DEFAULT_SYSTEM_PROMPT = '你是一个智能助手，可以回答各种问题并提供帮助。请尽量提供准确、有帮助的信息。';
@@ -119,6 +121,17 @@ export default function ChatCompletions() {
   // 新增状态：用于处理内联数据
   const [isReceivingInline, setIsReceivingInline] = useState(false);
   const [inlineBuffer, setInlineBuffer] = useState('');
+
+  // 费用计算器 Modal 相关状态
+  const [isCostModalOpen, setIsCostModalOpen] = useState(false);
+
+  // Token 统计状态 (从后端返回的usage中获取)
+  const [sessionTokens, setSessionTokens] = useState({
+    inputTokens: 0,
+    outputTokens: 0,
+    cacheCreationTokens: 0,
+    cacheReadTokens: 0
+  });
 
   // Refs
   const chatCompletionsWriterRef = useRef<ChatCompletionsProcessor | null>(null);
@@ -604,10 +617,20 @@ export default function ChatCompletions() {
       setStreamingResponse(prev => prev + processedContent);
     });
 
-    writer.on(ChatCompletionsEventType.FINISH, () => {
+    writer.on(ChatCompletionsEventType.FINISH, (data: any) => {
       setIsLoading(false);
       // 完成时重置流式响应和思考内容
       setStreamingResponse('');
+
+      // 使用后端返回的 usage 信息更新 token 统计
+      if (data?.usage) {
+        setSessionTokens(prevTokens => ({
+          inputTokens: prevTokens.inputTokens + (data.usage.prompt_tokens || 0),
+          outputTokens: prevTokens.outputTokens + (data.usage.completion_tokens || 0),
+          cacheCreationTokens: prevTokens.cacheCreationTokens + (data.usage.cache_creation_tokens || 0),
+          cacheReadTokens: prevTokens.cacheReadTokens + (data.usage.cache_read_tokens || 0)
+        }));
+      }
       
       // 确保所有内联数据都已处理完成
       if (isReceivingInline && inlineBuffer) {
@@ -757,6 +780,14 @@ export default function ChatCompletions() {
     // 清除上传的图片和视频
     setUploadedImages([]);
     setUploadedVideos([]);
+
+    // 重置 token 统计
+    setSessionTokens({
+      inputTokens: 0,
+      outputTokens: 0,
+      cacheCreationTokens: 0,
+      cacheReadTokens: 0
+    });
   };
 
   // 发送消息 - 支持多模态格式
@@ -919,7 +950,7 @@ export default function ChatCompletions() {
       // 在发送请求前，更新UI状态
       setMessages([...allCurrentMessages]);
 
-      // 发送请求
+      // 发送请求（token统计将在FINISH事件中通过后端返回的usage更新）
       await chatCompletionsWriterRef.current?.send(request);
     } catch (err) {
       setError(`发送请求失败: ${err instanceof Error ? err.message : String(err)}`);
@@ -945,29 +976,42 @@ export default function ChatCompletions() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-3 max-w-5xl h-screen flex flex-col">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
-        <h1 className="text-2xl font-bold">智能问答</h1>
+    <>
+      <div className="container mx-auto px-4 py-3 max-w-5xl h-screen flex flex-col">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
+          <h1 className="text-2xl font-bold">智能问答</h1>
 
-        <div className="mt-2 md:mt-0 flex items-center">
-          <span className="text-sm font-medium mr-2">模型:</span>
-          <div className="p-2 rounded flex items-center gap-2">
-            <span>{model}</span>
-            {hasVisionCapability && (
-              <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
-                <ImageIcon className="w-3 h-3" />
-                支持图像
-              </span>
-            )}
-            {hasVideoCapability && (
-              <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
-                <VideoIcon className="w-3 h-3" />
-                支持视频
-              </span>
-            )}
+          <div className="mt-2 md:mt-0 flex items-center gap-3">
+            <span className="text-sm font-medium mr-2">模型:</span>
+            <div className="p-2 rounded flex items-center gap-2">
+              <span>{model}</span>
+              {hasVisionCapability && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+                  <ImageIcon className="w-3 h-3" />
+                  支持图像
+                </span>
+              )}
+              {hasVideoCapability && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
+                  <VideoIcon className="w-3 h-3" />
+                  支持视频
+                </span>
+              )}
+            </div>
+
+            {/* 费用计算器按钮 */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsCostModalOpen(true)}
+              className="flex items-center gap-2"
+              title="费用计算器"
+            >
+              <Calculator className="w-4 h-4" />
+              费用
+            </Button>
           </div>
         </div>
-      </div>
 
       {/* 系统提示词编辑区域 */}
       <div className="mb-3 flex-shrink-0">
@@ -1298,9 +1342,18 @@ export default function ChatCompletions() {
         )}
       </div>
 
-      <div className="mt-2 text-xs text-gray-500 text-center flex-shrink-0">
-        <p>提示：按Enter键发送，Shift+Enter换行</p>
+        <div className="mt-2 text-xs text-gray-500 text-center flex-shrink-0">
+          <p>提示：按Enter键发送，Shift+Enter换行</p>
+        </div>
       </div>
-    </div>
+
+      {/* 费用计算器弹窗 */}
+      <CostCalculatorModal
+        isOpen={isCostModalOpen}
+        onClose={() => setIsCostModalOpen(false)}
+        model={currentModelInfo}
+        currentSessionTokens={sessionTokens}
+      />
+    </>
   );
 }

@@ -113,6 +113,19 @@ export interface ChatCompletionsResponse {
     /** 增量更新 */
     delta?: Partial<ChatMessage>;
   }[];
+  /** 使用统计 */
+  usage?: {
+    /** 输入token数 */
+    prompt_tokens: number;
+    /** 输出token数 */
+    completion_tokens: number;
+    /** 总token数 */
+    total_tokens: number;
+    /** 缓存创建token数 */
+    cache_creation_tokens?: number;
+    /** 缓存读取token数 */
+    cache_read_tokens?: number;
+  };
 }
 
 /**
@@ -154,6 +167,7 @@ export class ChatCompletionsProcessor extends EventEmitter {
   private controller: AbortController | null = null;
   private state: ChatCompletionsState = ChatCompletionsState.IDLE;
   private responseText: string = '';
+  private lastUsage: ChatCompletionsResponse['usage'] | null = null;
 
   /**
    * 构造函数
@@ -207,6 +221,7 @@ export class ChatCompletionsProcessor extends EventEmitter {
 
     // 重置状态
     this.responseText = '';
+    this.lastUsage = null;
     this.setState(ChatCompletionsState.CONNECTING);
 
     // 创建取消控制器
@@ -294,7 +309,7 @@ export class ChatCompletionsProcessor extends EventEmitter {
           // 检查是否为结束信号
           if (ChatCompletionsResponseParser.isDone(data)) {
             this.setState(ChatCompletionsState.FINISHED);
-            this.emit(ChatCompletionsEventType.FINISH, {});
+            this.emit(ChatCompletionsEventType.FINISH, { usage: this.lastUsage });
             return;
           }
 
@@ -302,8 +317,17 @@ export class ChatCompletionsProcessor extends EventEmitter {
             // 解析JSON数据
             const response = ChatCompletionsResponseParser.parseData(data);
 
+            if (!response) {
+              return;
+            }
+
+            // 先保存 usage 信息（必须在触发 FINISH 之前）
+            if (response.usage) {
+              this.lastUsage = response.usage;
+            }
+
             // 处理数据
-            if (response && response.choices.length > 0) {
+            if (response.choices && response.choices.length > 0) {
               const choice = response.choices[0];
 
                 // 处理正常内容
@@ -330,10 +354,13 @@ export class ChatCompletionsProcessor extends EventEmitter {
                   });
                 }
 
-                // 处理完成原因
+                // 处理完成原因（此时 usage 已经保存）
                 if (choice.finish_reason) {
                   this.setState(ChatCompletionsState.FINISHED);
-                  this.emit(ChatCompletionsEventType.FINISH, { reason: choice.finish_reason });
+                  this.emit(ChatCompletionsEventType.FINISH, {
+                    reason: choice.finish_reason,
+                    usage: this.lastUsage
+                  });
                 }
             }
           } catch (error) {
@@ -363,7 +390,7 @@ export class ChatCompletionsProcessor extends EventEmitter {
       // 确保最终状态为完成
       if (this.state !== ChatCompletionsState.FINISHED) {
         this.setState(ChatCompletionsState.FINISHED);
-        this.emit(ChatCompletionsEventType.FINISH, {});
+        this.emit(ChatCompletionsEventType.FINISH, { usage: this.lastUsage });
       }
 
     } catch (error) {
