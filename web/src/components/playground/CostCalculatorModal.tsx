@@ -130,16 +130,16 @@ export function CostCalculatorModal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogPortal>
         <DialogOverlay className="bg-black/5" />
-        <DialogPrimitive.Content className="fixed left-[50%] top-[50%] z-50 grid w-full max-w-4xl translate-x-[-50%] translate-y-[-50%] gap-4 border bg-white p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg max-h-[90vh] flex flex-col overflow-hidden">
+        <DialogPrimitive.Content className="fixed left-[50%] top-[50%] z-50 w-full max-w-4xl translate-x-[-50%] translate-y-[-50%] border bg-white shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg max-h-[90vh] flex flex-col overflow-hidden">
         {/* 固定的标题栏 */}
-        <div className="flex-shrink-0 border-b border-gray-200 pb-4">
+        <div className="flex-shrink-0 border-b border-gray-200 px-6 py-4">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold">费用计算器</DialogTitle>
           </DialogHeader>
         </div>
 
         {/* 可滚动的内容区域 */}
-        <div className="overflow-y-auto flex-1 py-4 space-y-6">
+        <div className="overflow-y-auto flex-1 px-6 py-4 space-y-6 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
           {/* 第一行：当前会话统计 和 模型信息 */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* 当前会话统计 */}
