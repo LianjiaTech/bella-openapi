@@ -675,7 +675,7 @@ public class TransferToCompletionsUtils {
 
     private static MessageRequest.ContentBlock convertContentPartToBlock(Map part) {
         if (part == null) return null;
-        
+
         String type = (String) part.get("type");
         if ("text".equals(type)) {
             MessageRequest.TextContentBlock textBlock = new MessageRequest.TextContentBlock();
@@ -691,7 +691,7 @@ public class TransferToCompletionsUtils {
                     if (dataParts.length == 2) {
                         String[] headerParts = dataParts[0].split(";");
                         String mediaType = headerParts[0].substring(5); // Remove "data:"
-                        
+
                         MessageRequest.ImageContentBlock imageBlock = new MessageRequest.ImageContentBlock();
                         MessageRequest.Base64ImageSource imageSource = new MessageRequest.Base64ImageSource();
                         imageSource.setType("base64");
@@ -701,8 +701,15 @@ public class TransferToCompletionsUtils {
                         imageBlock.setCache_control(part.get("cache_control"));
                         return imageBlock;
                     }
-                } else {
-                    throw new BizParamCheckException("Only support base64String image data.");
+                } else if (url != null) {
+                    // Handle URL image source
+                    MessageRequest.ImageContentBlock imageBlock = new MessageRequest.ImageContentBlock();
+                    MessageRequest.URLImageSource imageSource = new MessageRequest.URLImageSource();
+                    imageSource.setType("url");
+                    imageSource.setUrl(url);
+                    imageBlock.setSource(imageSource);
+                    imageBlock.setCache_control(part.get("cache_control"));
+                    return imageBlock;
                 }
             }
         }

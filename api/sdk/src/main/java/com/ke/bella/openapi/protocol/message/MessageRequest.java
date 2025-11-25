@@ -175,7 +175,8 @@ public class MessageRequest implements IMemoryClearable {
         include = JsonTypeInfo.As.PROPERTY,
         property = "type")
     @JsonSubTypes({
-        @JsonSubTypes.Type(value = Base64ImageSource.class, name = "base64")
+        @JsonSubTypes.Type(value = Base64ImageSource.class, name = "base64"),
+        @JsonSubTypes.Type(value = URLImageSource.class, name = "url")
     })
     @JsonInclude(JsonInclude.Include.NON_NULL)
     @Data
@@ -191,6 +192,20 @@ public class MessageRequest implements IMemoryClearable {
         @JsonProperty("media_type")
         private String mediaType;
         private String data;
+        public String getType() {
+            return "base64";
+        }
+    }
+
+    @Data
+    @NoArgsConstructor
+    @EqualsAndHashCode(callSuper = true)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public static class URLImageSource extends ImageSource {
+        private String url;
+        public String getType() {
+            return "url";
+        }
     }
 
     @JsonTypeInfo(
