@@ -14,6 +14,7 @@ import lombok.NoArgsConstructor;
 public class Part {
     private Boolean thought;
     private String text;
+    private String thoughtSignature;
     private InlineData inlineData;
     private FileData fileData;
     private FunctionCall functionCall;

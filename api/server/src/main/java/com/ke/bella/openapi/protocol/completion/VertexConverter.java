@@ -169,7 +169,9 @@ public class VertexConverter {
     
     private static Content convertMessage(Message message, Map<String, String> toolCallCache, List<String> toolCallSorts) {
         List<Part> parts = new ArrayList<>();
-        
+
+		// extract the sign tag
+		String contentThoughtSignature =  extractThoughtSignatureFromContent(message.getContent());
         addContentToParts(parts, message.getContent());
         
         // Handle tool calls
@@ -179,7 +181,12 @@ public class VertexConverter {
                         .name(toolCall.getFunction().getName())
                         .args(parseArguments(toolCall.getFunction().getArguments()))
                         .build();
-                parts.add(Part.builder().functionCall(functionCall).build());
+				// 创建 function call part 	附加 思维标签
+				Part.PartBuilder partBuilder = Part.builder().functionCall(functionCall);
+				if (StringUtils.hasText(contentThoughtSignature)) {
+					partBuilder.thoughtSignature(contentThoughtSignature);
+				}
+                parts.add(partBuilder.build());
                 toolCallCache.put(toolCall.getId(), toolCall.getFunction().getName());
                 toolCallSorts.add(toolCall.getId());
             }
@@ -193,12 +200,37 @@ public class VertexConverter {
                 .build();
     }
 
+	private static String extractThoughtSignatureFromContent(Object content) {
+		if (content == null) {
+			return null;
+		}
+		if (content instanceof  Map) {
+			@SuppressWarnings("unchecked")
+			Map<String, Object> contentMap = (Map<String, Object>) content;
+			return contentMap.get("thoughtSignature").toString();
+		}
+		return null;
+    }
+
     private static void addContentToParts(List<Part> parts, Object content) {
-        // Handle content (can be String or List for multimodal)
+        // Handle content (can be String, Map, or List for multimodal)
         if (content instanceof String) {
             String textContent = (String) content;
             if (StringUtils.hasText(textContent)) {
                 parts.add(Part.builder().text(textContent).build());
+            }
+        } else if (content instanceof Map) {
+            // Handle content as a map with text and thoughtSignature
+            @SuppressWarnings("unchecked")
+            Map<String, Object> contentMap = (Map<String, Object>) content;
+            String text = (String) contentMap.get("text");
+            String thoughtSignature = (String) contentMap.get("thoughtSignature");
+            if (StringUtils.hasText(text)) {
+                Part.PartBuilder builder = Part.builder().text(text);
+                if (StringUtils.hasText(thoughtSignature)) {
+                    builder.thoughtSignature(thoughtSignature);
+                }
+                parts.add(builder.build());
             }
         } else if (content instanceof List) {
             // Handle multimodal content
@@ -216,10 +248,18 @@ public class VertexConverter {
     private static Part convertContentItem(Map<String, Object> contentItem) {
         String type = (String) contentItem.get("type");
         if (type == null) return null;
-        
+
+        // 提取 thoughtSignature（如果存在）
+        String thoughtSignature = (String) contentItem.get("thoughtSignature");
+
         switch (type) {
             case "text":
-                return Part.builder().text((String) contentItem.get("text")).build();
+                String text = (String) contentItem.get("text");
+                Part.PartBuilder textBuilder = Part.builder().text(text);
+                if (StringUtils.hasText(thoughtSignature)) {
+                    textBuilder.thoughtSignature(thoughtSignature);
+                }
+                return textBuilder.build();
             case "image_url":
                 @SuppressWarnings("unchecked")
                 Map<String, Object> imageUrl = (Map<String, Object>) contentItem.get("image_url");
@@ -232,12 +272,15 @@ public class VertexConverter {
                     String[] parts = url.split(",", 2);
                     if (parts.length == 2) {
                         String mimeType = parts[0].split(":")[1].split(";")[0];
-                        return Part.builder()
+                        Part.PartBuilder imageBuilder = Part.builder()
                                 .inlineData(Part.InlineData.builder()
                                         .mimeType(mimeType)
                                         .data(parts[1])
-                                        .build())
-                                .build();
+                                        .build());
+                        if (StringUtils.hasText(thoughtSignature)) {
+                            imageBuilder.thoughtSignature(thoughtSignature);
+                        }
+                        return imageBuilder.build();
                     }
                 }
                 break;
@@ -404,6 +447,11 @@ public class VertexConverter {
                     reasoning.append(part.getText());
                 } else {
                     textContent.append(part.getText());
+                    if (StringUtils.hasText(part.getThoughtSignature())) {
+                        textContent.append("<thoughtSignature>");
+                        textContent.append(part.getThoughtSignature());
+                        textContent.append("</thoughtSignature>");
+                    }
                 }
             }
             
@@ -419,6 +467,12 @@ public class VertexConverter {
                                 .build())
                         .build();
                 toolCalls.add(toolCall);
+                // 如果 functionCall 的 part 有 thoughtSignature，也输出到 content
+                if (StringUtils.hasText(part.getThoughtSignature())) {
+                    textContent.append("<thoughtSignature>");
+                    textContent.append(part.getThoughtSignature());
+                    textContent.append("</thoughtSignature>");
+                }
             }
 
             if (part.getInlineData() != null) {
@@ -431,6 +485,11 @@ public class VertexConverter {
                 textContent.append(part.getInlineData().getMimeType());
                 textContent.append("</mimeType>");
                 textContent.append("</inline>");
+                if (StringUtils.hasText(part.getThoughtSignature())) {
+                    textContent.append("<thoughtSignature>");
+                    textContent.append(part.getThoughtSignature());
+                    textContent.append("</thoughtSignature>");
+                }
                 textContent.append("\n");
             }
         }
