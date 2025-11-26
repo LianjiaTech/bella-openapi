@@ -140,6 +140,13 @@ export interface EndpointDetails {
 }
 
 export interface PriceDetails {
+    priceInfo?: {
+        input: number;
+        output: number;
+        cachedRead?: number;
+        cachedCreation?: number;
+        unit: string;
+    };
     displayPrice: Record<string, string>;
     unit: string;
 }
