@@ -36,6 +36,8 @@ public class WebCrawlPriceInfo implements IPriceInfo, Serializable {
      */
     private BigDecimal advancedExtractionPrice;
 
+    private double batchDiscount = 1.0;
+
     @Override
     public String getUnit() {
         return "分/请求";

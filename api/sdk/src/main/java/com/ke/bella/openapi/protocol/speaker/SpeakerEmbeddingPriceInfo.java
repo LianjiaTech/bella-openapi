@@ -20,6 +20,7 @@ public class SpeakerEmbeddingPriceInfo implements IPriceInfo, Serializable {
      * 音频处理单价（元/小时）
      */
     private BigDecimal price;
+    private double batchDiscount = 1.0;
     
     @Override
     public String getUnit() {

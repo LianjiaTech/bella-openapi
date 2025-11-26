@@ -11,6 +11,7 @@ import java.util.Map;
 @Data
 public class TranscriptionsAsrPriceInfo implements IPriceInfo, Serializable {
     private BigDecimal price;
+    private double batchDiscount = 1.0;
 
     @Override
     public String getUnit() {

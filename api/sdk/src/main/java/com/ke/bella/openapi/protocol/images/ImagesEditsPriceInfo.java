@@ -12,6 +12,7 @@ import java.util.Map;
 public class ImagesEditsPriceInfo implements IPriceInfo, Serializable {
 	private BigDecimal pricePerEdit;
 	private BigDecimal imageTokenPrice;
+	private double batchDiscount = 1.0;
 
 	@Override
 	public String getUnit() {

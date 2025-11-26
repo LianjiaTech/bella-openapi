@@ -20,6 +20,7 @@ public class CompletionPriceInfo implements IPriceInfo, Serializable {
     private BigDecimal cachedRead;
     private BigDecimal cachedCreation;
     private String unit = "分/千token";
+    private double batchDiscount = 1.0;
 
     public BigDecimal getCachedCreation() {
         if(cachedCreation == null && cachedRead != null && input != null) {

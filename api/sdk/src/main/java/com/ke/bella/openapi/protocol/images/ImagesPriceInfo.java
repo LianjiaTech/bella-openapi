@@ -13,6 +13,7 @@ import java.util.Map;
 @Data
 public class ImagesPriceInfo implements IPriceInfo, Serializable {
     ImagesPriceInfoDetailsList details;
+    private double batchDiscount = 1.0;
     @Override
     public String getUnit() {
         return "元/张";
