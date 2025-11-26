@@ -43,6 +43,9 @@ public class OcrFieldNamingStandard {
         ALLOWED_FIELD_NAMES.add("eep_number");          // 通行证号
 		ALLOWED_FIELD_NAMES.add("issue_times");         // 签发次数，港澳台居民居住证、台胞证、返乡证
 
+        // 通用OCR字段
+        ALLOWED_FIELD_NAMES.add("words");               // 识别的文字内容
+
     }
 
     /**
