@@ -169,7 +169,9 @@ public class VertexConverter {
     
     private static Content convertMessage(Message message, Map<String, String> toolCallCache, List<String> toolCallSorts) {
         List<Part> parts = new ArrayList<>();
-        
+
+		// extract the sign tag
+		String contentThoughtSignature =  extractThoughtSignatureFromContent(message.getContent());
         addContentToParts(parts, message.getContent());
         
         // Handle tool calls
@@ -179,7 +181,12 @@ public class VertexConverter {
                         .name(toolCall.getFunction().getName())
                         .args(parseArguments(toolCall.getFunction().getArguments()))
                         .build();
-                parts.add(Part.builder().functionCall(functionCall).build());
+				// 创建 function call part 	附加 思维标签
+				Part.PartBuilder partBuilder = Part.builder().functionCall(functionCall);
+				if (StringUtils.hasText(contentThoughtSignature)) {
+					partBuilder.thoughtSignature(contentThoughtSignature);
+				}
+                parts.add(partBuilder.build());
                 toolCallCache.put(toolCall.getId(), toolCall.getFunction().getName());
                 toolCallSorts.add(toolCall.getId());
             }
@@ -191,6 +198,18 @@ public class VertexConverter {
                 .role(role)
                 .parts(parts)
                 .build();
+    }
+
+	private static String extractThoughtSignatureFromContent(Object content) {
+		if (content == null) {
+			return null;
+		}
+		if (content instanceof  Map) {
+			@SuppressWarnings("unchecked")
+			Map<String, Object> contentMap = (Map<String, Object>) content;
+			return contentMap.get("thoughtSignature").toString();
+		}
+		return null;
     }
 
     private static void addContentToParts(List<Part> parts, Object content) {
