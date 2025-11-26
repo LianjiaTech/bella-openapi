@@ -25,6 +25,9 @@ public class WebSearchPriceInfo implements IPriceInfo, Serializable {
      */
     private BigDecimal advancedSearchPrice;
 
+    private double batchDiscount = 1.0;
+
+
     @Override
     public String getUnit() {
         return "分/请求";

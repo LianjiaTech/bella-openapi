@@ -20,6 +20,7 @@ public class SpeakerDiarizationPriceInfo implements IPriceInfo, Serializable {
      * 说话人识别单价（元/小时）
      */
     private BigDecimal price;
+    private double batchDiscount = 1.0;
     
     @Override
     public String getUnit() {
