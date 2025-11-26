@@ -13,6 +13,7 @@ public class EmbeddingPriceInfo implements IPriceInfo, Serializable {
     private static final long serialVersionUID = 1L;
     private BigDecimal input;
     private String unit = "分/千token";
+    private double batchDiscount = 1.0;
 
     @Override
     public Map<String, String> description() {
