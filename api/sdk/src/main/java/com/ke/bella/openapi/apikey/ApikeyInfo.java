@@ -59,9 +59,9 @@ public class ApikeyInfo implements Serializable {
                 && getRolePath().getExcluded().stream().noneMatch(pattern -> MatchUtils.matchUrl(pattern, url));
     }
 
-    public boolean hasCostAllocatedPermission() {
+    public boolean hasAllocatedPermission() {
         return EntityConstants.HIGH.equals(roleCode) ||
-                EntityConstants.CONSOLE.equals(roleCode) || EntityConstants.SYSTEM.equals(roleCode);
+                EntityConstants.CONSOLE.equals(roleCode) || EntityConstants.ALL.equals(roleCode);
     }
 
     @Data
