@@ -54,6 +54,7 @@ public class EndpointContext {
     public static void setApikey(ApikeyInfo ak) {
         BellaContext.setApikey(ak);
         EndpointContext.getProcessData().setApikeyInfo(ak);
+        EndpointContext.getProcessData().setBillingApikeyInfo(BellaContext.getBillingAk());
     }
 
     public static void setEndpointData(String endpoint, String model, ChannelDB channel, Object request) {
