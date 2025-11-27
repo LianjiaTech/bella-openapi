@@ -46,29 +46,21 @@ public class AuthorizationInterceptor extends com.ke.bella.openapi.server.interc
                 throw new ChannelException.AuthorizationException("Authorization is empty");
             }
             ApikeyInfo apikeyInfo = apikeyService.verifyAuth(auth);
-            if(apikeyInfo.hasCostAllocatedPermission()) {
-                handleBillingAk(request);
+            hasPermission = apikeyInfo.hasPermission(url);
+            if(apikeyInfo.hasAllocatedPermission()) {
+                String userAkCode = request.getHeader(BellaContext.BELLA_USER_AK_HEADER);
+                if(StringUtils.isNotEmpty(userAkCode)) {
+                    ApikeyInfo userAkInfo = apikeyService.queryByCode(userAkCode, true);
+                    userAkInfo.setApikey(auth);
+                    apikeyInfo = userAkInfo;
+                }
             }
             EndpointContext.setApikey(apikeyInfo);
-            hasPermission = apikeyInfo.hasPermission(url);
         }
         if(!hasPermission) {
             throw new ChannelException.AuthorizationException("没有操作权限");
         }
         return true;
-    }
-
-    /**
-     * 处理计费用的AK
-     */
-    private void handleBillingAk(HttpServletRequest request) {
-        String billingAkCode = request.getHeader(BellaContext.BELLA_BILLING_AK_HEADER);
-        if(StringUtils.isEmpty(billingAkCode)) {
-            return;
-        }
-
-        ApikeyInfo billingAkInfo = apikeyService.queryByCode(billingAkCode, true);
-        BellaContext.setBillingAk(billingAkInfo);
     }
 
     private String getHeader(String uri) {

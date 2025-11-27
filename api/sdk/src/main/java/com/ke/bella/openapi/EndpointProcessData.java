@@ -30,8 +30,6 @@ public class EndpointProcessData {
     private String accountCode;
     private String akCode;
     private String parentAkCode;
-    private String billingAkCode;
-    private String billingAkParentCode;
     private String endpoint;
     private String model;
     private String channelCode;
@@ -94,13 +92,6 @@ public class EndpointProcessData {
         this.setParentAkCode(ak.getParentCode());
         this.setAccountType(ak.getOwnerType());
         this.setAccountCode(ak.getOwnerCode());
-    }
-
-    public void setBillingApikeyInfo(ApikeyInfo billingApikeyInfo) {
-        if(billingApikeyInfo != null) {
-            this.setBillingAkCode(billingApikeyInfo.getCode());
-            this.setBillingAkParentCode(billingApikeyInfo.getParentCode());
-        }
     }
 
     // 保存副本，防止日志处理中对response的修改影响返回结果
