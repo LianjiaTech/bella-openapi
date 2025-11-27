@@ -2,6 +2,7 @@ package com.ke.bella.openapi.apikey;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.ke.bella.openapi.utils.JacksonUtils;
+import com.ke.bella.openapi.common.EntityConstants;
 import com.ke.bella.openapi.utils.MatchUtils;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -56,6 +57,11 @@ public class ApikeyInfo implements Serializable {
     public boolean hasPermission(String url) {
        return getRolePath().getIncluded().stream().anyMatch(pattern -> MatchUtils.matchUrl(pattern, url))
                 && getRolePath().getExcluded().stream().noneMatch(pattern -> MatchUtils.matchUrl(pattern, url));
+    }
+
+    public boolean hasCostAllocatedPermission() {
+        return EntityConstants.HIGH.equals(roleCode) ||
+                EntityConstants.CONSOLE.equals(roleCode) || EntityConstants.SYSTEM.equals(roleCode);
     }
 
     @Data

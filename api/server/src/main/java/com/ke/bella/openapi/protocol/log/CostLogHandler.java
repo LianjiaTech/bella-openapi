@@ -66,9 +66,16 @@ public class CostLogHandler implements EventHandler<LogEvent> {
             return;
         }
         if(valid) {
-            costCounter.delta(log.getAkCode(), cost);
-            if(StringUtils.isNotEmpty(log.getParentAkCode())) {
-                costCounter.delta(log.getParentAkCode(), cost);
+            String billingAkCode = StringUtils.defaultIfEmpty(log.getBillingAkCode(), log.getAkCode());
+            costCounter.delta(billingAkCode, cost);
+
+            String parentAkCode = log.getParentAkCode();
+            if(StringUtils.isNotEmpty(log.getBillingAkCode())) {
+                parentAkCode = log.getBillingAkParentCode();
+            }
+            if (StringUtils.isNotEmpty(parentAkCode)) {
+                LOGGER.info("{} cost {} by {}", parentAkCode, cost, billingAkCode);
+                costCounter.delta(parentAkCode, cost);
             }
         }
     }

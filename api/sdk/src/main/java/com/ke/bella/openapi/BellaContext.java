@@ -13,10 +13,12 @@ public class BellaContext {
     public static final String BELLA_TRACE_HEADER = "X-BELLA-TRACE-ID";
     public static final String BELLA_REQUEST_ID_HEADER = "X-BELLA-REQUEST-ID";
     public static final String BELLA_REQUEST_MOCK_HEADER = "X-BELLA-MOCK-REQUEST";
+    public static final String BELLA_BILLING_AK_HEADER = "X-BELLA-BILLING-AK-CODE";
 
     private static final ThreadLocal<Operator> operatorLocal = new ThreadLocal<>();
     private static final ThreadLocal<Map<String, String>> headersThreadLocal = new ThreadLocal<>();
     private static final ThreadLocal<ApikeyInfo> akThreadLocal = new ThreadLocal<>();
+    private static final ThreadLocal<ApikeyInfo> billingAkThreadLocal = new ThreadLocal<>();
     public static String generateTraceId(String serviceId) {
         return serviceId + "-" + UUID.randomUUID();
     }
@@ -59,6 +61,14 @@ public class BellaContext {
 
     public static void setApikey(ApikeyInfo ak) {
         akThreadLocal.set(ak);
+    }
+
+    public static ApikeyInfo getBillingAk() {
+        return billingAkThreadLocal.get();
+    }
+
+    public static void setBillingAk(ApikeyInfo billingAkCode) {
+        billingAkThreadLocal.set(billingAkCode);
     }
 
     public static Operator getOperator() {
@@ -139,6 +149,7 @@ public class BellaContext {
         headersThreadLocal.remove();
         akThreadLocal.remove();
         operatorLocal.remove();
+        billingAkThreadLocal.remove();
     }
 
 }
