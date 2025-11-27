@@ -13,6 +13,7 @@ public class BellaContext {
     public static final String BELLA_TRACE_HEADER = "X-BELLA-TRACE-ID";
     public static final String BELLA_REQUEST_ID_HEADER = "X-BELLA-REQUEST-ID";
     public static final String BELLA_REQUEST_MOCK_HEADER = "X-BELLA-MOCK-REQUEST";
+    public static final String BELLA_USER_AK_HEADER = "X-BELLA-USER-AK-CODE";
 
     private static final ThreadLocal<Operator> operatorLocal = new ThreadLocal<>();
     private static final ThreadLocal<Map<String, String>> headersThreadLocal = new ThreadLocal<>();

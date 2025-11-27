@@ -35,6 +35,7 @@ public class EntityConstants {
     public static final String ORG = "org";
     public static final String PERSON = "person";
     public static final String CONSOLE = "console";
+    public static final String ALL = "all";
     public static final List<String> OWNER_TYPES = ImmutableList.of(SYSTEM, ORG, PERSON);
     public static final List<String> AUTHORIZER_TYPES = ImmutableList.of(ORG, PERSON);
 
