@@ -66,7 +66,7 @@ public class MessageController {
         CompletionProperty property = (CompletionProperty) JacksonUtils.deserialize(channelInfo, adaptor.getPropertyClass());
         EndpointContext.setEncodingType(property.getEncodingType());
         if(Boolean.TRUE.equals(request.getStream())) {
-            SseEmitter sse = SseHelper.createSse(1000L * 60 * 5, EndpointContext.getProcessData().getRequestId());
+            SseEmitter sse = SseHelper.createSse(1000L * 60 * 30, EndpointContext.getProcessData().getRequestId());
             adaptor.streamMessages(request, url, property, StreamCallbackProvider.provideForMessage(sse, processData, EndpointContext.getApikey(), logger, safetyCheckService, property));
             return sse;
         }
