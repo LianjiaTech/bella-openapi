@@ -5,6 +5,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class TaskExecutor {
@@ -15,6 +16,10 @@ public class TaskExecutor {
 
     public static CompletableFuture<Void> submit(Runnable r) {
         return CompletableFuture.runAsync(r, executor);
+    }
+
+    public static void scheduleAtFixedRate(Runnable r, int period) {
+        executor.scheduleAtFixedRate(r, 0, period, TimeUnit.SECONDS);
     }
 
     public static class NamedThreadFactory implements ThreadFactory {
