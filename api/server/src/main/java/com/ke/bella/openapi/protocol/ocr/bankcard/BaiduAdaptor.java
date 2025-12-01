@@ -1,4 +1,4 @@
-package com.ke.bella.openapi.protocol.ocr;
+package com.ke.bella.openapi.protocol.ocr.bankcard;
 
 import java.util.Base64;
 
@@ -8,9 +8,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import com.ke.bella.openapi.protocol.OpenapiResponse;
-import com.ke.bella.openapi.protocol.ocr.bankcard.BaiduBankcardRequest;
-import com.ke.bella.openapi.protocol.ocr.bankcard.BaiduBankcardResponse;
-import com.ke.bella.openapi.protocol.ocr.bankcard.OcrBankcardResponse;
+import com.ke.bella.openapi.protocol.ocr.BaiduOcrProperty;
+import com.ke.bella.openapi.protocol.ocr.ImageRetrievalService;
+import com.ke.bella.openapi.protocol.ocr.OcrRequest;
 import com.ke.bella.openapi.protocol.ocr.util.ImageConverter;
 import com.ke.bella.openapi.utils.HttpUtils;
 
@@ -24,7 +24,7 @@ import okhttp3.RequestBody;
  */
 @Slf4j
 @Component("baiduBankcard")
-public class BaiduBankcardAdaptor implements OcrBankcardAdaptor<BaiduOcrProperty> {
+public class BaiduAdaptor implements BankcardAdaptor<BaiduOcrProperty> {
 
     private static final String ERROR_CODE_SUCCESS = "0";
     private static final String BAIDU_OCR_ERROR_TYPE = "BAIDU_OCR_ERROR";
@@ -49,15 +49,15 @@ public class BaiduBankcardAdaptor implements OcrBankcardAdaptor<BaiduOcrProperty
 
     @Override
     public OcrBankcardResponse bankcard(OcrRequest request, String url, BaiduOcrProperty property) {
-        BaiduBankcardRequest baiduBankcardRequest = requestConvert(request);
-        Request httpRequest = buildRequest(baiduBankcardRequest, url, property);
-        clearLargeData(request, baiduBankcardRequest);
-        BaiduBankcardResponse baiduBankcardResponse = HttpUtils.httpRequest(httpRequest, BaiduBankcardResponse.class);
-        return responseConvert(baiduBankcardResponse);
+        BaiduRequest baiduRequest = requestConvert(request);
+        Request httpRequest = buildRequest(baiduRequest, url, property);
+        clearLargeData(request, baiduRequest);
+        BaiduResponse baiduResponse = HttpUtils.httpRequest(httpRequest, BaiduResponse.class);
+        return responseConvert(baiduResponse);
     }
 
-    private BaiduBankcardRequest requestConvert(OcrRequest request) {
-        BaiduBankcardRequest.BaiduBankcardRequestBuilder builder = BaiduBankcardRequest.builder();
+    private BaiduRequest requestConvert(OcrRequest request) {
+        BaiduRequest.BaiduRequestBuilder builder = BaiduRequest.builder();
 
         // 处理图片数据：url和image二选一
         if(StringUtils.hasText(request.getImageUrl())) {
@@ -83,7 +83,7 @@ public class BaiduBankcardAdaptor implements OcrBankcardAdaptor<BaiduOcrProperty
     /**
      * 构建HTTP请求
      */
-    private Request buildRequest(BaiduBankcardRequest request, String url, BaiduOcrProperty property) {
+    private Request buildRequest(BaiduRequest request, String url, BaiduOcrProperty property) {
         RequestBody formBody = buildFormBody(request);
         Request.Builder builder = authorizationRequestBuilder(property.getAuth())
                 .url(url)
@@ -94,7 +94,7 @@ public class BaiduBankcardAdaptor implements OcrBankcardAdaptor<BaiduOcrProperty
     /**
      * 构建表单数据，将BaiduBankcardRequest转换为FormBody
      */
-    private RequestBody buildFormBody(BaiduBankcardRequest request) {
+    private RequestBody buildFormBody(BaiduRequest request) {
         FormBody.Builder builder = new FormBody.Builder();
 
         // 图片参数二选一
@@ -114,19 +114,19 @@ public class BaiduBankcardAdaptor implements OcrBankcardAdaptor<BaiduOcrProperty
     /**
      * 转换百度响应为统一格式
      */
-    private OcrBankcardResponse responseConvert(BaiduBankcardResponse baiduBankcardResponse) {
+    private OcrBankcardResponse responseConvert(BaiduResponse baiduResponse) {
         // 检查百度API返回的错误
-        if(hasError(baiduBankcardResponse)) {
-            return buildErrorResponse(baiduBankcardResponse);
+        if(hasError(baiduResponse)) {
+            return buildErrorResponse(baiduResponse);
         }
 
         // 构建成功响应
         OcrBankcardResponse response = new OcrBankcardResponse();
-        response.setRequest_id(String.valueOf(baiduBankcardResponse.getLogId()));
+        response.setRequest_id(String.valueOf(baiduResponse.getLogId()));
 
         // 提取银行卡数据
-        if(baiduBankcardResponse.getResult() != null) {
-            OcrBankcardResponse.BankcardData data = extractBankcardData(baiduBankcardResponse.getResult());
+        if(baiduResponse.getResult() != null) {
+            OcrBankcardResponse.BankcardData data = extractBankcardData(baiduResponse.getResult());
             response.setData(data);
         }
 
@@ -136,7 +136,7 @@ public class BaiduBankcardAdaptor implements OcrBankcardAdaptor<BaiduOcrProperty
     /**
      * 提取银行卡数据
      */
-    private OcrBankcardResponse.BankcardData extractBankcardData(BaiduBankcardResponse.BankcardResult result) {
+    private OcrBankcardResponse.BankcardData extractBankcardData(BaiduResponse.BankcardResult result) {
         return OcrBankcardResponse.BankcardData.builder()
                 .card_number(result.getBankCardNumber())
                 .bank_name(result.getBankName())
@@ -172,7 +172,7 @@ public class BaiduBankcardAdaptor implements OcrBankcardAdaptor<BaiduOcrProperty
     /**
      * 检查百度API是否返回错误
      */
-    private boolean hasError(BaiduBankcardResponse baiduResponse) {
+    private boolean hasError(BaiduResponse baiduResponse) {
         return StringUtils.hasText(baiduResponse.getErrorCode()) &&
                 !ERROR_CODE_SUCCESS.equals(baiduResponse.getErrorCode());
     }
@@ -180,7 +180,7 @@ public class BaiduBankcardAdaptor implements OcrBankcardAdaptor<BaiduOcrProperty
     /**
      * 构建错误响应
      */
-    private OcrBankcardResponse buildErrorResponse(BaiduBankcardResponse baiduResponse) {
+    private OcrBankcardResponse buildErrorResponse(BaiduResponse baiduResponse) {
         int errorCode = Integer.parseInt(baiduResponse.getErrorCode());
         OpenapiResponse.OpenapiError error = OpenapiResponse.OpenapiError.builder()
                 .code(baiduResponse.getErrorCode())
