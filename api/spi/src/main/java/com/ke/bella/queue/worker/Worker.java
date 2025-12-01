@@ -1,5 +1,10 @@
 package com.ke.bella.queue.worker;
 
+import com.github.rholder.retry.Retryer;
+import com.github.rholder.retry.RetryerBuilder;
+import com.github.rholder.retry.StopStrategies;
+import com.github.rholder.retry.WaitStrategies;
+import com.github.rholder.retry.WaitStrategy;
 import com.google.common.collect.Maps;
 import com.ke.bella.queue.TaskEvent;
 import com.ke.bella.queue.TaskWrapper;
@@ -16,12 +21,17 @@ import redis.clients.jedis.exceptions.JedisException;
 import redis.clients.jedis.params.XAddParams;
 
 import javax.annotation.PreDestroy;
+import java.io.IOException;
+import java.net.ConnectException;
+import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -104,7 +114,15 @@ public class Worker {
     }
 
     public void markComplete(Task task, Map<String, Object> result) {
-        openAiService.completeTask(task.getTaskId(), result);
+        try {
+            DEFAULT_RETRYER.call(() -> {
+                openAiService.completeTask(task.getTaskId(), result);
+                return null;
+            });
+        } catch (Exception e) {
+            log.error("Failed to complete task {} after retries", task.getTaskId(), e);
+            throw new RuntimeException("Failed to complete task after retries", e);
+        }
     }
 
     public void markRetryLater(Task task) {
@@ -142,6 +160,30 @@ public class Worker {
         if(jedisPool != null && !jedisPool.isClosed()) {
             jedisPool.close();
         }
+    }
+
+    public static final Retryer<Void> DEFAULT_RETRYER = createRetryer(4, new long[] { 2, 5, 10 });
+
+    public static Retryer<Void> createRetryer(int maxAttempts, long[] delaySeconds) {
+        return RetryerBuilder.<Void>newBuilder()
+                .retryIfExceptionOfType(IOException.class)
+                .retryIfExceptionOfType(ConnectException.class)
+                .retryIfExceptionOfType(SocketTimeoutException.class)
+                .withWaitStrategy(createWaitStrategy(delaySeconds))
+                .withStopStrategy(StopStrategies.stopAfterAttempt(maxAttempts))
+                .build();
+    }
+
+    private static WaitStrategy createWaitStrategy(long[] delaySeconds) {
+        final Random random = new Random();
+        return attemptHistory -> {
+            int attemptIndex = Math.min((int) attemptHistory.getAttemptNumber() - 1, delaySeconds.length - 1);
+            long baseDelayMs = TimeUnit.SECONDS.toMillis(delaySeconds[attemptIndex]);
+
+            // 添加±25%的随机抖动防止雪崩 (0.75 ~ 1.25)
+            double jitterFactor = 0.75 + random.nextDouble() * 0.5;
+            return (long) (baseDelayMs * jitterFactor);
+        };
     }
 
 }
