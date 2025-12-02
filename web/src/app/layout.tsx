@@ -1,44 +1,36 @@
-'use client';
-import localFont from "next/font/local"
+import type React from "react"
+import type { Metadata } from "next"
 import "./globals.css"
-import {ThemeProvider} from "next-themes"
-import {Toaster} from "@/components/ui/toaster"
-import {UserProvider} from "@/lib/context/user-context";
+import { AppSidebar } from "@/components/app-sidebar"
+import { ThemeProvider } from "@/components/theme-provider"
+import { LanguageProvider } from "@/components/language-provider"
+import { UserProvider } from   "@/lib/context/user-context"
 
-const geistSans = localFont({
-    src: "./fonts/GeistVF.woff",
-    variable: "--font-geist-sans",
-    weight: "100 900",
-})
-
-const geistMono = localFont({
-    src: "./fonts/GeistMonoVF.woff",
-    variable: "--font-geist-mono",
-    weight: "100 900",
-})
+export const metadata: Metadata = {
+  title: "Bella - AI OpenAPI Platform",
+  description: "Bella - 大模型 OpenAPI 能力平台 - 提供 ChatCompletion、图像生成、语音识别等 AI 能力",
+  generator: "v0.app",
+}
 
 export default function RootLayout({
-                                       children,
-                                   }: Readonly<{
-    children: React.ReactNode
+  children,
+}: Readonly<{
+  children: React.ReactNode
 }>) {
-    return (
-        <html lang="en" suppressHydrationWarning>
-        <body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased bg-white`}>
-        <UserProvider>
-            <ThemeProvider
-                attribute="class"
-                defaultTheme="light"
-                enableSystem={false}
-                disableTransitionOnChange
-            >
-                <main className="min-h-screen bg-white text-gray-900">
-                    <Toaster />
-                    {children}
-                </main>
-            </ThemeProvider>
-        </UserProvider>
-        </body>
-        </html>
-    )
+  return (
+    <html lang="zh-CN" suppressHydrationWarning>
+      <body className="font-sans antialiased">
+        <ThemeProvider defaultTheme="dark">
+          <UserProvider>
+          <LanguageProvider>
+            <div className="flex h-screen overflow-hidden bg-background">
+              <AppSidebar />
+              <main className="flex-1 overflow-hidden pl-64">{children}</main>
+            </div>
+          </LanguageProvider>
+          </UserProvider>
+        </ThemeProvider>
+      </body>
+    </html>
+  )
 }

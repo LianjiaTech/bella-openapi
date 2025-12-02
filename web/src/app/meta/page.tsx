@@ -11,9 +11,9 @@ function MetaPageContent() {
 
     return (
         <div className="h-screen bg-gray-50 flex flex-col">
-            <ClientHeader title='Bella Openapi'/>
+            {/* <ClientHeader title='Bella Openapi'/> */}
             <div className="flex flex-1 overflow-hidden">
-                <Sidebar />
+                {/* <Sidebar /> */}
                 <main className="flex-1 overflow-y-auto">
                     <EndpointDisplay endpoint={selectedEndpoint}/>
                 </main>
