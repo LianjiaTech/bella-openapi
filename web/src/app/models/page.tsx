@@ -2133,7 +2133,7 @@ export default function ModelsPage() {
               // 提取值为 true 的键组成字符串数组
               processedModel.features = Object.keys(parsedFeatures).filter(
                 key => parsedFeatures[key] === true
-              )
+              ).join(',');
             } catch (e) {
               console.error('Failed to parse features:', e)
             }
@@ -2142,13 +2142,19 @@ export default function ModelsPage() {
           // 如果存在 properties 字段且为字符串，进行 JSON.parse
           if (processedModel.properties && typeof processedModel.properties === 'string') {
             try {
-              processedModel.properties = JSON.parse(processedModel.properties)
+              const parsedProps = JSON.parse(processedModel.properties)
+              // 对 max_input_context 和 max_output_context 应用千分位分隔
+              if (parsedProps.max_input_context !== undefined && typeof parsedProps.max_input_context === "number") {
+                parsedProps.max_input_context = parsedProps.max_input_context.toLocaleString()
+              }
+              if (parsedProps.max_output_context !== undefined && typeof parsedProps.max_output_context === "number") {
+                parsedProps.max_output_context = parsedProps.max_output_context.toLocaleString()
+              }
+              processedModel.properties = parsedProps
             } catch (e) {
               console.error('Failed to parse properties:', e)
             }
           }
-
-          // priceDetails 不需要解析，因为已经是对象
 
           return processedModel
         })
@@ -2314,26 +2320,36 @@ export default function ModelsPage() {
                         ))}
                       </div> */}
 
-                      {/* <div className="mb-3 min-h-[40px] space-y-1 text-xs">
-                        {model.inputTokens > 0 && (
+                      <div className="mb-3 min-h-[40px] space-y-1 text-xs">
+                        {model.properties && (
                           <div className="flex justify-between">
                             <span className="text-muted-foreground">输入/输出长度:</span>
                             <span className="font-medium">
-                              {model.inputTokens.toLocaleString()} / {model.outputTokens.toLocaleString()}
+                            {model.properties?.max_input_context} / {model.properties?.max_output_context}
                             </span>
                           </div>
                         )}
                         <div className="flex justify-between">
-                          <span className="text-muted-foreground">定价:</span>
+                          <span className="text-muted-foreground">输入/输出定价（{model.priceDetails.unit}）:</span>
                           <span className="font-medium">
-                            {model.pricing.input} / {model.pricing.output}
+                            ¥{model.priceDetails.priceInfo?.input} / ¥{model.priceDetails.priceInfo?.output} 
                           </span>
                         </div>
-                      </div> */}
+                        {
+                          model.priceDetails.priceInfo?.cachedRead && (
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">命中缓存定价（{model.priceDetails.unit}）:</span>
+                              <span className="font-medium">
+                                ¥{model.priceDetails.priceInfo?.cachedRead} 
+                              </span>
+                            </div>
+                          )
+                        }
+                      </div>
 
                       {/* Features */}
                       <div className="mb-4 flex flex-wrap gap-1">
-                        {Array.isArray(model.features) ? model.features.map((feature: string,index) => (
+                        {typeof model.features === 'string' ? model.features.split(',').map((feature: string,index) => (
                           <Badge key={feature} variant="secondary" className={`text-xs ${tagColors[index]}`}>
                             {feature}
                           </Badge>

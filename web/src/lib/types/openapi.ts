@@ -93,7 +93,10 @@ export interface MetadataFeature {
 export interface Model {
     modelName: string;
     documentUrl: string;
-    properties: string | Record<string, any>;
+    properties: {
+        max_input_context: number;
+        max_output_context: number;
+    };
     features: string | string[];
     ownerType: string;
     ownerCode:string;
@@ -135,8 +138,12 @@ export interface ModelDetails {
 export interface EndpointDetails {
     endpoint: string;
     models: Model[];
-    features: MetadataFeature[];
+    features: MetadataFeature[] ;
     priceDetails?: PriceDetails;
+    properties: {
+        max_input_context: string;
+        max_output_context:string;
+    };
 }
 
 export interface PriceDetails {
