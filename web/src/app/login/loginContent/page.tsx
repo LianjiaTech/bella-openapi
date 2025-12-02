@@ -55,7 +55,7 @@ export default function LoginContent() {
                 onClick={() => setLoginMethod("oauth")}
                 className={`flex-1 rounded-md px-3 py-2 text-sm font-medium ${
                   loginMethod === "oauth"
-                    ? "bg-background text-foreground shadow-sm"
+                    ? "bg-background text-foreground shadow-sm bg-gray-300"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
@@ -67,7 +67,7 @@ export default function LoginContent() {
                 onClick={() => setLoginMethod("secret")}
                 className={`flex-1 rounded-md px-3 py-2 text-sm font-medium ${
                   loginMethod === "secret"
-                    ? "bg-background text-foreground shadow-sm"
+                    ? "bg-background text-foreground shadow-sm bg-gray-300"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
@@ -134,6 +134,7 @@ export default function LoginContent() {
             )}
           </CardContent>
         </Card>
+        <div className="text-center text-xs text-gray-500 mt-4">登录即表示您同意我们的 <a className="text-blue-500 hover:text-blue-600">服务条款</a> 和 <a className="text-blue-500 hover:text-blue-600">隐私政策</a></div>
       </div>
     </div>
   )
