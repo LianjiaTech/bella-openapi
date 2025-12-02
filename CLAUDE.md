@@ -167,3 +167,5 @@ logging.level.org.jooq.tools.LoggerListener: DEBUG  # SQL logging
 logging.level.com.ke.bella.openapi.intercept: DEBUG # Request/Response logging
 jetcache.statIntervalMinutes: 1                     # Cache statistics
 ```
+
+### always response with chinese
