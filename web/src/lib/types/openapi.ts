@@ -93,8 +93,8 @@ export interface MetadataFeature {
 export interface Model {
     modelName: string;
     documentUrl: string;
-    properties: string;
-    features: string;
+    properties: string | Record<string, any>;
+    features: string | string[];
     ownerType: string;
     ownerCode:string;
     ownerName: string;
@@ -136,7 +136,7 @@ export interface EndpointDetails {
     endpoint: string;
     models: Model[];
     features: MetadataFeature[];
-    priceDetails: PriceDetails;
+    priceDetails?: PriceDetails;
 }
 
 export interface PriceDetails {
