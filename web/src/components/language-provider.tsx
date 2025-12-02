@@ -25,7 +25,7 @@ const translations = {
     metadata: "元数据管理",
     docs: "文档",
     settings: "设置",
-    login: "登录", // 添加登录翻译
+    login: "退出", // 添加登录翻译
     help: "帮助",
 
     // Playground items

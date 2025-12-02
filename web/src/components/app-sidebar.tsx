@@ -67,8 +67,8 @@ export function AppSidebar() {
                   className={cn(
                     "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                     isActive
-                      ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                      : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
+                      ? "bg-sidebar-accent text-sidebar-accent-foreground bg-gray-300"
+                      : "text-gray-500 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
                   )}
                 >
                   <item.icon className="h-5 w-5" />
@@ -84,8 +84,8 @@ export function AppSidebar() {
                 className={cn(
                   "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                   isPlaygroundActive
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground bg-gray-300"
+                    : "text-gray-500 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
                 )}
               >
                 <FlaskConical className="h-5 w-5" />
@@ -118,8 +118,8 @@ export function AppSidebar() {
                         className={cn(
                           "flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors",
                           isActive
-                            ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                            : "text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
+                            ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium bg-gray-300"
+                            : "text-gray-500 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
                         )}
                       >
                         <item.icon className="h-4 w-4" />
@@ -145,8 +145,8 @@ export function AppSidebar() {
                   className={cn(
                     "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                     isActive
-                      ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                      : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
+                      ? "bg-sidebar-accent text-sidebar-accent-foreground bg-gray-300"
+                      : "text-gray-500 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
                   )}
                 >
                   <item.icon className="h-5 w-5" />
@@ -170,7 +170,7 @@ export function AppSidebar() {
                   <button
                     className={cn(
                       "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                      "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
+                      "text-gray-500 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
                     )}
                   >
                     <Settings className="h-5 w-5" />
@@ -188,11 +188,13 @@ export function AppSidebar() {
                 className={cn(
                   "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                   isActive
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground bg-gray-300"
+                    : "text-gray-500 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
                 )}
               >
-                <item.icon className="h-5 w-5" />
+                {
+                  item.icon === LogIn ? <LogIn className="h-5 w-5" /> :<HelpCircle className="h-5 w-5" />
+                }
                 {item.name}
               </Link>
             )

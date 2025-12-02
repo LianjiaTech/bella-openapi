@@ -1,9 +1,7 @@
 'use client';
 
 import React, { Suspense } from 'react';
-import { Sidebar } from '@/components/meta/sidebar';
 import { EndpointDisplay } from '@/components/meta/endpoint-details';
-import { ClientHeader } from "@/components/user/client-header";
 import { SidebarProvider, useSidebar } from '@/lib/context/sidebar-context';
 
 function MetaPageContent() {
