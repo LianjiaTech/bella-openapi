@@ -3,28 +3,20 @@
 import { useState, useMemo, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
 import { TopBar } from "@/components/top-bar"
-import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import {
-  MessageSquare,
-  ImageIcon,
-  Mic,
   Search,
-  ExternalLink,
-  Plus,
-  Building,
   Layers,
-  Waves,
   Loader
 } from "lucide-react"
-import Link from "next/link"
 import { useLanguage } from "@/components/language-provider"
 import { useSidebar } from "@/lib/context/sidebar-context"
-import { CategoryTree, EndpointDetails } from "@/lib/types/openapi"
+import { CategoryTree, EndpointDetails, Model } from "@/lib/types/openapi"
 import { getInitialEndpoint } from "@/lib/utils/endpoint-selection"
 import { getEndpointDetails } from "@/lib/api/meta"
+import { ModelCard } from "./components/model-card"
 
 // 扁平化 CategoryTree 结构，按 endpoint 组织数据
 interface EndpointWithCategory {
@@ -259,82 +251,16 @@ export default function ModelsPage() {
             </div>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {endpointData?.models.map((model) => {
-                return (
-                  <Card
-                    key={model.modelName}
-                    className="border-border/50 transition-all hover:border-primary/50 hover:shadow-md"
-                  >
-                    <CardContent className="p-5 h-full flex flex-col justify-between">
-                      <div className="mb-4 flex items-start justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                            <MessageSquare className="h-5 w-5 text-primary" />
-                          </div>
-                          <div>
-                            <h3 className="font-semibold">{model.modelName}</h3>
-                          </div>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-8 w-8 p-0 hover:bg-primary/10"
-                          title="添加私有渠道"
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      <div className="mb-3 min-h-[40px] space-y-1 text-xs">
-                        {model.properties && (
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">输入/输出长度:</span>
-                            <span className="font-medium">
-                              {model.properties?.max_input_context ?? "?"} / {model.properties?.max_output_context ?? "?"}
-                            </span>
-                          </div>
-                        )}
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">输入/输出定价（{model.priceDetails?.unit ?? "?"}）:</span>
-                          <span className="font-medium">
-                            ¥{model.priceDetails?.priceInfo?.input ?? "?"} / ¥{model.priceDetails?.priceInfo?.output ?? "?"}
-                          </span>
-                        </div>
-                        {
-                          model.priceDetails?.priceInfo?.cachedRead !== undefined ? (
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">命中缓存定价（{model.priceDetails?.unit ?? "?"}）:</span>
-                              <span className="font-medium">
-                                ¥{model.priceDetails?.priceInfo?.cachedRead ?? "?"}
-                              </span>
-                            </div>
-                          ) : null
-                        }
-                      </div>
-
-                      {/* Features */}
-                      <div className="mb-4 flex flex-wrap gap-1">
-                        {typeof model.features === 'string' ? model.features.split(',').map((feature: string,index) => (
-                          <Badge key={feature} variant="secondary" className={`text-xs ${tagColors[index]}`}>
-                            {feature}
-                          </Badge>
-                        )):null}
-                      </div>
-
-                      {/* Actions */}
-                      <div className="flex gap-2">
-                        <Button size="sm" className="flex-1" asChild>
-                          <Link href={`/playground/chat?model=${model.id}`}>试用</Link>
-                        </Button>
-                        <Button size="sm" variant="outline" asChild>
-                          <Link href={`/docs/api/${model.id}`}>
-                            <ExternalLink className="h-4 w-4" />
-                          </Link>
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )
-              })}
+              {endpointData?.models.map((model) => (
+                <ModelCard
+                  key={model.modelName}
+                  model={model}
+                  tagColors={tagColors}
+                  onAddChannel={(model: Model) => {
+                    console.log("添加私有渠道:", model.modelName)
+                  }}
+                />
+              ))}
             </div>
           </div>
         </div>

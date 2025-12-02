@@ -17,7 +17,7 @@ export const HeroSection = () => {
         </span>
         <span className="text-primary font-medium">{t("aiDeveloperPlatform")}</span>
       </div>
-      <h1 className="mb-4 text-balance text-5xl font-bold tracking-tight">{t("fastestPathToProduction")}</h1>
+      <h1 className="my-4 text-balance text-5xl font-bold tracking-tight">{t("fastestPathToProduction")}</h1>
       <p className="mb-8 text-pretty text-xl text-muted-foreground">{t("homeDescription")}</p>
       <Button className="mb-12" size="lg" asChild>
         <Link href="/models">
