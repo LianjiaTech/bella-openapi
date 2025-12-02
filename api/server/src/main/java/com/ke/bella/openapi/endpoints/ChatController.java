@@ -81,14 +81,15 @@ public class ChatController {
             Exception lastException = null;
             
             for (int i = 0; i < maxNum; i++) {
+                CompletionRequest processedRequest = request.copyRequest();
                 String singleModel = models[i];
                 String trimmedModel = singleModel.trim();
                 // Create a copy of the request with just this model
-                request.setModel(trimmedModel);
+                processedRequest.setModel(trimmedModel);
                 
                 try {
                     // Try to process with this model
-                    return processCompletionRequest(endpoint, trimmedModel, request);
+                    return processCompletionRequest(endpoint, trimmedModel, processedRequest);
                 } catch (Exception e) {
                     // Log the exception and continue to the next model
                     lastException = e;
