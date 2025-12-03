@@ -28,9 +28,17 @@ public class CompletionLogHandler implements EndpointLogHandler {
 
         if(StringUtils.isNotBlank(processData.getResponseRaw()) && processData.getResponse() == null) {
             response = JacksonUtils.deserialize(processData.getResponseRaw(), CompletionResponse.class);
+            // 清理 response 中的 thoughtSignature，避免日志过大
+            if (response != null) {
+                VertexConverter.clearThoughtSignatures(response);
+            }
         }
         if(StringUtils.isNotBlank(processData.getRequestRaw())) {
             CompletionRequest request = JacksonUtils.deserialize(processData.getRequestRaw(), CompletionRequest.class);
+            // 清理 request 中的 thoughtSignature，避免日志过大
+            if (request != null) {
+                VertexConverter.clearThoughtSignatures(request);
+            }
             processData.setRequest(request);
         }
         long created = response == null || response.getCreated() <= 0 ? DateTimeUtils.getCurrentSeconds() : response.getCreated();
