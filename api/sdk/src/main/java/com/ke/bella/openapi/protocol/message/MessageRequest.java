@@ -22,6 +22,7 @@ import lombok.NoArgsConstructor;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 @Data
 @NoArgsConstructor
@@ -435,6 +436,18 @@ public class MessageRequest implements IMemoryClearable {
         private String type;
         //todo: 暂时不支持，兼容aws协议，标准/v1/message协议是支持的
         //private String ttl;
+
+        public static CacheControl convertToCacheControl(Object o) {
+            if(o instanceof CacheControl) {
+                return (CacheControl) o;
+            }
+            if(o instanceof Map) {
+                CacheControl cacheControl = new CacheControl();
+                cacheControl.setType(((Map<?, ?>) o).get("type").toString());
+                return cacheControl;
+            }
+            return null;
+        }
     }
 
 
