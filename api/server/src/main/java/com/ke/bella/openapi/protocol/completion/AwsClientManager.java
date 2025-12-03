@@ -64,8 +64,6 @@ public class AwsClientManager {
                                         .build()))
                         .overrideConfiguration(ClientOverrideConfiguration.builder()
                                 .retryStrategy(StandardRetryStrategy.builder().maxAttempts(1).build())
-                                .apiCallTimeout(Duration.of(300, ChronoUnit.SECONDS))
-                                .apiCallAttemptTimeout(Duration.of(300, ChronoUnit.SECONDS))
                                 .build())
                         .build());
     }
