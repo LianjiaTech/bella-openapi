@@ -33,58 +33,6 @@ import java.util.stream.Collectors;
 public class VertexConverter {
 
     /**
-     * 清理 GeminiRequest 中的 thoughtSignature，用于日志记录
-     * 避免因签名过大导致日志被截断
-     */
-    public static void clearThoughtSignatures(GeminiRequest request) {
-        if (request == null) {
-            return;
-        }
-
-        // 清理 contents 中的 thoughtSignature
-        if (request.getContents() != null) {
-            request.getContents().forEach(content -> {
-                if (content != null && content.getParts() != null) {
-                    content.getParts().forEach(part -> {
-                        if (part != null) {
-                            part.setThoughtSignature(null);
-                        }
-                    });
-                }
-            });
-        }
-
-        // 清理 systemInstruction 中的 thoughtSignature
-        if (request.getSystemInstruction() != null && request.getSystemInstruction().getParts() != null) {
-            request.getSystemInstruction().getParts().forEach(part -> {
-                if (part != null) {
-                    part.setThoughtSignature(null);
-                }
-            });
-        }
-    }
-
-    /**
-     * 清理 GeminiResponse 中的 thoughtSignature，用于日志记录
-     * 避免因签名过大导致日志被截断
-     */
-    public static void clearThoughtSignatures(GeminiResponse response) {
-        if (response == null || response.getCandidates() == null) {
-            return;
-        }
-
-        response.getCandidates().forEach(candidate -> {
-            if (candidate != null && candidate.getContent() != null && candidate.getContent().getParts() != null) {
-                candidate.getContent().getParts().forEach(part -> {
-                    if (part != null) {
-                        part.setThoughtSignature(null);
-                    }
-                });
-            }
-        });
-    }
-
-    /**
      * 清理 CompletionRequest 中的 thoughtSignature
      * 用于日志记录时避免签名导致内容过大
      */
