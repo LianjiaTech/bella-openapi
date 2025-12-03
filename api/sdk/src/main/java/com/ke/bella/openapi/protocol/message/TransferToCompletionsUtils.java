@@ -23,6 +23,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import static com.ke.bella.openapi.protocol.message.MessageRequest.CacheControl.convertToCacheControl;
+
 @Slf4j
 public class TransferToCompletionsUtils {
 
@@ -382,7 +384,7 @@ public class TransferToCompletionsUtils {
         MessageRequest.Tool.ToolBuilder toolBuilder = MessageRequest.Tool.builder()
                 .name(tool.getFunction().getName())
                 .description(tool.getFunction().getDescription())
-                .cache_control(tool.getCache_control());
+                .cache_control(convertToCacheControl(tool.getCache_control()));
         
         if (tool.getFunction().getParameters() != null) {
             Message.Function.FunctionParameter params = tool.getFunction().getParameters();
@@ -664,7 +666,7 @@ public class TransferToCompletionsUtils {
                     MessageRequest.RequestTextBlock textBlock = new MessageRequest.RequestTextBlock();
                     textBlock.setType("text");
                     textBlock.setText((String) part.get("text"));
-                    textBlock.setCache_control(part.get("cache_control"));
+                    textBlock.setCache_control(convertToCacheControl(part.get("cache_control")));
                     textBlocks.add(textBlock);
                 }
             }
@@ -680,7 +682,7 @@ public class TransferToCompletionsUtils {
         if ("text".equals(type)) {
             MessageRequest.TextContentBlock textBlock = new MessageRequest.TextContentBlock();
             textBlock.setText((String) part.get("text"));
-            textBlock.setCache_control(part.get("cache_control"));
+            textBlock.setCache_control(convertToCacheControl(part.get("cache_control")));
             return textBlock;
         } else if ("image_url".equals(type)) {
             Map imageUrl = (Map) part.get("image_url");
@@ -698,7 +700,7 @@ public class TransferToCompletionsUtils {
                         imageSource.setMediaType(mediaType);
                         imageSource.setData(dataParts[1]);
                         imageBlock.setSource(imageSource);
-                        imageBlock.setCache_control(part.get("cache_control"));
+                        imageBlock.setCache_control(convertToCacheControl(part.get("cache_control")));
                         return imageBlock;
                     }
                 } else if (url != null) {
@@ -708,7 +710,7 @@ public class TransferToCompletionsUtils {
                     imageSource.setType("url");
                     imageSource.setUrl(url);
                     imageBlock.setSource(imageSource);
-                    imageBlock.setCache_control(part.get("cache_control"));
+                    imageBlock.setCache_control(convertToCacheControl(part.get("cache_control")));
                     return imageBlock;
                 }
             }
