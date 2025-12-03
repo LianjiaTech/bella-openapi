@@ -78,7 +78,7 @@ public class MessageRequest implements IMemoryClearable {
     @Data
     public static abstract class ContentBlock {
         private String type;
-        private Object cache_control;
+        private CacheControl cache_control;
     }
 
     @Data
@@ -304,7 +304,7 @@ public class MessageRequest implements IMemoryClearable {
     public static class RequestTextBlock {
         private String type; // "text"
         private String text;
-        private Object cache_control;
+        private CacheControl cache_control;
     }
 
 
@@ -411,7 +411,7 @@ public class MessageRequest implements IMemoryClearable {
         private String description;
         @JsonProperty("input_schema")
         private InputSchema inputSchema;
-        private Object cache_control;
+        private CacheControl cache_control;
     }
 
     @Data
@@ -424,6 +424,17 @@ public class MessageRequest implements IMemoryClearable {
         private Object properties;
         private List<String> required;
         private boolean additionalProperties;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public static class CacheControl {
+        private String type;
+        //todo: 暂时不支持，兼容aws协议，标准/v1/message协议是支持的
+        //private String ttl;
     }
 
 
