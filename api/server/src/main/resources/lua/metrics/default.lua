@@ -101,6 +101,45 @@ local function update_last_timeStamp()
     end
 end
 
+-- 处理429时的RPM记录和响应时间分析
+local function record_429_metrics()
+
+    -- 1. 从当前脚本的指标数据中获取RPM和平均响应时间
+    local total_key = prefix_key .. ":total"
+    local current_rpm = tonumber(redis.call("HGET", total_key, "completed") or 0) -- 使用completed作为RPM
+    
+    -- 计算平均响应时间（如果有ttlt指标）
+    local current_avg_response_time = 0
+    local ttlt_total = tonumber(redis.call("HGET", total_key, "ttlt") or 0)
+    if ttlt_total > 0 and current_rpm > 0 then
+        current_avg_response_time = ttlt_total / current_rpm * 1000 -- 转换为毫秒
+    end
+
+    -- 2. 构建429数据点
+    local current_429_data = {
+        timestamp = current_timestamp,
+        rpm = current_rpm,
+        avg_response_time = current_avg_response_time
+    }
+
+    -- 3. 维护固定长度的429历史列表
+    local rpm_429_list_key = prefix_key .. ":rpm_429_history"
+    local max_history_size = 100  -- 保持最近100个429数据点
+
+    -- 添加到列表头部
+    redis.call("LPUSH", rpm_429_list_key, cjson.encode(current_429_data))
+
+    -- 维护列表长度，移除超过长度的最旧数据
+    local list_length = redis.call("LLEN", rpm_429_list_key)
+    if list_length > max_history_size then
+        -- 从尾部删除多余的数据
+        local excess_count = list_length - max_history_size
+        for _ = 1, excess_count do
+            redis.call("RPOP", rpm_429_list_key)
+        end
+    end
+end
+
 -- 更新通道状态
 local function update_channel_status()
     local mark_key = prefix_key .. ":unavailable"
@@ -109,6 +148,7 @@ local function update_channel_status()
     local status = "available"
     if http_code == 429 then
         status = "temporarily_unavailable"
+        record_429_metrics()
     else
         local total_key = prefix_key .. ":total"
         local total_errors = tonumber(redis.call("HGET", total_key, "errors") or 0)

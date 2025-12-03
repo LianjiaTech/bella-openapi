@@ -5,6 +5,7 @@ import com.alicp.jetcache.CacheManager;
 import com.alicp.jetcache.anno.CacheType;
 import com.alicp.jetcache.anno.Cached;
 import com.alicp.jetcache.template.QuickConfig;
+import com.google.common.collect.Sets;
 import com.ke.bella.openapi.db.repo.ChannelRepo;
 import com.ke.bella.openapi.db.repo.Page;
 import com.ke.bella.openapi.metadata.Channel;
@@ -180,6 +181,13 @@ public class ChannelService {
             return null;
         }
         return listActivesWithDb(entityType, entityCode);
+    }
+
+    public List<ChannelDB> listAllWorkerChannels() {
+        return listByCondition(Condition.ChannelCondition.builder()
+                .status(ACTIVE)
+                .queueModes(Sets.newHashSet(QueueMode.PULL.getCode(), QueueMode.BOTH.getCode()))
+                .build());
     }
 
     public List<String> listSuppliers() {
