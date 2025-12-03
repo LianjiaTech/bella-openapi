@@ -122,10 +122,6 @@ export default function ChatCompletions() {
   const [isReceivingInline, setIsReceivingInline] = useState(false);
   const [inlineBuffer, setInlineBuffer] = useState('');
 
-  // 新增状态：用于处理Gemini模型的thoughtSignature
-  const [isReceivingThought, setIsReceivingThought] = useState(false);
-  const [thoughtBuffer, setThoughtBuffer] = useState('');
-
   // Refs
   const chatCompletionsWriterRef = useRef<ChatCompletionsProcessor | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -487,87 +483,26 @@ export default function ChatCompletions() {
       // 重置内联数据处理状态
       setIsReceivingInline(false);
       setInlineBuffer('');
-      // 重置thoughtSignature处理状态
-      setIsReceivingThought(false);
-      setThoughtBuffer('');
     });
 
     writer.on(ChatCompletionsEventType.DELTA, (data) => {
+      // 处理 thoughtSignature 字段（作为 delta 的独立字段）
+      if (data.thoughtSignature) {
+        setMessages(prev => {
+          const messages = [...prev];
+          if (messages.length > 0 && messages[messages.length - 1].role === 'assistant') {
+            messages[messages.length - 1] = {
+              ...messages[messages.length - 1],
+              thoughtSignature: data.thoughtSignature
+            };
+          }
+          return messages;
+        });
+      }
+
       if (!data.content) return;
 
-      // 情况1: 完整的thoughtSignature在一个chunk中（最常见的情况）
-      if (data.content && data.content.includes('<thoughtSignature>') && data.content.includes('</thoughtSignature>')) {
-        // 直接提取完整的thoughtSignature
-        const signatureMatch = data.content.match(/<thoughtSignature>(.*?)<\/thoughtSignature>/);
-        if (signatureMatch) {
-          const extractedSignature = signatureMatch[1];
-
-          // 更新最后一条消息，添加thoughtSignature
-          setMessages(prev => {
-            const messages = [...prev];
-            if (messages.length > 0 && messages[messages.length - 1].role === 'assistant') {
-              const lastMsg = messages[messages.length - 1];
-              messages[messages.length - 1] = {
-                ...lastMsg,
-                thoughtSignature: extractedSignature
-              };
-            }
-            return messages;
-          });
-        }
-
-        // 继续处理，但需要过滤掉thoughtSignature后再显示
-        // 不要return，继续往下执行过滤逻辑
-      }
-      // 情况2: thoughtSignature开始标签但没有结束标签（分段接收开始）
-      else if (data.content && data.content.includes('<thoughtSignature>') && !data.content.includes('</thoughtSignature>')) {
-        setIsReceivingThought(true);
-        setThoughtBuffer(prev => prev + data.content);
-        return;
-      }
-      // 情况3: 处理thoughtSignature的中间和结束（分段接收中）
-      else if (isReceivingThought) {
-        const updatedBuffer = thoughtBuffer + (data.content || '');
-        setThoughtBuffer(updatedBuffer);
-
-        // 检查是否接收完成
-        if (data.content && data.content.includes('</thoughtSignature>')) {
-          setIsReceivingThought(false);
-
-          // 提取完整的thoughtSignature
-          const signatureMatch = updatedBuffer.match(/<thoughtSignature>(.*?)<\/thoughtSignature>/);
-          if (signatureMatch) {
-            const extractedSignature = signatureMatch[1];
-
-            // 更新最后一条消息，添加thoughtSignature
-            setMessages(prev => {
-              const messages = [...prev];
-              if (messages.length > 0 && messages[messages.length - 1].role === 'assistant') {
-                const lastMsg = messages[messages.length - 1];
-                messages[messages.length - 1] = {
-                  ...lastMsg,
-                  thoughtSignature: extractedSignature
-                };
-              }
-              return messages;
-            });
-          }
-
-          // 清空缓冲区
-          setThoughtBuffer('');
-        }
-        return;
-      }
-
-      // 处理完thoughtSignature后，过滤掉标签内容用于显示
-      // 这样确保thoughtSignature不会显示在界面上
       let processedContent = data.content;
-      if (processedContent) {
-        // 移除完整的thoughtSignature标签
-        processedContent = processedContent.replace(/<thoughtSignature>.*?<\/thoughtSignature>/g, '');
-        // 如果还有未闭合的thoughtSignature标签，也移除
-        processedContent = processedContent.replace(/<thoughtSignature>.*$/g, '');
-      }
 
       // 检查是否开始接收内联数据
       if (processedContent.includes('<inline>') && !processedContent.includes('</inline>')) {
@@ -762,9 +697,8 @@ export default function ChatCompletions() {
         // 检查最后一条消息是否是助手消息
         if (messages.length > 0 && messages[messages.length - 1].role === 'assistant') {
           // 更新现有助手消息
-          const lastMsg = messages[messages.length - 1];
           messages[messages.length - 1] = {
-            ...lastMsg,
+            ...messages[messages.length - 1],
             error: error
           };
         }
@@ -774,9 +708,6 @@ export default function ChatCompletions() {
       // 重置内联数据状态
       setIsReceivingInline(false);
       setInlineBuffer('');
-      // 重置thoughtSignature状态
-      setIsReceivingThought(false);
-      setThoughtBuffer('');
     });
 
     return () => {
@@ -785,7 +716,7 @@ export default function ChatCompletions() {
         writer.removeAllListeners();
       }
     };
-  }, [isReceivingInline, inlineBuffer, isReceivingThought, thoughtBuffer, model]);
+  }, [isReceivingInline, inlineBuffer, model]);
 
   // 自动滚动到底部
   useEffect(() => {
@@ -949,7 +880,6 @@ export default function ChatCompletions() {
       });
       
       // 处理非系统消息
-      const isGeminiModel = model.includes('gemini');
       for (const msg of allCurrentMessages.filter(msg => msg.role !== 'system')) {
         const messageObj: any = {
           role: msg.role,
@@ -984,26 +914,10 @@ export default function ChatCompletions() {
           messageObj.content = typeof msg.content === 'string' ? msg.content : '';
         }
 
-        // 如果是Gemini模型且是assistant消息且存在thoughtSignature
-        if (isGeminiModel && msg.role === 'assistant' && msg.thoughtSignature) {
-          // 情况1：如果content是多模态数组（包含图像），给每个元素的顶层添加thoughtSignature
-          if (Array.isArray(messageObj.content)) {
-            messageObj.content = messageObj.content.map((item: any) => {
-              // thoughtSignature 添加到顶层，与 type、text、image_url 等字段平级
-              return {
-                ...item,
-                thoughtSignature: msg.thoughtSignature
-              };
-            });
-          }
-          // 情况2：如果是纯文本，将content转换为对象格式
-          else if (typeof messageObj.content === 'string') {
-            const contentObj: any = {
-              text: messageObj.content,
-              thoughtSignature: msg.thoughtSignature
-            };
-            messageObj.content = contentObj;
-          }
+        // 如果消息存在 thoughtSignature，添加到请求中（适用于所有角色和模型）
+        // thoughtSignature 作为 Message 对象的顶层字段
+        if (msg.thoughtSignature) {
+          messageObj.thoughtSignature = msg.thoughtSignature;
         }
 
         requestMessages.push(messageObj);
@@ -1206,14 +1120,7 @@ export default function ChatCompletions() {
                     }
 
                     // 使用处理后的内容（如果有）
-                    // 过滤掉thoughtSignature标签内容，确保不显示在界面上
-                    let displayContent = msg.processedContent || (typeof msg.content === 'string' ? msg.content : '') || '';
-                    if (displayContent) {
-                      // 移除完整的thoughtSignature标签
-                      displayContent = displayContent.replace(/<thoughtSignature>.*?<\/thoughtSignature>/g, '');
-                      // 如果还有未闭合的thoughtSignature标签，也移除
-                      displayContent = displayContent.replace(/<thoughtSignature>.*$/g, '');
-                    }
+                    const displayContent = msg.processedContent || (typeof msg.content === 'string' ? msg.content : '') || '';
 
                     return (
                       <MessageComponent
