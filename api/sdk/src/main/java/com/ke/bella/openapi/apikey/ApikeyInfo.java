@@ -42,6 +42,7 @@ public class ApikeyInfo implements Serializable {
     private String remark;
     private Long userId;
     private ApikeyInfo parentInfo;
+    private Integer qpsLimit;
 
     public RolePath getRolePath() {
         if(rolePath != null) {

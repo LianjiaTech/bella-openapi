@@ -15,6 +15,7 @@ import org.springframework.web.socket.server.standard.ServletServerContainerFact
 
 import com.ke.bella.openapi.common.EntityConstants;
 import com.ke.bella.openapi.intercept.MonthQuotaInterceptor;
+import com.ke.bella.openapi.intercept.QpsRateLimitInterceptor;
 
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
@@ -23,8 +24,18 @@ public class WebConfig implements WebMvcConfigurer {
     @Autowired
     private MonthQuotaInterceptor monthQuotaInterceptor;
 
+    @Autowired
+    private QpsRateLimitInterceptor qpsRateLimitInterceptor;
+
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
+
+		// QPS 限流拦截器（order=109）- 在 AuthorizationInterceptor(100) 之后，MonthQuotaInterceptor(110) 之前
+		registry.addInterceptor(qpsRateLimitInterceptor)
+			.addPathPatterns(endpointPathPatterns)
+			.order(109);
+
+        // 月额度拦截器（order=110）
         registry.addInterceptor(monthQuotaInterceptor)
                 .addPathPatterns(endpointPathPatterns)
                 .order(110);
