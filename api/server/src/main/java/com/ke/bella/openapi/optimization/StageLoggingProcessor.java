@@ -1,6 +1,5 @@
 package com.ke.bella.openapi.optimization;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ke.bella.openapi.EndpointProcessData;
 import com.ke.bella.openapi.RequestMetrics;
 import com.ke.bella.openapi.configuration.RequestOptimizationConfig;
@@ -257,8 +256,7 @@ public class StageLoggingProcessor {
      */
     private String generateRequestSummary(Object request) {
         try {
-            // 使用自定义序列化器，在序列化时直接忽略 thoughtSignature，避免拷贝开销
-            String fullContent = serializeWithoutThoughtSignature(request);
+            String fullContent = JacksonUtils.serialize(request);
             int maxLength = config.getRequestSummaryMaxLength();
 
             if (fullContent.length() <= maxLength) {
@@ -274,30 +272,4 @@ public class StageLoggingProcessor {
         }
     }
 
-    /**
-     * 序列化对象，自动过滤 thoughtSignature 字段
-     * 使用 Jackson 的 addMixIn 功能动态添加过滤规则，无需拷贝对象
-     */
-    private String serializeWithoutThoughtSignature(Object obj) {
-        try {
-            ObjectMapper mapper = JacksonUtils.MAPPER.copy();
-
-            // 为 Message 类添加过滤规则：忽略 thoughtSignature 字段
-            mapper.addMixIn(com.ke.bella.openapi.protocol.completion.Message.class,
-                           ThoughtSignatureFilter.class);
-
-            return mapper.writeValueAsString(obj);
-        } catch (Exception e) {
-            log.warn("Serialization with filter failed, fallback to default", e);
-            return JacksonUtils.serialize(obj);
-        }
-    }
-
-    /**
-     * MixIn 接口：用于标记要忽略的字段
-     */
-    private abstract static class ThoughtSignatureFilter {
-        @com.fasterxml.jackson.annotation.JsonIgnore
-        abstract String getThoughtSignature();
-    }
 }

@@ -32,37 +32,6 @@ import java.util.stream.Collectors;
 @Slf4j
 public class VertexConverter {
 
-    /**
-     * 清理 CompletionRequest 中的 thoughtSignature
-     * 用于日志记录时避免签名导致内容过大
-     */
-    public static void clearThoughtSignatures(CompletionRequest request) {
-        if (request == null || request.getMessages() == null) {
-            return;
-        }
-
-        request.getMessages().forEach(message -> {
-            if (message != null) {
-                message.setThoughtSignature(null);
-            }
-        });
-    }
-
-    /**
-     * 清理 CompletionResponse 中的 thoughtSignature
-     */
-    public static void clearThoughtSignatures(CompletionResponse response) {
-        if (response == null || response.getChoices() == null) {
-            return;
-        }
-
-        response.getChoices().forEach(choice -> {
-            if (choice != null && choice.getMessage() != null) {
-                choice.getMessage().setThoughtSignature(null);
-            }
-        });
-    }
-
     public static GeminiRequest convertToVertexRequest(CompletionRequest openaiRequest, VertexProperty property) {
         GeminiRequest.GeminiRequestBuilder builder = GeminiRequest.builder();
         
@@ -207,7 +176,7 @@ public class VertexConverter {
         }
         return builder;
     }
-    
+
     private static Content convertMessage(Message message, Map<String, String> toolCallCache, List<String> toolCallSorts) {
         List<Part> parts = new ArrayList<>();
         
@@ -222,7 +191,6 @@ public class VertexConverter {
                         .name(toolCall.getFunction().getName())
                         .args(parseArguments(toolCall.getFunction().getArguments()))
                         .build();
-
                 // 创建 function call part 并附加 thoughtSignature
                 Part part = applyThoughtSignature(
                     Part.builder().functionCall(functionCall),
@@ -290,7 +258,6 @@ public class VertexConverter {
                     Part.builder().text(text),
                     thoughtSignature
                 ).build();
-
             case "image_url":
                 @SuppressWarnings("unchecked")
                 Map<String, Object> imageUrl = (Map<String, Object>) contentItem.get("image_url");
