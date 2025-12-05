@@ -10,6 +10,7 @@ import com.ke.bella.openapi.common.exception.BizParamCheckException;
 import com.ke.bella.openapi.common.exception.ChannelException;
 import com.ke.bella.openapi.protocol.AdaptorManager;
 import com.ke.bella.openapi.protocol.ChannelRouter;
+import com.ke.bella.openapi.protocol.DirectChannelRouter;
 import com.ke.bella.openapi.protocol.completion.CompletionAdaptor;
 import com.ke.bella.openapi.protocol.completion.CompletionAdaptorDelegator;
 import com.ke.bella.openapi.protocol.completion.CompletionProperty;
@@ -48,6 +49,8 @@ public class ChatController {
     @Autowired
     private ChannelRouter router;
     @Autowired
+    private DirectChannelRouter directRouter;
+    @Autowired
     private AdaptorManager adaptorManager;
     @Autowired
     private LimiterManager limiterManager;
@@ -65,6 +68,12 @@ public class ChatController {
     @PostMapping("/completions")
     public Object completion(@RequestBody CompletionRequest request) {
         String endpoint = EndpointContext.getRequest().getRequestURI();
+
+        // Check for direct mode
+        if (BellaContext.isDirectMode()) {
+            return processDirectModeRequest(endpoint, request);
+        }
+
         String model = request.getModel();
         
         // Handle multi-model requests
@@ -169,5 +178,55 @@ public class ChatController {
             adaptor = new ToolCallSimulator<>(adaptor, processData);
         }
         return adaptor;
+    }
+
+    /**
+     * Process request in direct mode:
+     * 1. Use X-BELLA-MODEL header for model routing
+     * 2. Skip availability checks (uses DirectChannelRouter)
+     * 3. Use DirectCompletionAdaptor for transparent passthrough
+     * 4. Minimal processing overhead
+     */
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    private Object processDirectModeRequest(String endpoint, CompletionRequest request) {
+        // Get model from header (validated by DirectModeInterceptor)
+        String model = BellaContext.getDirectModel();
+
+        // Set endpoint data
+        endpointDataService.setEndpointData(endpoint, model, request);
+
+        // Use DirectChannelRouter - skips availability checks
+        ChannelDB channel = directRouter.routeDirect(model, EndpointContext.getApikey());
+        endpointDataService.setChannel(channel);
+
+        // No rate limiting or concurrent count in direct mode
+        // No safety checks in direct mode (transparent passthrough)
+
+        EndpointProcessData processData = EndpointContext.getProcessData();
+        String protocol = processData.getProtocol();
+        String url = processData.getForwardUrl();
+        String channelInfo = channel.getChannelInfo();
+
+        // Get the actual channel protocol adaptor
+        CompletionAdaptor adaptor = adaptorManager.getProtocolAdaptor(endpoint, protocol, CompletionAdaptor.class);
+        CompletionProperty property = (CompletionProperty) JacksonUtils.deserialize(channelInfo, adaptor.getPropertyClass());
+
+        // No adaptor decoration in direct mode - pure passthrough
+        EndpointContext.setEncodingType(property.getEncodingType());
+
+        if(request.isStream()) {
+            SseEmitter sse = SseHelper.createSse(1000L * 60 * 30, EndpointContext.getProcessData().getRequestId());
+            // Stream with direct callback (async logging)
+            adaptor.streamCompletion(request, url, property,
+                StreamCallbackProvider.provide(sse, processData, EndpointContext.getApikey(),
+                    logger, safetyCheckService, property));
+            return sse;
+        }
+
+        // Non-streaming request
+        CompletionResponse response = adaptor.completion(request, url, property);
+
+        // No safety checks on response in direct mode - transparent passthrough
+        return response;
     }
 }

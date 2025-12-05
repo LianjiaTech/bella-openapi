@@ -14,6 +14,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.socket.server.standard.ServletServerContainerFactoryBean;
 
 import com.ke.bella.openapi.common.EntityConstants;
+import com.ke.bella.openapi.intercept.DirectModeInterceptor;
 import com.ke.bella.openapi.intercept.MonthQuotaInterceptor;
 
 @Configuration
@@ -22,9 +23,14 @@ public class WebConfig implements WebMvcConfigurer {
             .map(EntityConstants.SystemBasicEndpoint::getEndpoint).collect(Collectors.toList());
     @Autowired
     private MonthQuotaInterceptor monthQuotaInterceptor;
+    @Autowired
+    private DirectModeInterceptor directModeInterceptor;
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(directModeInterceptor)
+                .addPathPatterns(endpointPathPatterns)
+                .order(100);
         registry.addInterceptor(monthQuotaInterceptor)
                 .addPathPatterns(endpointPathPatterns)
                 .order(110);
