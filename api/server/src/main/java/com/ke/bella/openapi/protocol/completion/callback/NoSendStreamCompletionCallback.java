@@ -5,16 +5,16 @@ import com.ke.bella.openapi.protocol.Callbacks;
 import com.ke.bella.openapi.protocol.completion.StreamCompletionResponse;
 
 /**
- * NoSendCallback - Adapter pattern wrapper for StreamCompletionCallback
+ * NoSendStreamCompletionCallback - Adapter pattern wrapper for StreamCompletionCallback
  *
  * Used in direct mode to prevent sending to SseEmitter (already handled by DirectSseListener)
  * All methods delegate to the wrapped callback, except send() which does nothing
  */
-public class NoSendCallback implements Callbacks.StreamCompletionCallback {
+public class NoSendStreamCompletionCallback implements Callbacks.StreamCompletionCallback {
 
     private final Callbacks.StreamCompletionCallback delegate;
 
-    public NoSendCallback(Callbacks.StreamCompletionCallback delegate) {
+    public NoSendStreamCompletionCallback(Callbacks.StreamCompletionCallback delegate) {
         this.delegate = delegate;
     }
 
