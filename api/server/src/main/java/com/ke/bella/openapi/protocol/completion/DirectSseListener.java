@@ -1,5 +1,6 @@
 package com.ke.bella.openapi.protocol.completion;
 
+import com.ke.bella.openapi.TaskExecutor;
 import com.ke.bella.openapi.protocol.BellaEventSourceListener;
 import com.ke.bella.openapi.protocol.Callbacks;
 import com.ke.bella.openapi.utils.SseHelper;
@@ -7,8 +8,6 @@ import lombok.extern.slf4j.Slf4j;
 import okhttp3.Response;
 import okhttp3.sse.EventSource;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-
-import java.util.concurrent.Executor;
 
 /**
  * Direct SSE Listener for transparent passthrough
@@ -18,12 +17,10 @@ import java.util.concurrent.Executor;
 public class DirectSseListener extends BellaEventSourceListener {
     private final SseEmitter sseEmitter;
     private final Callbacks.StreamCompletionCallback delegateCallback;
-    private final Executor taskExecutor;
 
-    public DirectSseListener(SseEmitter sseEmitter, Callbacks.StreamCompletionCallback delegateCallback, Executor taskExecutor) {
+    public DirectSseListener(SseEmitter sseEmitter, Callbacks.StreamCompletionCallback delegateCallback) {
         this.sseEmitter = sseEmitter;
         this.delegateCallback = delegateCallback;
-        this.taskExecutor = taskExecutor;
     }
 
     @Override
@@ -31,8 +28,8 @@ public class DirectSseListener extends BellaEventSourceListener {
         super.onOpen(eventSource, response);
 
         // Async notify delegate callback
-        if (delegateCallback != null && taskExecutor != null) {
-            taskExecutor.execute(() -> {
+        if (delegateCallback != null) {
+            TaskExecutor.submit(() -> {
                 try {
                     delegateCallback.onOpen();
                 } catch (Exception e) {
@@ -49,8 +46,8 @@ public class DirectSseListener extends BellaEventSourceListener {
 
         // Async process delegate callback (logging, metrics, etc.)
         // NoSendStreamCompletionCallback already wraps it, so send() is skipped
-        if (delegateCallback != null && taskExecutor != null) {
-            taskExecutor.execute(() -> {
+        if (delegateCallback != null) {
+            TaskExecutor.submit(() -> {
                 try {
                     StreamCompletionResponse response = parseResponse(data);
                     if (response != null) {
@@ -74,8 +71,8 @@ public class DirectSseListener extends BellaEventSourceListener {
         sseEmitter.complete();
 
         // Async finish processing
-        if (delegateCallback != null && taskExecutor != null) {
-            taskExecutor.execute(() -> {
+        if (delegateCallback != null) {
+            TaskExecutor.submit(() -> {
                 try {
                     delegateCallback.done();
                     delegateCallback.finish();
@@ -96,8 +93,8 @@ public class DirectSseListener extends BellaEventSourceListener {
         sseEmitter.completeWithError(t);
 
         // Async error processing
-        if (delegateCallback != null && taskExecutor != null) {
-            taskExecutor.execute(() -> {
+        if (delegateCallback != null) {
+            TaskExecutor.submit(() -> {
                 try {
                     if (t instanceof com.ke.bella.openapi.common.exception.ChannelException) {
                         delegateCallback.finish((com.ke.bella.openapi.common.exception.ChannelException) t);

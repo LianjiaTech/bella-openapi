@@ -241,7 +241,7 @@ public class ChatController {
                                     AuthorizationProperty auth, String url, HttpServletRequest httpRequest,
                                     EndpointProcessData processData) throws IOException {
         SseEmitter sse = SseHelper.createSse(1000L * 60 * 30, EndpointContext.getProcessData().getRequestId());
-        CompletionAdaptor adaptor = new DirectPassthroughAdaptor(delegator, httpRequest.getInputStream(), auth, sse, null);
+        CompletionAdaptor adaptor = new DirectPassthroughAdaptor(delegator, httpRequest.getInputStream(), auth, sse);
 
         // Create callback and wrap with NoSendStreamCompletionCallback to prevent duplicate sending
         Callbacks.StreamCompletionCallback originalCallback = StreamCallbackProvider.provide(
@@ -255,7 +255,7 @@ public class ChatController {
     private Object processDirectHTTP(CompletionAdaptorDelegator delegator, CompletionProperty property,
                                      AuthorizationProperty auth, String url, HttpServletRequest httpRequest,
                                      HttpServletResponse httpResponse) throws IOException {
-        CompletionAdaptor adaptor = new DirectPassthroughAdaptor(delegator, httpRequest.getInputStream(), auth, httpResponse, null);
+        CompletionAdaptor adaptor = new DirectPassthroughAdaptor(delegator, httpRequest.getInputStream(), auth, httpResponse);
         adaptor.completion(null, url, property);
         return null; // Response already written directly
     }

@@ -1,5 +1,6 @@
 package com.ke.bella.openapi.protocol.completion;
 
+import com.ke.bella.openapi.TaskExecutor;
 import com.ke.bella.openapi.protocol.AuthorizationProperty;
 import com.ke.bella.openapi.protocol.Callbacks;
 import com.ke.bella.openapi.utils.HttpUtils;
@@ -16,7 +17,6 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.concurrent.Executor;
 
 /**
  * Direct passthrough adaptor - wraps delegator for transparent passthrough
@@ -34,32 +34,27 @@ public class DirectPassthroughAdaptor implements CompletionAdaptor<CompletionPro
     private final AuthorizationProperty auth;
     private final HttpServletResponse httpResponse;
     private final SseEmitter sseEmitter;
-    private final Executor taskExecutor;
 
     public DirectPassthroughAdaptor(CompletionAdaptorDelegator<?> delegator,
                                     InputStream requestBody,
                                     AuthorizationProperty auth,
-                                    HttpServletResponse httpResponse,
-                                    Executor taskExecutor) {
+                                    HttpServletResponse httpResponse) {
         this.delegator = delegator;
         this.requestBody = requestBody;
         this.auth = auth;
         this.httpResponse = httpResponse;
         this.sseEmitter = null;
-        this.taskExecutor = taskExecutor;
     }
 
     public DirectPassthroughAdaptor(CompletionAdaptorDelegator<?> delegator,
                                     InputStream requestBody,
                                     AuthorizationProperty auth,
-                                    SseEmitter sseEmitter,
-                                    Executor taskExecutor) {
+                                    SseEmitter sseEmitter) {
         this.delegator = delegator;
         this.requestBody = requestBody;
         this.auth = auth;
         this.sseEmitter = sseEmitter;
         this.httpResponse = null;
-        this.taskExecutor = taskExecutor;
     }
 
     @Override
@@ -93,11 +88,9 @@ public class DirectPassthroughAdaptor implements CompletionAdaptor<CompletionPro
             }
 
             // Async processing for logging
-            if (taskExecutor != null) {
-                taskExecutor.execute(() -> {
-                    // TODO: logging, metrics
-                });
-            }
+            TaskExecutor.submit(() -> {
+                // TODO: logging, metrics
+            });
 
         } catch (IOException e) {
             log.error("Direct passthrough error", e);
@@ -113,7 +106,7 @@ public class DirectPassthroughAdaptor implements CompletionAdaptor<CompletionPro
         Request httpRequest = buildDirectRequest(url, property);
 
         // Create DirectSseListener - sends immediately, processes async
-        DirectSseListener directListener = new DirectSseListener(sseEmitter, callback, taskExecutor);
+        DirectSseListener directListener = new DirectSseListener(sseEmitter, callback);
 
         HttpUtils.streamRequest(httpRequest, directListener);
     }
