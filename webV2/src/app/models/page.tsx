@@ -9,7 +9,8 @@ import { Badge } from "@/components/ui/badge"
 import {
   Search,
   Layers,
-  Loader
+  Loader,
+  X
 } from "lucide-react"
 import { useLanguage } from "@/components/language-provider"
 import { useSidebar } from "@/lib/context/sidebar-context"
@@ -139,8 +140,16 @@ const ModelsPage = () => {
                   placeholder={t("searchModels")}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 text-sm"
+                  className="pl-10 pr-10 text-sm"
                 />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
               </div>
             </div>
 
