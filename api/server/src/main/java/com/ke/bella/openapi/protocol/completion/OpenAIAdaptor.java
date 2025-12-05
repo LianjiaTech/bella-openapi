@@ -15,11 +15,7 @@ import com.ke.bella.openapi.utils.JacksonUtils;
 import okhttp3.MediaType;
 import okhttp3.Request;
 import okhttp3.RequestBody;
-import okio.BufferedSink;
-import okio.Okio;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.Arrays;
 
 @Component("OpenAICompletion")
@@ -110,61 +106,5 @@ public class OpenAIAdaptor implements CompletionAdaptorDelegator<OpenAIProperty>
     @Override
     public Class<OpenAIProperty> getPropertyClass() {
         return OpenAIProperty.class;
-    }
-
-    /**
-     * Direct mode completion with InputStream passthrough - no deserialization
-     * Forwards InputStream directly to channel for maximum performance
-     */
-    @Override
-    public CompletionResponse completion(InputStream requestBody, String url, OpenAIProperty property) {
-        Request httpRequest = buildDirectRequest(requestBody, url, property);
-        CompletionResponse response = HttpUtils.httpRequest(httpRequest, CompletionResponse.class, errorCallback);
-        ResponseHelper.splitReasoningFromContent(response, property);
-        response.setCreated(DateTimeUtils.getCurrentSeconds());
-        return response;
-    }
-
-    /**
-     * Direct mode streaming completion with InputStream passthrough - no deserialization
-     * Forwards InputStream directly to channel for maximum performance
-     */
-    @Override
-    public void streamCompletion(InputStream requestBody, String url, OpenAIProperty property, StreamCompletionCallback callback) {
-        CompletionSseListener listener = new CompletionSseListener(callback, sseConverter);
-        Request httpRequest = buildDirectRequest(requestBody, url, property);
-        HttpUtils.streamRequest(httpRequest, listener);
-    }
-
-    /**
-     * Build request directly from InputStream without deserialization
-     */
-    private Request buildDirectRequest(InputStream requestBody, String url, OpenAIProperty property) {
-        if(StringUtils.isNotEmpty(property.getApiVersion())) {
-            url += property.getApiVersion();
-        }
-
-        // Create RequestBody that streams from InputStream
-        RequestBody body = new RequestBody() {
-            @Override
-            public MediaType contentType() {
-                return MediaType.parse("application/json");
-            }
-
-            @Override
-            public void writeTo(BufferedSink sink) throws IOException {
-                sink.writeAll(Okio.source(requestBody));
-            }
-        };
-
-        Request.Builder builder = authorizationRequestBuilder(property.getAuth())
-                .url(url)
-                .post(body);
-
-        if(MapUtils.isNotEmpty(property.getExtraHeaders())) {
-            property.getExtraHeaders().forEach(builder::addHeader);
-        }
-
-        return builder.build();
     }
 }

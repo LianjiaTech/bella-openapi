@@ -15,6 +15,7 @@ import com.ke.bella.openapi.protocol.completion.CompletionAdaptorDelegator;
 import com.ke.bella.openapi.protocol.completion.CompletionProperty;
 import com.ke.bella.openapi.protocol.completion.CompletionRequest;
 import com.ke.bella.openapi.protocol.completion.CompletionResponse;
+import com.ke.bella.openapi.protocol.completion.DirectPassthroughAdaptor;
 import com.ke.bella.openapi.protocol.completion.QueueAdaptor;
 import com.ke.bella.openapi.protocol.completion.ToolCallSimulator;
 import com.ke.bella.openapi.protocol.completion.callback.StreamCallbackProvider;
@@ -38,6 +39,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Map;
 import org.apache.commons.io.IOUtils;
@@ -66,12 +68,12 @@ public class ChatController {
     private Integer maxModelsPerRequest;
 
     @PostMapping("/completions")
-    public Object completion(HttpServletRequest httpRequest) throws IOException {
+    public Object completion(HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException {
         String endpoint = httpRequest.getRequestURI();
 
         // Check for direct mode - skip body deserialization for performance
         if (BellaContext.isDirectMode()) {
-            return processDirectModeRequest(endpoint, httpRequest);
+            return processDirectModeRequest(endpoint, httpRequest, httpResponse);
         }
 
         // Normal mode - read and parse request body
@@ -184,15 +186,15 @@ public class ChatController {
     }
 
     /**
-     * Process request in direct mode with InputStream passthrough:
+     * Process request in direct mode with DirectPassthroughAdaptor:
      * 1. Use X-BELLA-MODEL header for model routing
      * 2. Use X-BELLA-PROTOCOL header to distinguish HTTP vs SSE
-     * 3. Skip availability checks (uses DirectChannelRouter)
-     * 4. Skip body deserialization - pass InputStream directly
-     * 5. Minimal processing overhead - no serialization/deserialization
+     * 3. Skip availability checks, rate limiting, safety checks
+     * 4. Direct transparent passthrough - responses written immediately
+     * 5. Async processing for logging, metrics
      */
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    private Object processDirectModeRequest(String endpoint, HttpServletRequest httpRequest) throws IOException {
+    private Object processDirectModeRequest(String endpoint, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException {
         // Get model from header (validated by DirectModeInterceptor)
         String model = BellaContext.getDirectModel();
 
@@ -211,28 +213,36 @@ public class ChatController {
         String url = processData.getForwardUrl();
         String channelInfo = channel.getChannelInfo();
 
-        // Get the actual channel protocol adaptor
-        CompletionAdaptor adaptor = adaptorManager.getProtocolAdaptor(endpoint, protocol, CompletionAdaptor.class);
-        CompletionProperty property = (CompletionProperty) JacksonUtils.deserialize(channelInfo, adaptor.getPropertyClass());
+        // Get the actual channel protocol adaptor (must be CompletionAdaptorDelegator)
+        CompletionAdaptor rawAdaptor = adaptorManager.getProtocolAdaptor(endpoint, protocol, CompletionAdaptor.class);
+        if (!(rawAdaptor instanceof CompletionAdaptorDelegator)) {
+            throw new IllegalStateException("Direct mode requires CompletionAdaptorDelegator, got: " + rawAdaptor.getClass().getSimpleName());
+        }
 
-        // No adaptor decoration in direct mode - pure passthrough
+        CompletionAdaptorDelegator delegator = (CompletionAdaptorDelegator) rawAdaptor;
+        CompletionProperty property = (CompletionProperty) JacksonUtils.deserialize(channelInfo, delegator.getPropertyClass());
+
         EndpointContext.setEncodingType(property.getEncodingType());
 
-        // Check protocol from header
+        // Wrap with DirectPassthroughAdaptor for transparent passthrough
+        CompletionAdaptor adaptor;
         if(BellaContext.isDirectSSE()) {
             // SSE streaming mode
             SseEmitter sse = SseHelper.createSse(1000L * 60 * 30, EndpointContext.getProcessData().getRequestId());
-            // Pass InputStream directly to adaptor for streaming
-            adaptor.streamCompletion(httpRequest.getInputStream(), url, property,
+            adaptor = new DirectPassthroughAdaptor(delegator, httpRequest.getInputStream(), sse);
+
+            // Streaming - callback for async processing
+            adaptor.streamCompletion(null, url, property,
                 StreamCallbackProvider.provide(sse, processData, EndpointContext.getApikey(),
                     logger, safetyCheckService, property));
             return sse;
         } else {
             // HTTP mode (non-streaming)
-            // Pass InputStream directly to adaptor
-            CompletionResponse response = adaptor.completion(httpRequest.getInputStream(), url, property);
-            // No safety checks on response in direct mode - transparent passthrough
-            return response;
+            adaptor = new DirectPassthroughAdaptor(delegator, httpRequest.getInputStream(), httpResponse);
+
+            // Non-streaming - returns null as response is already written to httpResponse
+            adaptor.completion(null, url, property);
+            return null; // Response already written directly
         }
     }
 }
