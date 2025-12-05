@@ -40,6 +40,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.util.Map;
+import org.apache.commons.io.IOUtils;
 
 @EndpointAPI
 @RestController
@@ -65,16 +66,17 @@ public class ChatController {
     private Integer maxModelsPerRequest;
 
     @PostMapping("/completions")
-    public Object completion(HttpServletRequest httpRequest, @RequestBody(required = false) CompletionRequest request) throws IOException {
+    public Object completion(HttpServletRequest httpRequest) throws IOException {
         String endpoint = httpRequest.getRequestURI();
 
         // Check for direct mode - skip body deserialization for performance
-        // In direct mode, @RequestBody will be null because we don't parse it
         if (BellaContext.isDirectMode()) {
             return processDirectModeRequest(endpoint, httpRequest);
         }
 
-        // Normal mode - request body is parsed
+        // Normal mode - read and parse request body
+        byte[] bodyBytes = IOUtils.toByteArray(httpRequest.getInputStream());
+        CompletionRequest request = JacksonUtils.deserialize(bodyBytes, CompletionRequest.class);
         String model = request.getModel();
         
         // Handle multi-model requests
