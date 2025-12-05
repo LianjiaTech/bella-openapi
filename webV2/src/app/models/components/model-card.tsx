@@ -54,7 +54,7 @@ export function ModelCard({ model, onAddChannel, tagColors = defaultTagColors }:
         </div>
 
         {/* Properties */}
-        <div className="mb-3 min-h-[40px] space-y-1 text-sm">
+        <div className="mb-3 min-h-[40px] space-y-1 text-xs">
           {model.properties && (
             <div className="flex justify-between">
               <span className="text-muted-foreground">输入/输出长度:</span>
@@ -85,7 +85,7 @@ export function ModelCard({ model, onAddChannel, tagColors = defaultTagColors }:
             <Badge
               key={feature}
               variant="secondary"
-              className={`text-sm ${tagColors[index % tagColors.length]}`}
+              className={`text-xs ${tagColors[index % tagColors.length]}`}
             >
               {feature}
             </Badge>

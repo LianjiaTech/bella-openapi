@@ -169,3 +169,5 @@ jetcache.statIntervalMinutes: 1                     # Cache statistics
 ```
 
 ### always response with chinese
+
+ ## First, provide a revision plan according to the user's requirements, and then proceed to the next step after the user confirms it
