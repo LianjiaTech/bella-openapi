@@ -1,0 +1,23 @@
+.env.local
+
+# Logs
+logs
+*.log*
+
+# node
+node_modules
+.husky
+.next
+
+# vscode
+.vscode
+
+# webstorm
+.idea
+*.iml
+*.iws
+*.ipr
+
+
+# Jetbrains
+.idea

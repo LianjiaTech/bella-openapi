@@ -1,0 +1,313 @@
+'use client'
+
+import React, {ReactNode, useEffect, useRef, useState} from "react"
+import {useRouter} from "next/navigation"
+import {ColumnDef} from "@tanstack/react-table"
+import {ApikeyInfo} from "@/lib/types/openapi"
+import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip"
+import {CertifyDialog, DeleteDialog, QuotaDialog, RenameDialog, ResetDialog, ServiceIdDialog} from "./apikey-dialog"
+import {HoverContext} from "@/components/ui/data-table";
+import {Badge} from "@/components/ui/badge"
+import {Button} from "@/components/ui/button"
+import {Copy, Wallet, Users, ArrowRightLeft} from 'lucide-react'
+import {useToast} from "@/hooks/use-toast";
+import {safety_apply_url} from "@/config";
+import {ApiKeyBalanceDialog, ApiKeyBalanceIndicator} from "./apikey-balance";
+import {TransferDialog} from "./transfer-dialog";
+import {getSafetyLevel} from "@/lib/api/apikey";
+
+interface EditableCellProps {
+    content: ReactNode;
+    dialogComponent: (isOpen: boolean, onClose: () => void) => React.ReactElement;
+    positionCalc: string;
+    rowId: string;
+}
+
+const EditableCell: React.FC<EditableCellProps> = ({ content, dialogComponent, positionCalc, rowId }) => {
+    const hoveredRowId = React.useContext(HoverContext);
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const contentRef = useRef<HTMLSpanElement>(null);
+    const [iconPosition, setIconPosition] = useState(0);
+
+    useEffect(() => {
+        if (contentRef.current) {
+            const contentWidth = contentRef.current.offsetWidth;
+            setIconPosition(contentWidth / 2 + 5);
+        }
+    }, [content]);
+
+    const showButton = hoveredRowId === rowId || isDialogOpen;
+
+    return (
+        <div className="relative flex justify-center items-center w-full">
+            <span ref={contentRef} className="font-medium">{content}</span>
+            {showButton && (
+                <div style={{ position: 'absolute', left: `calc(${positionCalc} + ${iconPosition}px)` }}>
+                    {dialogComponent(isDialogOpen, () => setIsDialogOpen(!isDialogOpen))}
+                </div>
+            )}
+        </div>
+    );
+};
+
+
+const RemarkCell = ({ value }: { value: string }) => {
+    const remark = value || '/'
+    return (
+        <TooltipProvider>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <div className="truncate max-w-xs cursor-help">{remark}</div>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="w-64 break-words">
+                    <p>{remark}</p>
+                </TooltipContent>
+            </Tooltip>
+        </TooltipProvider>
+    )
+}
+
+const ActionCell = ({code, name, displayAk, refresh, showApikey}: { code: string, name: string, displayAk: string, refresh: () => void, showApikey: (apikey: string) => void }) => {
+    const router = useRouter()
+    const { toast } = useToast();
+    const [showBalance, setShowBalance] = useState(false);
+    const [showTransferDialog, setShowTransferDialog] = useState(false);
+
+
+    const copyToClipboard = () => {
+        navigator.clipboard.writeText(code).then(() => {
+            toast({ title: "复制成功", description: "API Key编码复制成功。" })
+        });
+    };
+
+    const handleSubApikeyManagement = () => {
+        router.push(`/apikey/${code}`)
+    }
+
+    const handleTransfer = () => {
+        setShowTransferDialog(true)
+    }
+
+
+    return (
+        <div className="flex flex-wrap justify-end gap-2">
+            <Button onClick={copyToClipboard} variant="ghost" size="icon" className="p-0 focus:ring-0">
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <div>
+                                <Copy className="h-4 w-4" />
+                                <span className="sr-only">复制ak code</span>
+                            </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>复制ak code</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+            </Button>
+            <Button
+                onClick={handleSubApikeyManagement}
+                variant="ghost"
+                size="icon"
+                className="p-0 focus:ring-0"
+            >
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <div>
+                                <Users className="h-4 w-4" />
+                                <span className="sr-only">子AK管理</span>
+                            </div>
+                        </TooltipTrigger>
+                        <TooltipContent>子AK管理</TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+            </Button>
+            <Button
+                onClick={handleTransfer}
+                variant="ghost"
+                size="icon"
+                className="p-0 focus:ring-0"
+            >
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <div>
+                                <ArrowRightLeft className="h-4 w-4" />
+                                <span className="sr-only">转交</span>
+                            </div>
+                        </TooltipTrigger>
+                        <TooltipContent>转交</TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+            </Button>
+            <Button
+                onClick={() => setShowBalance(true)}
+                variant="ghost"
+                size="icon"
+                className="p-0 focus:ring-0"
+            >
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <div>
+                                <Wallet className="h-4 w-4" />
+                                <span className="sr-only">查看余额</span>
+                            </div>
+                        </TooltipTrigger>
+                        <TooltipContent>查看余额</TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+            </Button>
+            <ResetDialog code={code} showApikey={showApikey}/>
+            <DeleteDialog code={code} refresh={refresh}/>
+            <ApiKeyBalanceDialog code={code} isOpen={showBalance} onClose={() => setShowBalance(false)} />
+            <TransferDialog
+                isOpen={showTransferDialog}
+                onClose={() => setShowTransferDialog(false)}
+                akCode={code}
+                displayName={displayAk}
+                onTransferSuccess={refresh}
+            />
+        </div>
+    )
+}
+
+export const ApikeyColumns = (refresh: () => void, showApikey: (apikey : string) => void, updateApiKeyInPlace?: (code: string, updates: Partial<ApikeyInfo>) => void): ColumnDef<ApikeyInfo>[] => [
+    {
+        accessorKey: "akDisplay",
+        header: "AK",
+        cell: ({row}) =>
+            (<div className="font-mono text-sm">
+                {row.original.akDisplay}
+            </div>)
+        ,
+    },
+    {
+        accessorKey: "name",
+        header: "名称",
+        cell: ({row}) => (
+            <EditableCell
+                content={row.original.name}
+                dialogComponent={(isOpen, onClose) => (
+                    <RenameDialog
+                        code={row.original.code}
+                        origin={row.original.name}
+                        refresh={refresh}
+                        isOpen={isOpen}
+                        onClose={onClose}
+                        onSuccess={updateApiKeyInPlace ? (newName) => updateApiKeyInPlace(row.original.code, { name: newName }) : undefined}
+                    />
+                )}
+                positionCalc="50%"
+                rowId={row.id}
+            />
+        ),
+    },
+    {
+        accessorKey: "serviceId",
+        header: "服务名",
+        cell: ({row}) => (
+            <EditableCell
+                content={row.original.serviceId || '/'}
+                dialogComponent={(isOpen, onClose) => (
+                    <ServiceIdDialog
+                        code={row.original.code}
+                        origin={row.original.serviceId || ''}
+                        refresh={refresh}
+                        isOpen={isOpen}
+                        onClose={onClose}
+                        onSuccess={updateApiKeyInPlace ? (newServiceId) => updateApiKeyInPlace(row.original.code, { serviceId: newServiceId }) : undefined}
+                    />
+                )}
+                positionCalc="50%"
+                rowId={row.id}
+            />
+        ),
+    },
+    {
+        accessorKey: "safetyLevel",
+        header: "安全等级",
+        cell: ({row}) => {
+            const level = row.original.safetyLevel as number;
+            let color = "bg-green-100 text-green-800";
+            if (level == 1) {
+                color = "bg-yellow-100 text-yellow-800";
+            }
+            if (level == 0) {
+                color = "bg-red-100 text-red-800";
+            }
+
+            return (
+                safety_apply_url ?
+                <EditableCell
+                    content={<Badge className={`${color} capitalize`}>{getSafetyLevel(level)}
+                </Badge>}
+                    dialogComponent={(isOpen, onClose) => (
+                        <CertifyDialog
+                            code={row.original.code}
+                            refresh={refresh}
+                            isOpen={isOpen}
+                            onClose={onClose}
+                        />
+                    )}
+                    positionCalc="60%"
+                    rowId={row.id}
+                /> : <Badge className={`${color} capitalize`}>{getSafetyLevel(level)}
+                    </Badge>
+            );
+        },
+    },
+    {
+        accessorKey: "monthQuota",
+        header: "每月额度",
+        cell: ({row}) => {
+            const formatted = new Intl.NumberFormat("zh-CN", {
+                style: "currency",
+                currency: "CNY",
+            }).format(row.original.monthQuota);
+
+            return (
+                <EditableCell
+                    content={formatted}
+                    dialogComponent={(isOpen, onClose) => (
+                        <QuotaDialog
+                            code={row.original.code}
+                            origin={row.original.monthQuota}
+                            refresh={refresh}
+                            isOpen={isOpen}
+                            onClose={onClose}
+                        />
+                    )}
+                    positionCalc="50%"
+                    rowId={row.id}
+                />
+            );
+        }
+    },
+    {
+        accessorKey: "code",
+        header: "余额状态",
+        cell: ({row}) =>
+                <ApiKeyBalanceIndicator code={row.original.code} />
+    },
+    {
+        accessorKey: "remark",
+        header: "备注",
+        cell: ({row}) => <RemarkCell value={row.original.remark}/>,
+    },
+    {
+        id: "actions",
+        header: "",
+        cell: ({row}) => (
+            <ActionCell 
+                code={row.original.code} 
+                name={row.original.name} 
+                displayAk={row.original.akDisplay}
+                refresh={refresh} 
+                showApikey={showApikey}
+            />
+        ),
+    },
+]
