@@ -10,6 +10,7 @@ import com.ke.bella.openapi.common.exception.BizParamCheckException;
 import com.ke.bella.openapi.common.exception.ChannelException;
 import com.ke.bella.openapi.protocol.AdaptorManager;
 import com.ke.bella.openapi.protocol.AuthorizationProperty;
+import com.ke.bella.openapi.protocol.Callbacks;
 import com.ke.bella.openapi.protocol.ChannelRouter;
 import com.ke.bella.openapi.protocol.completion.CompletionAdaptor;
 import com.ke.bella.openapi.protocol.completion.CompletionAdaptorDelegator;
@@ -19,6 +20,7 @@ import com.ke.bella.openapi.protocol.completion.CompletionResponse;
 import com.ke.bella.openapi.protocol.completion.DirectPassthroughAdaptor;
 import com.ke.bella.openapi.protocol.completion.QueueAdaptor;
 import com.ke.bella.openapi.protocol.completion.ToolCallSimulator;
+import com.ke.bella.openapi.protocol.completion.callback.NoSendCallback;
 import com.ke.bella.openapi.protocol.completion.callback.StreamCallbackProvider;
 import com.ke.bella.openapi.protocol.limiter.LimiterManager;
 import com.ke.bella.openapi.protocol.log.EndpointLogger;
@@ -235,10 +237,13 @@ public class ChatController {
             SseEmitter sse = SseHelper.createSse(1000L * 60 * 30, EndpointContext.getProcessData().getRequestId());
             adaptor = new DirectPassthroughAdaptor(delegator, httpRequest.getInputStream(), auth, sse);
 
+            // Create callback and wrap with NoSendCallback to prevent duplicate sending
+            Callbacks.StreamCompletionCallback originalCallback = StreamCallbackProvider.provide(
+                sse, processData, EndpointContext.getApikey(), logger, safetyCheckService, property);
+            Callbacks.StreamCompletionCallback noSendCallback = new NoSendCallback(originalCallback);
+
             // Streaming - callback for async processing
-            adaptor.streamCompletion(null, url, property,
-                StreamCallbackProvider.provide(sse, processData, EndpointContext.getApikey(),
-                    logger, safetyCheckService, property));
+            adaptor.streamCompletion(null, url, property, noSendCallback);
             return sse;
         } else {
             // HTTP mode (non-streaming)
