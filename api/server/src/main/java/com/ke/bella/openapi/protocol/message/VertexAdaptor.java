@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component("VertexMessage")
-public class VertexMessageAdaptor implements MessageDelegatorAdaptor<VertexProperty> {
+public class VertexAdaptor implements MessageDelegatorAdaptor<VertexProperty> {
     @Autowired
     private com.ke.bella.openapi.protocol.completion.VertexAdaptor delegator;
 
