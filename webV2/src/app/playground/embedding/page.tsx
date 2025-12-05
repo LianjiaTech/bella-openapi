@@ -1,0 +1,347 @@
+"use client"
+
+import { TopBar } from "@/components/top-bar"
+import { Brain } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Textarea } from "@/components/ui/textarea"
+import { Card } from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
+import { useState } from "react"
+
+export default function EmbeddingPlaygroundPage() {
+  const [inputText, setInputText] = useState("")
+  const [embeddings, setEmbeddings] = useState<Array<{ text: string; vector: number[] }>>([])
+  const [selectedModel, setSelectedModel] = useState("text-embedding-3-large")
+
+  // Mock embedding generation
+  const generateEmbedding = (text: string) => {
+    return Array.from({ length: 1536 }, () => Math.random() * 2 - 1)
+  }
+
+  const calculateCosineSimilarity = (vec1: number[], vec2: number[]) => {
+    const dotProduct = vec1.reduce((sum, val, i) => sum + val * vec2[i], 0)
+    const mag1 = Math.sqrt(vec1.reduce((sum, val) => sum + val * val, 0))
+    const mag2 = Math.sqrt(vec2.reduce((sum, val) => sum + val * val, 0))
+    return dotProduct / (mag1 * mag2)
+  }
+
+  const calculateEuclideanDistance = (vec1: number[], vec2: number[]) => {
+    return Math.sqrt(vec1.reduce((sum, val, i) => sum + Math.pow(val - vec2[i], 2), 0))
+  }
+
+  const handleGenerate = () => {
+    const lines = inputText.split("\n").filter((line) => line.trim())
+    const newEmbeddings = lines.map((line) => ({
+      text: line,
+      vector: generateEmbedding(line),
+    }))
+    setEmbeddings(newEmbeddings)
+  }
+
+  const modelInfo = {
+    "text-embedding-3-large": {
+      description: "最强性能，1536维向量",
+      badges: ["1536维", "高性能"],
+    },
+    "text-embedding-3-small": {
+      description: "快速高效，512维向量",
+      badges: ["512维", "快速"],
+    },
+    "text-embedding-ada-002": {
+      description: "经典模型，1536维向量",
+      badges: ["1536维", "经典"],
+    },
+  }
+
+  return (
+    <div className="flex h-screen flex-col">
+      <TopBar title="Embedding Playground" description="生成文本向量表示并计算相似度" />
+      <main className="flex flex-1 overflow-hidden">
+        {/* 左侧主要内容区域 */}
+        <div className="flex-1 overflow-auto p-6">
+          <div className="mx-auto max-w-4xl space-y-6">
+            <Card className="p-6">
+              <div className="mb-4 flex items-center gap-2">
+                <Brain className="h-5 w-5 text-primary" />
+                <h3 className="font-semibold">输入文本（每行一条）</h3>
+              </div>
+              <Textarea
+                placeholder="输入多行文本，每行将生成独立的 embedding 向量...&#10;例如：&#10;什么是人工智能？&#10;AI 的应用场景有哪些？&#10;机器学习的基本原理"
+                className="min-h-[200px] font-mono"
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+              />
+              <Button onClick={handleGenerate} className="mt-4 w-full" size="lg" disabled={!inputText.trim()}>
+                生成 Embedding 向量
+              </Button>
+            </Card>
+
+            {embeddings.length > 0 && (
+              <>
+                <Card className="p-6">
+                  <h3 className="mb-4 font-semibold">生成的向量</h3>
+                  <div className="space-y-3">
+                    {embeddings.map((item, idx) => (
+                      <div key={idx} className="rounded-lg border bg-card p-4">
+                        <div className="mb-2 flex items-center justify-between">
+                          <span className="text-sm font-medium">文本 {idx + 1}</span>
+                          <span className="text-xs text-muted-foreground">1536维</span>
+                        </div>
+                        <p className="mb-2 text-sm text-muted-foreground">{item.text}</p>
+                        <p className="truncate text-xs font-mono text-muted-foreground">
+                          [
+                          {item.vector
+                            .slice(0, 5)
+                            .map((v) => v.toFixed(4))
+                            .join(", ")}
+                          ...]
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+
+                {embeddings.length > 1 && (
+                  <Card className="p-6">
+                    <h3 className="mb-4 font-semibold">相似度距离矩阵</h3>
+                    <div className="overflow-auto">
+                      <div className="grid gap-4">
+                        {/* 余弦相似度矩阵 */}
+                        <div>
+                          <h4 className="mb-3 text-sm font-medium">余弦相似度矩阵</h4>
+                          <div className="inline-block min-w-full">
+                            <table className="border-collapse">
+                              <thead>
+                                <tr>
+                                  <th className="border border-border bg-muted p-2 text-xs font-medium"></th>
+                                  {embeddings.map((_, idx) => (
+                                    <th key={idx} className="border border-border bg-muted p-2 text-xs font-medium">
+                                      文本 {idx + 1}
+                                    </th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {embeddings.map((item1, i) => (
+                                  <tr key={i}>
+                                    <th className="border border-border bg-muted p-2 text-xs font-medium">
+                                      文本 {i + 1}
+                                    </th>
+                                    {embeddings.map((item2, j) => {
+                                      const similarity =
+                                        i === j ? 1.0 : calculateCosineSimilarity(item1.vector, item2.vector)
+                                      const colorClass =
+                                        i === j
+                                          ? "bg-muted"
+                                          : similarity > 0.8
+                                            ? "bg-green-100 dark:bg-green-950"
+                                            : similarity > 0.5
+                                              ? "bg-yellow-100 dark:bg-yellow-950"
+                                              : "bg-red-100 dark:bg-red-950"
+                                      return (
+                                        <td
+                                          key={j}
+                                          className={`border border-border p-2 text-center text-xs font-mono ${colorClass}`}
+                                        >
+                                          {similarity.toFixed(4)}
+                                        </td>
+                                      )
+                                    })}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+
+                        {/* 欧式距离矩阵 */}
+                        <div>
+                          <h4 className="mb-3 text-sm font-medium">欧式距离矩阵</h4>
+                          <div className="inline-block min-w-full">
+                            <table className="border-collapse">
+                              <thead>
+                                <tr>
+                                  <th className="border border-border bg-muted p-2 text-xs font-medium"></th>
+                                  {embeddings.map((_, idx) => (
+                                    <th key={idx} className="border border-border bg-muted p-2 text-xs font-medium">
+                                      文本 {idx + 1}
+                                    </th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {embeddings.map((item1, i) => (
+                                  <tr key={i}>
+                                    <th className="border border-border bg-muted p-2 text-xs font-medium">
+                                      文本 {i + 1}
+                                    </th>
+                                    {embeddings.map((item2, j) => {
+                                      const distance =
+                                        i === j ? 0.0 : calculateEuclideanDistance(item1.vector, item2.vector)
+                                      return (
+                                        <td
+                                          key={j}
+                                          className="border border-border bg-muted p-2 text-center text-xs font-mono"
+                                        >
+                                          {distance.toFixed(4)}
+                                        </td>
+                                      )
+                                    })}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 rounded-lg border bg-card p-3 text-xs text-muted-foreground">
+                      <p className="mb-2 font-medium">矩阵说明：</p>
+                      <ul className="space-y-1 list-disc list-inside">
+                        <li>余弦相似度：1.0表示完全相同，越接近1越相似，越接近0越不相似</li>
+                        <li>欧式距离：0表示完全相同，数值越小表示越相似</li>
+                        <li>对角线元素表示文本与自身的相似度</li>
+                      </ul>
+                    </div>
+                  </Card>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* 右侧配置面板 */}
+        <div className="w-80 border-l bg-muted/30 p-6 overflow-auto">
+          <div className="space-y-6">
+            <div>
+              <h3 className="mb-4 font-semibold">模型配置</h3>
+
+              <div className="space-y-4">
+                <div>
+                  <Label className="mb-2 block">模型选择</Label>
+                  <Select value={selectedModel} onValueChange={setSelectedModel}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue>
+                        {selectedModel === "text-embedding-3-large" && "text-embedding-3-large"}
+                        {selectedModel === "text-embedding-3-small" && "text-embedding-3-small"}
+                        {selectedModel === "text-embedding-ada-002" && "text-embedding-ada-002"}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="text-embedding-3-large">
+                        <div className="flex flex-col gap-1 py-1">
+                          <div className="font-medium">text-embedding-3-large</div>
+                          <div className="text-xs text-muted-foreground">最强性能，1536维向量</div>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                              1536维
+                            </Badge>
+                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                              高性能
+                            </Badge>
+                          </div>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="text-embedding-3-small">
+                        <div className="flex flex-col gap-1 py-1">
+                          <div className="font-medium">text-embedding-3-small</div>
+                          <div className="text-xs text-muted-foreground">快速高效，512维向量</div>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                              512维
+                            </Badge>
+                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                              快速
+                            </Badge>
+                          </div>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="text-embedding-ada-002">
+                        <div className="flex flex-col gap-1 py-1">
+                          <div className="font-medium">text-embedding-ada-002</div>
+                          <div className="text-xs text-muted-foreground">经典模型，1536维向量</div>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                              1536维
+                            </Badge>
+                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                              经典
+                            </Badge>
+                          </div>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {/* 选择后的模型信息显示在下方 */}
+                  <div className="mt-3 rounded-lg border bg-muted/50 p-3 space-y-2">
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      {modelInfo[selectedModel].description}
+                    </p>
+                    <div className="flex flex-wrap gap-1">
+                      {modelInfo[selectedModel].badges.map((badge, idx) => (
+                        <Badge key={idx} variant="secondary" className="text-[10px] px-1.5 py-0">
+                          {badge}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="mb-2 block">编码格式</Label>
+                  <Select defaultValue="float">
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="float">Float</SelectItem>
+                      <SelectItem value="base64">Base64</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label className="mb-2 block">维度 (可选)</Label>
+                  <Select defaultValue="1536">
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1536">1536</SelectItem>
+                      <SelectItem value="768">768</SelectItem>
+                      <SelectItem value="512">512</SelectItem>
+                      <SelectItem value="256">256</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="mt-2 text-xs text-muted-foreground">降低维度可以减少存储成本</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t pt-6">
+              <h4 className="mb-3 text-sm font-medium">模型信息</h4>
+              <div className="space-y-2 text-xs text-muted-foreground">
+                <div className="flex justify-between">
+                  <span>最大输入</span>
+                  <span className="font-medium">8191 tokens</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>向量维度</span>
+                  <span className="font-medium">1536</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>价格</span>
+                  <span className="font-medium">$0.13/1M tokens</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  )
+}
