@@ -1,5 +1,6 @@
 package com.ke.bella.openapi.protocol.completion;
 
+import com.ke.bella.openapi.protocol.AuthorizationProperty;
 import com.ke.bella.openapi.protocol.IProtocolProperty;
 import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
@@ -8,13 +9,19 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Data
-public class CompletionProperty implements IProtocolProperty {
+public abstract class CompletionProperty implements IProtocolProperty {
     String encodingType = StringUtils.EMPTY;
     boolean mergeReasoningContent = false;
     boolean splitReasoningFromContent = false;
     boolean functionCallSimulate = false;
     Map<String, String> extraHeaders;
     String queueName;
+
+    /**
+     * Get authorization property for the channel
+     * Must be implemented by subclasses
+     */
+    public abstract AuthorizationProperty getAuth();
 
     @Override
     public Map<String, String> description() {

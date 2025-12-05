@@ -17,7 +17,6 @@ import com.ke.bella.openapi.protocol.completion.CompletionProperty;
 import com.ke.bella.openapi.protocol.completion.CompletionRequest;
 import com.ke.bella.openapi.protocol.completion.CompletionResponse;
 import com.ke.bella.openapi.protocol.completion.DirectPassthroughAdaptor;
-import com.ke.bella.openapi.protocol.completion.OpenAIProperty;
 import com.ke.bella.openapi.protocol.completion.QueueAdaptor;
 import com.ke.bella.openapi.protocol.completion.ToolCallSimulator;
 import com.ke.bella.openapi.protocol.completion.callback.StreamCallbackProvider;
@@ -226,20 +225,8 @@ public class ChatController {
 
         EndpointContext.setEncodingType(property.getEncodingType());
 
-        // Extract auth from property (assuming it's OpenAIProperty or similar with auth field)
-        AuthorizationProperty auth;
-        if (property instanceof OpenAIProperty) {
-            auth = ((OpenAIProperty) property).getAuth();
-        } else {
-            // Use reflection for other property types
-            try {
-                java.lang.reflect.Field authField = property.getClass().getDeclaredField("auth");
-                authField.setAccessible(true);
-                auth = (AuthorizationProperty) authField.get(property);
-            } catch (Exception e) {
-                throw new IllegalStateException("Cannot extract auth from property: " + property.getClass(), e);
-            }
-        }
+        // Extract auth from property
+        AuthorizationProperty auth = property.getAuth();
 
         // Wrap with DirectPassthroughAdaptor for transparent passthrough
         CompletionAdaptor adaptor;
