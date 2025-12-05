@@ -75,6 +75,8 @@ interface EnhancedChatMessage extends ChatMessage {
   multimodalContent?: any[];
   // 是否包含图像
   hasImage?: boolean;
+  // Gemini模型的思维签名
+  thoughtSignature?: string;
 }
 
 // 多模态内容项类型
@@ -497,11 +499,24 @@ export default function ChatCompletions() {
     });
 
     writer.on(ChatCompletionsEventType.DELTA, (data) => {
+      // 处理 thoughtSignature 字段（作为 delta 的独立字段）
+      if (data.thoughtSignature) {
+        setMessages(prev => {
+          const messages = [...prev];
+          if (messages.length > 0 && messages[messages.length - 1].role === 'assistant') {
+            messages[messages.length - 1] = {
+              ...messages[messages.length - 1],
+              thoughtSignature: data.thoughtSignature
+            };
+          }
+          return messages;
+        });
+      }
+
       if (!data.content) return;
-      
-      // 使用通用处理函数处理内容
-      const processedContent = data.content;
-      
+
+      let processedContent = data.content;
+
       // 检查是否开始接收内联数据
       if (processedContent.includes('<inline>') && !processedContent.includes('</inline>')) {
         setIsReceivingInline(true);
@@ -705,9 +720,8 @@ export default function ChatCompletions() {
         // 检查最后一条消息是否是助手消息
         if (messages.length > 0 && messages[messages.length - 1].role === 'assistant') {
           // 更新现有助手消息
-          const lastMsg = messages[messages.length - 1];
           messages[messages.length - 1] = {
-            ...lastMsg,
+            ...messages[messages.length - 1],
             error: error
           };
         }
@@ -898,12 +912,14 @@ export default function ChatCompletions() {
       
       // 处理非系统消息
       for (const msg of allCurrentMessages.filter(msg => msg.role !== 'system')) {
+        const messageObj: any = {
+          role: msg.role,
+          content: ''
+        };
+
         // 如果消息包含图像，使用多模态格式
         if (msg.hasImage && msg.multimodalContent) {
-          requestMessages.push({
-            role: msg.role,
-            content: msg.multimodalContent
-          });
+          messageObj.content = msg.multimodalContent;
         } 
         // 否则，检查是否需要提取图像
         else if (typeof msg.content === 'string' && msg.content && (msg.content.includes('<inline>') ||
@@ -914,29 +930,28 @@ export default function ChatCompletions() {
           
           if (hasImage) {
             // 使用多模态格式
-            requestMessages.push({
-              role: msg.role,
-              content: multimodalContent
-            });
+            messageObj.content = multimodalContent;
             
             // 更新消息对象以包含多模态内容
             msg.multimodalContent = multimodalContent;
             msg.hasImage = true;
           } else {
             // 没有图像，使用普通格式
-            requestMessages.push({
-              role: msg.role,
-              content: msg.apiContent || cleanInlineContentForAPI(msg.content)
-            });
+            messageObj.content = msg.apiContent || cleanInlineContentForAPI(msg.content);
           }
         } 
         // 普通文本消息
         else {
-          requestMessages.push({
-            role: msg.role,
-            content: typeof msg.content === 'string' ? msg.content : ''
-          });
+          messageObj.content = typeof msg.content === 'string' ? msg.content : '';
         }
+
+        // 如果消息存在 thoughtSignature，添加到请求中（适用于所有角色和模型）
+        // thoughtSignature 作为 Message 对象的顶层字段
+        if (msg.thoughtSignature) {
+          messageObj.thoughtSignature = msg.thoughtSignature;
+        }
+
+        requestMessages.push(messageObj);
       }
 
       // 构建请求对象

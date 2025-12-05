@@ -167,10 +167,22 @@ public class VertexConverter {
         toolCallSorts.clear();
     }
     
+    /**
+     * 辅助方法：为 Part.PartBuilder 设置 thoughtSignature（如果存在）
+     */
+    private static Part.PartBuilder applyThoughtSignature(Part.PartBuilder builder, String thoughtSignature) {
+        if (StringUtils.hasText(thoughtSignature)) {
+            builder.thoughtSignature(thoughtSignature);
+        }
+        return builder;
+    }
+
     private static Content convertMessage(Message message, Map<String, String> toolCallCache, List<String> toolCallSorts) {
         List<Part> parts = new ArrayList<>();
         
-        addContentToParts(parts, message.getContent());
+        // 使用 Message.thoughtSignature 字段
+        String thoughtSignature = message.getThoughtSignature();
+        addContentToParts(parts, message.getContent(), thoughtSignature);
         
         // Handle tool calls
         if (CollectionUtils.isNotEmpty(message.getTool_calls())) {
@@ -179,7 +191,13 @@ public class VertexConverter {
                         .name(toolCall.getFunction().getName())
                         .args(parseArguments(toolCall.getFunction().getArguments()))
                         .build();
-                parts.add(Part.builder().functionCall(functionCall).build());
+                // 创建 function call part 并附加 thoughtSignature
+                Part part = applyThoughtSignature(
+                    Part.builder().functionCall(functionCall),
+                    thoughtSignature
+                ).build();
+
+                parts.add(part);
                 toolCallCache.put(toolCall.getId(), toolCall.getFunction().getName());
                 toolCallSorts.add(toolCall.getId());
             }
@@ -193,19 +211,35 @@ public class VertexConverter {
                 .build();
     }
 
-    private static void addContentToParts(List<Part> parts, Object content) {
-        // Handle content (can be String or List for multimodal)
+    private static void addContentToParts(List<Part> parts, Object content, String thoughtSignature) {
+        // Handle content (can be String, Map, or List for multimodal)
         if (content instanceof String) {
             String textContent = (String) content;
             if (StringUtils.hasText(textContent)) {
-                parts.add(Part.builder().text(textContent).build());
+                Part part = applyThoughtSignature(
+                    Part.builder().text(textContent),
+                    thoughtSignature
+                ).build();
+                parts.add(part);
+            }
+        } else if (content instanceof Map) {
+            // Handle content as a map with text field
+            @SuppressWarnings("unchecked")
+            Map<String, Object> contentMap = (Map<String, Object>) content;
+            String text = (String) contentMap.get("text");
+            if (StringUtils.hasText(text)) {
+                Part part = applyThoughtSignature(
+                    Part.builder().text(text),
+                    thoughtSignature
+                ).build();
+                parts.add(part);
             }
         } else if (content instanceof List) {
             // Handle multimodal content
             @SuppressWarnings("unchecked")
             List<Map<String, Object>> contentList = (List<Map<String, Object>>) content;
             for (Map<String, Object> contentItem : contentList) {
-                Part part = convertContentItem(contentItem);
+                Part part = convertContentItem(contentItem, thoughtSignature);
                 if (part != null) {
                     parts.add(part);
                 }
@@ -213,13 +247,17 @@ public class VertexConverter {
         }
     }
     
-    private static Part convertContentItem(Map<String, Object> contentItem) {
+    private static Part convertContentItem(Map<String, Object> contentItem, String thoughtSignature) {
         String type = (String) contentItem.get("type");
         if (type == null) return null;
         
         switch (type) {
             case "text":
-                return Part.builder().text((String) contentItem.get("text")).build();
+                String text = (String) contentItem.get("text");
+                return applyThoughtSignature(
+                    Part.builder().text(text),
+                    thoughtSignature
+                ).build();
             case "image_url":
                 @SuppressWarnings("unchecked")
                 Map<String, Object> imageUrl = (Map<String, Object>) contentItem.get("image_url");
@@ -232,12 +270,15 @@ public class VertexConverter {
                     String[] parts = url.split(",", 2);
                     if (parts.length == 2) {
                         String mimeType = parts[0].split(":")[1].split(";")[0];
-                        return Part.builder()
-                                .inlineData(Part.InlineData.builder()
-                                        .mimeType(mimeType)
-                                        .data(parts[1])
-                                        .build())
-                                .build();
+                        return applyThoughtSignature(
+                            Part.builder().inlineData(
+                                Part.InlineData.builder()
+                                    .mimeType(mimeType)
+                                    .data(parts[1])
+                                    .build()
+                            ),
+                            thoughtSignature
+                        ).build();
                     }
                 }
                 break;
@@ -254,7 +295,7 @@ public class VertexConverter {
                 .findFirst()
                 .map(msg -> {
                     List<Part> parts = new ArrayList<>();
-                    addContentToParts(parts, msg.getContent());
+                    addContentToParts(parts, msg.getContent(), null);
                     return SystemInstruction.builder()
                             .role("system")
                             .parts(parts)
@@ -397,8 +438,26 @@ public class VertexConverter {
         StringBuilder reasoning = new StringBuilder();
         List<Message.ToolCall> toolCalls = new ArrayList<>();
 
+        // 按优先级提取 thoughtSignature
+        String functionCallThoughtSignature = null;  // 最高优先级
+        String inlineDataThoughtSignature = null;    // 次优先级
+        String firstThoughtSignature = null;         // 兜底：第一个非空的
+
         int index = 0;
         for (Part part : content.getParts()) {
+            // 收集不同类型的 thoughtSignature
+            if (StringUtils.hasText(part.getThoughtSignature())) {
+                if (firstThoughtSignature == null) {
+                    firstThoughtSignature = part.getThoughtSignature();
+                }
+                if (part.getFunctionCall() != null && functionCallThoughtSignature == null) {
+                    functionCallThoughtSignature = part.getThoughtSignature();
+                }
+                if (part.getInlineData() != null && inlineDataThoughtSignature == null) {
+                    inlineDataThoughtSignature = part.getThoughtSignature();
+                }
+            }
+
             if (StringUtils.hasText(part.getText())) {
                 if(Boolean.TRUE == part.getThought()) {
                     reasoning.append(part.getText());
@@ -445,6 +504,14 @@ public class VertexConverter {
 
         if (!toolCalls.isEmpty()) {
             builder.tool_calls(toolCalls);
+        }
+
+        // 按优先级设置 thoughtSignature：functionCall > inlineData > 第一个非空
+        String thoughtSignature = functionCallThoughtSignature != null ? functionCallThoughtSignature
+                : (inlineDataThoughtSignature != null ? inlineDataThoughtSignature : firstThoughtSignature);
+
+        if (StringUtils.hasText(thoughtSignature)) {
+            builder.thoughtSignature(thoughtSignature);
         }
         
         return builder.build();

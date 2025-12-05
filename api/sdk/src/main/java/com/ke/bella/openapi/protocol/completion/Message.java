@@ -52,6 +52,14 @@ public class Message implements Serializable {
     private String reasoning_content_signature;
 
     /**
+     * Thought signature for content - used for Gemini thinking mode
+     * This field contains the cryptographic signature of the thought process
+     */
+    @JsonInclude(Include.NON_NULL)
+    @Nullable
+    private String thoughtSignature;
+
+    /**
      * name is required if role is function, and it should be the name of the
      * function whose response is in the content;
      */
