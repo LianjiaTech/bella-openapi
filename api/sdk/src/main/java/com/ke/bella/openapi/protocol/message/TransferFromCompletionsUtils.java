@@ -433,6 +433,11 @@ public class TransferFromCompletionsUtils {
 
         responseBuilder.content(contentBlocks);
 
+        // 处理 thoughtSignature (Gemini 3 思维签名)
+        if (assistantMessage.getThoughtSignature() != null && !assistantMessage.getThoughtSignature().isEmpty()) {
+            responseBuilder.thoughtSignature(assistantMessage.getThoughtSignature());
+        }
+
         String finishReason = choice.getFinish_reason();
         String stopReason = mapFinishReason(finishReason);
         responseBuilder.stopReason(stopReason);
@@ -484,6 +489,13 @@ public class TransferFromCompletionsUtils {
                 }
             }
 
+            // ThoughtSignature delta (Gemini 3 思维签名)
+            if(delta != null && delta.getThoughtSignature() != null) {
+                String thoughtSignature = delta.getThoughtSignature();
+                if(!thoughtSignature.isEmpty()) {
+                    responseList.add(StreamMessageResponse.contentBlockDelta(choiceIndex, new StreamMessageResponse.SignatureDelta(thoughtSignature)));
+                }
+            }
 
             // Text content delta
             if(delta != null && delta.getContent() != null) {
