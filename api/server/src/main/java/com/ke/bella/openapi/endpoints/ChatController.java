@@ -9,6 +9,7 @@ import com.ke.bella.openapi.annotations.EndpointAPI;
 import com.ke.bella.openapi.common.exception.BizParamCheckException;
 import com.ke.bella.openapi.common.exception.ChannelException;
 import com.ke.bella.openapi.protocol.AdaptorManager;
+import com.ke.bella.openapi.protocol.AuthorizationProperty;
 import com.ke.bella.openapi.protocol.ChannelRouter;
 import com.ke.bella.openapi.protocol.completion.CompletionAdaptor;
 import com.ke.bella.openapi.protocol.completion.CompletionAdaptorDelegator;
@@ -16,6 +17,7 @@ import com.ke.bella.openapi.protocol.completion.CompletionProperty;
 import com.ke.bella.openapi.protocol.completion.CompletionRequest;
 import com.ke.bella.openapi.protocol.completion.CompletionResponse;
 import com.ke.bella.openapi.protocol.completion.DirectPassthroughAdaptor;
+import com.ke.bella.openapi.protocol.completion.OpenAIProperty;
 import com.ke.bella.openapi.protocol.completion.QueueAdaptor;
 import com.ke.bella.openapi.protocol.completion.ToolCallSimulator;
 import com.ke.bella.openapi.protocol.completion.callback.StreamCallbackProvider;
@@ -224,12 +226,27 @@ public class ChatController {
 
         EndpointContext.setEncodingType(property.getEncodingType());
 
+        // Extract auth from property (assuming it's OpenAIProperty or similar with auth field)
+        AuthorizationProperty auth;
+        if (property instanceof OpenAIProperty) {
+            auth = ((OpenAIProperty) property).getAuth();
+        } else {
+            // Use reflection for other property types
+            try {
+                java.lang.reflect.Field authField = property.getClass().getDeclaredField("auth");
+                authField.setAccessible(true);
+                auth = (AuthorizationProperty) authField.get(property);
+            } catch (Exception e) {
+                throw new IllegalStateException("Cannot extract auth from property: " + property.getClass(), e);
+            }
+        }
+
         // Wrap with DirectPassthroughAdaptor for transparent passthrough
         CompletionAdaptor adaptor;
         if(BellaContext.isDirectSSE()) {
             // SSE streaming mode
             SseEmitter sse = SseHelper.createSse(1000L * 60 * 30, EndpointContext.getProcessData().getRequestId());
-            adaptor = new DirectPassthroughAdaptor(delegator, httpRequest.getInputStream(), sse);
+            adaptor = new DirectPassthroughAdaptor(delegator, httpRequest.getInputStream(), auth, sse);
 
             // Streaming - callback for async processing
             adaptor.streamCompletion(null, url, property,
@@ -238,7 +255,7 @@ public class ChatController {
             return sse;
         } else {
             // HTTP mode (non-streaming)
-            adaptor = new DirectPassthroughAdaptor(delegator, httpRequest.getInputStream(), httpResponse);
+            adaptor = new DirectPassthroughAdaptor(delegator, httpRequest.getInputStream(), auth, httpResponse);
 
             // Non-streaming - returns null as response is already written to httpResponse
             adaptor.completion(null, url, property);

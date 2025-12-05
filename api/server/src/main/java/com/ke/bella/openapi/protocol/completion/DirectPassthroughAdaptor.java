@@ -1,67 +1,75 @@
 package com.ke.bella.openapi.protocol.completion;
 
+import com.ke.bella.openapi.protocol.AuthorizationProperty;
 import com.ke.bella.openapi.protocol.Callbacks;
+import com.ke.bella.openapi.utils.HttpUtils;
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.MediaType;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+import okio.BufferedSink;
+import okio.Okio;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.concurrent.CompletableFuture;
 
 /**
- * Direct passthrough adaptor - decorates existing adaptor to bypass processing
- * Similar to QueueAdaptor pattern, wraps the delegator for transparent passthrough
+ * Direct passthrough adaptor - wraps delegator for transparent passthrough
+ * Similar to QueueAdaptor pattern
  *
- * This adaptor bypasses all request/response processing and directly streams:
- * - HTTP mode: InputStream → Channel → HttpServletResponse.OutputStream
- * - SSE mode: InputStream → Channel → SseEmitter (immediate send)
+ * Direct passthrough: InputStream → Channel → OutputStream
+ * - HTTP mode: Write directly to HttpServletResponse
+ * - SSE mode: Send directly to SseEmitter
+ * - Async processing for logging, metrics
  */
 @Slf4j
-public class DirectPassthroughAdaptor<T extends CompletionProperty> implements CompletionAdaptor<T> {
-    private final CompletionAdaptorDelegator<T> delegator;
+public class DirectPassthroughAdaptor implements CompletionAdaptor<CompletionProperty> {
+    private final CompletionAdaptorDelegator<?> delegator;
     private final InputStream requestBody;
+    private final AuthorizationProperty auth;
     private final HttpServletResponse httpResponse;
     private final SseEmitter sseEmitter;
 
-    /**
-     * Constructor for non-streaming (HTTP) mode
-     */
-    public DirectPassthroughAdaptor(CompletionAdaptorDelegator<T> delegator,
+    public DirectPassthroughAdaptor(CompletionAdaptorDelegator<?> delegator,
                                     InputStream requestBody,
+                                    AuthorizationProperty auth,
                                     HttpServletResponse httpResponse) {
         this.delegator = delegator;
         this.requestBody = requestBody;
+        this.auth = auth;
         this.httpResponse = httpResponse;
         this.sseEmitter = null;
     }
 
-    /**
-     * Constructor for streaming (SSE) mode
-     */
-    public DirectPassthroughAdaptor(CompletionAdaptorDelegator<T> delegator,
+    public DirectPassthroughAdaptor(CompletionAdaptorDelegator<?> delegator,
                                     InputStream requestBody,
+                                    AuthorizationProperty auth,
                                     SseEmitter sseEmitter) {
         this.delegator = delegator;
         this.requestBody = requestBody;
+        this.auth = auth;
         this.sseEmitter = sseEmitter;
         this.httpResponse = null;
     }
 
     @Override
-    public CompletionResponse completion(CompletionRequest request, String url, T property) {
-        // HTTP mode - direct passthrough
+    public CompletionResponse completion(CompletionRequest request, String url, CompletionProperty property) {
         try {
-            // Build request with InputStream
+            // Build request
             Request httpRequest = buildDirectRequest(url, property);
 
-            // Execute request and get response
-            Response response = com.ke.bella.openapi.utils.HttpUtils.httpRequest(httpRequest);
+            // Execute request
+            Response response = HttpUtils.httpRequest(httpRequest);
 
-            // Write response body directly to HttpServletResponse output stream
+            // Write response directly to HttpServletResponse.OutputStream
             try (InputStream responseBody = response.body().byteStream();
                  OutputStream outputStream = httpResponse.getOutputStream()) {
 
-                // Set content type
                 httpResponse.setContentType("application/json");
                 httpResponse.setStatus(response.code());
 
@@ -70,7 +78,7 @@ public class DirectPassthroughAdaptor<T extends CompletionProperty> implements C
                     values.forEach(value -> httpResponse.addHeader(name, value));
                 });
 
-                // Direct stream copy - no buffering
+                // Stream copy
                 byte[] buffer = new byte[8192];
                 int bytesRead;
                 while ((bytesRead = responseBody.read(buffer)) != -1) {
@@ -79,36 +87,36 @@ public class DirectPassthroughAdaptor<T extends CompletionProperty> implements C
                 outputStream.flush();
             }
 
-            // Async processing - logging, metrics, etc.
-            asyncProcessNonStreaming(request, url, property, response);
+            // Async processing for logging
+            asyncProcess(() -> {
+                // TODO: logging, metrics
+            });
 
         } catch (IOException e) {
             log.error("Direct passthrough error", e);
             throw new RuntimeException(e);
         }
 
-        // Return null as response is already written
-        return null;
+        return null; // Response already written
     }
 
     @Override
-    public void streamCompletion(CompletionRequest request, String url, T property,
+    public void streamCompletion(CompletionRequest request, String url, CompletionProperty property,
                                  Callbacks.StreamCompletionCallback callback) {
-        // SSE mode - direct passthrough with async processing
         Request httpRequest = buildDirectRequest(url, property);
 
-        // Create DirectSseListener that sends immediately and processes async
+        // Create DirectSseListener - sends immediately, processes async
         DirectSseListener directListener = new DirectSseListener(sseEmitter, callback);
 
-        // Execute streaming request
-        com.ke.bella.openapi.utils.HttpUtils.streamRequest(httpRequest, directListener);
+        HttpUtils.streamRequest(httpRequest, directListener);
     }
 
     /**
-     * Build HTTP request directly from InputStream
+     * Build HTTP request with InputStream body
      */
-    private Request buildDirectRequest(String url, T property) {
-        // Create RequestBody that streams from InputStream
+    private Request buildDirectRequest(String url, CompletionProperty property) {
+
+        // Create RequestBody from InputStream
         RequestBody body = new RequestBody() {
             @Override
             public MediaType contentType() {
@@ -121,31 +129,26 @@ public class DirectPassthroughAdaptor<T extends CompletionProperty> implements C
             }
         };
 
-        Request.Builder builder = delegator.authorizationRequestBuilder(property.getAuth())
+        // Build request with auth
+        Request.Builder builder = delegator.authorizationRequestBuilder(auth)
                 .url(url)
                 .post(body);
 
-        // Add extra headers if any
-        if (property.getExtraHeaders() != null && !property.getExtraHeaders().isEmpty()) {
+        // Add extra headers
+        if (property.getExtraHeaders() != null) {
             property.getExtraHeaders().forEach(builder::addHeader);
         }
 
         return builder.build();
     }
 
-    /**
-     * Async processing for non-streaming responses
-     * Handles logging, metrics, etc. without blocking the response
-     */
-    private void asyncProcessNonStreaming(CompletionRequest request, String url, T property, Response response) {
-        // TODO: Implement async logging and metrics
-        // Can parse response body from a copy if needed for logging
-        // But don't block the main response
+    private void asyncProcess(Runnable task) {
+        CompletableFuture.runAsync(task);
     }
 
     @Override
     public String getDescription() {
-        return "Direct Passthrough - " + delegator.getDescription();
+        return "DirectPassthrough-" + delegator.getDescription();
     }
 
     @Override
