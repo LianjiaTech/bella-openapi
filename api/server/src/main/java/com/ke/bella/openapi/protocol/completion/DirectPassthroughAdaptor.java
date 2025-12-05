@@ -3,6 +3,7 @@ package com.ke.bella.openapi.protocol.completion;
 import com.ke.bella.openapi.TaskExecutor;
 import com.ke.bella.openapi.protocol.AuthorizationProperty;
 import com.ke.bella.openapi.protocol.Callbacks;
+import com.ke.bella.openapi.protocol.completion.callback.NoSendStreamCompletionCallback;
 import com.ke.bella.openapi.utils.HttpUtils;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.MediaType;
@@ -31,28 +32,28 @@ import java.io.OutputStream;
 public class DirectPassthroughAdaptor implements CompletionAdaptor<CompletionProperty> {
     private final CompletionAdaptorDelegator<?> delegator;
     private final InputStream requestBody;
-    private final AuthorizationProperty auth;
+    private final CompletionProperty property;
     private final HttpServletResponse httpResponse;
     private final SseEmitter sseEmitter;
 
     public DirectPassthroughAdaptor(CompletionAdaptorDelegator<?> delegator,
                                     InputStream requestBody,
-                                    AuthorizationProperty auth,
+                                    CompletionProperty property,
                                     HttpServletResponse httpResponse) {
         this.delegator = delegator;
         this.requestBody = requestBody;
-        this.auth = auth;
+        this.property = property;
         this.httpResponse = httpResponse;
         this.sseEmitter = null;
     }
 
     public DirectPassthroughAdaptor(CompletionAdaptorDelegator<?> delegator,
                                     InputStream requestBody,
-                                    AuthorizationProperty auth,
+                                    CompletionProperty property,
                                     SseEmitter sseEmitter) {
         this.delegator = delegator;
         this.requestBody = requestBody;
-        this.auth = auth;
+        this.property = property;
         this.sseEmitter = sseEmitter;
         this.httpResponse = null;
     }
@@ -61,7 +62,7 @@ public class DirectPassthroughAdaptor implements CompletionAdaptor<CompletionPro
     public CompletionResponse completion(CompletionRequest request, String url, CompletionProperty property) {
         try {
             // Build request
-            Request httpRequest = buildDirectRequest(url, property);
+            Request httpRequest = buildDirectRequest(url);
 
             // Execute request
             Response response = HttpUtils.httpRequest(httpRequest);
@@ -103,10 +104,13 @@ public class DirectPassthroughAdaptor implements CompletionAdaptor<CompletionPro
     @Override
     public void streamCompletion(CompletionRequest request, String url, CompletionProperty property,
                                  Callbacks.StreamCompletionCallback callback) {
-        Request httpRequest = buildDirectRequest(url, property);
+        Request httpRequest = buildDirectRequest(url);
+
+        // Cast callback to NoSendStreamCompletionCallback to get the delegate
+        NoSendStreamCompletionCallback noSendCallback = (NoSendStreamCompletionCallback) callback;
 
         // Create DirectSseListener - sends immediately, processes async
-        DirectSseListener directListener = new DirectSseListener(sseEmitter, callback);
+        DirectSseListener directListener = new DirectSseListener(sseEmitter, noSendCallback);
 
         HttpUtils.streamRequest(httpRequest, directListener);
     }
@@ -114,7 +118,8 @@ public class DirectPassthroughAdaptor implements CompletionAdaptor<CompletionPro
     /**
      * Build HTTP request with InputStream body
      */
-    private Request buildDirectRequest(String url, CompletionProperty property) {
+    private Request buildDirectRequest(String url) {
+        AuthorizationProperty auth = property.getAuth();
 
         // Create RequestBody from InputStream
         RequestBody body = new RequestBody() {

@@ -9,7 +9,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Data
-public abstract class CompletionProperty implements IProtocolProperty {
+public class CompletionProperty implements IProtocolProperty {
     String encodingType = StringUtils.EMPTY;
     boolean mergeReasoningContent = false;
     boolean splitReasoningFromContent = false;
@@ -19,9 +19,11 @@ public abstract class CompletionProperty implements IProtocolProperty {
 
     /**
      * Get authorization property for the channel
-     * Must be implemented by subclasses
+     * Subclasses should override this method if they have auth
      */
-    public abstract AuthorizationProperty getAuth();
+    public AuthorizationProperty getAuth() {
+        return null;
+    }
 
     @Override
     public Map<String, String> description() {

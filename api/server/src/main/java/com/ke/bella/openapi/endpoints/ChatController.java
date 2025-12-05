@@ -190,6 +190,47 @@ public class ChatController {
     }
 
     /**
+     * Common initialization for both normal and direct mode
+     */
+    private static class ChannelContext {
+        String protocol;
+        String url;
+        CompletionAdaptorDelegator delegator;
+        CompletionProperty property;
+    }
+
+    private ChannelContext initializeChannel(String endpoint, String model, boolean isDirectMode) {
+        // Set endpoint data
+        endpointDataService.setEndpointData(endpoint, model, null);
+
+        // Route to channel (direct mode skips availability checks)
+        ChannelDB channel = router.route(endpoint, model, EndpointContext.getApikey(), false, isDirectMode);
+        endpointDataService.setChannel(channel);
+
+        EndpointProcessData processData = EndpointContext.getProcessData();
+        String protocol = processData.getProtocol();
+        String url = processData.getForwardUrl();
+        String channelInfo = channel.getChannelInfo();
+
+        // Get delegator and property
+        CompletionAdaptor rawAdaptor = adaptorManager.getProtocolAdaptor(endpoint, protocol, CompletionAdaptor.class);
+        if (!(rawAdaptor instanceof CompletionAdaptorDelegator)) {
+            throw new IllegalStateException("Direct mode requires CompletionAdaptorDelegator, got: " + rawAdaptor.getClass().getSimpleName());
+        }
+        CompletionAdaptorDelegator delegator = (CompletionAdaptorDelegator) rawAdaptor;
+        CompletionProperty property = (CompletionProperty) JacksonUtils.deserialize(channelInfo, delegator.getPropertyClass());
+
+        EndpointContext.setEncodingType(property.getEncodingType());
+
+        ChannelContext ctx = new ChannelContext();
+        ctx.protocol = protocol;
+        ctx.url = url;
+        ctx.delegator = delegator;
+        ctx.property = property;
+        return ctx;
+    }
+
+    /**
      * Process request in direct mode with DirectPassthroughAdaptor:
      * 1. Use X-BELLA-MODEL header for model routing
      * 2. Use X-BELLA-PROTOCOL header to distinguish HTTP vs SSE
@@ -199,64 +240,27 @@ public class ChatController {
      */
     @SuppressWarnings({ "rawtypes", "unchecked" })
     private Object processDirectModeRequest(String endpoint, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException {
-        // Get model from header
         String model = BellaContext.getDirectModel();
-
-        // Set endpoint data with null request (not deserialized in direct mode)
-        endpointDataService.setEndpointData(endpoint, model, null);
-
-        // Use ChannelRouter with direct mode flag - skips availability checks (no Redis queries)
-        ChannelDB channel = router.route(endpoint, model, EndpointContext.getApikey(), false, true);
-        endpointDataService.setChannel(channel);
+        ChannelContext ctx = initializeChannel(endpoint, model, true);
 
         EndpointProcessData processData = EndpointContext.getProcessData();
-        String protocol = processData.getProtocol();
-        String url = processData.getForwardUrl();
-        String channelInfo = channel.getChannelInfo();
-
-        // Get delegator and property
-        CompletionAdaptorDelegator delegator = getDelegator(endpoint, protocol);
-        CompletionProperty property = (CompletionProperty) JacksonUtils.deserialize(channelInfo, delegator.getPropertyClass());
-        EndpointContext.setEncodingType(property.getEncodingType());
-
-        AuthorizationProperty auth = property.getAuth();
 
         // Create adaptor and execute
         if(BellaContext.isDirectSSE()) {
-            return processDirectSSE(delegator, property, auth, url, httpRequest, processData);
+            SseEmitter sse = SseHelper.createSse(1000L * 60 * 30, processData.getRequestId());
+            CompletionAdaptor adaptor = new DirectPassthroughAdaptor(ctx.delegator, httpRequest.getInputStream(), ctx.property, sse);
+
+            // Create callback and wrap with NoSendStreamCompletionCallback to prevent duplicate sending
+            Callbacks.StreamCompletionCallback originalCallback = StreamCallbackProvider.provide(
+                sse, processData, EndpointContext.getApikey(), logger, safetyCheckService, ctx.property);
+            Callbacks.StreamCompletionCallback noSendCallback = new NoSendStreamCompletionCallback(originalCallback);
+
+            adaptor.streamCompletion(null, ctx.url, ctx.property, noSendCallback);
+            return sse;
         } else {
-            return processDirectHTTP(delegator, property, auth, url, httpRequest, httpResponse);
+            CompletionAdaptor adaptor = new DirectPassthroughAdaptor(ctx.delegator, httpRequest.getInputStream(), ctx.property, httpResponse);
+            adaptor.completion(null, ctx.url, ctx.property);
+            return null; // Response already written directly
         }
-    }
-
-    private CompletionAdaptorDelegator getDelegator(String endpoint, String protocol) {
-        CompletionAdaptor rawAdaptor = adaptorManager.getProtocolAdaptor(endpoint, protocol, CompletionAdaptor.class);
-        if (!(rawAdaptor instanceof CompletionAdaptorDelegator)) {
-            throw new IllegalStateException("Direct mode requires CompletionAdaptorDelegator, got: " + rawAdaptor.getClass().getSimpleName());
-        }
-        return (CompletionAdaptorDelegator) rawAdaptor;
-    }
-
-    private Object processDirectSSE(CompletionAdaptorDelegator delegator, CompletionProperty property,
-                                    AuthorizationProperty auth, String url, HttpServletRequest httpRequest,
-                                    EndpointProcessData processData) throws IOException {
-        SseEmitter sse = SseHelper.createSse(1000L * 60 * 30, EndpointContext.getProcessData().getRequestId());
-        CompletionAdaptor adaptor = new DirectPassthroughAdaptor(delegator, httpRequest.getInputStream(), auth, sse);
-
-        // Create callback and wrap with NoSendStreamCompletionCallback to prevent duplicate sending
-        Callbacks.StreamCompletionCallback originalCallback = StreamCallbackProvider.provide(
-            sse, processData, EndpointContext.getApikey(), logger, safetyCheckService, property);
-        Callbacks.StreamCompletionCallback noSendCallback = new NoSendStreamCompletionCallback(originalCallback);
-
-        adaptor.streamCompletion(null, url, property, noSendCallback);
-        return sse;
-    }
-
-    private Object processDirectHTTP(CompletionAdaptorDelegator delegator, CompletionProperty property,
-                                     AuthorizationProperty auth, String url, HttpServletRequest httpRequest,
-                                     HttpServletResponse httpResponse) throws IOException {
-        CompletionAdaptor adaptor = new DirectPassthroughAdaptor(delegator, httpRequest.getInputStream(), auth, httpResponse);
-        adaptor.completion(null, url, property);
-        return null; // Response already written directly
     }
 }
