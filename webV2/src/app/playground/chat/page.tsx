@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { TopBar } from "@/components/top-bar"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -24,6 +24,7 @@ import {
   Play,
 } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
+import { usePlaygroundData } from "@/hooks/use-playground-data"
 
 interface MessageContent {
   type: "text" | "code" | "thinking" | "image" | "audio"
@@ -130,13 +131,25 @@ async function example() {
     },
   ])
   const [input, setInput] = useState("")
-  const [model, setModel] = useState("gpt-5-pro")
+  const [modelList, setModelList] = useState<unknown[]>([])
+  const [model, setModel] = useState("")
   const [temperature, setTemperature] = useState([0.7])
   const [maxTokens, setMaxTokens] = useState([2048])
   const [thinkingMode, setThinkingMode] = useState(true)
   const [streamMode, setStreamMode] = useState(true)
   const [copiedIndex, setCopiedIndex] = useState<string | null>(null)
   const [thinkingExpanded, setThinkingExpanded] = useState<Record<string, boolean>>({ "2-0": true })
+
+  const { endpointDetails, loading, error, refetch, currentEndpoint } = usePlaygroundData()
+  const models = endpointDetails?.models || []
+  
+  // 监听 endpointDetails.models，当有值时设置第一项为默认值
+  useEffect(() => {
+    if (endpointDetails?.models && endpointDetails.models.length > 0) {
+      setModelList(endpointDetails.models)
+      setModel(endpointDetails.models[0].modelName)
+    }
+  }, [endpointDetails?.models])
 
   const handleSend = () => {
     if (!input.trim()) return
@@ -177,23 +190,23 @@ async function example() {
     switch (content.type) {
       case "thinking":
         return (
-          <div className="my-3 rounded-lg border border-blue-200 bg-blue-50/50 dark:border-blue-900 dark:bg-blue-950/20 overflow-hidden">
+          <div className="my-3 rounded-lg border border-primary/20 bg-primary/5 dark:border-primary/30 dark:bg-primary/10 overflow-hidden">
             <button
-              className="w-full flex items-center justify-between p-4 hover:bg-blue-100/50 dark:hover:bg-blue-950/40 transition-colors"
+              className="w-full flex items-center justify-between p-4 hover:bg-primary/10 dark:hover:bg-primary/20 transition-colors"
               onClick={() => setThinkingExpanded((prev) => ({ ...prev, [key]: !isExpanded }))}
             >
-              <div className="flex items-center gap-2 text-sm font-medium text-blue-700 dark:text-blue-400">
+              <div className="flex items-center gap-2 text-sm font-medium text-primary dark:text-primary">
                 <Brain className="h-4 w-4" />
                 思考过程
               </div>
               {isExpanded ? (
-                <ChevronUp className="h-4 w-4 text-blue-700 dark:text-blue-400" />
+                <ChevronUp className="h-4 w-4 text-primary dark:text-primary" />
               ) : (
-                <ChevronDown className="h-4 w-4 text-blue-700 dark:text-blue-400" />
+                <ChevronDown className="h-4 w-4 text-primary dark:text-primary" />
               )}
             </button>
             {isExpanded && (
-              <div className="px-4 pb-4 whitespace-pre-wrap text-sm text-blue-600 dark:text-blue-300 leading-relaxed">
+              <div className="px-4 pb-4 whitespace-pre-wrap text-sm text-primary/80 dark:text-primary/70 leading-relaxed">
                 {content.content}
               </div>
             )}
@@ -341,174 +354,28 @@ async function example() {
                 模型选择
               </Label>
               <Select value={model} onValueChange={setModel}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="选择模型">
-                    {model === "gpt-5-pro" && "GPT-5 Pro"}
-                    {model === "gpt-5-mini" && "GPT-5 Mini"}
-                    {model === "claude-sonnet-4" && "Claude Sonnet 4"}
-                    {model === "qwen-plus" && "通义千问 Plus"}
-                    {model === "gpt-o1" && "GPT-o1"}
-                  </SelectValue>
+                <SelectTrigger className="w-full focus:ring-0 focus:ring-offset-0 focus-visible:ring-0 focus-visible:ring-offset-0">
+                  <SelectValue placeholder="选择模型" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="gpt-5-pro">
-                    <div className="flex flex-col gap-1 py-1">
-                      <div className="font-medium">GPT-5 Pro</div>
-                      <div className="text-xs text-muted-foreground">最先进的推理和代码生成能力，支持128K上下文</div>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                          超长上下文
-                        </Badge>
-                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                          深度思考
-                        </Badge>
-                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                          128K
-                        </Badge>
-                      </div>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="gpt-5-mini">
-                    <div className="flex flex-col gap-1 py-1">
-                      <div className="font-medium">GPT-5 Mini</div>
-                      <div className="text-xs text-muted-foreground">快速响应，适合日常对话，支持16K上下文</div>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                          流式
-                        </Badge>
-                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                          16K
-                        </Badge>
-                      </div>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="claude-sonnet-4">
-                    <div className="flex flex-col gap-1 py-1">
-                      <div className="font-medium">Claude Sonnet 4</div>
-                      <div className="text-xs text-muted-foreground">平衡的性能和速度，支持200K上下文</div>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                          国外
-                        </Badge>
-                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                          超长输出
-                        </Badge>
-                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                          200K
-                        </Badge>
-                      </div>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="qwen-plus">
-                    <div className="flex flex-col gap-1 py-1">
-                      <div className="font-medium">通义千问 Plus</div>
-                      <div className="text-xs text-muted-foreground">国内领先的大语言模型，支持32K上下文</div>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                          国内
-                        </Badge>
-                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                          深度思考
-                        </Badge>
-                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                          32K
-                        </Badge>
-                      </div>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="gpt-o1">
-                    <div className="flex flex-col gap-1 py-1">
-                      <div className="font-medium">GPT-o1</div>
-                      <div className="text-xs text-muted-foreground">专注于复杂推理任务，支持128K上下文</div>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                          深度思考
-                        </Badge>
-                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                          国外
-                        </Badge>
-                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                          128K
-                        </Badge>
-                      </div>
-                    </div>
-                  </SelectItem>
+                  {modelList.map((modelItem) => (
+                    <SelectItem key={modelItem.modelName} value={modelItem.modelName}>
+                      {modelItem.modelName}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
 
-              <div className="mt-3 rounded-lg border bg-muted/50 p-3 space-y-2">
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  {model === "gpt-5-pro" && "最先进的推理和代码生成能力，支持128K上下文"}
-                  {model === "gpt-5-mini" && "快速响应，适合日常对话，支持16K上下文"}
-                  {model === "claude-sonnet-4" && "平衡的性能和速度，支持200K上下文"}
-                  {model === "qwen-plus" && "国内领先的大语言模型，支持32K上下文"}
-                  {model === "gpt-o1" && "专注于复杂推理任务，支持128K上下文"}
-                </p>
-                <div className="flex flex-wrap gap-1">
-                  {model === "gpt-5-pro" && (
-                    <>
-                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                        超长上下文
-                      </Badge>
-                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                        深度思考
-                      </Badge>
-                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                        128K
-                      </Badge>
-                    </>
-                  )}
-                  {model === "gpt-5-mini" && (
-                    <>
-                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                        流式
-                      </Badge>
-                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                        16K
-                      </Badge>
-                    </>
-                  )}
-                  {model === "claude-sonnet-4" && (
-                    <>
-                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                        国外
-                      </Badge>
-                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                        超长输出
-                      </Badge>
-                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                        200K
-                      </Badge>
-                    </>
-                  )}
-                  {model === "qwen-plus" && (
-                    <>
-                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                        国内
-                      </Badge>
-                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                        深度思考
-                      </Badge>
-                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                        32K
-                      </Badge>
-                    </>
-                  )}
-                  {model === "gpt-o1" && (
-                    <>
-                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                        深度思考
-                      </Badge>
-                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                        国外
-                      </Badge>
-                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                        128K
-                      </Badge>
-                    </>
-                  )}
+              {modelList.length > 0 && (
+                <div className="mt-3 rounded-lg border bg-muted/50 p-3 space-y-2">
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    当前已选择: {model || "未选择"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    共 {modelList.length} 个可用模型
+                  </p>
                 </div>
-              </div>
+              )}
             </div>
 
             <Separator />

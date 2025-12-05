@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils"
 import { useMemo, useState } from "react"
 import { useSidebar } from "@/lib/context/sidebar-context"
 import { flattenCategoryTrees, EndpointWithCategory } from "@/app/models/utils/category-tree"
-import { getPlaygroundUrl, getIconForEndpoint } from "./endpoint-mapping"
+import { getPlaygroundUrl, getIconForEndpoint } from "@/lib/endpoint-mapping"
 
 // 为 endpoint 添加图标
 interface PlaygroundItemWithIcon extends EndpointWithCategory {
@@ -84,3 +84,4 @@ export function PlaygroundSidebarMenu({ pathname, t }: PlaygroundSidebarMenuProp
     </div>
   )
 }
+

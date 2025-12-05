@@ -44,7 +44,7 @@ const ModelsPage = () => {
   const { categoryTrees } = useSidebar()
 
   // 使用自定义 Hook 获取端点数据
-  const { endpoint, features, models, initialLoading, modelsLoading } = useEndpointData(selectedCapability, selectedTags)
+  const { features, models, initialLoading, modelsLoading } = useEndpointData(selectedCapability, selectedTags)
 
   // 使用 useMemo 缓存扁平化后的数据
   const flattenedEndpoints = useMemo(() => {

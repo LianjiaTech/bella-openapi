@@ -16,7 +16,7 @@ import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { SettingsDialog } from "@/components/settings-dialog"
 import { useLanguage } from "@/components/language-provider"
-import { PlaygroundSidebarMenu } from "@/components/playground-sidebar-menu"
+import { PlaygroundSidebarMenu } from "@/components/sidebar/playground-sidebar-menu"
 
 export function AppSidebar() {
   const pathname = usePathname()
@@ -136,3 +136,4 @@ export function AppSidebar() {
     </aside>
   )
 }
+
