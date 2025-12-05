@@ -98,7 +98,6 @@ export default function ModelsPage() {
     try {
       setLoading(true)
       const data = await getEndpointDetails(endpoint, "", [])
-      // const data = DATA_MOCK 
 
       // 检查并处理数据
       if (data && data.models) {
@@ -140,7 +139,6 @@ export default function ModelsPage() {
         })
       }
 
-      console.log('data1', data)
       setEndpointData(data)
     } catch (error) {
       console.error('Error fetching endpoint details:', error)
@@ -150,13 +148,13 @@ export default function ModelsPage() {
     }
   }
 
-  // 初始化选中的 endpoint
+  // 初始化选中的能力分类选项 endpoint
   useEffect(() => {
     const endpoint = getInitialEndpoint(searchParams.get("endpoint"))
     setSelectedCapability(endpoint)
   }, [searchParams])
 
-  // 当 selectedCapability 变化时，获取数据
+  // 当能力分类选项 selectedCapability 变化时，获取数据
   useEffect(() => {
     if (selectedCapability) {
       fetchEndpointDetails(selectedCapability)
@@ -167,7 +165,64 @@ export default function ModelsPage() {
     setSelectedTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]))
   }
 
-  
+  useEffect(() => {
+    if (selectedCapability && selectedTags.length >= 0) {
+      // 直接调用 API,使用 selectedTags 作为参数
+      (async () => {
+        try {
+          setLoading(true)
+          const data = await getEndpointDetails(selectedCapability, "", selectedTags)
+
+          // 检查并处理数据
+          if (data && data.models) {
+            // 对每个模型进行处理
+            data.models = data.models.map(model => {
+              const processedModel = { ...model }
+
+              // 如果存在 features 字段且为字符串,进行 JSON.parse
+              if (processedModel.features && typeof processedModel.features === 'string') {
+                try {
+                  const parsedFeatures = JSON.parse(processedModel.features)
+                  // 提取值为 true 的键组成字符串数组
+                  processedModel.features = Object.keys(parsedFeatures).filter(
+                    key => parsedFeatures[key] === true
+                  ).join(',');
+                } catch (e) {
+                  console.error('Failed to parse features:', e)
+                }
+              }
+
+              // 如果存在 properties 字段且为字符串,进行 JSON.parse
+              if (processedModel.properties && typeof processedModel.properties === 'string') {
+                try {
+                  const parsedProps = JSON.parse(processedModel.properties)
+                  // 对 max_input_context 和 max_output_context 应用千分位分隔
+                  if (parsedProps.max_input_context !== undefined && typeof parsedProps.max_input_context === "number") {
+                    parsedProps.max_input_context = parsedProps.max_input_context.toLocaleString()
+                  }
+                  if (parsedProps.max_output_context !== undefined && typeof parsedProps.max_output_context === "number") {
+                    parsedProps.max_output_context = parsedProps.max_output_context.toLocaleString()
+                  }
+                  processedModel.properties = parsedProps
+                } catch (e) {
+                  console.error('Failed to parse properties:', e)
+                }
+              }
+
+              return processedModel
+            })
+          }
+
+          setEndpointData(data)
+        } catch (error) {
+          console.error('Error fetching endpoint details:', error)
+          setEndpointData(null)
+        } finally {
+          setLoading(false)
+        }
+      })()
+    }
+  }, [selectedTags])
 
   return (
     <>
@@ -213,7 +268,7 @@ export default function ModelsPage() {
               </div>
             </div>
 
-            {/* Tags */}
+            {/* Tags 快速筛选 */}
             <div className="mb-8">
               <div className="mb-3 flex items-center gap-2">
                 <Layers className="h-4 w-4 text-muted-foreground" />
