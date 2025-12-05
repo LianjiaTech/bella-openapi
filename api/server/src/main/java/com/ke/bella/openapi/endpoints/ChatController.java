@@ -38,6 +38,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import javax.servlet.http.HttpServletRequest;
+import java.io.IOException;
 import java.util.Map;
 
 @EndpointAPI
@@ -66,12 +68,12 @@ public class ChatController {
     private Integer maxModelsPerRequest;
 
     @PostMapping("/completions")
-    public Object completion(@RequestBody CompletionRequest request) {
-        String endpoint = EndpointContext.getRequest().getRequestURI();
+    public Object completion(@RequestBody(required = false) CompletionRequest request, HttpServletRequest httpRequest) throws IOException {
+        String endpoint = httpRequest.getRequestURI();
 
-        // Check for direct mode
+        // Check for direct mode - skip body deserialization for performance
         if (BellaContext.isDirectMode()) {
-            return processDirectModeRequest(endpoint, request);
+            return processDirectModeRequest(endpoint, httpRequest);
         }
 
         String model = request.getModel();
@@ -181,19 +183,20 @@ public class ChatController {
     }
 
     /**
-     * Process request in direct mode:
+     * Process request in direct mode with InputStream passthrough:
      * 1. Use X-BELLA-MODEL header for model routing
-     * 2. Skip availability checks (uses DirectChannelRouter)
-     * 3. Use DirectCompletionAdaptor for transparent passthrough
-     * 4. Minimal processing overhead
+     * 2. Use X-BELLA-PROTOCOL header to distinguish HTTP vs SSE
+     * 3. Skip availability checks (uses DirectChannelRouter)
+     * 4. Skip body deserialization - pass InputStream directly
+     * 5. Minimal processing overhead - no serialization/deserialization
      */
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    private Object processDirectModeRequest(String endpoint, CompletionRequest request) {
+    private Object processDirectModeRequest(String endpoint, HttpServletRequest httpRequest) throws IOException {
         // Get model from header (validated by DirectModeInterceptor)
         String model = BellaContext.getDirectModel();
 
-        // Set endpoint data
-        endpointDataService.setEndpointData(endpoint, model, request);
+        // Set endpoint data with null request (not deserialized in direct mode)
+        endpointDataService.setEndpointData(endpoint, model, null);
 
         // Use DirectChannelRouter - skips availability checks
         ChannelDB channel = directRouter.routeDirect(model, EndpointContext.getApikey());
@@ -214,19 +217,21 @@ public class ChatController {
         // No adaptor decoration in direct mode - pure passthrough
         EndpointContext.setEncodingType(property.getEncodingType());
 
-        if(request.isStream()) {
+        // Check protocol from header
+        if(BellaContext.isDirectSSE()) {
+            // SSE streaming mode
             SseEmitter sse = SseHelper.createSse(1000L * 60 * 30, EndpointContext.getProcessData().getRequestId());
-            // Stream with direct callback (async logging)
-            adaptor.streamCompletion(request, url, property,
+            // Pass InputStream directly to adaptor for streaming
+            adaptor.streamCompletion(httpRequest.getInputStream(), url, property,
                 StreamCallbackProvider.provide(sse, processData, EndpointContext.getApikey(),
                     logger, safetyCheckService, property));
             return sse;
+        } else {
+            // HTTP mode (non-streaming)
+            // Pass InputStream directly to adaptor
+            CompletionResponse response = adaptor.completion(httpRequest.getInputStream(), url, property);
+            // No safety checks on response in direct mode - transparent passthrough
+            return response;
         }
-
-        // Non-streaming request
-        CompletionResponse response = adaptor.completion(request, url, property);
-
-        // No safety checks on response in direct mode - transparent passthrough
-        return response;
     }
 }

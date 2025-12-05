@@ -35,6 +35,19 @@ public class DirectModeInterceptor implements HandlerInterceptor {
                     "Direct mode requires X-BELLA-MODEL header");
         }
 
+        // Validate that X-BELLA-PROTOCOL header is present
+        String directProtocol = BellaContext.getDirectProtocol();
+        if (StringUtils.isEmpty(directProtocol)) {
+            throw new ChannelException.AuthorizationException(
+                    "Direct mode requires X-BELLA-PROTOCOL header (HTTP or SSE)");
+        }
+
+        // Validate protocol value
+        if (!BellaContext.isDirectHTTP() && !BellaContext.isDirectSSE()) {
+            throw new ChannelException.AuthorizationException(
+                    "X-BELLA-PROTOCOL must be either 'HTTP' or 'SSE', got: " + directProtocol);
+        }
+
         // Validate API key role
         ApikeyInfo apikeyInfo = EndpointContext.getApikey();
         if (apikeyInfo == null) {

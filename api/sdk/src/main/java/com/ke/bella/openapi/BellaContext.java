@@ -16,6 +16,7 @@ public class BellaContext {
     public static final String BELLA_USER_AK_HEADER = "X-BELLA-USER-AK-CODE";
     public static final String BELLA_DIRECT_HEADER = "X-BELLA-DIRECT";
     public static final String BELLA_MODEL_HEADER = "X-BELLA-MODEL";
+    public static final String BELLA_PROTOCOL_HEADER = "X-BELLA-PROTOCOL";
 
     private static final ThreadLocal<Operator> operatorLocal = new ThreadLocal<>();
     private static final ThreadLocal<Map<String, String>> headersThreadLocal = new ThreadLocal<>();
@@ -58,6 +59,18 @@ public class BellaContext {
 
     public static String getDirectModel() {
         return getHeaders().get(BELLA_MODEL_HEADER);
+    }
+
+    public static String getDirectProtocol() {
+        return getHeaders().get(BELLA_PROTOCOL_HEADER);
+    }
+
+    public static boolean isDirectSSE() {
+        return "SSE".equalsIgnoreCase(getDirectProtocol());
+    }
+
+    public static boolean isDirectHTTP() {
+        return "HTTP".equalsIgnoreCase(getDirectProtocol());
     }
 
     public static ApikeyInfo getApikeyIgnoreNull() {
