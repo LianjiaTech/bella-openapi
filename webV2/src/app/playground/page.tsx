@@ -1,84 +1,67 @@
-'use client';
+"use client"
 
-import {useEffect, useState, Suspense} from 'react';
-import {ClientHeader} from "@/components/user/client-header";
-import {ModelSelect} from "@/components/ui/model-select";
-import {Sidebar} from '@/components/meta/sidebar';
-import {getEndpointDetails} from '@/lib/api/meta';
-import {Model} from "@/lib/types/openapi";
-import {SidebarProvider, useSidebar} from '@/lib/context/sidebar-context';
+import { TopBar } from "@/components/top-bar"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ChatPlayground } from "@/components/playground/chat-playground"
+import { ImagePlayground } from "@/components/playground/image-playground"
+import { AudioPlayground } from "@/components/playground/audio-playground"
+import { OCRPlayground } from "@/components/playground/ocr-playground"
+import { MessageSquare, ImageIcon, Mic, FileText } from "lucide-react"
 
+export default function PlaygroundPage() {
+  return (
+    <>
+      <TopBar />
 
-function PlaygroundContent() {
-    const {selectedEndpoint} = useSidebar();
-    const [models, setModels] = useState<Model[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [selectedModel, setSelectedModel] = useState<string>('');
-    const [selectedDisplayModel, setSelectedDisplayModel] = useState<string>('');
+      <div className="flex-1 overflow-y-auto">
+        <div className="container px-6 py-8">
+          <div className="mb-8">
+            <h1 className="mb-4 text-4xl font-bold">Playground</h1>
+            <p className="text-lg text-muted-foreground">在线测试和体验我们的 AI 能力</p>
+          </div>
 
-    useEffect(() => {
-        async function fetchModels() {
-            try {
-                setLoading(true);
-                const data = await getEndpointDetails(selectedEndpoint, '', []);
-                setModels(data.models || []);
-                setSelectedModel(data.models[0]?.terminalModel || data.models[0]?.modelName);
-                setSelectedDisplayModel(data.models[0]?.modelName);
-            } catch (error) {
-                console.error('Error fetching endpoint details:', error);
-            } finally {
-                setLoading(false);
-            }
-        }
-        fetchModels();
-    }, [selectedEndpoint]);
+          <Tabs defaultValue="chat" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 lg:w-auto lg:grid-cols-4">
+              <TabsTrigger value="chat" className="gap-2">
+                <MessageSquare className="h-4 w-4" />
+                <span className="hidden sm:inline">ChatCompletion</span>
+                <span className="sm:hidden">对话</span>
+              </TabsTrigger>
+              <TabsTrigger value="image" className="gap-2">
+                <ImageIcon className="h-4 w-4" />
+                <span className="hidden sm:inline">图像生成</span>
+                <span className="sm:hidden">图像</span>
+              </TabsTrigger>
+              <TabsTrigger value="audio" className="gap-2">
+                <Mic className="h-4 w-4" />
+                <span className="hidden sm:inline">语音识别</span>
+                <span className="sm:hidden">语音</span>
+              </TabsTrigger>
+              <TabsTrigger value="ocr" className="gap-2">
+                <FileText className="h-4 w-4" />
+                <span className="hidden sm:inline">OCR 识别</span>
+                <span className="sm:hidden">OCR</span>
+              </TabsTrigger>
+            </TabsList>
 
-    return (
-        <div className="h-screen bg-white dark:bg-white flex flex-col">
-            <ClientHeader title="Playground" />
-            <div className="flex flex-1 overflow-hidden">
-                <Sidebar />
-                <main className="flex-1 flex flex-col overflow-hidden">
-                    {models.length > 0 &&  (
-                    <div className="bg-white p-3">
-                        <div className="flex items-center space-x-2">
-                            <label className="text-sm font-medium text-gray-700 whitespace-nowrap">模型:</label>
-                            <ModelSelect
-                                value={selectedDisplayModel}
-                                onChange={(value) => {
-                                    const model = models.find(m => m.modelName === value);
-                                    setSelectedModel(model?.terminalModel || model?.modelName || value);
-                                    setSelectedDisplayModel(model?.modelName || value);
-                                }}
-                                models={models.map(m => m.modelName || '')}
-                                className="w-full"
-                            />
-                        </div>
-                    </div>)}
-                    <div className="flex-1 overflow-hidden">
-                        <iframe
-                            src={`/playground${selectedEndpoint}?model=${selectedModel}&modelData=${encodeURIComponent(JSON.stringify(models.find(m => m.modelName === selectedDisplayModel) || {}))}`}
-                            className="w-full h-full border-0"
-                            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"
-                            referrerPolicy="no-referrer"
-                        />
-                    </div>
-                </main>
-            </div>
+            <TabsContent value="chat" className="mt-6">
+              <ChatPlayground />
+            </TabsContent>
+
+            <TabsContent value="image" className="mt-6">
+              <ImagePlayground />
+            </TabsContent>
+
+            <TabsContent value="audio" className="mt-6">
+              <AudioPlayground />
+            </TabsContent>
+
+            <TabsContent value="ocr" className="mt-6">
+              <OCRPlayground />
+            </TabsContent>
+          </Tabs>
         </div>
-    );
-}
-
-function Playground() {
-    return (
-        <Suspense fallback={<div>Loading...</div>}>
-            <SidebarProvider>
-                <PlaygroundContent />
-            </SidebarProvider>
-        </Suspense>
-    );
-}
-
-export default function MonitorPage() {
-    return <Playground/>;
+      </div>
+    </>
+  )
 }

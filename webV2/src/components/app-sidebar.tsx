@@ -3,23 +3,9 @@
 import {
   Home,
   Sparkles,
-  FlaskConical,
   Key,
   ScrollText,
   HelpCircle,
-  ChevronDown,
-  MessageSquare,
-  Brain,
-  Mic,
-  Volume2,
-  Radio,
-  ImageIcon,
-  Database,
-  Network,
-  FileText,
-  WorkflowIcon,
-  Search,
-  ScanText,
   Settings,
   Activity,
   FolderTree,
@@ -28,16 +14,13 @@ import {
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { useState } from "react"
 import { SettingsDialog } from "@/components/settings-dialog"
 import { useLanguage } from "@/components/language-provider"
+import { PlaygroundSidebarMenu } from "@/components/playground-sidebar-menu"
 
 export function AppSidebar() {
   const pathname = usePathname()
-  const [isPlaygroundOpen, setIsPlaygroundOpen] = useState(pathname.startsWith("/playground"))
   const { t } = useLanguage()
-
-  const isPlaygroundActive = pathname.startsWith("/playground")
 
   return (
     <aside className="fixed left-0 top-0 z-40 h-screen w-64 flex-shrink-0 border-r border-border bg-sidebar">
@@ -78,58 +61,7 @@ export function AppSidebar() {
             })}
 
             {/* Playground Menu Item */}
-            <div>
-              <button
-                onClick={() => setIsPlaygroundOpen(!isPlaygroundOpen)}
-                className={cn(
-                  "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                  isPlaygroundActive
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground bg-gray-300"
-                    : "text-gray-500 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
-                )}
-              >
-                <FlaskConical className="h-5 w-5" />
-                <span className="flex-1 text-left">{t("playground")}</span>
-                <ChevronDown className={cn("h-4 w-4 transition-transform", isPlaygroundOpen ? "rotate-180" : "")} />
-              </button>
-
-              {/* Submenu for Playground */}
-              {isPlaygroundOpen && (
-                <div className="ml-4 mt-1 space-y-1 border-l border-sidebar-border pl-4">
-                  {[
-                    { name: t("chat"), href: "/playground/chat", icon: MessageSquare },
-                    { name: t("embedding"), href: "/playground/embedding", icon: Brain },
-                    { name: t("audio"), href: "/playground/audio", icon: Mic },
-                    { name: t("tts"), href: "/playground/tts", icon: Volume2 },
-                    { name: t("realtime"), href: "/playground/realtime", icon: Radio },
-                    { name: t("images"), href: "/playground/images", icon: ImageIcon },
-                    { name: t("knowledge"), href: "/playground/knowledge", icon: Database },
-                    { name: t("rag"), href: "/playground/rag", icon: Network },
-                    { name: t("docparse"), href: "/playground/docparse", icon: FileText },
-                    { name: t("workflow"), href: "/playground/workflow", icon: WorkflowIcon },
-                    { name: t("search"), href: "/playground/search", icon: Search },
-                    { name: t("ocr"), href: "/playground/ocr", icon: ScanText },
-                  ].map((item) => {
-                    const isActive = pathname === item.href
-                    return (
-                      <Link
-                        key={item.name}
-                        href={item.href}
-                        className={cn(
-                          "flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors",
-                          isActive
-                            ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium bg-gray-300"
-                            : "text-gray-500 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
-                        )}
-                      >
-                        <item.icon className="h-4 w-4" />
-                        {item.name}
-                      </Link>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
+            <PlaygroundSidebarMenu pathname={pathname} t={t} />
 
             {[
               { name: t("apiKeys"), href: "/api-keys", icon: Key },

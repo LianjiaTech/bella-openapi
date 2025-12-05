@@ -194,6 +194,11 @@
   resolved "https://registry.npmjs.org/@radix-ui/number/-/number-1.1.0.tgz"
   integrity sha512-V3gRzhVNU1ldS5XhAPTom1fOIo4ccrjjJgmE+LI2h/WaFpHmx0MQApT+KZHnx8abG6Avtfcz4WoEciMnpFT3HQ==
 
+"@radix-ui/number@1.1.1":
+  version "1.1.1"
+  resolved "http://artifactory.intra.ke.com/artifactory/api/npm/npm-virtual/@radix-ui/number/-/number-1.1.1.tgz"
+  integrity sha1-eyySJfvxsSZTlVH1mFdp0ASNkJA=
+
 "@radix-ui/primitive@1.0.1":
   version "1.0.1"
   resolved "https://registry.npmjs.org/@radix-ui/primitive/-/primitive-1.0.1.tgz"
@@ -651,6 +656,13 @@
   dependencies:
     "@radix-ui/react-slot" "1.2.3"
 
+"@radix-ui/react-primitive@2.1.4":
+  version "2.1.4"
+  resolved "http://artifactory.intra.ke.com/artifactory/api/npm/npm-virtual/@radix-ui/react-primitive/-/react-primitive-2.1.4.tgz"
+  integrity sha1-JibqMJ69Y79XZ9Pn/ECB+BuZPfA=
+  dependencies:
+    "@radix-ui/react-slot" "1.2.4"
+
 "@radix-ui/react-radio-group@^1.3.8":
   version "1.3.8"
   resolved "http://artifactory.intra.ke.com/artifactory/api/npm/npm-virtual/@radix-ui/react-radio-group/-/react-radio-group-1.3.8.tgz"
@@ -754,6 +766,30 @@
     aria-hidden "^1.1.1"
     react-remove-scroll "2.6.0"
 
+"@radix-ui/react-separator@^1.1.8":
+  version "1.1.8"
+  resolved "http://artifactory.intra.ke.com/artifactory/api/npm/npm-virtual/@radix-ui/react-separator/-/react-separator-1.1.8.tgz"
+  integrity sha1-JPhx+/ljCvMW0MFMvHUZpuM6oR4=
+  dependencies:
+    "@radix-ui/react-primitive" "2.1.4"
+
+"@radix-ui/react-slider@^1.3.6":
+  version "1.3.6"
+  resolved "http://artifactory.intra.ke.com/artifactory/api/npm/npm-virtual/@radix-ui/react-slider/-/react-slider-1.3.6.tgz"
+  integrity sha1-QJRTEQuPNMoAlydQuAzXkvCyOow=
+  dependencies:
+    "@radix-ui/number" "1.1.1"
+    "@radix-ui/primitive" "1.1.3"
+    "@radix-ui/react-collection" "1.1.7"
+    "@radix-ui/react-compose-refs" "1.1.2"
+    "@radix-ui/react-context" "1.1.2"
+    "@radix-ui/react-direction" "1.1.1"
+    "@radix-ui/react-primitive" "2.1.3"
+    "@radix-ui/react-use-controllable-state" "1.2.2"
+    "@radix-ui/react-use-layout-effect" "1.1.1"
+    "@radix-ui/react-use-previous" "1.1.1"
+    "@radix-ui/react-use-size" "1.1.1"
+
 "@radix-ui/react-slot@^1.1.0", "@radix-ui/react-slot@1.1.0":
   version "1.1.0"
   resolved "https://registry.npmjs.org/@radix-ui/react-slot/-/react-slot-1.1.0.tgz"
@@ -780,6 +816,13 @@
   version "1.2.3"
   resolved "http://artifactory.intra.ke.com/artifactory/api/npm/npm-virtual/@radix-ui/react-slot/-/react-slot-1.2.3.tgz"
   integrity sha1-UC1uNU/IR9QWnDvF8Yned39oz+E=
+  dependencies:
+    "@radix-ui/react-compose-refs" "1.1.2"
+
+"@radix-ui/react-slot@1.2.4":
+  version "1.2.4"
+  resolved "http://artifactory.intra.ke.com/artifactory/api/npm/npm-virtual/@radix-ui/react-slot/-/react-slot-1.2.4.tgz"
+  integrity sha1-Y8C6Bf35DMSQdrlAKchS17rB+4M=
   dependencies:
     "@radix-ui/react-compose-refs" "1.1.2"
 

@@ -5,6 +5,7 @@ import { AppSidebar } from "@/components/app-sidebar"
 import { ThemeProvider } from "@/components/theme-provider"
 import { LanguageProvider } from "@/components/language-provider"
 import { UserProvider } from   "@/lib/context/user-context"
+import { SidebarProvider } from "@/lib/context/sidebar-context"
 
 export const metadata: Metadata = {
   title: "Bella - AI OpenAPI Platform",
@@ -23,10 +24,12 @@ export default function RootLayout({
         <ThemeProvider defaultTheme="dark">
           <UserProvider>
           <LanguageProvider>
-            <div className="flex h-screen overflow-hidden bg-background">
-              <AppSidebar />
-              <main className="flex-1 overflow-hidden pl-64">{children}</main>
-            </div>
+            <SidebarProvider>
+              <div className="flex h-screen overflow-hidden bg-background">
+                <AppSidebar />
+                <main className="flex-1 overflow-hidden pl-64">{children}</main>
+              </div>
+            </SidebarProvider>
           </LanguageProvider>
           </UserProvider>
         </ThemeProvider>
