@@ -59,8 +59,10 @@ export function PlaygroundSidebarMenu({ pathname, t }: PlaygroundSidebarMenuProp
       {isPlaygroundOpen && (
         <div className="ml-4 mt-1 space-y-1 border-l border-sidebar-border pl-4">
           {playgroundItems.map((item) => {
-            const isActive = pathname === item.href
+            const baseHref = item.href.split("?")[0]
+            const isActive = pathname === baseHref
             const Icon = item.icon
+            
             return (
               <Link
                 key={item.endpointName}
