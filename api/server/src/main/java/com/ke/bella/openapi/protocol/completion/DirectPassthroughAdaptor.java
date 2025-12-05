@@ -16,7 +16,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 /**
  * Direct passthrough adaptor - wraps delegator for transparent passthrough
@@ -34,27 +34,32 @@ public class DirectPassthroughAdaptor implements CompletionAdaptor<CompletionPro
     private final AuthorizationProperty auth;
     private final HttpServletResponse httpResponse;
     private final SseEmitter sseEmitter;
+    private final Executor taskExecutor;
 
     public DirectPassthroughAdaptor(CompletionAdaptorDelegator<?> delegator,
                                     InputStream requestBody,
                                     AuthorizationProperty auth,
-                                    HttpServletResponse httpResponse) {
+                                    HttpServletResponse httpResponse,
+                                    Executor taskExecutor) {
         this.delegator = delegator;
         this.requestBody = requestBody;
         this.auth = auth;
         this.httpResponse = httpResponse;
         this.sseEmitter = null;
+        this.taskExecutor = taskExecutor;
     }
 
     public DirectPassthroughAdaptor(CompletionAdaptorDelegator<?> delegator,
                                     InputStream requestBody,
                                     AuthorizationProperty auth,
-                                    SseEmitter sseEmitter) {
+                                    SseEmitter sseEmitter,
+                                    Executor taskExecutor) {
         this.delegator = delegator;
         this.requestBody = requestBody;
         this.auth = auth;
         this.sseEmitter = sseEmitter;
         this.httpResponse = null;
+        this.taskExecutor = taskExecutor;
     }
 
     @Override
@@ -88,9 +93,11 @@ public class DirectPassthroughAdaptor implements CompletionAdaptor<CompletionPro
             }
 
             // Async processing for logging
-            asyncProcess(() -> {
-                // TODO: logging, metrics
-            });
+            if (taskExecutor != null) {
+                taskExecutor.execute(() -> {
+                    // TODO: logging, metrics
+                });
+            }
 
         } catch (IOException e) {
             log.error("Direct passthrough error", e);
@@ -106,7 +113,7 @@ public class DirectPassthroughAdaptor implements CompletionAdaptor<CompletionPro
         Request httpRequest = buildDirectRequest(url, property);
 
         // Create DirectSseListener - sends immediately, processes async
-        DirectSseListener directListener = new DirectSseListener(sseEmitter, callback);
+        DirectSseListener directListener = new DirectSseListener(sseEmitter, callback, taskExecutor);
 
         HttpUtils.streamRequest(httpRequest, directListener);
     }
@@ -140,10 +147,6 @@ public class DirectPassthroughAdaptor implements CompletionAdaptor<CompletionPro
         }
 
         return builder.build();
-    }
-
-    private void asyncProcess(Runnable task) {
-        CompletableFuture.runAsync(task);
     }
 
     @Override

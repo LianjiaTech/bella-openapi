@@ -8,7 +8,7 @@ import okhttp3.Response;
 import okhttp3.sse.EventSource;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 /**
  * Direct SSE Listener for transparent passthrough
@@ -18,36 +18,46 @@ import java.util.concurrent.CompletableFuture;
 public class DirectSseListener extends BellaEventSourceListener {
     private final SseEmitter sseEmitter;
     private final Callbacks.StreamCompletionCallback delegateCallback;
+    private final Executor taskExecutor;
 
-    public DirectSseListener(SseEmitter sseEmitter, Callbacks.StreamCompletionCallback delegateCallback) {
+    public DirectSseListener(SseEmitter sseEmitter, Callbacks.StreamCompletionCallback delegateCallback, Executor taskExecutor) {
         this.sseEmitter = sseEmitter;
         this.delegateCallback = delegateCallback;
+        this.taskExecutor = taskExecutor;
     }
 
     @Override
     public void onOpen(EventSource eventSource, Response response) {
         super.onOpen(eventSource, response);
 
-        // Immediately notify client
-        if (delegateCallback != null) {
-            delegateCallback.onOpen();
+        // Async notify delegate callback
+        if (delegateCallback != null && taskExecutor != null) {
+            taskExecutor.execute(() -> {
+                try {
+                    delegateCallback.onOpen();
+                } catch (Exception e) {
+                    log.error("Error in async onOpen processing", e);
+                }
+            });
         }
     }
 
     @Override
     public void onEvent(EventSource eventSource, String id, String type, String data) {
-        // Step 1: Immediately send to client (transparent passthrough)
+        // Immediately send to client (transparent passthrough)
         sendDirectly(data);
 
-        // Step 2: Async process delegate callback (logging, metrics, etc.)
-        if (delegateCallback != null) {
-            CompletableFuture.runAsync(() -> {
+        // Async process delegate callback (logging, metrics, etc.)
+        // NoSendStreamCompletionCallback already wraps it, so send() is skipped
+        if (delegateCallback != null && taskExecutor != null) {
+            taskExecutor.execute(() -> {
                 try {
-                    // Process the event through delegate (for logging, metrics, safety checks, etc.)
-                    // But skip the send operation since we already sent
-                    processAsyncWithoutSend(data);
+                    StreamCompletionResponse response = parseResponse(data);
+                    if (response != null) {
+                        delegateCallback.callback(response);
+                    }
                 } catch (Exception e) {
-                    log.error("Error in async delegate processing", e);
+                    log.error("Error in async event processing", e);
                 }
             });
         }
@@ -64,8 +74,8 @@ public class DirectSseListener extends BellaEventSourceListener {
         sseEmitter.complete();
 
         // Async finish processing
-        if (delegateCallback != null) {
-            CompletableFuture.runAsync(() -> {
+        if (delegateCallback != null && taskExecutor != null) {
+            taskExecutor.execute(() -> {
                 try {
                     delegateCallback.done();
                     delegateCallback.finish();
@@ -86,8 +96,8 @@ public class DirectSseListener extends BellaEventSourceListener {
         sseEmitter.completeWithError(t);
 
         // Async error processing
-        if (delegateCallback != null) {
-            CompletableFuture.runAsync(() -> {
+        if (delegateCallback != null && taskExecutor != null) {
+            taskExecutor.execute(() -> {
                 try {
                     if (t instanceof com.ke.bella.openapi.common.exception.ChannelException) {
                         delegateCallback.finish((com.ke.bella.openapi.common.exception.ChannelException) t);
@@ -114,59 +124,14 @@ public class DirectSseListener extends BellaEventSourceListener {
     }
 
     /**
-     * Process delegate callback asynchronously without sending
-     * This is for logging, metrics, safety checks, etc.
+     * Parse response from data string
      */
-    private void processAsyncWithoutSend(String data) {
-        // Parse the data if needed for delegate processing
-        // The delegate's send() will be skipped since we wrap it with NoOpSendCallback
-
-        // Create a wrapper callback that skips send operations
-        Callbacks.StreamCompletionCallback noOpSendCallback = new Callbacks.StreamCompletionCallback() {
-            @Override
-            public void onOpen() {
-                // Already opened
-            }
-
-            @Override
-            public void callback(StreamCompletionResponse msg) {
-                // Delegate to actual callback but skip send
-                if (delegateCallback instanceof NoOpSendWrapper) {
-                    ((NoOpSendWrapper) delegateCallback).callbackWithoutSend(msg);
-                }
-            }
-
-            @Override
-            public void done() {
-                // Already sent [DONE]
-            }
-
-            @Override
-            public void finish() {
-                // Delegate finish
-                delegateCallback.finish();
-            }
-
-            @Override
-            public void finish(com.ke.bella.openapi.common.exception.ChannelException exception) {
-                // Delegate finish with error
-                delegateCallback.finish(exception);
-            }
-
-            @Override
-            public void send(Object data) {
-                // Skip send - already sent directly
-            }
-        };
-
-        // TODO: Parse data and call delegate callback for processing
-        // This allows logging, metrics, safety checks, etc. to run asynchronously
-    }
-
-    /**
-     * Interface for callbacks that support skipping send operations
-     */
-    public interface NoOpSendWrapper {
-        void callbackWithoutSend(StreamCompletionResponse msg);
+    private StreamCompletionResponse parseResponse(String data) {
+        try {
+            return com.ke.bella.openapi.utils.JacksonUtils.deserialize(data, StreamCompletionResponse.class);
+        } catch (Exception e) {
+            log.warn("Failed to parse response data: {}", data, e);
+            return null;
+        }
     }
 }

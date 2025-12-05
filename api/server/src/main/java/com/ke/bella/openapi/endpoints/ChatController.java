@@ -5,6 +5,7 @@ import com.ke.bella.job.queue.config.JobQueueProperties;
 import com.ke.bella.openapi.BellaContext;
 import com.ke.bella.openapi.EndpointContext;
 import com.ke.bella.openapi.EndpointProcessData;
+import com.ke.bella.openapi.TaskExecutor;
 import com.ke.bella.openapi.annotations.EndpointAPI;
 import com.ke.bella.openapi.common.exception.BizParamCheckException;
 import com.ke.bella.openapi.common.exception.ChannelException;
@@ -198,7 +199,7 @@ public class ChatController {
      */
     @SuppressWarnings({ "rawtypes", "unchecked" })
     private Object processDirectModeRequest(String endpoint, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException {
-        // Get model from header (validated by DirectModeInterceptor)
+        // Get model from header
         String model = BellaContext.getDirectModel();
 
         // Set endpoint data with null request (not deserialized in direct mode)
@@ -208,50 +209,54 @@ public class ChatController {
         ChannelDB channel = router.route(endpoint, model, EndpointContext.getApikey(), false, true);
         endpointDataService.setChannel(channel);
 
-        // No rate limiting or concurrent count in direct mode
-        // No safety checks in direct mode (transparent passthrough)
-
         EndpointProcessData processData = EndpointContext.getProcessData();
         String protocol = processData.getProtocol();
         String url = processData.getForwardUrl();
         String channelInfo = channel.getChannelInfo();
 
-        // Get the actual channel protocol adaptor (must be CompletionAdaptorDelegator)
+        // Get delegator and property
+        CompletionAdaptorDelegator delegator = getDelegator(endpoint, protocol);
+        CompletionProperty property = (CompletionProperty) JacksonUtils.deserialize(channelInfo, delegator.getPropertyClass());
+        EndpointContext.setEncodingType(property.getEncodingType());
+
+        AuthorizationProperty auth = property.getAuth();
+
+        // Create adaptor and execute
+        if(BellaContext.isDirectSSE()) {
+            return processDirectSSE(delegator, property, auth, url, httpRequest, processData);
+        } else {
+            return processDirectHTTP(delegator, property, auth, url, httpRequest, httpResponse);
+        }
+    }
+
+    private CompletionAdaptorDelegator getDelegator(String endpoint, String protocol) {
         CompletionAdaptor rawAdaptor = adaptorManager.getProtocolAdaptor(endpoint, protocol, CompletionAdaptor.class);
         if (!(rawAdaptor instanceof CompletionAdaptorDelegator)) {
             throw new IllegalStateException("Direct mode requires CompletionAdaptorDelegator, got: " + rawAdaptor.getClass().getSimpleName());
         }
+        return (CompletionAdaptorDelegator) rawAdaptor;
+    }
 
-        CompletionAdaptorDelegator delegator = (CompletionAdaptorDelegator) rawAdaptor;
-        CompletionProperty property = (CompletionProperty) JacksonUtils.deserialize(channelInfo, delegator.getPropertyClass());
+    private Object processDirectSSE(CompletionAdaptorDelegator delegator, CompletionProperty property,
+                                    AuthorizationProperty auth, String url, HttpServletRequest httpRequest,
+                                    EndpointProcessData processData) throws IOException {
+        SseEmitter sse = SseHelper.createSse(1000L * 60 * 30, EndpointContext.getProcessData().getRequestId());
+        CompletionAdaptor adaptor = new DirectPassthroughAdaptor(delegator, httpRequest.getInputStream(), auth, sse, null);
 
-        EndpointContext.setEncodingType(property.getEncodingType());
+        // Create callback and wrap with NoSendStreamCompletionCallback to prevent duplicate sending
+        Callbacks.StreamCompletionCallback originalCallback = StreamCallbackProvider.provide(
+            sse, processData, EndpointContext.getApikey(), logger, safetyCheckService, property);
+        Callbacks.StreamCompletionCallback noSendCallback = new NoSendStreamCompletionCallback(originalCallback);
 
-        // Extract auth from property
-        AuthorizationProperty auth = property.getAuth();
+        adaptor.streamCompletion(null, url, property, noSendCallback);
+        return sse;
+    }
 
-        // Wrap with DirectPassthroughAdaptor for transparent passthrough
-        CompletionAdaptor adaptor;
-        if(BellaContext.isDirectSSE()) {
-            // SSE streaming mode
-            SseEmitter sse = SseHelper.createSse(1000L * 60 * 30, EndpointContext.getProcessData().getRequestId());
-            adaptor = new DirectPassthroughAdaptor(delegator, httpRequest.getInputStream(), auth, sse);
-
-            // Create callback and wrap with NoSendStreamCompletionCallback to prevent duplicate sending
-            Callbacks.StreamCompletionCallback originalCallback = StreamCallbackProvider.provide(
-                sse, processData, EndpointContext.getApikey(), logger, safetyCheckService, property);
-            Callbacks.StreamCompletionCallback noSendCallback = new NoSendStreamCompletionCallback(originalCallback);
-
-            // Streaming - callback for async processing
-            adaptor.streamCompletion(null, url, property, noSendCallback);
-            return sse;
-        } else {
-            // HTTP mode (non-streaming)
-            adaptor = new DirectPassthroughAdaptor(delegator, httpRequest.getInputStream(), auth, httpResponse);
-
-            // Non-streaming - returns null as response is already written to httpResponse
-            adaptor.completion(null, url, property);
-            return null; // Response already written directly
-        }
+    private Object processDirectHTTP(CompletionAdaptorDelegator delegator, CompletionProperty property,
+                                     AuthorizationProperty auth, String url, HttpServletRequest httpRequest,
+                                     HttpServletResponse httpResponse) throws IOException {
+        CompletionAdaptor adaptor = new DirectPassthroughAdaptor(delegator, httpRequest.getInputStream(), auth, httpResponse, null);
+        adaptor.completion(null, url, property);
+        return null; // Response already written directly
     }
 }
