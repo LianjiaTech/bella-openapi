@@ -3,12 +3,13 @@ package com.ke.bella.openapi.protocol.ocr.idcard;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.ke.bella.openapi.protocol.IMemoryClearable;
 import com.ke.bella.openapi.protocol.ITransfer;
+
 import lombok.Builder;
 import lombok.Data;
 
 @Data
 @Builder
-public class BaiduOcrIdcardRequest implements IMemoryClearable, ITransfer {
+public class BaiduRequest implements IMemoryClearable, ITransfer {
     public static final String ID_CARD_FRONT = "front";
 
     private String image;
