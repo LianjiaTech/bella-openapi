@@ -51,6 +51,30 @@ const ModelsPage = () => {
   }, [categoryTrees])
 
   /**
+   * 根据搜索关键词筛选模型列表
+   */
+  const filteredModels = useMemo(() => {
+    if (!endpointData?.models) return []
+    if (!searchQuery.trim()) return endpointData.models
+
+    const query = searchQuery.toLowerCase().trim()
+    return endpointData.models.filter((model) => {
+      // 搜索模型名称
+      if (model.modelName.toLowerCase().includes(query)) return true
+      // 搜索拥有者名称
+      if (model.ownerName?.toLowerCase().includes(query)) return true
+      // 搜索端点
+      if (model.endpoints?.some(ep => ep.toLowerCase().includes(query))) return true
+      // 搜索特性标签
+      const features = typeof model.features === 'string'
+        ? model.features.split(',').map(f => f.trim())
+        : model.features || []
+      if (features.some(f => f.toLowerCase().includes(query))) return true
+      return false
+    })
+  }, [endpointData?.models, searchQuery])
+
+  /**
    * 初始化选中的能力分类选项 endpoint
    */
   useEffect(() => {
@@ -153,12 +177,12 @@ const ModelsPage = () => {
             {/* 模型列表 */}
             <div className="mb-4">
               <h2 className="text-sm font-medium text-muted-foreground">
-                {t("foundModels")} {endpointData?.models.length ?? 0} {t("modelsCount")}
+                {t("foundModels")} {filteredModels.length} {t("modelsCount")}
               </h2>
             </div>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {endpointData?.models.map((model) => (
+              {filteredModels.map((model) => (
                 <ModelCard
                   key={model.modelName}
                   model={model}

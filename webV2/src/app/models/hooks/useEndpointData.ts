@@ -14,7 +14,7 @@ export const useEndpointData = (endpoint: string, selectedTags: string[]) => {
   /**
    * 获取并处理端点详情数据
    */
-  const fetchAndProcessData = useCallback(async (endpoint: string, tags: string[]) => {
+  const fetchAndProcessData = useCallback(async (endpoint: string, modelName: string = "", tags: string[]) => {
     if (!endpoint) return
 
     try {
@@ -22,7 +22,7 @@ export const useEndpointData = (endpoint: string, selectedTags: string[]) => {
       setError(null)
 
       // 获取原始数据
-      const data = await getEndpointDetails(endpoint, "", tags)
+      const data = await getEndpointDetails(endpoint, modelName, tags)
 
       // 处理模型数据
       if (data && data.models) {
@@ -44,7 +44,7 @@ export const useEndpointData = (endpoint: string, selectedTags: string[]) => {
    */
   useEffect(() => {
     if (endpoint) {
-      fetchAndProcessData(endpoint, selectedTags)
+      fetchAndProcessData(endpoint, "", selectedTags)
     }
   }, [endpoint, selectedTags, fetchAndProcessData])
 
@@ -53,7 +53,7 @@ export const useEndpointData = (endpoint: string, selectedTags: string[]) => {
    */
   const refetch = useCallback(() => {
     if (endpoint) {
-      fetchAndProcessData(endpoint, selectedTags)
+      fetchAndProcessData(endpoint, "", selectedTags)
     }
   }, [endpoint, selectedTags, fetchAndProcessData])
 
