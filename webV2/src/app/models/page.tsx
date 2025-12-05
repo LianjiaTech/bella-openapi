@@ -43,7 +43,7 @@ const ModelsPage = () => {
   const { categoryTrees } = useSidebar()
 
   // 使用自定义 Hook 获取端点数据
-  const { endpointData, loading } = useEndpointData(selectedCapability, selectedTags)
+  const { endpoint, features, models, initialLoading, modelsLoading } = useEndpointData(selectedCapability, selectedTags)
 
   // 使用 useMemo 缓存扁平化后的数据
   const flattenedEndpoints = useMemo(() => {
@@ -54,11 +54,11 @@ const ModelsPage = () => {
    * 根据搜索关键词筛选模型列表
    */
   const filteredModels = useMemo(() => {
-    if (!endpointData?.models) return []
-    if (!searchQuery.trim()) return endpointData.models
+    if (!models) return []
+    if (!searchQuery.trim()) return models
 
     const query = searchQuery.toLowerCase().trim()
-    return endpointData.models.filter((model) => {
+    return models.filter((model) => {
       // 搜索模型名称
       if (model.modelName.toLowerCase().includes(query)) return true
       // 搜索拥有者名称
@@ -66,13 +66,13 @@ const ModelsPage = () => {
       // 搜索端点
       if (model.endpoints?.some(ep => ep.toLowerCase().includes(query))) return true
       // 搜索特性标签
-      const features = typeof model.features === 'string'
+      const modelFeatures = typeof model.features === 'string'
         ? model.features.split(',').map(f => f.trim())
         : model.features || []
-      if (features.some(f => f.toLowerCase().includes(query))) return true
+      if (modelFeatures.some(f => f.toLowerCase().includes(query))) return true
       return false
     })
-  }, [endpointData?.models, searchQuery])
+  }, [models, searchQuery])
 
   /**
    * 初始化选中的能力分类选项 endpoint
@@ -150,14 +150,14 @@ const ModelsPage = () => {
                 <Layers className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm font-medium text-muted-foreground">{t("quickFilter")}</span>
               </div>
-              {loading ? (
+              {initialLoading ? (
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Loader className="h-4 w-4 animate-spin" />
                   <span className="text-sm">加载中...</span>
                 </div>
               ) : (
                 <div className="flex flex-wrap gap-2">
-                  {endpointData?.features.map((feature) => (
+                  {features.map((feature) => (
                     <Badge
                       key={feature.code}
                       variant={selectedTags.includes(feature.code) ? "default" : "outline"}
@@ -167,7 +167,7 @@ const ModelsPage = () => {
                       {feature.name}
                     </Badge>
                   ))}
-                  {(!endpointData?.features || endpointData.features.length === 0) && (
+                  {(!features || features.length === 0) && (
                     <span className="text-sm text-muted-foreground">暂无可用筛选标签</span>
                   )}
                 </div>
@@ -181,16 +181,23 @@ const ModelsPage = () => {
               </h2>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {filteredModels.map((model) => (
-                <ModelCard
-                  key={model.modelName}
-                  model={model}
-                  tagColors={tagColors}
-                  onAddChannel={handleAddChannel}
-                />
-              ))}
-            </div>
+            {modelsLoading ? (
+              <div className="flex items-center justify-center py-12 text-muted-foreground">
+                <Loader className="h-6 w-6 animate-spin mr-2" />
+                <span className="text-sm">正在加载模型...</span>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {filteredModels.map((model) => (
+                  <ModelCard
+                    key={model.modelName}
+                    model={model}
+                    tagColors={tagColors}
+                    onAddChannel={handleAddChannel}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
