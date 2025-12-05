@@ -10,7 +10,6 @@ import com.ke.bella.openapi.common.exception.BizParamCheckException;
 import com.ke.bella.openapi.common.exception.ChannelException;
 import com.ke.bella.openapi.protocol.AdaptorManager;
 import com.ke.bella.openapi.protocol.ChannelRouter;
-import com.ke.bella.openapi.protocol.DirectChannelRouter;
 import com.ke.bella.openapi.protocol.completion.CompletionAdaptor;
 import com.ke.bella.openapi.protocol.completion.CompletionAdaptorDelegator;
 import com.ke.bella.openapi.protocol.completion.CompletionProperty;
@@ -51,8 +50,6 @@ public class ChatController {
     @Autowired
     private ChannelRouter router;
     @Autowired
-    private DirectChannelRouter directRouter;
-    @Autowired
     private AdaptorManager adaptorManager;
     @Autowired
     private LimiterManager limiterManager;
@@ -68,14 +65,16 @@ public class ChatController {
     private Integer maxModelsPerRequest;
 
     @PostMapping("/completions")
-    public Object completion(@RequestBody(required = false) CompletionRequest request, HttpServletRequest httpRequest) throws IOException {
+    public Object completion(HttpServletRequest httpRequest, @RequestBody(required = false) CompletionRequest request) throws IOException {
         String endpoint = httpRequest.getRequestURI();
 
         // Check for direct mode - skip body deserialization for performance
+        // In direct mode, @RequestBody will be null because we don't parse it
         if (BellaContext.isDirectMode()) {
             return processDirectModeRequest(endpoint, httpRequest);
         }
 
+        // Normal mode - request body is parsed
         String model = request.getModel();
         
         // Handle multi-model requests
@@ -198,8 +197,8 @@ public class ChatController {
         // Set endpoint data with null request (not deserialized in direct mode)
         endpointDataService.setEndpointData(endpoint, model, null);
 
-        // Use DirectChannelRouter - skips availability checks
-        ChannelDB channel = directRouter.routeDirect(model, EndpointContext.getApikey());
+        // Use ChannelRouter with direct mode flag - skips availability checks (no Redis queries)
+        ChannelDB channel = router.route(endpoint, model, EndpointContext.getApikey(), false, true);
         endpointDataService.setChannel(channel);
 
         // No rate limiting or concurrent count in direct mode
