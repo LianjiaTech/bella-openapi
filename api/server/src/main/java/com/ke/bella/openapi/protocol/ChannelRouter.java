@@ -44,6 +44,14 @@ public class ChannelRouter {
     private Integer freeConcurrent;
 
     public ChannelDB route(String endpoint, String model, ApikeyInfo apikeyInfo, boolean isMock) {
+        return route(endpoint, model, apikeyInfo, isMock, false);
+    }
+
+    /**
+     * Route to channel with optional direct mode
+     * @param isDirectMode if true, skips availability checks (no Redis queries)
+     */
+    public ChannelDB route(String endpoint, String model, ApikeyInfo apikeyInfo, boolean isMock, boolean isDirectMode) {
         if(StringUtils.isBlank(endpoint) && StringUtils.isBlank(model)) {
             throw new BizParamCheckException("没有可用渠道");
         }
@@ -65,7 +73,7 @@ public class ChannelRouter {
             }
         }
         if(!isMock) {
-            channels = filter(channels, entityCode, apikeyInfo);
+            channels = filter(channels, entityCode, apikeyInfo, isDirectMode);
         }
         channels = pickMaxPriority(channels);
         ChannelDB channel = random(channels);
@@ -84,10 +92,15 @@ public class ChannelRouter {
      * 1、筛选账户支持的数据流向（风控） 2、筛选可用的渠道
      *
      * @param channels
+     * @param isDirectMode if true, skips availability checks (no Redis queries)
      *
      * @return
      */
     private List<ChannelDB> filter(List<ChannelDB> channels, String entityCode, ApikeyInfo apikeyInfo) {
+        return filter(channels, entityCode, apikeyInfo, false);
+    }
+
+    private List<ChannelDB> filter(List<ChannelDB> channels, String entityCode, ApikeyInfo apikeyInfo, boolean isDirectMode) {
         Byte safetyLevel = apikeyInfo.getSafetyLevel();
         String accountType = apikeyInfo.getOwnerType();
         String accountCode = apikeyInfo.getOwnerCode();
@@ -108,13 +121,17 @@ public class ChannelRouter {
                 throw new ChannelException.RateLimitException("当前使用试用额度,每分钟最多请求" + freeRpm + "次, 且并行请求数不能高于" + freeConcurrent);
             }
         }
-        Set<String> unavailableSet = metricsManager.getAllUnavailableChannels(
-                filtered.stream().map(ChannelDB::getChannelCode).collect(Collectors.toList()));
-        filtered = filtered.stream()
-                .filter(channel -> channel.getDataDestination().equals(EntityConstants.PROTECTED) ||
-                        channel.getDataDestination().equals(EntityConstants.INNER) ||
-                        !unavailableSet.contains(channel.getChannelCode()))
-                .collect(Collectors.toList());
+
+        // Direct mode: skip availability checks (no Redis queries)
+        if (!isDirectMode) {
+            Set<String> unavailableSet = metricsManager.getAllUnavailableChannels(
+                    filtered.stream().map(ChannelDB::getChannelCode).collect(Collectors.toList()));
+            filtered = filtered.stream()
+                    .filter(channel -> channel.getDataDestination().equals(EntityConstants.PROTECTED) ||
+                            channel.getDataDestination().equals(EntityConstants.INNER) ||
+                            !unavailableSet.contains(channel.getChannelCode()))
+                    .collect(Collectors.toList());
+        }
         if(CollectionUtils.isEmpty(filtered)) {
             throw new ChannelException.RateLimitException("渠道当前负载过高，请稍后重试");
         }

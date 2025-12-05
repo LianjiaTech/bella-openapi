@@ -1,5 +1,6 @@
 package com.ke.bella.openapi.protocol.completion;
 
+import com.ke.bella.openapi.protocol.AuthorizationProperty;
 import com.ke.bella.openapi.protocol.IProtocolProperty;
 import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
@@ -15,6 +16,14 @@ public class CompletionProperty implements IProtocolProperty {
     boolean functionCallSimulate = false;
     Map<String, String> extraHeaders;
     String queueName;
+
+    /**
+     * Get authorization property for the channel
+     * Subclasses should override this method if they have auth
+     */
+    public AuthorizationProperty getAuth() {
+        return null;
+    }
 
     @Override
     public Map<String, String> description() {

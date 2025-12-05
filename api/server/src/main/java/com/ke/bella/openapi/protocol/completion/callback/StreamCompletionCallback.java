@@ -82,7 +82,9 @@ public class StreamCompletionCallback implements Callbacks.StreamCompletionCallb
     }
 
     public void finish() {
-        sse.complete();
+        if(sse != null) {
+            sse.complete();
+        }
         log();
     }
 
@@ -103,6 +105,9 @@ public class StreamCompletionCallback implements Callbacks.StreamCompletionCallb
 
     @Override
     public void send(Object data) {
+        if(sse == null) {
+            return;
+        }
         SseHelper.sendEvent(sse, data);
     }
 
@@ -175,12 +180,16 @@ public class StreamCompletionCallback implements Callbacks.StreamCompletionCallb
             safetyCheckIndex = content.length();
         }
         responseBuffer.setChoices(Collections.singletonList(choice));
-        Object result = safetyService.safetyCheck(SafetyCheckRequest.Chat.convertFrom(responseBuffer, processData, apikeyInfo), processData.isMock());
-        if(result != null) {
-            StreamCompletionResponse response = new StreamCompletionResponse();
-            response.setSensitives(result);
-            response.setCreated(DateTimeUtils.getCurrentSeconds());
-            send(response);
+        if(safetyService != null) {
+            Object result = safetyService.safetyCheck(SafetyCheckRequest.Chat.convertFrom(responseBuffer, processData, apikeyInfo),
+                    processData.isMock());
+
+            if(result != null) {
+                StreamCompletionResponse response = new StreamCompletionResponse();
+                response.setSensitives(result);
+                response.setCreated(DateTimeUtils.getCurrentSeconds());
+                send(response);
+            }
         }
         dirtyChoice = false;
     }

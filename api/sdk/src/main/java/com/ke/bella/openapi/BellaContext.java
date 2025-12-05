@@ -14,6 +14,8 @@ public class BellaContext {
     public static final String BELLA_REQUEST_ID_HEADER = "X-BELLA-REQUEST-ID";
     public static final String BELLA_REQUEST_MOCK_HEADER = "X-BELLA-MOCK-REQUEST";
     public static final String BELLA_USER_AK_HEADER = "X-BELLA-USER-AK-CODE";
+    public static final String BELLA_DIRECT_HEADER = "X-BELLA-DIRECT";
+    public static final String BELLA_MODEL_HEADER = "X-BELLA-MODEL";
 
     private static final ThreadLocal<Operator> operatorLocal = new ThreadLocal<>();
     private static final ThreadLocal<Map<String, String>> headersThreadLocal = new ThreadLocal<>();
@@ -48,6 +50,14 @@ public class BellaContext {
 
     public static boolean isMock() {
         return "true".equalsIgnoreCase(getHeaders().get(BELLA_REQUEST_MOCK_HEADER));
+    }
+
+    public static boolean isDirectMode() {
+        return "true".equalsIgnoreCase(getHeaders().get(BELLA_DIRECT_HEADER));
+    }
+
+    public static String getDirectModel() {
+        return getHeaders().get(BELLA_MODEL_HEADER);
     }
 
     public static ApikeyInfo getApikeyIgnoreNull() {
