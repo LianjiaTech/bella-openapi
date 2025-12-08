@@ -152,3 +152,5 @@ export function getIconForEndpoint(endpointOrCode: string): LucideIcon {
   return mapping?.icon || MessageSquare
 }
 
+
+

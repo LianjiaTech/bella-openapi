@@ -357,7 +357,7 @@ async function example() {
                 <SelectTrigger className="w-full focus:ring-0 focus:ring-offset-0 focus-visible:ring-0 focus-visible:ring-offset-0">
                   <SelectValue placeholder="选择模型" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-[60vh]">
                   {modelList.map((modelItem) => (
                     <SelectItem key={modelItem.modelName} value={modelItem.modelName}>
                       {modelItem.modelName}
