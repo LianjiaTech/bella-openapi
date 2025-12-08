@@ -117,7 +117,7 @@ export class ChatCompletionsProcessor extends EventEmitter {
         signal,
 
         // 连接打开时的回调
-        async onopen(response) {
+        onopen: async (response) => {
           clearTimeout(timeoutId);
 
           if (!response.ok) {

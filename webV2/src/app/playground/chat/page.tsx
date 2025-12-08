@@ -8,21 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
-import {
-  MessageSquare,
-  Send,
-  Bot,
-  User,
-  Copy,
-  Check,
-  Brain,
-  ImageIcon,
-  ChevronDown,
-  ChevronUp,
-  Volume2,
-  Play,
-  StopCircle,
-} from "lucide-react"
+import { MessageSquare, Send, StopCircle } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
 import { usePlaygroundData } from "@/hooks/use-playground-data"
 import { Model } from "@/lib/types/openapi"
@@ -30,18 +16,8 @@ import { ChatCompletionsProcessor } from "@/lib/sse/ChatCompletionsProcessor"
 import { ChatCompletionsEventType } from "@/lib/sse/types"
 import { useSearchParams } from "next/navigation"
 import { useUser } from "@/lib/context/user-context"
-
-interface MessageContent {
-  type: "text" | "code" | "reasoning_content" | "image" | "audio"
-  content: string
-  language?: string
-  caption?: string
-}
-
-interface Message {
-  role: "user" | "assistant"
-  contents: MessageContent[]
-}
+import { Message } from "./types"
+import { MessageList } from "./components/MessageList"
 
 export default function ChatPlaygroundPage() {
   const searchParams = useSearchParams()
@@ -54,8 +30,6 @@ export default function ChatPlaygroundPage() {
   const [maxTokens, setMaxTokens] = useState([2048])
   const [thinkingMode, setThinkingMode] = useState(true)
   const [streamMode, setStreamMode] = useState(true)
-  const [copiedIndex, setCopiedIndex] = useState<string | null>(null)
-  const [thinkingExpanded, setThinkingExpanded] = useState<Record<string, boolean>>({})
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string>("")
 
@@ -79,6 +53,12 @@ export default function ChatPlaygroundPage() {
     if (!endpoint) {
       setError("缺少 endpoint 参数")
       return
+    }
+
+    // 清理旧的 processor 实例
+    if (chatProcessorRef.current) {
+      chatProcessorRef.current.cancel("创建新实例")
+      chatProcessorRef.current.removeAllListeners()
     }
 
     // 创建 ChatCompletionsProcessor 实例
@@ -153,11 +133,12 @@ export default function ChatPlaygroundPage() {
 
     chatProcessorRef.current = processor
 
-    // 清理函数
+    // 清理函数：取消请求并移除监听器
     return () => {
+      processor.cancel("组件卸载")
       processor.removeAllListeners()
     }
-  }, [])
+  }, [searchParams])
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return
@@ -201,7 +182,7 @@ export default function ChatPlaygroundPage() {
         max_tokens: maxTokens[0],
         user: userInfo?.userId || 1000000030873314
       }
-
+      console.log('request:', request)
       // 发送请求
       await processor.send(request)
     } catch (err) {
@@ -217,116 +198,6 @@ export default function ChatPlaygroundPage() {
       setIsLoading(false)
     }
   }
-
-  const copyToClipboard = (text: string, index: string) => {
-    navigator.clipboard.writeText(text)
-    setCopiedIndex(index)
-    setTimeout(() => setCopiedIndex(null), 2000)
-  }
-
-  const renderContent = (content: MessageContent, messageIndex: number, contentIndex: number) => {
-    const key = `${messageIndex}-${contentIndex}`
-    const isExpanded = thinkingExpanded[key] !== false
-
-    switch (content.type) {
-      case "reasoning_content":
-        return (
-          <div className="my-3 rounded-lg border border-primary/20 bg-primary/5 dark:border-primary/30 dark:bg-primary/10 overflow-hidden">
-            <button
-              className="w-full flex items-center justify-between p-4 hover:bg-primary/10 dark:hover:bg-primary/20 transition-colors"
-              onClick={() => setThinkingExpanded((prev) => ({ ...prev, [key]: !isExpanded }))}
-            >
-              <div className="flex items-center gap-2 text-sm font-medium text-primary dark:text-primary">
-                <Brain className="h-4 w-4" />
-                思考过程
-              </div>
-              {isExpanded ? (
-                <ChevronUp className="h-4 w-4 text-primary dark:text-primary" />
-              ) : (
-                <ChevronDown className="h-4 w-4 text-primary dark:text-primary" />
-              )}
-            </button>
-            {isExpanded && (
-              <div className="px-4 pb-4 whitespace-pre-wrap text-sm text-primary/80 dark:text-primary/70 leading-relaxed">
-                {content.content}
-              </div>
-            )}
-          </div>
-        )
-
-      case "code":
-        return (
-          <div className="my-3 rounded-lg border bg-muted/50 overflow-hidden">
-            <div className="flex items-center justify-between border-b bg-muted px-4 py-2">
-              <span className="text-xs font-medium text-muted-foreground">{content.language || "code"}</span>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 gap-1.5 px-2"
-                onClick={() => copyToClipboard(content.content, key)}
-              >
-                {copiedIndex === key ? (
-                  <>
-                    <Check className="h-3 w-3" />
-                    <span className="text-xs">已复制</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="h-3 w-3" />
-                    <span className="text-xs">复制</span>
-                  </>
-                )}
-              </Button>
-            </div>
-            <pre className="overflow-x-auto p-4">
-              <code className="text-xs leading-relaxed">{content.content}</code>
-            </pre>
-          </div>
-        )
-
-      case "image":
-        return (
-          <div className="my-3">
-            <div className="rounded-lg border bg-muted/30 overflow-hidden">
-              <img
-                src={content.content || "/placeholder.svg"}
-                alt={content.caption || "Generated image"}
-                className="w-full h-auto"
-              />
-              {content.caption && (
-                <div className="flex items-center gap-2 border-t bg-muted/50 px-4 py-2">
-                  <ImageIcon className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">{content.caption}</span>
-                </div>
-              )}
-            </div>
-          </div>
-        )
-
-      case "audio":
-        return (
-          <div className="my-3">
-            <div className="rounded-lg border bg-muted/30 overflow-hidden">
-              <div className="flex items-center gap-3 p-4">
-                <Volume2 className="h-10 w-10 text-primary" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium">生成的音频内容</p>
-                  <p className="text-xs text-muted-foreground">{content.caption || "点击播放音频"}</p>
-                </div>
-                <Button size="sm" variant="outline">
-                  <Play className="h-4 w-4 mr-2" />
-                  播放
-                </Button>
-              </div>
-            </div>
-          </div>
-        )
-
-      case "text":
-      default:
-        return <p className="text-sm leading-relaxed whitespace-pre-wrap">{content.content}</p>
-    }
-  }
   return (
     <>
       <TopBar />
@@ -334,33 +205,7 @@ export default function ChatPlaygroundPage() {
       <div className="flex h-[calc(100vh-4rem)]">
         <div className="flex flex-1 flex-col">
           <div className="flex-1 overflow-y-auto p-6">
-            <div className="mx-auto max-w-3xl space-y-6">
-              {messages.map((message, messageIndex) => (
-                <div key={messageIndex} className="flex gap-3">
-                  <div
-                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
-                      message.role === "assistant" ? "bg-primary/10" : "bg-muted"
-                    }`}
-                  >
-                    {message.role === "assistant" ? (
-                      <Bot className="h-4 w-4 text-primary" />
-                    ) : (
-                      <User className="h-4 w-4" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="mb-2 text-sm font-medium text-muted-foreground">
-                      {message.role === "assistant" ? "助手" : "你"}
-                    </p>
-                    <div className="space-y-2">
-                      {message.contents.map((content, contentIndex) => (
-                        <div key={contentIndex}>{renderContent(content, messageIndex, contentIndex)}</div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <MessageList messages={messages} />
           </div>
 
           <div className="border-t bg-background p-4">
@@ -421,7 +266,7 @@ export default function ChatPlaygroundPage() {
                 </SelectTrigger>
                 <SelectContent className="max-h-[60vh]">
                   {modelList.map((modelItem) => (
-                    <SelectItem key={modelItem.modelName} value={modelItem.modelName}>
+                    <SelectItem key={modelItem.modelName} value={modelItem.modelName || ""}>
                       {modelItem.modelName}
                     </SelectItem>
                   ))}
