@@ -4,6 +4,26 @@ const nextConfig = {
     typescript: {
         ignoreBuildErrors: true,
     },
+    async rewrites() {
+        return [
+            {
+                source: '/v1/chat/completions',
+                destination: 'http://localhost:3010/sse',
+            },
+            {
+                source: '/v1/:path*',
+                destination: 'http://localhost:8080/v1/:path*',
+            },
+            {
+                source: '/console/:path*',
+                destination: 'http://localhost:8080/console/:path*',
+            },
+            {
+                source: '/openapi/:path*',
+                destination: 'http://localhost:8080/openapi/:path*',
+            },
+        ]
+    },
     env: {
         WORKFLOW_URL: process.env.WORKFLOW_URL,
         WORKFLOW_API_KEY: process.env.WORKFLOW_API_KEY,

@@ -141,6 +141,11 @@
     "@jridgewell/resolve-uri" "^3.1.0"
     "@jridgewell/sourcemap-codec" "^1.4.14"
 
+"@microsoft/fetch-event-source@^2.0.1":
+  version "2.0.1"
+  resolved "http://artifactory.intra.ke.com/artifactory/api/npm/npm-virtual/@microsoft/fetch-event-source/-/fetch-event-source-2.0.1.tgz"
+  integrity sha1-nO7MlLSfuqFWZuOK6Fh/ZKzOAH0=
+
 "@next/env@14.2.11":
   version "14.2.11"
   resolved "https://registry.npmjs.org/@next/env/-/env-14.2.11.tgz"

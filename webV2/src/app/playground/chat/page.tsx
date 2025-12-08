@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { TopBar } from "@/components/top-bar"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -21,13 +21,18 @@ import {
   ChevronUp,
   Volume2,
   Play,
+  StopCircle,
 } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
 import { usePlaygroundData } from "@/hooks/use-playground-data"
 import { Model } from "@/lib/types/openapi"
+import { ChatCompletionsProcessor } from "@/lib/sse/ChatCompletionsProcessor"
+import { ChatCompletionsEventType } from "@/lib/sse/types"
+import { useSearchParams } from "next/navigation"
+import { useUser } from "@/lib/context/user-context"
 
 interface MessageContent {
-  type: "text" | "code" | "thinking" | "image" | "audio"
+  type: "text" | "code" | "reasoning_content" | "image" | "audio"
   content: string
   language?: string
   caption?: string
@@ -39,97 +44,9 @@ interface Message {
 }
 
 export default function ChatPlaygroundPage() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: "assistant",
-      contents: [{ type: "text", content: "你好！我是AI助手，有什么可以帮助你的吗？" }],
-    },
-    {
-      role: "user",
-      contents: [{ type: "text", content: "请帮我写一个 TypeScript 的用户数据获取函数，并解释一下代码架构。" }],
-    },
-    {
-      role: "assistant",
-      contents: [
-        {
-          type: "thinking",
-          content:
-            "让我分析一下这个问题...\n\n首先，我需要理解用户的意图。用户想要一个 TypeScript 函数来获取用户数据，这意味着需要定义类型接口、处理异步请求和错误处理。\n\n其次，我应该提供清晰的代码示例来说明最佳实践，包括类型安全和现代的 async/await 语法。\n\n最后，我会配合架构图来展示整体的数据流程，让用户更好地理解系统设计。",
-        },
-        {
-          type: "text",
-          content: "好的！我来为你编写一个 TypeScript 的用户数据获取函数。这是一个包含类型定义和错误处理的完整示例：",
-        },
-        {
-          type: "code",
-          language: "typescript",
-          content: `// 定义用户接口
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  avatar?: string;
-  createdAt: Date;
-}
-
-// 定义 API 响应类型
-interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
-}
-
-// 用户数据获取函数
-async function fetchUser(id: string): Promise<User> {
-  try {
-    const response = await fetch(\`/api/users/\${id}\`);
-    
-    if (!response.ok) {
-      throw new Error(\`HTTP error! status: \${response.status}\`);
-    }
-    
-    const result: ApiResponse<User> = await response.json();
-    
-    if (!result.success || !result.data) {
-      throw new Error(result.error || 'Failed to fetch user');
-    }
-    
-    return result.data;
-  } catch (error) {
-    console.error('Error fetching user:', error);
-    throw error;
-  }
-}
-
-// 使用示例
-async function example() {
-  try {
-    const user = await fetchUser("123");
-    console.log(\`用户名称: \${user.name}\`);
-    console.log(\`电子邮件: \${user.email}\`);
-  } catch (error) {
-    console.error('获取用户失败:', error);
-  }
-}`,
-        },
-        {
-          type: "text",
-          content:
-            "这段代码展示了如何使用 TypeScript 的类型系统来确保类型安全，并使用现代的 async/await 语法处理异步操作。下面是系统的架构示意图：",
-        },
-        {
-          type: "image",
-          content: "/code-architecture-diagram.jpg",
-          caption: "用户数据获取流程 - 从前端请求到后端响应的完整架构",
-        },
-        {
-          type: "text",
-          content:
-            "这个架构展示了数据如何从客户端流向服务器，以及如何处理响应。关键点包括：\n\n1. **类型安全**：使用 TypeScript 接口定义数据结构\n2. **错误处理**：完善的 try-catch 机制\n3. **响应验证**：检查 HTTP 状态和业务逻辑状态\n4. **可维护性**：清晰的代码结构便于后续扩展\n\n希望这些示例对你有帮助！如果有任何问题，随时问我。",
-        },
-      ],
-    },
-  ])
+  const searchParams = useSearchParams()
+  const { userInfo } = useUser()
+  const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState("")
   const [modelList, setModelList] = useState<Model[]>([])
   const [model, setModel] = useState("")
@@ -138,9 +55,13 @@ async function example() {
   const [thinkingMode, setThinkingMode] = useState(true)
   const [streamMode, setStreamMode] = useState(true)
   const [copiedIndex, setCopiedIndex] = useState<string | null>(null)
-  const [thinkingExpanded, setThinkingExpanded] = useState<Record<string, boolean>>({ "2-0": true })
+  const [thinkingExpanded, setThinkingExpanded] = useState<Record<string, boolean>>({})
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string>("")
 
-  const { endpointDetails, loading, error, refetch, currentEndpoint } = usePlaygroundData()
+  const chatProcessorRef = useRef<ChatCompletionsProcessor | null>(null)
+
+  const { endpointDetails, loading, error: endpointError, refetch, currentEndpoint } = usePlaygroundData()
   const models = endpointDetails?.models || []
   
   // 监听 endpointDetails.models，当有值时设置第一项为默认值
@@ -152,30 +73,149 @@ async function example() {
     }
   }, [endpointDetails?.models])
 
-  const handleSend = () => {
-    if (!input.trim()) return
+  // 初始化 ChatCompletionsProcessor
+  useEffect(() => {
+    const endpoint = searchParams.get("endpoint")
+    if (!endpoint) {
+      setError("缺少 endpoint 参数")
+      return
+    }
 
-    setMessages([...messages, { role: "user", contents: [{ type: "text", content: input }] }])
+    // 创建 ChatCompletionsProcessor 实例
+    const processor = new ChatCompletionsProcessor({
+      url: endpoint,
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+
+    // 监听 START 事件
+    processor.on(ChatCompletionsEventType.START, () => {
+      console.log('START event triggered')
+      // 开始接收响应，添加一个空的 assistant 消息
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          contents: [],
+        },
+      ])
+    })
+
+    // 监听 DELTA 事件
+    processor.on(ChatCompletionsEventType.DELTA, (data) => {
+      console.log('DELTA event triggered:', data)
+      setMessages((prev) => {
+        const newMessages = [...prev]
+        const lastMessage = newMessages[newMessages.length - 1]
+
+        if (lastMessage && lastMessage.role === "assistant") {
+          // 处理 reasoning_content（思考过程）
+          if (data.isReasoningContent && data.reasoning_content) {
+            const reasoningContent = lastMessage.contents.find((c) => c.type === "reasoning_content")
+            if (reasoningContent) {
+              reasoningContent.content += data.reasoning_content
+            } else {
+              lastMessage.contents.push({
+                type: "reasoning_content",
+                content: data.reasoning_content,
+              })
+            }
+          }
+          // 处理普通 content
+          else if (data.content) {
+            const textContent = lastMessage.contents.find((c) => c.type === "text")
+            if (textContent) {
+              textContent.content += data.content
+            } else {
+              lastMessage.contents.push({
+                type: "text",
+                content: data.content,
+              })
+            }
+          }
+        }
+
+        return newMessages
+      })
+    })
+
+    // 监听 FINISH 事件
+    processor.on(ChatCompletionsEventType.FINISH, () => {
+      setIsLoading(false)
+    })
+
+    // 监听 ERROR 事件
+    processor.on(ChatCompletionsEventType.ERROR, (errorMsg) => {
+      setError(`请求错误: ${errorMsg}`)
+      setIsLoading(false)
+    })
+
+    chatProcessorRef.current = processor
+
+    // 清理函数
+    return () => {
+      processor.removeAllListeners()
+    }
+  }, [])
+
+  const handleSend = async () => {
+    if (!input.trim() || isLoading) return
+
+    const processor = chatProcessorRef.current
+    if (!processor) {
+      setError("ChatCompletionsProcessor 未初始化")
+      return
+    }
+
+    // 添加用户消息
+    const userMessage: Message = {
+      role: "user",
+      contents: [{ type: "text", content: input }],
+    }
+    setMessages((prev) => [...prev, userMessage])
+
+    // 清空输入框并设置加载状态
     setInput("")
+    setIsLoading(true)
+    setError("")
 
-    setTimeout(() => {
-      const demoContents: MessageContent[] = []
+    try {
+      // 构建请求消息列表
+      const requestMessages = messages
+        .concat(userMessage)
+        .map((msg) => ({
+          role: msg.role,
+          content: msg.contents
+            .filter((c) => c.type === "text")
+            .map((c) => c.content)
+            .join("\n"),
+        }))
 
-      if (thinkingMode) {
-        demoContents.push({
-          type: "thinking",
-          content:
-            "让我分析一下这个问题...\n\n首先，我需要理解用户的意图。\n\n其次，我应该提供清晰的代码示例来说明。\n\n最后，我会总结关键要点。",
-        })
+      // 构建请求参数
+      const request = {
+        model: model,
+        messages: requestMessages,
+        stream: streamMode,
+        temperature: temperature[0],
+        max_tokens: maxTokens[0],
+        user: userInfo?.userId || 1000000030873314
       }
 
-      demoContents.push({
-        type: "text",
-        content: "这是一个带有多种元素的示例响应。",
-      })
+      // 发送请求
+      await processor.send(request)
+    } catch (err) {
+      setError(`发送请求失败: ${err instanceof Error ? err.message : String(err)}`)
+      setIsLoading(false)
+    }
+  }
 
-      setMessages((prev) => [...prev, { role: "assistant", contents: demoContents }])
-    }, 1000)
+  const handleCancel = () => {
+    const processor = chatProcessorRef.current
+    if (processor) {
+      processor.cancel("用户取消")
+      setIsLoading(false)
+    }
   }
 
   const copyToClipboard = (text: string, index: string) => {
@@ -189,7 +229,7 @@ async function example() {
     const isExpanded = thinkingExpanded[key] !== false
 
     switch (content.type) {
-      case "thinking":
+      case "reasoning_content":
         return (
           <div className="my-3 rounded-lg border border-primary/20 bg-primary/5 dark:border-primary/30 dark:bg-primary/10 overflow-hidden">
             <button
@@ -325,6 +365,11 @@ async function example() {
 
           <div className="border-t bg-background p-4">
             <div className="mx-auto max-w-3xl">
+              {error && (
+                <div className="mb-3 rounded-lg bg-destructive/10 border border-destructive/20 p-3">
+                  <p className="text-sm text-destructive">{error}</p>
+                </div>
+              )}
               <div className="relative">
                 <Textarea
                   placeholder="输入你的消息... (Shift+Enter 换行)"
@@ -337,10 +382,27 @@ async function example() {
                     }
                   }}
                   className="min-h-[80px] resize-none pr-12"
+                  disabled={isLoading}
                 />
-                <Button size="icon" className="absolute bottom-2 right-2" onClick={handleSend}>
-                  <Send className="h-4 w-4" />
-                </Button>
+                {isLoading ? (
+                  <Button
+                    size="icon"
+                    variant="destructive"
+                    className="absolute bottom-2 right-2"
+                    onClick={handleCancel}
+                  >
+                    <StopCircle className="h-4 w-4" />
+                  </Button>
+                ) : (
+                  <Button
+                    size="icon"
+                    className="absolute bottom-2 right-2"
+                    onClick={handleSend}
+                    disabled={!input.trim()}
+                  >
+                    <Send className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             </div>
           </div>

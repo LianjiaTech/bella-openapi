@@ -1,11 +1,11 @@
 services:
   api:
     image: ${REGISTRY:-bellatop}/bella-openapi-api:${VERSION:-latest}
-    build: 
+    build:
       context: ./api
     container_name: bella-openapi-api
-    expose:
-      - "8080"
+    ports:
+      - "8080:8080"
     environment:
       - JAVA_OPTS=-server -Xms2048m -Xmx2048m -XX:MetaspaceSize=512m -XX:MaxMetaspaceSize=512m -Dbella.proxy.host=${PROXY_HOST:-} -Dbella.proxy.port=${PROXY_PORT:-} -Dbella.proxy.type=${PROXY_TYPE:-} -Dbella.proxy.domains=${PROXY_DOMAINS:-}
       - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-docker}
