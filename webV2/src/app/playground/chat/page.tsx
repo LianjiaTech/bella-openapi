@@ -8,7 +8,6 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
-import { Badge } from "@/components/ui/badge"
 import {
   MessageSquare,
   Send,
@@ -25,6 +24,7 @@ import {
 } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
 import { usePlaygroundData } from "@/hooks/use-playground-data"
+import { Model } from "@/lib/types/openapi"
 
 interface MessageContent {
   type: "text" | "code" | "thinking" | "image" | "audio"
@@ -131,7 +131,7 @@ async function example() {
     },
   ])
   const [input, setInput] = useState("")
-  const [modelList, setModelList] = useState<unknown[]>([])
+  const [modelList, setModelList] = useState<Model[]>([])
   const [model, setModel] = useState("")
   const [temperature, setTemperature] = useState([0.7])
   const [maxTokens, setMaxTokens] = useState([2048])
@@ -146,8 +146,9 @@ async function example() {
   // 监听 endpointDetails.models，当有值时设置第一项为默认值
   useEffect(() => {
     if (endpointDetails?.models && endpointDetails.models.length > 0) {
-      setModelList(endpointDetails.models)
-      setModel(endpointDetails.models[0].modelName)
+      const modelList = endpointDetails?.models || []
+      setModelList(modelList)
+      setModel(modelList[0].modelName || '')
     }
   }, [endpointDetails?.models])
 
@@ -286,7 +287,6 @@ async function example() {
         return <p className="text-sm leading-relaxed whitespace-pre-wrap">{content.content}</p>
     }
   }
-
   return (
     <>
       <TopBar />

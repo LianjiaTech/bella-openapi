@@ -91,22 +91,22 @@ export interface MetadataFeature {
 }
 
 export interface Model {
-    modelName: string;
-    documentUrl: string;
-    properties: {
-        max_input_context: number;
-        max_output_context: number;
+    modelName?: string;
+    documentUrl?: string;
+    properties?: {
+        max_input_context?: number;
+        max_output_context?: number;
     };
-    features: string | string[];
-    ownerType: string;
-    ownerCode:string;
-    ownerName: string;
-    visibility: string;
-    status: string;
-    linkedTo: string;
-    endpoints: string[];
-    priceDetails: PriceDetails;
-    terminalModel: string;
+    features?: string | string[];
+    ownerType?: string;
+    ownerCode?:string;
+    ownerName?: string;
+    visibility?: string;
+    status?: string;
+    linkedTo?: string;
+    endpoints?: string[];
+    priceDetails?: PriceDetails;
+    terminalModel?: string;
 }
 
 export interface Channel {
