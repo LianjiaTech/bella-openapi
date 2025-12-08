@@ -84,8 +84,8 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
 
           return (
             <code
-              className="rounded bg-muted px-1.5 py-0.5 text-sm font-mono"
-              {...props}
+              className="rounded bg-muted px-1.5 py-0.5 text-sm font-mono max-w-full inline-block break-all whitespace-pre-wrap"
+            {...props}
             >
               {children}
             </code>
