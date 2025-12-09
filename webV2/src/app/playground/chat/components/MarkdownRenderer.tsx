@@ -12,6 +12,14 @@ interface MarkdownRendererProps {
   content: string
 }
 
+interface CodeComponentProps {
+  node?: any
+  inline?: boolean
+  className?: string
+  children?: React.ReactNode
+  [key: string]: any
+}
+
 /**
  * Markdown 渲染器组件
  * 支持 GFM 扩展和代码语法高亮
@@ -31,7 +39,7 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
         remarkPlugins={[remarkGfm]}
         components={{
         // 自定义代码块渲染
-        code({ node, inline, className, children, ...props }) {
+        code({ node, inline, className, children, ...props }: CodeComponentProps) {
           const match = /language-(\w+)/.exec(className || "")
           const codeString = String(children).replace(/\n$/, "")
           const language = match ? match[1] : ""
