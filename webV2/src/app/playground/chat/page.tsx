@@ -35,8 +35,7 @@ export default function ChatPlaygroundPage() {
 
   const chatProcessorRef = useRef<ChatCompletionsProcessor | null>(null)
 
-  const { endpointDetails, loading, error: endpointError, refetch, currentEndpoint } = usePlaygroundData()
-  const models = endpointDetails?.models || []
+  const { endpointDetails } = usePlaygroundData()
   
   // 监听 endpointDetails.models，当有值时设置第一项为默认值
   useEffect(() => {

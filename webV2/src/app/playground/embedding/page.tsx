@@ -8,12 +8,26 @@ import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { usePlaygroundData } from "@/hooks/use-playground-data"
+import { Model } from "@/lib/types/openapi"
 
 export default function EmbeddingPlaygroundPage() {
   const [inputText, setInputText] = useState("")
   const [embeddings, setEmbeddings] = useState<Array<{ text: string; vector: number[] }>>([])
-  const [selectedModel, setSelectedModel] = useState("text-embedding-3-large")
+  const [modelList, setModelList] = useState<Model[]>([])
+  const [selectedModel, setSelectedModel] = useState("")
+
+  const { endpointDetails } = usePlaygroundData()
+
+  // 监听 endpointDetails.models，当有值时设置模型列表和默认值
+  useEffect(() => {
+    if (endpointDetails?.models && endpointDetails.models.length > 0) {
+      const models = endpointDetails.models
+      setModelList(models)
+      setSelectedModel(models[0].modelName || "")
+    }
+  }, [endpointDetails?.models])
 
   // Mock embedding generation
   const generateEmbedding = (text: string) => {
@@ -40,21 +54,9 @@ export default function EmbeddingPlaygroundPage() {
     setEmbeddings(newEmbeddings)
   }
 
-  const modelInfo = {
-    "text-embedding-3-large": {
-      description: "最强性能，1536维向量",
-      badges: ["1536维", "高性能"],
-    },
-    "text-embedding-3-small": {
-      description: "快速高效，512维向量",
-      badges: ["512维", "快速"],
-    },
-    "text-embedding-ada-002": {
-      description: "经典模型，1536维向量",
-      badges: ["1536维", "经典"],
-    },
-  }
-
+  // 获取当前选中的模型对象
+  const currentModel = modelList.find((m) => m.modelName === selectedModel)
+  console.log(currentModel, ">>>currentModel")
   return (
     <div className="flex h-screen flex-col">
       <TopBar title="Embedding Playground" description="生成文本向量表示并计算相似度" />
@@ -87,7 +89,6 @@ export default function EmbeddingPlaygroundPage() {
                       <div key={idx} className="rounded-lg border bg-card p-4">
                         <div className="mb-2 flex items-center justify-between">
                           <span className="text-sm font-medium">文本 {idx + 1}</span>
-                          <span className="text-xs text-muted-foreground">1536维</span>
                         </div>
                         <p className="mb-2 text-sm text-muted-foreground">{item.text}</p>
                         <p className="truncate text-xs font-mono text-muted-foreground">
@@ -224,71 +225,68 @@ export default function EmbeddingPlaygroundPage() {
                   <Label className="mb-2 block">模型选择</Label>
                   <Select value={selectedModel} onValueChange={setSelectedModel}>
                     <SelectTrigger className="w-full">
-                      <SelectValue>
-                        {selectedModel === "text-embedding-3-large" && "text-embedding-3-large"}
-                        {selectedModel === "text-embedding-3-small" && "text-embedding-3-small"}
-                        {selectedModel === "text-embedding-ada-002" && "text-embedding-ada-002"}
+                      <SelectValue placeholder="请选择模型">
+                        {selectedModel || "请选择模型"}
                       </SelectValue>
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="text-embedding-3-large">
-                        <div className="flex flex-col gap-1 py-1">
-                          <div className="font-medium">text-embedding-3-large</div>
-                          <div className="text-xs text-muted-foreground">最强性能，1536维向量</div>
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                              1536维
-                            </Badge>
-                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                              高性能
-                            </Badge>
+                    <SelectContent className="max-h-[60vh]">
+                      {modelList.map((model) => (
+                        <SelectItem key={model.modelName} value={model.modelName || ""}>
+                          <div className="flex flex-col gap-1 py-1">
+                            <div className="font-medium">{model.modelName}</div>
+                            {model.properties && (
+                              <div className="text-xs text-muted-foreground space-y-0.5">
+                                {model.properties.embedding_dimensions && (
+                                  <div>维度: {model.properties.embedding_dimensions} 维</div>
+                                )}
+                                {model.properties.max_input_context && (
+                                  <div>上下文: {model.properties.max_input_context} tokens</div>
+                                )}
+                              </div>
+                            )}
+                            {model.features && (
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {(Array.isArray(model.features) ? model.features : [model.features]).map(
+                                  (feature, idx) => (
+                                    <Badge key={idx} variant="secondary" className="text-[10px] px-1.5 py-0">
+                                      {feature}
+                                    </Badge>
+                                  )
+                                )}
+                              </div>
+                            )}
                           </div>
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="text-embedding-3-small">
-                        <div className="flex flex-col gap-1 py-1">
-                          <div className="font-medium">text-embedding-3-small</div>
-                          <div className="text-xs text-muted-foreground">快速高效，512维向量</div>
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                              512维
-                            </Badge>
-                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                              快速
-                            </Badge>
-                          </div>
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="text-embedding-ada-002">
-                        <div className="flex flex-col gap-1 py-1">
-                          <div className="font-medium">text-embedding-ada-002</div>
-                          <div className="text-xs text-muted-foreground">经典模型，1536维向量</div>
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                              1536维
-                            </Badge>
-                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                              经典
-                            </Badge>
-                          </div>
-                        </div>
-                      </SelectItem>
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
 
                   {/* 选择后的模型信息显示在下方 */}
-                  <div className="mt-3 rounded-lg border bg-muted/50 p-3 space-y-2">
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                      {modelInfo[selectedModel].description}
-                    </p>
-                    <div className="flex flex-wrap gap-1">
-                      {modelInfo[selectedModel].badges.map((badge, idx) => (
-                        <Badge key={idx} variant="secondary" className="text-[10px] px-1.5 py-0">
-                          {badge}
-                        </Badge>
-                      ))}
+                  {currentModel && (
+                    <div className="mt-3 rounded-lg border bg-muted/50 p-3 space-y-2">
+                      {/* {currentModel.documentUrl && (
+                        <a
+                          href={currentModel.documentUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-primary hover:underline"
+                        >
+                          查看文档
+                        </a>
+                      )} */}
+                      <div className="flex flex-wrap gap-1">
+                        {currentModel.features &&
+                          (Array.isArray(currentModel.features)
+                            ? currentModel.features
+                            : [currentModel.features]
+                          ).map((feature, idx) => (
+                            <Badge key={idx} variant="secondary" className="text-[10px] px-1.5 py-0">
+                              {feature}
+                            </Badge>
+                          ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
 
                 <div>
@@ -322,23 +320,70 @@ export default function EmbeddingPlaygroundPage() {
               </div>
             </div>
 
-            <div className="border-t pt-6">
-              <h4 className="mb-3 text-sm font-medium">模型信息</h4>
-              <div className="space-y-2 text-xs text-muted-foreground">
-                <div className="flex justify-between">
-                  <span>最大输入</span>
-                  <span className="font-medium">8191 tokens</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>向量维度</span>
-                  <span className="font-medium">1536</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>价格</span>
-                  <span className="font-medium">$0.13/1M tokens</span>
+            {currentModel && (
+              <div className="border-t pt-6">
+                <h4 className="mb-3 text-sm font-medium">模型信息</h4>
+                <div className="space-y-2 text-xs text-muted-foreground">
+                  {currentModel.properties?.embedding_dimensions && (
+                    <div className="flex justify-between">
+                      <span>向量维度</span>
+                      <span className="font-medium">{currentModel.properties.embedding_dimensions} 维</span>
+                    </div>
+                  )}
+                  {currentModel.properties?.max_input_context && (
+                    <div className="flex justify-between">
+                      <span>最大输入</span>
+                      <span className="font-medium">{currentModel.properties.max_input_context} tokens</span>
+                    </div>
+                  )}
+                  {currentModel.properties?.max_output_context && (
+                    <div className="flex justify-between">
+                      <span>最大输出</span>
+                      <span className="font-medium">{currentModel.properties.max_output_context} tokens</span>
+                    </div>
+                  )}
+                  {currentModel.priceDetails?.priceInfo && (
+                    <div className="space-y-1">
+                      <div className="font-medium">价格信息</div>
+                      <div className="flex justify-between pl-2">
+                        <span>输入价格</span>
+                        <span className="font-medium">
+                          {currentModel.priceDetails.priceInfo.input}/{currentModel.priceDetails.priceInfo.unit}
+                        </span>
+                      </div>
+                      <div className="flex justify-between pl-2">
+                        <span>输出价格</span>
+                        <span className="font-medium">
+                          {currentModel.priceDetails.priceInfo.output}/{currentModel.priceDetails.priceInfo.unit}
+                        </span>
+                      </div>
+                      {currentModel.priceDetails.priceInfo.cachedRead !== undefined && (
+                        <div className="flex justify-between pl-2">
+                          <span>缓存读取</span>
+                          <span className="font-medium">
+                            {currentModel.priceDetails.priceInfo.cachedRead}/{currentModel.priceDetails.priceInfo.unit}
+                          </span>
+                        </div>
+                      )}
+                      {currentModel.priceDetails.priceInfo.cachedCreation !== undefined && (
+                        <div className="flex justify-between pl-2">
+                          <span>缓存创建</span>
+                          <span className="font-medium">
+                            {currentModel.priceDetails.priceInfo.cachedCreation}/{currentModel.priceDetails.priceInfo.unit}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {currentModel.ownerName && (
+                    <div className="flex justify-between">
+                      <span>提供商</span>
+                      <span className="font-medium">{currentModel.ownerName}</span>
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </main>

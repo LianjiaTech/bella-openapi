@@ -96,6 +96,7 @@ export interface Model {
     properties?: {
         max_input_context?: number;
         max_output_context?: number;
+        embedding_dimensions?: number;
     };
     features?: string | string[];
     ownerType?: string;
