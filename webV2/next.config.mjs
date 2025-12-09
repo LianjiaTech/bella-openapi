@@ -11,6 +11,10 @@ const nextConfig = {
                 destination: 'http://localhost:3010/sse',
             },
             {
+                source: '/v1/embeddings',
+                destination: 'http://localhost:3020/v1/embeddings',
+            },
+            {
                 source: '/v1/:path*',
                 destination: 'http://localhost:8080/v1/:path*',
             },

@@ -11,14 +11,20 @@ import { Badge } from "@/components/ui/badge"
 import { useState, useEffect } from "react"
 import { usePlaygroundData } from "@/hooks/use-playground-data"
 import { Model } from "@/lib/types/openapi"
+import { useUser } from "@/lib/context/user-context"
+import { openapi } from "@/lib/api/openapi"
 
 export default function EmbeddingPlaygroundPage() {
   const [inputText, setInputText] = useState("")
   const [embeddings, setEmbeddings] = useState<Array<{ text: string; vector: number[] }>>([])
   const [modelList, setModelList] = useState<Model[]>([])
   const [selectedModel, setSelectedModel] = useState("")
+  const [encodingFormat, setEncodingFormat] = useState("float")
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const { endpointDetails } = usePlaygroundData()
+  const { userInfo } = useUser()
 
   // 监听 endpointDetails.models，当有值时设置模型列表和默认值
   useEffect(() => {
@@ -28,11 +34,6 @@ export default function EmbeddingPlaygroundPage() {
       setSelectedModel(models[0].modelName || "")
     }
   }, [endpointDetails?.models])
-
-  // Mock embedding generation
-  const generateEmbedding = (text: string) => {
-    return Array.from({ length: 1536 }, () => Math.random() * 2 - 1)
-  }
 
   const calculateCosineSimilarity = (vec1: number[], vec2: number[]) => {
     const dotProduct = vec1.reduce((sum, val, i) => sum + val * vec2[i], 0)
@@ -45,18 +46,49 @@ export default function EmbeddingPlaygroundPage() {
     return Math.sqrt(vec1.reduce((sum, val, i) => sum + Math.pow(val - vec2[i], 2), 0))
   }
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     const lines = inputText.split("\n").filter((line) => line.trim())
-    const newEmbeddings = lines.map((line) => ({
-      text: line,
-      vector: generateEmbedding(line),
-    }))
-    setEmbeddings(newEmbeddings)
+
+    if (!selectedModel || lines.length === 0) {
+      return
+    }
+
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const response = await openapi.post('/v1/embeddings', {
+        encoding_format: encodingFormat,
+        input: lines,
+        model: selectedModel,
+        user: userInfo?.userId || " 1000000030873314"
+      })
+
+      // 处理 API 响应，兼容不同的响应结构
+      // API 直接返回 {data: [...], usage: ...} 格式
+      const embeddingData = response.data?.data || response.data
+
+      if (embeddingData && Array.isArray(embeddingData)) {
+        const newEmbeddings = embeddingData.map((item: any, index: number) => ({
+          text: lines[index],
+          vector: item.embedding
+        }))
+        console.log('生成的 embeddings:', newEmbeddings)
+        setEmbeddings(newEmbeddings)
+      } else {
+        console.error('响应数据格式不正确:', response.data)
+        setError('响应数据格式错误，请检查 API 返回结果')
+      }
+    } catch (err: any) {
+      console.error('生成 embedding 失败:', err)
+      setError(err?.response?.data?.message || err?.message || '生成失败，请重试')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   // 获取当前选中的模型对象
   const currentModel = modelList.find((m) => m.modelName === selectedModel)
-  console.log(currentModel, ">>>currentModel")
   return (
     <div className="flex h-screen flex-col">
       <TopBar title="Embedding Playground" description="生成文本向量表示并计算相似度" />
@@ -75,8 +107,18 @@ export default function EmbeddingPlaygroundPage() {
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
               />
-              <Button onClick={handleGenerate} className="mt-4 w-full" size="lg" disabled={!inputText.trim()}>
-                生成 Embedding 向量
+              {error && (
+                <div className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-600 dark:border-red-900 dark:bg-red-950 dark:text-red-400">
+                  {error}
+                </div>
+              )}
+              <Button
+                onClick={handleGenerate}
+                className="mt-4 w-full"
+                size="lg"
+                disabled={!inputText.trim() || !selectedModel || isLoading}
+              >
+                {isLoading ? "生成中..." : "生成 Embedding 向量"}
               </Button>
             </Card>
 
@@ -291,7 +333,7 @@ export default function EmbeddingPlaygroundPage() {
 
                 <div>
                   <Label className="mb-2 block">编码格式</Label>
-                  <Select defaultValue="float">
+                  <Select value={encodingFormat} onValueChange={setEncodingFormat}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
