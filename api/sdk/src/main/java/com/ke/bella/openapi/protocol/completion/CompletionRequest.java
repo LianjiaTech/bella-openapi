@@ -8,6 +8,8 @@ import com.ke.bella.openapi.protocol.UserRequest;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
+import org.apache.commons.collections4.MapUtils;
+import org.springframework.beans.BeanUtils;
 
 import javax.annotation.Nullable;
 import java.io.Serializable;
@@ -249,5 +251,21 @@ public class CompletionRequest implements UserRequest, Serializable, IMemoryClea
     @Override
     public boolean isCleared() {
         return cleared;
+    }
+
+    public CompletionRequest copyRequest() {
+        CompletionRequest copy = new CompletionRequest();
+        BeanUtils.copyProperties(this, copy);
+        if(this.getExtra_body() != null) {
+            Map<String, Object> map = new HashMap<>();
+            BeanUtils.copyProperties(this.getExtra_body(), map);
+            copy.setExtra_body(map);
+        }
+        if(this.getRealExtraBody() != null) {
+            Map<String, Object> map = new HashMap<>();
+            BeanUtils.copyProperties(this.getRealExtraBody(), map);
+            copy.setRealExtraBody(map);
+        }
+        return copy;
     }
 }

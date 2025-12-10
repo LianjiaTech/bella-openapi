@@ -31,6 +31,9 @@ public class MessageResponse {
     @JsonProperty("stop_sequence")
     private String stopSequence; // Nullable
     private Usage usage;
+    @JsonProperty("thought_signature")
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String thoughtSignature; // Gemini 3 思维签名
 
     // Base ContentBlock for response
     @JsonTypeInfo(
@@ -237,7 +240,6 @@ public class MessageResponse {
     @Builder
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class Usage {
-        @JsonIgnore
         private int inputTokens;
         @JsonProperty("output_tokens")
         private int outputTokens;
