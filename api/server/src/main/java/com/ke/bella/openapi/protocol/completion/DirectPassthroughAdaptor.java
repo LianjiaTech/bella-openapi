@@ -1,5 +1,12 @@
 package com.ke.bella.openapi.protocol.completion;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+
+import javax.servlet.http.HttpServletResponse;
+
 import com.ke.bella.openapi.BellaContext;
 import com.ke.bella.openapi.EndpointContext;
 import com.ke.bella.openapi.EndpointProcessData;
@@ -11,6 +18,7 @@ import com.ke.bella.openapi.protocol.completion.callback.StreamCompletionCallbac
 import com.ke.bella.openapi.protocol.log.EndpointLogger;
 import com.ke.bella.openapi.utils.HttpUtils;
 import com.ke.bella.openapi.utils.JacksonUtils;
+
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.MediaType;
 import okhttp3.Request;
@@ -18,12 +26,6 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 import okio.BufferedSink;
 import okio.Okio;
-
-import javax.servlet.http.HttpServletResponse;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 
 /**
  * Direct passthrough adaptor - wraps delegator for transparent passthrough
@@ -80,11 +82,6 @@ public class DirectPassthroughAdaptor implements CompletionAdaptor<CompletionPro
                 }
                 httpResponse.setStatus(response.code());
 
-                // Copy headers
-                response.headers().toMultimap().forEach((name, values) -> {
-                    values.forEach(value -> httpResponse.addHeader(name, value));
-                });
-
                 // Stream copy - works for both streaming and non-streaming
                 // Buffer the response data for logging
                 byte[] buffer = new byte[8192];
@@ -133,7 +130,7 @@ public class DirectPassthroughAdaptor implements CompletionAdaptor<CompletionPro
                             processData.setResponse(completionResponse);
 
                             // Log
-                            logger.log(EndpointContext.getProcessData());
+                            logger.log(processData);
                         } catch (Exception e) {
                             log.warn("Failed to deserialize response to CompletionResponse, response: {}", responseStr, e);
                         }
