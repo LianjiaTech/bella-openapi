@@ -31,7 +31,7 @@ public class ImageRetrievalService {
      */
     public byte[] getImageFromFileId(String fileId) {
         OpenAiService openAiService = openAiServiceFactory.create(10, 60);
-        try (ResponseBody responseBody = openAiService.retrieveDomTreeContent(fileId)) {
+        try (ResponseBody responseBody = openAiService.retrieveFileContent(fileId)) {
             return responseBody.bytes();
         } catch (IOException e) {
             log.error("Failed to retrieve image from fileId: {}", fileId, e);
