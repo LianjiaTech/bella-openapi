@@ -12,7 +12,7 @@ import lombok.Data;
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Data
-public class BaiduBankcardResponse implements Serializable {
+public class BaiduResponse implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @JsonProperty("log_id")
