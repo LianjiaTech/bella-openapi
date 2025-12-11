@@ -13,7 +13,7 @@ import lombok.Data;
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Data
-public class BaiduOcrIdcardResponse implements Serializable {
+public class BaiduResponse implements Serializable {
     private static final long serialVersionUID = 1L;
 
     // 基本响应字段

@@ -14,11 +14,11 @@ import com.ke.bella.openapi.annotations.EndpointAPI;
 import com.ke.bella.openapi.protocol.AdaptorManager;
 import com.ke.bella.openapi.protocol.ChannelRouter;
 import com.ke.bella.openapi.protocol.limiter.LimiterManager;
-import com.ke.bella.openapi.protocol.ocr.OcrBankcardAdaptor;
-import com.ke.bella.openapi.protocol.ocr.OcrIdcardAdaptor;
 import com.ke.bella.openapi.protocol.ocr.OcrProperty;
 import com.ke.bella.openapi.protocol.ocr.OcrRequest;
+import com.ke.bella.openapi.protocol.ocr.bankcard.BankcardAdaptor;
 import com.ke.bella.openapi.protocol.ocr.general.GeneralAdaptor;
+import com.ke.bella.openapi.protocol.ocr.idcard.IdcardAdaptor;
 import com.ke.bella.openapi.protocol.ocr.residence_permit.ResidencePermitAdaptor;
 import com.ke.bella.openapi.protocol.ocr.tmp_idcard.TmpIdcardAdaptor;
 import com.ke.bella.openapi.service.EndpointDataService;
@@ -69,7 +69,7 @@ public class OcrController {
         String protocol = processData.getProtocol();
         String url = processData.getForwardUrl();
         String channelInfo = channel.getChannelInfo();
-        OcrIdcardAdaptor adaptor = adaptorManager.getProtocolAdaptor(endpoint, protocol, OcrIdcardAdaptor.class);
+        IdcardAdaptor adaptor = adaptorManager.getProtocolAdaptor(endpoint, protocol, IdcardAdaptor.class);
         OcrProperty property = (OcrProperty) JacksonUtils.deserialize(channelInfo, adaptor.getPropertyClass());
         EndpointContext.setEncodingType(property.getEncodingType());
 
@@ -101,7 +101,7 @@ public class OcrController {
         String protocol = processData.getProtocol();
         String url = processData.getForwardUrl();
         String channelInfo = channel.getChannelInfo();
-        OcrBankcardAdaptor adaptor = adaptorManager.getProtocolAdaptor(endpoint, protocol, OcrBankcardAdaptor.class);
+        BankcardAdaptor adaptor = adaptorManager.getProtocolAdaptor(endpoint, protocol, BankcardAdaptor.class);
         OcrProperty property = (OcrProperty) JacksonUtils.deserialize(channelInfo, adaptor.getPropertyClass());
         EndpointContext.setEncodingType(property.getEncodingType());
 
