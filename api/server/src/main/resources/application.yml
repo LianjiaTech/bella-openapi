@@ -72,6 +72,8 @@ bella:
     max-models-per-request: 3
     service: openapi
     host: http://localhost:8080
+    as-worker:
+      enabled: true
 
 app:
   id: bella-openapi
