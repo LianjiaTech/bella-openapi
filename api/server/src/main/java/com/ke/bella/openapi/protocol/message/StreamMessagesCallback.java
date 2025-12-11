@@ -102,6 +102,9 @@ public class StreamMessagesCallback extends StreamCompletionCallback {
 
     @Override
     public void send(Object data) {
+        if(sse == null) {
+            return;
+        }
         if(data instanceof StreamMessageResponse) {
             SseHelper.sendEvent(sse, ((StreamMessageResponse)data).getType(), data);
         } else {
