@@ -103,7 +103,7 @@ public class DirectPassthroughAdaptor implements CompletionAdaptor<CompletionPro
                     String responseStr = new String(responseBytes);
 
                     if (isSSE) {
-                        StreamCompletionCallback callback = new StreamCompletionCallback(null, processData, apikeyInfo, logger, null);
+                        StreamCompletionCallback callback = new StreamCompletionCallback(null, processData, apikeyInfo, logger, null, property);
                         // Extract data from SSE format
                         // SSE format: "data: {...}\n\ndata: {...}\n\n[DONE]"
                         // Extract all "data: " lines and parse JSON

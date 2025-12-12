@@ -15,7 +15,7 @@ public class StreamCallbackProvider {
         Callbacks.StreamCompletionCallbackNode root = new SplitReasoningCallback(property);
         root.addLast(new ToolCallSimulatorCallback(processData));
         root.addLast(new MergeReasoningCallback(property));
-        root.addLast(new StreamCompletionCallback(sse, processData, apikeyInfo, logger, safetyService));
+        root.addLast(new StreamCompletionCallback(sse, processData, apikeyInfo, logger, safetyService, property));
         return root;
     }
 
@@ -24,7 +24,7 @@ public class StreamCallbackProvider {
         Callbacks.StreamCompletionCallbackNode root = new SplitReasoningCallback(property);
         root.addLast(new ToolCallSimulatorCallback(processData));
         root.addLast(new MergeReasoningCallback(property));
-        root.addLast(new StreamMessagesCallback(sse, processData, apikeyInfo, logger, safetyService));
+        root.addLast(new StreamMessagesCallback(sse, processData, apikeyInfo, logger, safetyService, property));
         return root;
     }
 }

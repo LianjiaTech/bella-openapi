@@ -44,4 +44,30 @@ public class AsyncConfig {
         executor.initialize();
         return executor;
     }
+
+    /**
+     * 安全检测异步线程池
+     */
+    @Bean("safetyCheckExecutor")
+    public Executor safetyCheckExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(5);        // 核心线程数
+        executor.setMaxPoolSize(20);        // 最大线程数
+        executor.setQueueCapacity(500);     // 队列容量
+        executor.setKeepAliveSeconds(60);   // 空闲线程存活时间
+        executor.setThreadNamePrefix("safety-check-");
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+
+        // 异常处理装饰器
+        executor.setTaskDecorator(runnable -> () -> {
+            try {
+                runnable.run();
+            } catch (Exception e) {
+                log.warn("异步安全检测任务执行失败", e);
+            }
+        });
+
+        executor.initialize();
+        return executor;
+    }
 }

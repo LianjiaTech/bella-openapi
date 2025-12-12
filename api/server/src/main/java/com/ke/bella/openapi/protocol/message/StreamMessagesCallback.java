@@ -2,6 +2,7 @@ package com.ke.bella.openapi.protocol.message;
 
 import com.ke.bella.openapi.EndpointProcessData;
 import com.ke.bella.openapi.apikey.ApikeyInfo;
+import com.ke.bella.openapi.protocol.completion.CompletionProperty;
 import com.ke.bella.openapi.protocol.completion.StreamCompletionResponse;
 import com.ke.bella.openapi.protocol.completion.callback.StreamCompletionCallback;
 import com.ke.bella.openapi.protocol.log.EndpointLogger;
@@ -28,8 +29,9 @@ public class StreamMessagesCallback extends StreamCompletionCallback {
     public StreamMessagesCallback(SseEmitter sse,
             EndpointProcessData processData, ApikeyInfo apikeyInfo,
             EndpointLogger logger,
-            ISafetyCheckService.IChatSafetyCheckService safetyService) {
-        super(sse, processData, apikeyInfo, logger, safetyService);
+            ISafetyCheckService.IChatSafetyCheckService safetyService,
+            CompletionProperty property) {
+        super(sse, processData, apikeyInfo, logger, safetyService, property);
     }
 
     @Override

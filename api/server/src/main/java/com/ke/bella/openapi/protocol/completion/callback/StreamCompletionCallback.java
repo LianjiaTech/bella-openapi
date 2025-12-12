@@ -6,11 +6,13 @@ import com.ke.bella.openapi.apikey.ApikeyInfo;
 import com.ke.bella.openapi.common.exception.ChannelException;
 import com.ke.bella.openapi.protocol.Callbacks;
 import com.ke.bella.openapi.protocol.OpenapiResponse;
+import com.ke.bella.openapi.protocol.completion.CompletionProperty;
 import com.ke.bella.openapi.protocol.completion.CompletionResponse;
 import com.ke.bella.openapi.protocol.completion.ResponseHelper;
 import com.ke.bella.openapi.protocol.completion.StreamCompletionResponse;
 import com.ke.bella.openapi.protocol.log.EndpointLogger;
 import com.ke.bella.openapi.safety.ISafetyCheckService;
+import com.ke.bella.openapi.safety.SafetyCheckMode;
 import com.ke.bella.openapi.safety.SafetyCheckRequest;
 import com.ke.bella.openapi.utils.DateTimeUtils;
 import com.ke.bella.openapi.utils.PunctuationUtils;
@@ -33,6 +35,7 @@ public class StreamCompletionCallback implements Callbacks.StreamCompletionCallb
     protected final ApikeyInfo apikeyInfo;
     protected final EndpointLogger logger;
     protected final ISafetyCheckService.IChatSafetyCheckService safetyService;
+    protected final CompletionProperty property;
     protected final CompletionResponse responseBuffer;
     protected final Map<Integer, CompletionResponse.Choice> choiceBuffer;
     protected boolean dirtyChoice;
@@ -42,12 +45,14 @@ public class StreamCompletionCallback implements Callbacks.StreamCompletionCallb
     protected Integer thinkStage = 0; // 0: 推理未开始; 1: 推理开始; 2: 推理进行中；3:推理完成；-1:推理已结束
 
     public StreamCompletionCallback(SseEmitter sse, EndpointProcessData processData, ApikeyInfo apikeyInfo,
-            EndpointLogger logger, ISafetyCheckService.IChatSafetyCheckService safetyService) {
+            EndpointLogger logger, ISafetyCheckService.IChatSafetyCheckService safetyService,
+            CompletionProperty property) {
         this.sse = sse;
         this.processData = processData;
         this.apikeyInfo = apikeyInfo;
         this.logger = logger;
         this.safetyService = safetyService;
+        this.property = property;
         this.safetyCheckIndex = 0;
         this.responseBuffer = new CompletionResponse();
         responseBuffer.setCreated(DateTimeUtils.getCurrentSeconds());
@@ -181,15 +186,31 @@ public class StreamCompletionCallback implements Callbacks.StreamCompletionCallb
         }
         responseBuffer.setChoices(Collections.singletonList(choice));
         if(safetyService != null) {
-            Object result = safetyService.safetyCheck(SafetyCheckRequest.Chat.convertFrom(responseBuffer, processData, apikeyInfo),
-                    processData.isMock());
+            // 获取安全检测模式
+            SafetyCheckMode checkMode = SafetyCheckMode.fromString(
+                    property != null ? property.getSafetyCheckMode() : null
+            );
 
-            if(result != null) {
-                StreamCompletionResponse response = new StreamCompletionResponse();
-                response.setSensitives(result);
-                response.setCreated(DateTimeUtils.getCurrentSeconds());
-                send(response);
+            if (checkMode == SafetyCheckMode.sync) {
+                // 同步模式：等待结果并通过SSE发送
+                Object result = safetyService.safetyCheck(
+                        SafetyCheckRequest.Chat.convertFrom(responseBuffer, processData, apikeyInfo),
+                        processData.isMock()
+                );
+                if(result != null) {
+                    StreamCompletionResponse response = new StreamCompletionResponse();
+                    response.setSensitives(result);
+                    response.setCreated(DateTimeUtils.getCurrentSeconds());
+                    send(response);
+                }
+            } else if (checkMode == SafetyCheckMode.async) {
+                // 异步模式：发送检测但不等待结果
+                safetyService.safetyCheckAsync(
+                        SafetyCheckRequest.Chat.convertFrom(responseBuffer, processData, apikeyInfo),
+                        processData.isMock()
+                );
             }
+            // SafetyCheckMode.skip：不执行任何检测
         }
         dirtyChoice = false;
     }

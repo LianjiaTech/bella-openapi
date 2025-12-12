@@ -37,6 +37,7 @@ import com.ke.bella.openapi.protocol.completion.callback.StreamCallbackProvider;
 import com.ke.bella.openapi.protocol.limiter.LimiterManager;
 import com.ke.bella.openapi.protocol.log.EndpointLogger;
 import com.ke.bella.openapi.safety.ISafetyCheckService;
+import com.ke.bella.openapi.safety.SafetyCheckMode;
 import com.ke.bella.openapi.safety.SafetyCheckRequest;
 import com.ke.bella.openapi.service.EndpointDataService;
 import com.ke.bella.openapi.tables.pojos.ChannelDB;
@@ -131,33 +132,65 @@ public class ChatController {
 
         // Initialize channel using common method
         ChannelContext ctx = initializeChannel(endpoint, model, false);
+        CompletionProperty property = ctx.property;
 
         if(!EndpointContext.getProcessData().isPrivate()) {
             limiterManager.incrementConcurrentCount(EndpointContext.getProcessData().getAkCode(), model);
         }
-        Object requestRiskData = safetyCheckService.safetyCheck(SafetyCheckRequest.Chat.convertFrom(request,
-                    EndpointContext.getProcessData(), EndpointContext.getApikey()), isMock);
+
+        // 根据Channel配置的safetyCheckMode执行安全检测
+        Object requestRiskData = executeSafetyCheckByMode(
+                property.getSafetyCheckMode(),
+                SafetyCheckRequest.Chat.convertFrom(request, EndpointContext.getProcessData(), EndpointContext.getApikey()),
+                isMock
+        );
         EndpointContext.getProcessData().setRequestRiskData(requestRiskData);
         EndpointProcessData processData = EndpointContext.getProcessData();
 
         CompletionAdaptor adaptor = ctx.adaptor;
-        CompletionProperty property = ctx.property;
         if(isMock) {
             fillMockProperty(property);
         }
         adaptor = decorateAdaptor(adaptor, property, processData);
 
         if(request.isStream()) {
-            SseEmitter sse = SseHelper.createSse(1000L * 60 * 30, EndpointContext.getProcessData().getRequestId());
+            SseEmitter sse = SseHelper.createSse(1000L * 60 * 30, processData.getRequestId());
             adaptor.streamCompletion(request, ctx.url, property, StreamCallbackProvider.provide(sse, processData, EndpointContext.getApikey(), logger, safetyCheckService, property));
             return sse;
         }
 
         CompletionResponse response = adaptor.completion(request, ctx.url, property);
-        Object responseRiskData = safetyCheckService.safetyCheck(SafetyCheckRequest.Chat.convertFrom(response, EndpointContext.getProcessData(), EndpointContext.getApikey()), isMock);
+        Object responseRiskData = executeSafetyCheckByMode(
+                property.getSafetyCheckMode(),
+                SafetyCheckRequest.Chat.convertFrom(response, processData, EndpointContext.getApikey()),
+                isMock
+        );
         response.setSensitives(responseRiskData);
         response.setRequestRiskData(requestRiskData);
         return response;
+    }
+
+    /**
+     * 根据安全检测模式执行检测
+     * @param mode 安全检测模式：skip, async, sync
+     * @param request 安全检测请求
+     * @param isMock 是否Mock模式
+     * @return 检测结果（异步和跳过模式返回null）
+     */
+    private Object executeSafetyCheckByMode(String mode, SafetyCheckRequest.Chat request, boolean isMock) {
+        SafetyCheckMode checkMode = SafetyCheckMode.fromString(mode);
+
+        if (checkMode == SafetyCheckMode.async) {
+            // 异步模式：发送检测请求但不等待结果
+            safetyCheckService.safetyCheckAsync(request, isMock);
+            return null;
+        } else if (checkMode == SafetyCheckMode.skip) {
+            // 跳过模式：完全不检测
+            return null;
+        } else { // SafetyCheckMode.sync
+            // 同步模式：等待检测结果
+            return safetyCheckService.safetyCheck(request, isMock);
+        }
     }
 
     private void fillMockProperty(CompletionProperty property) {
