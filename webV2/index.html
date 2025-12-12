@@ -5,23 +5,6 @@
     <link rel="icon" type="image/x-icon" href="/resource/bella.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Bella OpenAPI</title>
-    <script>
-      // 在渲染前立即设置主题，避免闪烁
-      (function() {
-        try {
-          const theme = localStorage.getItem('theme');
-          if (theme === 'light' || theme === 'dark') {
-            document.documentElement.classList.add(theme);
-          } else {
-            // 如果没有保存的主题，使用默认暗黑主题
-            document.documentElement.classList.add('dark');
-          }
-        } catch (e) {
-          // 如果 localStorage 不可用（隐私模式等），使用默认暗黑主题
-          document.documentElement.classList.add('dark');
-        }
-      })();
-    </script>
   </head>
   <body>
     <div id="root"></div>

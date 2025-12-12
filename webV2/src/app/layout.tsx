@@ -4,7 +4,7 @@ import { LanguageProvider } from "@/components/language-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 
 export const metadata: Metadata = {
-  title: "Bella OpenAPI v2",
+  title: "Bella OpenAPI",
   description: "AI API Gateway - Next Generation",
 };
 

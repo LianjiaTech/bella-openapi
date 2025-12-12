@@ -16,14 +16,16 @@ type ThemeContextType = {
 
 const ThemeContext = React.createContext<ThemeContextType | undefined>(undefined)
 
-export function ThemeProvider({ children, defaultTheme = "dark" }: ThemeProviderProps) {
+export function ThemeProvider({ children, defaultTheme = "light" }: ThemeProviderProps) {
   const [theme, setThemeState] = React.useState<Theme>(() => {
-    // 从 DOM 读取已设置的主题（HTML 脚本已经设置）
+    // 优先从 localStorage 读取已保存的主题
     if (typeof window !== 'undefined') {
-      const htmlElement = document.documentElement
-      if (htmlElement.classList.contains('dark')) return 'dark'
-      if (htmlElement.classList.contains('light')) return 'light'
+      const savedTheme = localStorage.getItem('theme')
+      if (savedTheme === 'dark' || savedTheme === 'light') {
+        return savedTheme as Theme
+      }
     }
+    // 如果 localStorage 没有值，使用默认主题（light）
     return defaultTheme
   })
 
