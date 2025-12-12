@@ -19,6 +19,7 @@ import com.ke.bella.openapi.tables.Space;
 import com.ke.bella.openapi.tables.SpaceMember;
 import com.ke.bella.openapi.tables.SpaceRole;
 import com.ke.bella.openapi.tables.User;
+import com.ke.bella.openapi.tables.VideoJob;
 
 import java.util.Arrays;
 import java.util.List;
@@ -117,6 +118,11 @@ public class DefaultSchema extends SchemaImpl {
     public final User USER = User.USER;
 
     /**
+     * 视频任务表
+     */
+    public final VideoJob VIDEO_JOB = VideoJob.VIDEO_JOB;
+
+    /**
      * No further instances allowed
      */
     private DefaultSchema() {
@@ -146,6 +152,7 @@ public class DefaultSchema extends SchemaImpl {
             Space.SPACE,
             SpaceMember.SPACE_MEMBER,
             SpaceRole.SPACE_ROLE,
-            User.USER);
+            User.USER,
+            VideoJob.VIDEO_JOB);
     }
 }
