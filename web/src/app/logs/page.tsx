@@ -209,7 +209,15 @@ const LogsPage = () => {
     }
   }
 
-  const getDisplayedLines = (text: string, expanded: boolean) => {
+  const getDisplayedLines = (text: string | undefined | null, expanded: boolean) => {
+    // 检查文本是否为空或未定义
+    if (!text) {
+      return {
+        text: '',
+        hasMore: false
+      }
+    }
+
     // 检查是否有换行符
     const lines = text.split('\n')
     const hasNewlines = lines.length > 1
@@ -600,7 +608,7 @@ const LogsPage = () => {
                             <pre className="mt-1 p-2 bg-gray-50 border rounded text-sm overflow-x-auto text-gray-900">
                               {getDisplayedLines(log.data_info_msg_request, expandedRequests[index]).text}
                             </pre>
-                            {(log.data_info_msg_request.split('\n').length > 3 || log.data_info_msg_request.length > 200) && (
+                            {log.data_info_msg_request && (log.data_info_msg_request.split('\n').length > 3 || log.data_info_msg_request.length > 200) && (
                               <button
                                 onClick={() => toggleRequest(index)}
                                 className="mt-1 text-sm text-blue-600 hover:text-blue-800"
@@ -616,7 +624,7 @@ const LogsPage = () => {
                               <pre className="mt-1 p-2 bg-gray-50 border rounded text-sm overflow-x-auto text-gray-900">
                                 {getDisplayedLines(log.data_info_msg_response, expandedResponses[index]).text}
                               </pre>
-                              {(log.data_info_msg_response.split('\n').length > 3 || log.data_info_msg_response.length > 200) && (
+                              {log.data_info_msg_response && (log.data_info_msg_response.split('\n').length > 3 || log.data_info_msg_response.length > 200) && (
                                 <button
                                   onClick={() => toggleResponse(index)}
                                   className="mt-1 text-sm text-blue-600 hover:text-blue-800"
