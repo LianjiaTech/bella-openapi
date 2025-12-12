@@ -108,7 +108,7 @@ export function CreateChannelForm({
             try {
                 const newChannelInfoSchema = await getChannelInfoSchema(entityType, entityCode, selectedProtocol);
                 setChannelInfoSchema(newChannelInfoSchema);
-                setChannelInfoValue({});
+                setChannelInfoValue({ safetyCheckMode: 'async' });
             } catch (error) {
                 console.error("Error fetching schemas:", error);
                 toast({
