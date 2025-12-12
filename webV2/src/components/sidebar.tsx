@@ -94,7 +94,7 @@ export default function Sidebar() {
 
 
   return (
-    <aside className="w-64 bg-white border-r border-gray-200 flex flex-col h-screen fixed left-0 top-0">
+    <aside className="w-64 bg-sidebar border-r border-sidebar-border flex flex-col h-screen fixed left-0 top-0">
       {/* Logo */}
       <div className="flex h-16 items-center border-b border-sidebar-border px-6">
         <Link href="/" className="flex items-center gap-2">
@@ -125,8 +125,8 @@ export default function Sidebar() {
                   className={cn(
                     "w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all text-sm",
                     isAnyChildActive
-                      ? "bg-blue-50 text-blue-700 font-medium"
-                      : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                      ? "bg-sidebar-accent text-sidebar-primary font-medium"
+                      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                   )}
                 >
                   <div className="flex items-center space-x-3">
@@ -160,8 +160,8 @@ export default function Sidebar() {
                           className={cn(
                             "flex items-center space-x-3 px-4 py-2 rounded-lg transition-colors text-sm",
                             isChildActive
-                              ? "bg-blue-100 text-blue-700 font-medium"
-                              : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                              ? "bg-sidebar-accent text-sidebar-primary font-medium"
+                              : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                           )}
                         >
                           <ChildIcon className="w-4 h-4" />
@@ -185,8 +185,8 @@ export default function Sidebar() {
               className={cn(
                 "flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors text-sm",
                 isActive
-                  ? "bg-blue-50 text-blue-700 font-medium"
-                  : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                  ? "bg-sidebar-accent text-sidebar-primary font-medium"
+                  : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
               )}
             >
               <Icon className="w-5 h-5" />
@@ -197,7 +197,7 @@ export default function Sidebar() {
       </nav>
 
       {/* Bottom Navigation */}
-      <div className="border-t border-gray-200 p-3 space-y-1">
+      <div className="border-t border-sidebar-border p-3 space-y-1">
         {[
           { name: t("settings"), href: "/settings", icon: Settings },
           { name: t("logout"), href: "/logout", icon: LogOut }
@@ -210,8 +210,8 @@ export default function Sidebar() {
               className={cn(
                 "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                 isActive
-                  ? "bg-blue-50 text-blue-700"
-                  : "text-gray-700 hover:bg-gray-50 hover:text-gray-900",
+                  ? "bg-sidebar-accent text-sidebar-primary"
+                  : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
               )}
             >
               <item.icon className="h-5 w-5" />

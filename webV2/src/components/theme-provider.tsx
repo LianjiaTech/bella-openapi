@@ -17,35 +17,28 @@ type ThemeContextType = {
 const ThemeContext = React.createContext<ThemeContextType | undefined>(undefined)
 
 export function ThemeProvider({ children, defaultTheme = "dark" }: ThemeProviderProps) {
-  const [theme, setThemeState] = React.useState<Theme>(defaultTheme)
-  const [mounted, setMounted] = React.useState(false)
-
-  React.useEffect(() => {
-    setMounted(true)
-    const savedTheme = localStorage.getItem("theme") as Theme | null
-    if (savedTheme && (savedTheme === "light" || savedTheme === "dark")) {
-      setThemeState(savedTheme)
+  const [theme, setThemeState] = React.useState<Theme>(() => {
+    // 从 DOM 读取已设置的主题（HTML 脚本已经设置）
+    if (typeof window !== 'undefined') {
+      const htmlElement = document.documentElement
+      if (htmlElement.classList.contains('dark')) return 'dark'
+      if (htmlElement.classList.contains('light')) return 'light'
     }
-  }, [])
+    return defaultTheme
+  })
 
   React.useEffect(() => {
-    if (!mounted) return
-
     const root = window.document.documentElement
     root.classList.remove("light", "dark")
     root.classList.add(theme)
     localStorage.setItem("theme", theme)
-  }, [theme, mounted])
+  }, [theme])
 
   const setTheme = React.useCallback((newTheme: Theme) => {
     setThemeState(newTheme)
   }, [])
 
   const value = React.useMemo(() => ({ theme, setTheme }), [theme, setTheme])
-
-  if (!mounted) {
-    return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
-  }
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
 }

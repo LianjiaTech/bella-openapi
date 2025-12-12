@@ -1,31 +1,29 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
-
-function HomePage() {
-  return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">
-          Bella OpenAPI v2
-        </h1>
-        <p className="text-lg text-gray-600">
-          欢迎使用 Bella OpenAPI 管理平台
-        </p>
-        <div className="mt-8 text-sm text-gray-500">
-          React + Vite + TypeScript + TailwindCSS
-        </div>
-      </div>
-    </div>
-  )
-}
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { ThemeProvider } from '@/components/theme-provider'
+import { LanguageProvider } from '@/components/language-provider'
+import DashboardLayout from '@/app/(dashboard)/layout'
+import ModelsPage from '@/app/(dashboard)/models/page'
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-      </Routes>
-    </BrowserRouter>
+    <ThemeProvider>
+      <LanguageProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Navigate to="/models" replace />} />
+            <Route path="/*" element={
+              <DashboardLayout>
+                <Routes>
+                  <Route path="/models" element={<ModelsPage />} />
+                </Routes>
+              </DashboardLayout>
+            } />
+          </Routes>
+        </BrowserRouter>
+      </LanguageProvider>
+    </ThemeProvider>
   )
 }
 
 export default App
+
