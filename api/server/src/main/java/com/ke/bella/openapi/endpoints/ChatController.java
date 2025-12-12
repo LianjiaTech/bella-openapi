@@ -2,6 +2,8 @@ package com.ke.bella.openapi.endpoints;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -9,6 +11,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -63,6 +66,9 @@ public class ChatController {
     private EndpointLogger logger;
     @Autowired
     private ISafetyCheckService.IChatSafetyCheckService safetyCheckService;
+    @Autowired
+    @Qualifier("safetyCheckExecutor")
+    private Executor safetyCheckExecutor;
     @Autowired
     private JobQueueProperties jobQueueProperties;
     @Autowired
@@ -155,7 +161,7 @@ public class ChatController {
 
         if(request.isStream()) {
             SseEmitter sse = SseHelper.createSse(1000L * 60 * 30, processData.getRequestId());
-            adaptor.streamCompletion(request, ctx.url, property, StreamCallbackProvider.provide(sse, processData, EndpointContext.getApikey(), logger, safetyCheckService, property));
+            adaptor.streamCompletion(request, ctx.url, property, StreamCallbackProvider.provide(sse, processData, EndpointContext.getApikey(), logger, safetyCheckService, property, safetyCheckExecutor));
             return sse;
         }
 
@@ -181,8 +187,20 @@ public class ChatController {
         SafetyCheckMode checkMode = SafetyCheckMode.fromString(mode);
 
         if (checkMode == SafetyCheckMode.async) {
-            // 异步模式：发送检测请求但不等待结果
-            safetyCheckService.safetyCheckAsync(request, isMock);
+            // 异步模式：在独立线程池中执行检测，不等待结果，不阻塞主流程
+            CompletableFuture.runAsync(() -> {
+                try {
+                    safetyCheckService.safetyCheck(request, isMock);
+                } catch (ChannelException.SafetyCheckException e) {
+                    // 异步模式下检测到敏感数据：仅记录日志，不阻断主流程
+                    log.warn("异步安全检测发现敏感数据: requestId={}, stage={}, sensitiveData={}",
+                            request.getRequestId(), request.getType(), e.getSensitive());
+                } catch (Exception e) {
+                    // 其他异常（如网络错误）：仅记录日志，不阻断主流程
+                    log.warn("异步安全检测异常: requestId={}, stage={}, error={}",
+                            request.getRequestId(), request.getType(), e.getMessage(), e);
+                }
+            }, safetyCheckExecutor);
             return null;
         } else if (checkMode == SafetyCheckMode.skip) {
             // 跳过模式：完全不检测

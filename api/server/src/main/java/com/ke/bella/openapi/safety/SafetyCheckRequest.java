@@ -36,10 +36,6 @@ public class SafetyCheckRequest {
     @Data
     public static class Chat extends SafetyCheckRequest {
         private List<Message> messages;
-		/**
-		 * API endpoint 路径，如 /v1/chat/completions
-		 */
-		private String endpoint;
 
         @Data
         public static class Message {
@@ -59,7 +55,6 @@ public class SafetyCheckRequest {
                     .userId(processData.getUser())
                     .model(processData.getModel())
                     .supplier(processData.getSupplier())
-					.endpoint(processData.getEndpoint())
                     .messages(SafetyCheckRequest.Chat.convertFrom(message))
                     .build();
         }
@@ -80,7 +75,6 @@ public class SafetyCheckRequest {
                     .userId(processData.getUser())
                     .model(processData.getModel())
                     .supplier(processData.getSupplier())
-					.endpoint(processData.getEndpoint())
                     .messages(SafetyCheckRequest.Chat.convertFrom(messages))
                     .build();
         }

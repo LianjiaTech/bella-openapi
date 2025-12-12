@@ -26,6 +26,8 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 @Slf4j
 public class StreamCompletionCallback implements Callbacks.StreamCompletionCallback {
@@ -36,6 +38,7 @@ public class StreamCompletionCallback implements Callbacks.StreamCompletionCallb
     protected final EndpointLogger logger;
     protected final ISafetyCheckService.IChatSafetyCheckService safetyService;
     protected final CompletionProperty property;
+    protected final Executor safetyCheckExecutor;
     protected final CompletionResponse responseBuffer;
     protected final Map<Integer, CompletionResponse.Choice> choiceBuffer;
     protected boolean dirtyChoice;
@@ -46,13 +49,14 @@ public class StreamCompletionCallback implements Callbacks.StreamCompletionCallb
 
     public StreamCompletionCallback(SseEmitter sse, EndpointProcessData processData, ApikeyInfo apikeyInfo,
             EndpointLogger logger, ISafetyCheckService.IChatSafetyCheckService safetyService,
-            CompletionProperty property) {
+            CompletionProperty property, Executor safetyCheckExecutor) {
         this.sse = sse;
         this.processData = processData;
         this.apikeyInfo = apikeyInfo;
         this.logger = logger;
         this.safetyService = safetyService;
         this.property = property;
+        this.safetyCheckExecutor = safetyCheckExecutor;
         this.safetyCheckIndex = 0;
         this.responseBuffer = new CompletionResponse();
         responseBuffer.setCreated(DateTimeUtils.getCurrentSeconds());
@@ -204,11 +208,23 @@ public class StreamCompletionCallback implements Callbacks.StreamCompletionCallb
                     send(response);
                 }
             } else if (checkMode == SafetyCheckMode.async) {
-                // 异步模式：发送检测但不等待结果
-                safetyService.safetyCheckAsync(
-                        SafetyCheckRequest.Chat.convertFrom(responseBuffer, processData, apikeyInfo),
-                        processData.isMock()
-                );
+                // 异步模式：在独立线程池中执行检测，不等待结果，不阻塞流式响应
+                SafetyCheckRequest.Chat safetyRequest = SafetyCheckRequest.Chat.convertFrom(responseBuffer, processData, apikeyInfo);
+                boolean isMock = processData.isMock();
+
+                CompletableFuture.runAsync(() -> {
+                    try {
+                        safetyService.safetyCheck(safetyRequest, isMock);
+                    } catch (ChannelException.SafetyCheckException e) {
+                        // 异步模式下检测到敏感数据：仅记录日志，不阻断流式响应
+                        log.warn("异步安全检测发现敏感数据: requestId={}, stage={}, sensitiveData={}",
+                                safetyRequest.getRequestId(), safetyRequest.getType(), e.getSensitive());
+                    } catch (Exception e) {
+                        // 其他异常（如网络错误）：仅记录日志，不阻断流式响应
+                        log.warn("异步安全检测异常: requestId={}, stage={}, error={}",
+                                safetyRequest.getRequestId(), safetyRequest.getType(), e.getMessage(), e);
+                    }
+                }, safetyCheckExecutor);
             }
             // SafetyCheckMode.skip：不执行任何检测
         }

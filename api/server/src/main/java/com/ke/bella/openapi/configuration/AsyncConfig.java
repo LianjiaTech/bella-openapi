@@ -50,13 +50,15 @@ public class AsyncConfig {
      */
     @Bean("safetyCheckExecutor")
     public Executor safetyCheckExecutor() {
-        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(5);        // 核心线程数
-        executor.setMaxPoolSize(20);        // 最大线程数
-        executor.setQueueCapacity(500);     // 队列容量
-        executor.setKeepAliveSeconds(60);   // 空闲线程存活时间
-        executor.setThreadNamePrefix("safety-check-");
-        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+		executor.setCorePoolSize(50);       // 核心线程数
+		executor.setMaxPoolSize(150);       // 最大线程数
+		executor.setQueueCapacity(2000);    // 队列容量
+		executor.setKeepAliveSeconds(120);  // 空闲线程存活时间
+		executor.setThreadNamePrefix("safety-check-");
+
+		// 使用DiscardOldestPolicy：异步检测场景下，丢弃最旧任务比阻塞主线程更合适
+		executor.setRejectedExecutionHandler(new ThreadPoolExecutor.DiscardOldestPolicy());
 
         // 异常处理装饰器
         executor.setTaskDecorator(runnable -> () -> {

@@ -9,22 +9,26 @@ import com.ke.bella.openapi.protocol.message.StreamMessagesCallback;
 import com.ke.bella.openapi.safety.ISafetyCheckService;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.util.concurrent.Executor;
+
 public class StreamCallbackProvider {
     public static Callbacks.StreamCompletionCallback provide(SseEmitter sse, EndpointProcessData processData, ApikeyInfo apikeyInfo,
-            EndpointLogger logger, ISafetyCheckService.IChatSafetyCheckService safetyService, CompletionProperty property) {
+            EndpointLogger logger, ISafetyCheckService.IChatSafetyCheckService safetyService, CompletionProperty property,
+            Executor safetyCheckExecutor) {
         Callbacks.StreamCompletionCallbackNode root = new SplitReasoningCallback(property);
         root.addLast(new ToolCallSimulatorCallback(processData));
         root.addLast(new MergeReasoningCallback(property));
-        root.addLast(new StreamCompletionCallback(sse, processData, apikeyInfo, logger, safetyService, property));
+        root.addLast(new StreamCompletionCallback(sse, processData, apikeyInfo, logger, safetyService, property, safetyCheckExecutor));
         return root;
     }
 
     public static Callbacks.StreamCompletionCallback provideForMessage(SseEmitter sse, EndpointProcessData processData, ApikeyInfo apikeyInfo,
-            EndpointLogger logger, ISafetyCheckService.IChatSafetyCheckService safetyService, CompletionProperty property) {
+            EndpointLogger logger, ISafetyCheckService.IChatSafetyCheckService safetyService, CompletionProperty property,
+            Executor safetyCheckExecutor) {
         Callbacks.StreamCompletionCallbackNode root = new SplitReasoningCallback(property);
         root.addLast(new ToolCallSimulatorCallback(processData));
         root.addLast(new MergeReasoningCallback(property));
-        root.addLast(new StreamMessagesCallback(sse, processData, apikeyInfo, logger, safetyService, property));
+        root.addLast(new StreamMessagesCallback(sse, processData, apikeyInfo, logger, safetyService, property, safetyCheckExecutor));
         return root;
     }
 }

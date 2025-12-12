@@ -14,6 +14,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
+import java.util.concurrent.Executor;
 
 @Slf4j
 public class StreamMessagesCallback extends StreamCompletionCallback {
@@ -30,8 +31,9 @@ public class StreamMessagesCallback extends StreamCompletionCallback {
             EndpointProcessData processData, ApikeyInfo apikeyInfo,
             EndpointLogger logger,
             ISafetyCheckService.IChatSafetyCheckService safetyService,
-            CompletionProperty property) {
-        super(sse, processData, apikeyInfo, logger, safetyService, property);
+            CompletionProperty property,
+            Executor safetyCheckExecutor) {
+        super(sse, processData, apikeyInfo, logger, safetyService, property, safetyCheckExecutor);
     }
 
     @Override
