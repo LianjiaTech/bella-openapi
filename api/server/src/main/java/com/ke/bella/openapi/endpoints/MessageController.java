@@ -19,11 +19,14 @@ import com.ke.bella.openapi.utils.JacksonUtils;
 import com.ke.bella.openapi.utils.SseHelper;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.util.concurrent.Executor;
 
 @EndpointAPI
 @RestController
@@ -42,6 +45,9 @@ public class MessageController {
     private EndpointLogger logger;
     @Autowired
     private ISafetyCheckService.IChatSafetyCheckService safetyCheckService;
+	@Autowired
+	@Qualifier("safetyCheckExecutor")
+	private Executor safetyCheckExecutor;
 
     @PostMapping
     @SuppressWarnings({ "rawtypes", "unchecked" })
@@ -67,7 +73,7 @@ public class MessageController {
         EndpointContext.setEncodingType(property.getEncodingType());
         if(Boolean.TRUE.equals(request.getStream())) {
             SseEmitter sse = SseHelper.createSse(1000L * 60 * 30, EndpointContext.getProcessData().getRequestId());
-            adaptor.streamMessages(request, url, property, StreamCallbackProvider.provideForMessage(sse, processData, EndpointContext.getApikey(), logger, safetyCheckService, property));
+			adaptor.streamMessages(request, url, property, StreamCallbackProvider.provideForMessage(sse, processData, EndpointContext.getApikey(), logger, safetyCheckService, property, safetyCheckExecutor));
             return sse;
         }
         return adaptor.createMessages(request, url, property);
