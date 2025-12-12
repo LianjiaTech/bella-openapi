@@ -97,13 +97,13 @@ export default function Sidebar() {
     <aside className="w-64 bg-white border-r border-gray-200 flex flex-col h-screen fixed left-0 top-0">
       {/* Logo */}
       <div className="flex h-16 items-center border-b border-sidebar-border px-6">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-              <Sparkles className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <span className="text-lg font-semibold text-sidebar-foreground">Bella</span>
-          </Link>
-        </div>
+        <Link href="/" className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+            <Sparkles className="h-5 w-5 text-primary-foreground" />
+          </div>
+          <span className="text-lg font-semibold text-sidebar-foreground">Bella</span>
+        </Link>
+      </div>
 
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
@@ -198,28 +198,28 @@ export default function Sidebar() {
 
       {/* Bottom Navigation */}
       <div className="border-t border-gray-200 p-3 space-y-1">
-          {[
-            { name: t("settings"), href: "/settings", icon: Settings },
-            { name: t("logout"), href: "/logout", icon: LogOut }
-          ].map((item) => {
-            const isActive = pathname === item.href
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                  isActive
-                    ? "bg-blue-50 text-blue-700"
-                    : "text-gray-700 hover:bg-gray-50 hover:text-gray-900",
-                )}
-              >
-                <item.icon className="h-5 w-5" />
-                {item.name}
-              </Link>
-            )
-          })}
-        </div>
+        {[
+          { name: t("settings"), href: "/settings", icon: Settings },
+          { name: t("logout"), href: "/logout", icon: LogOut }
+        ].map((item) => {
+          const isActive = pathname === item.href
+          return (
+            <Link
+              key={item.name}
+              href={item.href}
+              className={cn(
+                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                isActive
+                  ? "bg-blue-50 text-blue-700"
+                  : "text-gray-700 hover:bg-gray-50 hover:text-gray-900",
+              )}
+            >
+              <item.icon className="h-5 w-5" />
+              {item.name}
+            </Link>
+          )
+        })}
+      </div>
     </aside>
   );
 }
