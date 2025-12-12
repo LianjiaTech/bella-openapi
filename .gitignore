@@ -33,6 +33,9 @@ build/
 ### VS Code ###
 .vscode/
 
+### Cursor ###
+.cursor/
+
 *.log
 
 .DS_Store
@@ -41,6 +44,7 @@ build/
 #### web ####
 # dependencies
 web/node_modules/
+webV2/node_modules/
 
 
 # next.js
@@ -81,5 +85,7 @@ node_modules/
 nginx/conf.d/dynamic-services.conf
 
 web/.env
+webV2/.env
 
 *.tsbuildinfo
+webV2/.next/
