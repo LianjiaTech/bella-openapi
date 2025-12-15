@@ -77,6 +77,8 @@ mysql/data/
 
 redis/data/
 
+api/logs/
+
 system-apikey.txt
 
 
