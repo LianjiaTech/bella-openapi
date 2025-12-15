@@ -1,10 +1,11 @@
 "use client"
 
-import { useLanguage } from "../providers/language-provider"
+import { useLanguage } from "../../providers/language-provider"
 import { Button } from "@/common/ui/button"
 import type React from "react"
-import { Sun, Moon } from "lucide-react"
-import { useTheme } from "../providers/theme-provider"
+import { Sun, Moon, Star, Github } from "lucide-react"
+import { useTheme } from "../../providers/theme-provider"
+import { useGitHubStar } from "./hooks/use-github-start"
 
 interface TopBarProps {
   title?: string
@@ -13,6 +14,7 @@ interface TopBarProps {
 }
 
 export function TopBar({ title, description, action }: TopBarProps) {
+  const { isStarred, isLoading, error, handleStar } = useGitHubStar();
   const { theme, setTheme } = useTheme()
   const { t } = useLanguage()
 
@@ -29,6 +31,21 @@ export function TopBar({ title, description, action }: TopBarProps) {
       {action && <div className="flex items-center gap-2">{action}</div>}
 
       <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          className={`gap-2 transition-all duration-200 ${
+            isStarred
+              ? 'bg-yellow-50 border-yellow-300 text-yellow-700 hover:bg-yellow-50 hover:border-yellow-300 dark:bg-yellow-950 dark:border-yellow-800 dark:text-yellow-400'
+              : 'bg-transparent'
+          } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+          onClick={handleStar}
+          disabled={isStarred || isLoading}
+        >
+          <Github className="h-4 w-4" />
+          <Star className={`h-4 w-4 ${isStarred ? 'fill-current' : ''}`} />
+          {isStarred ? t("starred") : t("star")}
+        </Button>
         <Button
           variant="ghost"
           size="icon"

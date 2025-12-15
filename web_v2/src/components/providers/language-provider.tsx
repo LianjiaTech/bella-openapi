@@ -108,7 +108,8 @@ const translations = {
     itemsCount: "项",
 
     // Common
-    star: "Star",
+    star: "点个赞",
+    starred: "已点赞",
     toggleTheme: "切换主题",
   },
   "en-US": {
@@ -206,6 +207,7 @@ const translations = {
 
     // Common
     star: "Star",
+    starred: "Starred",
     toggleTheme: "Toggle Theme",
   },
 }
