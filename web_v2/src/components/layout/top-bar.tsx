@@ -1,7 +1,7 @@
 "use client"
 
 import { useLanguage } from "../providers/language-provider"
-import { Button } from "@/common/button"
+import { Button } from "@/common/ui/button"
 import type React from "react"
 import { Sun, Moon } from "lucide-react"
 import { useTheme } from "../providers/theme-provider"
