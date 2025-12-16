@@ -8,19 +8,21 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.ke.bella.openapi.protocol.OpenapiResponse;
 
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
+@EqualsAndHashCode(callSuper = true)
 @JsonInclude(JsonInclude.Include.ALWAYS)
-public class MessageResponse {
+public class MessageResponse extends OpenapiResponse {
     private String id;
     private String type; // "message"
     private String role; // "assistant"
@@ -237,7 +239,7 @@ public class MessageResponse {
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
-    @Builder
+    @SuperBuilder
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class Usage {
         private int inputTokens;
@@ -268,7 +270,7 @@ public class MessageResponse {
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
-    @Builder
+    @SuperBuilder
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class CacheCreation {
         @JsonProperty("ephemeral_1h_input_tokens")
@@ -280,7 +282,7 @@ public class MessageResponse {
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
-    @Builder
+    @SuperBuilder
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class ServerToolUsage {
         @JsonProperty("web_search_requests")
