@@ -13,6 +13,7 @@ import com.ke.bella.openapi.protocol.completion.gemini.Part;
 import com.ke.bella.openapi.protocol.completion.gemini.SystemInstruction;
 import com.ke.bella.openapi.protocol.completion.gemini.Tool;
 import com.ke.bella.openapi.protocol.completion.gemini.UsageMetadata;
+import com.ke.bella.openapi.protocol.completion.gemini.UsageMetadata.Modality;
 import com.ke.bella.openapi.utils.DateTimeUtils;
 import com.ke.bella.openapi.utils.ImageUtils;
 import com.ke.bella.openapi.utils.JacksonUtils;
@@ -526,23 +527,59 @@ public class VertexConverter {
                 .prompt_tokens(usageMetadata.getPromptTokenCount() != null ? usageMetadata.getPromptTokenCount() : 0)
                 .completion_tokens(usageMetadata.getCandidatesTokenCount() != null ? usageMetadata.getCandidatesTokenCount() : 0)
                 .total_tokens(usageMetadata.getTotalTokenCount() != null ? usageMetadata.getTotalTokenCount() : 0);
+        
+        if(usageMetadata.getCachedContentTokenCount() != null && usageMetadata.getCachedContentTokenCount() > 0) {
+            builder.cache_read_tokens(usageMetadata.getCachedContentTokenCount());
+        }
+        
         if(usageMetadata.getPromptTokensDetails() != null) {
             CompletionResponse.TokensDetail tokensDetail = new CompletionResponse.TokensDetail();
-            usageMetadata.getPromptTokensDetails().stream().filter(detail -> "IMAGE".equals(detail.getModality()))
-                    .forEach(detail -> tokensDetail.setImage_tokens(tokensDetail.getImage_tokens() + detail.getTokenCount()));
-            if(tokensDetail.getImage_tokens() > 0) {
+            usageMetadata.getPromptTokensDetails().forEach(detail -> {
+                if(Modality.IMAGE.name().equals(detail.getModality())) {
+                    tokensDetail.setImage_tokens(tokensDetail.getImage_tokens() + detail.getTokenCount());
+                } else if(Modality.AUDIO.name().equals(detail.getModality())) {
+                    tokensDetail.setAudio_tokens(tokensDetail.getAudio_tokens() + detail.getTokenCount());
+                }
+            });
+            if(tokensDetail.getImage_tokens() > 0 || tokensDetail.getAudio_tokens() > 0) {
                 builder.prompt_tokens_details(tokensDetail);
             }
         }
 
         if(usageMetadata.getCandidatesTokensDetails() != null) {
             CompletionResponse.TokensDetail tokensDetail = new CompletionResponse.TokensDetail();
-            usageMetadata.getCandidatesTokensDetails().stream().filter(detail -> "IMAGE".equals(detail.getModality()))
-                    .forEach(detail -> tokensDetail.setImage_tokens(tokensDetail.getImage_tokens() + detail.getTokenCount()));
-            if(tokensDetail.getImage_tokens() > 0) {
+            usageMetadata.getCandidatesTokensDetails().forEach(detail -> {
+                if(Modality.IMAGE.name().equals(detail.getModality())) {
+                    tokensDetail.setImage_tokens(tokensDetail.getImage_tokens() + detail.getTokenCount());
+                } else if(Modality.AUDIO.name().equals(detail.getModality())) {
+                    tokensDetail.setAudio_tokens(tokensDetail.getAudio_tokens() + detail.getTokenCount());
+                }
+            });
+            if(usageMetadata.getThoughtsTokenCount() != null && usageMetadata.getThoughtsTokenCount() > 0) {
+                tokensDetail.setReasoning_tokens(usageMetadata.getThoughtsTokenCount());
+            }
+            if(tokensDetail.getImage_tokens() > 0 || tokensDetail.getAudio_tokens() > 0 || tokensDetail.getReasoning_tokens() > 0) {
                 builder.completion_tokens_details(tokensDetail);
             }
         }
+        
+        if(usageMetadata.getCacheTokensDetails() != null) {
+            usageMetadata.getCacheTokensDetails().forEach(detail -> {
+                if(Modality.IMAGE.name().equals(detail.getModality()) || Modality.AUDIO.name().equals(detail.getModality())) {
+                    CompletionResponse.TokensDetail promptDetail = builder.build().getPrompt_tokens_details();
+                    if(promptDetail == null) {
+                        promptDetail = new CompletionResponse.TokensDetail();
+                        builder.prompt_tokens_details(promptDetail);
+                    }
+                    if(Modality.IMAGE.name().equals(detail.getModality())) {
+                        promptDetail.setImage_tokens(promptDetail.getImage_tokens() + detail.getTokenCount());
+                    } else if(Modality.AUDIO.name().equals(detail.getModality())) {
+                        promptDetail.setAudio_tokens(promptDetail.getAudio_tokens() + detail.getTokenCount());
+                    }
+                }
+            });
+        }
+        
         return builder.build();
     }
     
