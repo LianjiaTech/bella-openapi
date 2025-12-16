@@ -20,7 +20,7 @@ public class LimiterLogHandler implements EventHandler<LogEvent> {
         if(event.isCostOnly()) {
             return;
         }
-        if(!log.isInnerLog() && !log.isPrivate()) {
+        if(log.isInnerLog() && !log.isPrivate()) {
             limiterManager.record(log);
         }
     }
