@@ -17,8 +17,14 @@ public class UsageMetadata {
     private Integer promptTokenCount;
     private Integer candidatesTokenCount;
     private Integer totalTokenCount;
+    private Integer toolUsePromptTokenCount;
+    private Integer thoughtsTokenCount;
+    private Integer cachedContentTokenCount;
     private List<TokensDetails> promptTokensDetails;
+    private List<TokensDetails> cacheTokensDetails;
     private List<TokensDetails> candidatesTokensDetails;
+    private List<TokensDetails> toolUsePromptTokensDetails;
+    private String trafficType;
 
 
     @Data
@@ -29,5 +35,14 @@ public class UsageMetadata {
     public static class TokensDetails {
         private String modality;
         private int tokenCount;
+    }
+
+    public enum Modality {
+        MODALITY_UNSPECIFIED,
+        TEXT,
+        IMAGE,
+        VIDEO,
+        AUDIO,
+        DOCUMENT
     }
 }
