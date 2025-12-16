@@ -53,25 +53,12 @@ public class CapacityCalculator {
     public double getRemainingCapacity() {
         double capacity = getCapacity();
         if(capacity == 0) {
-            capacity = 0.7 * getCurrentMaxRpm();
-        }
-        if(capacity == 0) {
             return 1.0;
         }
 
         long requestCapacity = getCurrentRequests() + getCompletedRpm();
         double remainingCapacity = 1.0 - (requestCapacity / capacity);
         return Math.max(0.0, Math.min(1.0, remainingCapacity));
-    }
-
-    private long getCurrentMaxRpm() {
-        long currentRpm = getCompletedRpm();
-
-        if(currentRpm > maxFinishRpm) {
-            maxFinishRpm = currentRpm;
-        }
-
-        return Math.max(currentRpm, maxFinishRpm);
     }
 
     private long getCompletedRpm() {
