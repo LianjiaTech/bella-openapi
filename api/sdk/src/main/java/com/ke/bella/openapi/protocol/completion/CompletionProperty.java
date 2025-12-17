@@ -16,14 +16,11 @@ public class CompletionProperty implements IProtocolProperty {
     boolean functionCallSimulate = false;
     Map<String, String> extraHeaders;
     String queueName;
-
-    /**
-     * Get authorization property for the channel
-     * Subclasses should override this method if they have auth
-     */
-    public AuthorizationProperty getAuth() {
-        return null;
-    }
+    String anthropicVersion;
+    String messageEndpointUrl;
+    Integer defaultMaxToken;
+    String deployName;
+    AuthorizationProperty auth;
 
     @Override
     public Map<String, String> description() {
@@ -34,6 +31,11 @@ public class CompletionProperty implements IProtocolProperty {
         map.put("functionCallSimulate", "是否需要强制支持function call");
         map.put("extraHeaders", "额外的请求头");
         map.put("queueName", "队列（配置后请求被bella-job-queue服务代理）");
+        map.put("anthropicVersion", "Anthropic API版本（如2023-06-01，用于原生代理）");
+        map.put("messageEndpointUrl", "Message API端点URL（配置后启用Anthropic原生代理）");
+        map.put("defaultMaxToken", "默认最大输出token");
+        map.put("deployName", "部署名称/模型名称");
+        map.put("auth", "鉴权配置");
         return map;
     }
 }

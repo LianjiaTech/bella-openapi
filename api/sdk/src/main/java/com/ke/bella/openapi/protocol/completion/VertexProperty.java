@@ -15,15 +15,12 @@ import java.util.Map;
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class VertexProperty extends CompletionProperty {
-    AuthorizationProperty auth;
-    String deployName;
     boolean supportSystemInstruction = true;
     boolean supportThinkConfig = false;
 
     @Override
     public Map<String, String> description() {
-        Map<String, String> map = new LinkedHashMap<>();
-        map.put("auth", "鉴权配置");
+        Map<String, String> map = super.description();
         map.put("supportSystemInstruction", "是否支持系统指令");
         map.put("supportThinkConfig", "是否支持开启思考");
         return map;

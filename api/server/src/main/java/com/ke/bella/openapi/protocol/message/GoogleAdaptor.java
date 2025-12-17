@@ -9,9 +9,18 @@ import org.springframework.stereotype.Component;
 public class GoogleAdaptor implements MessageDelegatorAdaptor<OpenAIProperty>  {
     @Autowired
     private com.ke.bella.openapi.protocol.completion.GoogleAdaptor delegator;
+
+    @Autowired
+    private AnthropicAdaptor anthropicAdaptor;
+
     @Override
     public CompletionAdaptor<OpenAIProperty> delegator() {
         return delegator;
+    }
+
+    @Override
+    public AnthropicAdaptor anthropicAdaptor() {
+        return anthropicAdaptor;
     }
 
     @Override
