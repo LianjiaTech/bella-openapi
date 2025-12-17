@@ -14,19 +14,11 @@ import java.util.Map;
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class AwsMessageProperty extends CompletionProperty {
-    AuthorizationProperty auth;
     String region;
-    String deployName;
-    String anthropicVersion = "bedrock-2023-05-31";
-    Integer defaultMaxToken;
     @Override
     public Map<String, String> description() {
-        Map<String, String> map = new LinkedHashMap<>();
-        map.put("auth", "鉴权配置");
+        Map<String, String> map = super.description();
         map.put("region", "部署区域");
-        map.put("deployName", "部署名称");
-        map.put("defaultMaxToken", "默认最大输出token");
-        map.put("anthropicVersion", "默认anthropic版本");
         return map;
     }
 }

@@ -10,9 +10,17 @@ public class HuoshanAdaptor implements MessageDelegatorAdaptor<OpenAIProperty>  
     @Autowired
     private com.ke.bella.openapi.protocol.completion.HuoshanAdaptor delegator;
 
+    @Autowired
+    private AnthropicAdaptor anthropicAdaptor;
+
     @Override
     public CompletionAdaptor<OpenAIProperty> delegator() {
         return delegator;
+    }
+
+    @Override
+    public AnthropicAdaptor anthropicAdaptor() {
+        return anthropicAdaptor;
     }
 
     @Override
