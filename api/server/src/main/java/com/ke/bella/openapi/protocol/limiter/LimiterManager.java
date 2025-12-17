@@ -1,6 +1,7 @@
 package com.ke.bella.openapi.protocol.limiter;
 
 import com.google.common.collect.Lists;
+import com.ke.bella.openapi.EndpointContext;
 import com.ke.bella.openapi.EndpointProcessData;
 import com.ke.bella.openapi.script.LuaScriptExecutor;
 import com.ke.bella.openapi.script.ScriptType;
@@ -34,15 +35,14 @@ public class LimiterManager {
         String entityCode = processData.getModel() != null ? processData.getModel() : processData.getEndpoint();
         String akCode = processData.getAkCode();
         String requestId = processData.getRequestId();
-        if (entityCode == null || akCode == null) {
+        if (entityCode == null) {
             return;
         }
         long currentTimestamp = DateTimeUtils.getCurrentSeconds();
-        if(requestId != null) {
+        if(requestId != null && akCode != null) {
             // RPM记录
             incrementRequestCountPerMinute(akCode, entityCode, requestId, currentTimestamp);
         }
-
         // 减少并发请求计数
         decrementConcurrentCount(akCode, entityCode);
     }
@@ -74,10 +74,11 @@ public class LimiterManager {
         List<Object> keys = Lists.newArrayList(concurrentKey, entityCode);
         List<Object> params = new ArrayList<>();
         params.add("INCR");
+        params.add(System.currentTimeMillis() / 1000);
         try {
             executor.execute("/concurrent", ScriptType.limiter, keys, params);
         } catch (IOException e) {
-            log.warn(e.getMessage(), e);
+            log.warn("Failed to increment concurrent count: {}", e.getMessage(), e);
         }
     }
 
@@ -86,10 +87,11 @@ public class LimiterManager {
         List<Object> keys = Lists.newArrayList(concurrentKey, entityCode);
         List<Object> params = new ArrayList<>();
         params.add("DECR");
+        params.add(System.currentTimeMillis() / 1000);
         try {
             executor.execute("/concurrent", ScriptType.limiter, keys, params);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            log.warn("Failed to decrement concurrent count: {}", e.getMessage(), e);
         }
     }
 
@@ -97,5 +99,20 @@ public class LimiterManager {
         String concurrentKey = String.format(CONCURRENT_KEY_FORMAT, entityCode, akCode);
         Object count = redisson.getBucket(concurrentKey).get();
         return count != null ? Long.parseLong(count.toString()) : 0L;
+    }
+
+    public long getCurrentRequests(String entityCode) {
+        try {
+            String concurrentKey = "bella-openapi-channel-concurrent:" + entityCode;
+            List<Object> keys = Lists.newArrayList(concurrentKey, entityCode);
+            List<Object> params = new ArrayList<>();
+            params.add("GET");
+            params.add(System.currentTimeMillis() / 1000);
+            Object result = executor.execute("/concurrent", ScriptType.limiter, keys, params);
+            return result instanceof Number ? ((Number) result).longValue() : 0L;
+        } catch (Exception e) {
+            log.warn("Failed to get current requests for channel: {}", entityCode, e);
+            return 0L;
+        }
     }
 }
