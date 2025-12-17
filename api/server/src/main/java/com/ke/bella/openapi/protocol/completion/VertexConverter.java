@@ -525,7 +525,7 @@ public class VertexConverter {
         
         CompletionResponse.TokenUsage.TokenUsageBuilder builder = CompletionResponse.TokenUsage.builder()
                 .prompt_tokens(usageMetadata.getPromptTokenCount() != null ? usageMetadata.getPromptTokenCount() : 0)
-                .completion_tokens(usageMetadata.getCandidatesTokenCount() != null ? usageMetadata.getCandidatesTokenCount() : 0)
+                .completion_tokens(calculateCompletionTokens(usageMetadata))
                 .total_tokens(usageMetadata.getTotalTokenCount() != null ? usageMetadata.getTotalTokenCount() : 0);
         
         if(usageMetadata.getCachedContentTokenCount() != null && usageMetadata.getCachedContentTokenCount() > 0) {
@@ -581,6 +581,12 @@ public class VertexConverter {
         }
         
         return builder.build();
+    }
+    
+    private static int calculateCompletionTokens(UsageMetadata usageMetadata) {
+        int candidateTokens = usageMetadata.getCandidatesTokenCount() != null ? usageMetadata.getCandidatesTokenCount() : 0;
+        int thoughtTokens = usageMetadata.getThoughtsTokenCount() != null ? usageMetadata.getThoughtsTokenCount() : 0;
+        return candidateTokens + thoughtTokens;
     }
     
     private static String convertFinishReason(String vertexFinishReason) {
