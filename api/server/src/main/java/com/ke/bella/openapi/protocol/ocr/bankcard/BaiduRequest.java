@@ -4,12 +4,13 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ke.bella.openapi.protocol.IMemoryClearable;
 import com.ke.bella.openapi.protocol.ITransfer;
+
 import lombok.Builder;
 import lombok.Data;
 
 @Data
 @Builder
-public class BaiduBankcardRequest implements IMemoryClearable, ITransfer {
+public class BaiduRequest implements IMemoryClearable, ITransfer {
     String image;
     String url;
     @Builder.Default
