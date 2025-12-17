@@ -6,11 +6,10 @@ import com.ke.bella.openapi.protocol.images.ImageDataType;
 import com.ke.bella.openapi.protocol.images.ImagesEditRequest;
 import com.ke.bella.openapi.protocol.images.ImagesEditorProperty;
 import com.ke.bella.openapi.protocol.images.ImagesResponse;
+import com.ke.bella.openapi.utils.ByteBufferRequestBody;
 import com.ke.bella.openapi.utils.HttpUtils;
-import com.ke.bella.openapi.utils.JacksonUtils;
 import okhttp3.MediaType;
 import okhttp3.Request;
-import okhttp3.RequestBody;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -44,16 +43,25 @@ public class VertexAdaptor implements ImagesEditorAdaptor<ImagesEditorProperty> 
 		// 使用 VertexEditorConverter 将 OpenAI 格式转换为 Gemini 格式
 		GeminiRequest geminiRequest = VertexEditorConverter.convertToGeminiRequest(request, dataType);
 
-		// 构建 HTTP 请求
-		Request httpRequest = buildHttpRequest(vertexUrl, geminiRequest, property);
-		clearLargeData(request, geminiRequest);
+		// 构建 HTTP 请求，确保异常时也能释放 ByteBuffer
+		ByteBufferRequestBody requestBody = null;
+		try {
+			requestBody = buildHttpRequestBody(geminiRequest);
+			Request httpRequest = buildHttpRequest(vertexUrl, requestBody, property);
+			clearLargeData(request, geminiRequest);
 
-		// 调用 Gemini API，获取 GeminiResponse
-		GeminiResponse geminiResponse = HttpUtils.httpRequest(httpRequest, GeminiResponse.class);
+			// 调用 Gemini API，获取 GeminiResponse
+			GeminiResponse geminiResponse = HttpUtils.httpRequest(httpRequest, GeminiResponse.class);
 
-		// 使用 VertexEditorConverter 转换为标准 OpenAI 格式
-		// 从 inlineData 中提取图像，忽略 thoughtSignature
-		return VertexEditorConverter.convertToImagesResponse(geminiResponse);
+			// 使用 VertexEditorConverter 转换为标准 OpenAI 格式
+			// 从 inlineData 中提取图像，忽略 thoughtSignature
+			return VertexEditorConverter.convertToImagesResponse(geminiResponse);
+		} finally {
+			// 确保 ByteBuffer 被释放，即使发生异常
+			if (requestBody != null && !requestBody.isReleased()) {
+				requestBody.release();
+			}
+		}
 	}
 
 	/**
@@ -65,13 +73,22 @@ public class VertexAdaptor implements ImagesEditorAdaptor<ImagesEditorProperty> 
 	}
 
 	/**
-	 * 构建 HTTP 请求
-	 * 参考 chat completion 的实现方式
+	 * 构建 ByteBufferRequestBody
+	 * 使用 DirectByteBuffer 存储在堆外内存，减少 Young GC 和 Full GC
 	 */
-	private Request buildHttpRequest(String url, GeminiRequest geminiRequest, ImagesEditorProperty property) {
-		byte[] requestBytes = JacksonUtils.toByte(geminiRequest);
-		RequestBody body = RequestBody.create(MediaType.parse("application/json"), requestBytes);
+	private ByteBufferRequestBody buildHttpRequestBody(GeminiRequest geminiRequest) {
+		return ByteBufferRequestBody.fromObject(
+				MediaType.parse("application/json"),
+				geminiRequest
+		);
+	}
 
+	/**
+	 * 构建 HTTP 请求
+	 * 使用 ByteBuffer 优化内存占用，减少 GC 压力
+	 * 特别适用于大数据量的图片和思维链请求
+	 */
+	private Request buildHttpRequest(String url, ByteBufferRequestBody body, ImagesEditorProperty property) {
 		Request.Builder builder = authorizationRequestBuilder(property.getAuth())
 				.url(url)
 				.post(body)

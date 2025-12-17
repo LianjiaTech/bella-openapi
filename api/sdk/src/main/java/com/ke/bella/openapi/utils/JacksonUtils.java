@@ -79,6 +79,129 @@ public class JacksonUtils {
         return new byte[0];
     }
 
+    /**
+     * 将对象序列化到 ByteBuffer
+     * 使用流式序列化直接写入 ByteBuffer，避免中间的 byte[] 分配
+     * 适合处理大对象（如图片数据、思维链等）
+     *
+     * @param obj 要序列化的对象
+     * @return DirectByteBuffer，如果序列化失败返回空的 DirectByteBuffer
+     */
+    public static java.nio.ByteBuffer toByteBuffer(Object obj) {
+        if (obj == null) {
+            return java.nio.ByteBuffer.allocateDirect(0);
+        }
+
+        try {
+            // 先估算序列化大小
+            int estimatedSize = estimateSerializedSize(obj);
+
+            // 分配 DirectByteBuffer（预留 10% 空间）
+            int bufferSize = (int) (estimatedSize * 1.1);
+            java.nio.ByteBuffer buffer = java.nio.ByteBuffer.allocateDirect(bufferSize);
+
+            // 使用流式序列化直接写入 ByteBuffer
+            ByteBufferOutputStream outputStream = new ByteBufferOutputStream(buffer);
+            com.fasterxml.jackson.core.JsonGenerator generator = MAPPER.getFactory().createGenerator(outputStream);
+            MAPPER.writeValue(generator, obj);
+            generator.close();
+
+            // 切换到读模式
+            buffer.flip();
+            return buffer;
+
+        } catch (java.io.IOException e) {
+            LOGGER.error("流式序列化失败，回退到 byte[] 方式: " + e.getMessage(), e);
+            // 回退到原始方式
+            try {
+                byte[] bytes = MAPPER.writeValueAsBytes(obj);
+                java.nio.ByteBuffer buffer = java.nio.ByteBuffer.allocateDirect(bytes.length);
+                buffer.put(bytes);
+                buffer.flip();
+                return buffer;
+            } catch (JsonProcessingException ex) {
+                LOGGER.error("序列化完全失败: " + ex.getMessage(), ex);
+                return java.nio.ByteBuffer.allocateDirect(0);
+            }
+        }
+    }
+
+    /**
+     * 估算对象序列化后的大小
+     * 使用轻量级的计数输出流来测量，不实际分配内存
+     *
+     * @param obj 要估算的对象
+     * @return 估算的字节数
+     */
+    private static int estimateSerializedSize(Object obj) {
+        if (obj == null) {
+            return 0;
+        }
+
+        try {
+            // 使用计数输出流测量大小
+            CountingOutputStream counter = new CountingOutputStream();
+            com.fasterxml.jackson.core.JsonGenerator generator = MAPPER.getFactory().createGenerator(counter);
+            MAPPER.writeValue(generator, obj);
+            generator.close();
+            return counter.getCount();
+        } catch (Exception e) {
+            LOGGER.warn("大小估算失败，使用保守估算: " + e.getMessage());
+            // 保守估算：1MB
+            return 1024 * 1024;
+        }
+    }
+
+    /**
+     * ByteBuffer 输出流适配器
+     * 将 Jackson 的输出写入到 ByteBuffer
+     */
+    private static class ByteBufferOutputStream extends java.io.OutputStream {
+        private final java.nio.ByteBuffer buffer;
+
+        public ByteBufferOutputStream(java.nio.ByteBuffer buffer) {
+            this.buffer = buffer;
+        }
+
+        @Override
+        public void write(int b) throws java.io.IOException {
+            if (!buffer.hasRemaining()) {
+                throw new java.io.IOException("ByteBuffer overflow: no remaining space");
+            }
+            buffer.put((byte) b);
+        }
+
+        @Override
+        public void write(byte[] b, int off, int len) throws java.io.IOException {
+            if (buffer.remaining() < len) {
+                throw new java.io.IOException("ByteBuffer overflow: need " + len + " bytes, but only " + buffer.remaining() + " remaining");
+            }
+            buffer.put(b, off, len);
+        }
+    }
+
+    /**
+     * 计数输出流
+     * 用于测量序列化大小，不实际写入数据
+     */
+    private static class CountingOutputStream extends java.io.OutputStream {
+        private int count = 0;
+
+        @Override
+        public void write(int b) {
+            count++;
+        }
+
+        @Override
+        public void write(byte[] b, int off, int len) {
+            count += len;
+        }
+
+        public int getCount() {
+            return count;
+        }
+    }
+
     public static <T> T deserialize(String jsonText, TypeReference<T> type) {
         if (StringUtils.isBlank(jsonText)) {
             return null;
