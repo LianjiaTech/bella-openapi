@@ -19,6 +19,7 @@ import com.ke.bella.openapi.tables.Space;
 import com.ke.bella.openapi.tables.SpaceMember;
 import com.ke.bella.openapi.tables.SpaceRole;
 import com.ke.bella.openapi.tables.User;
+import com.ke.bella.openapi.tables.VideoJob;
 
 
 /**
@@ -101,4 +102,9 @@ public class Tables {
      * 用户表
      */
     public static final User USER = User.USER;
+
+    /**
+     * 视频任务表
+     */
+    public static final VideoJob VIDEO_JOB = VideoJob.VIDEO_JOB;
 }
