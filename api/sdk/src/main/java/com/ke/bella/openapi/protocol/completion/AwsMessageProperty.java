@@ -15,6 +15,15 @@ import java.util.Map;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class AwsMessageProperty extends CompletionProperty {
     String region;
+
+    @Override
+    public String getAnthropicVersion() {
+        if(anthropicVersion == null) {
+            return "bedrock-2023-05-31";
+        }
+        return anthropicVersion;
+    }
+
     @Override
     public Map<String, String> description() {
         Map<String, String> map = super.description();

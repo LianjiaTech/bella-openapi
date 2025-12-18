@@ -25,7 +25,7 @@ public class OpenAIAdaptor implements MessageDelegatorAdaptor<OpenAIProperty> {
 
     @Override
     public boolean isNativeSupport() {
-        return true;
+        return false;
     }
 
     @Override

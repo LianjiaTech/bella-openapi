@@ -13,4 +13,12 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class AnthropicProperty extends CompletionProperty {
+
+    @Override
+    public String getAnthropicVersion() {
+        if(anthropicVersion == null) {
+            return "2023-06-01";
+        }
+        return anthropicVersion;
+    }
 }
