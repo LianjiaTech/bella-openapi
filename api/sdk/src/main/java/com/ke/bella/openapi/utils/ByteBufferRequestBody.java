@@ -40,20 +40,6 @@ public class ByteBufferRequestBody extends RequestBody {
     }
 
     /**
-     * 使用 Direct ByteBuffer 创建（推荐方式）
-     *
-     * @param mediaType 媒体类型
-     * @param data 数据字节数组
-     * @return ByteBufferRequestBody
-     */
-    public static ByteBufferRequestBody createDirect(MediaType mediaType, byte[] data) {
-        ByteBuffer buffer = ByteBuffer.allocateDirect(data.length);
-        buffer.put(data);
-        buffer.flip();
-        return new ByteBufferRequestBody(mediaType, buffer);
-    }
-
-    /**
      * 从 Jackson 序列化对象创建 Direct ByteBuffer RequestBody
      * 直接序列化到 DirectByteBuffer，避免堆内存分配
      *
