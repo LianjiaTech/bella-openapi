@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.ser.std.DateSerializer;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -81,7 +82,7 @@ public class JacksonUtils {
 
     /**
      * 将对象序列化到 ByteBuffer
-     * 使用流式序列化直接写入 ByteBuffer，避免中间的 byte[] 分配
+     * 使用 Netty 的 ByteBufOutputStream 直接写入 ByteBuffer，避免中间的 byte[] 分配
      * 适合处理大对象（如图片数据、思维链等）
      *
      * @param obj 要序列化的对象
@@ -93,21 +94,27 @@ public class JacksonUtils {
         }
 
         try {
-            // 先估算序列化大小
+            // 先估算序列化大小（精确分配，不预留额外空间）
             int estimatedSize = estimateSerializedSize(obj);
 
-            // 分配 DirectByteBuffer（预留 10% 空间）
-            int bufferSize = (int) (estimatedSize * 1.1);
-            java.nio.ByteBuffer buffer = java.nio.ByteBuffer.allocateDirect(bufferSize);
+            // 分配精确大小的 DirectByteBuffer
+            java.nio.ByteBuffer buffer = java.nio.ByteBuffer.allocateDirect(estimatedSize);
 
-            // 使用流式序列化直接写入 ByteBuffer
-            ByteBufferOutputStream outputStream = new ByteBufferOutputStream(buffer);
-            com.fasterxml.jackson.core.JsonGenerator generator = MAPPER.getFactory().createGenerator(outputStream);
+            // 使用 Netty 的 ByteBuf 包装 NIO ByteBuffer
+            io.netty.buffer.ByteBuf byteBuf = io.netty.buffer.Unpooled.wrappedBuffer(buffer);
+            byteBuf.writerIndex(0); // 重置写入位置
+
+            // 使用 Netty 的 ByteBufOutputStream 进行流式序列化
+            io.netty.buffer.ByteBufOutputStream outputStream = new io.netty.buffer.ByteBufOutputStream(byteBuf);
+            // 显式转换为 OutputStream 以避免 Jackson 的 createGenerator 方法歧义
+            com.fasterxml.jackson.core.JsonGenerator generator = MAPPER.getFactory().createGenerator((java.io.OutputStream) outputStream);
             MAPPER.writeValue(generator, obj);
             generator.close();
 
-            // 切换到读模式
-            buffer.flip();
+            // 调整 NIO ByteBuffer 的 position 和 limit
+            buffer.position(0);
+            buffer.limit(byteBuf.writerIndex());
+
             return buffer;
 
         } catch (java.io.IOException e) {
@@ -153,38 +160,11 @@ public class JacksonUtils {
     }
 
     /**
-     * ByteBuffer 输出流适配器
-     * 将 Jackson 的输出写入到 ByteBuffer
-     */
-    private static class ByteBufferOutputStream extends java.io.OutputStream {
-        private final java.nio.ByteBuffer buffer;
-
-        public ByteBufferOutputStream(java.nio.ByteBuffer buffer) {
-            this.buffer = buffer;
-        }
-
-        @Override
-        public void write(int b) throws java.io.IOException {
-            if (!buffer.hasRemaining()) {
-                throw new java.io.IOException("ByteBuffer overflow: no remaining space");
-            }
-            buffer.put((byte) b);
-        }
-
-        @Override
-        public void write(byte[] b, int off, int len) throws java.io.IOException {
-            if (buffer.remaining() < len) {
-                throw new java.io.IOException("ByteBuffer overflow: need " + len + " bytes, but only " + buffer.remaining() + " remaining");
-            }
-            buffer.put(b, off, len);
-        }
-    }
-
-    /**
      * 计数输出流
      * 用于测量序列化大小，不实际写入数据
      */
-    private static class CountingOutputStream extends java.io.OutputStream {
+    @Getter
+	private static class CountingOutputStream extends java.io.OutputStream {
         private int count = 0;
 
         @Override
@@ -197,9 +177,6 @@ public class JacksonUtils {
             count += len;
         }
 
-        public int getCount() {
-            return count;
-        }
     }
 
     public static <T> T deserialize(String jsonText, TypeReference<T> type) {
