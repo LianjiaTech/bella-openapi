@@ -19,6 +19,7 @@ import com.ke.bella.openapi.tables.Space;
 import com.ke.bella.openapi.tables.SpaceMember;
 import com.ke.bella.openapi.tables.SpaceRole;
 import com.ke.bella.openapi.tables.User;
+import com.ke.bella.openapi.tables.VideoJob;
 import com.ke.bella.openapi.tables.records.ApikeyMonthCostRecord;
 import com.ke.bella.openapi.tables.records.ApikeyRecord;
 import com.ke.bella.openapi.tables.records.ApikeyRoleRecord;
@@ -34,6 +35,7 @@ import com.ke.bella.openapi.tables.records.SpaceMemberRecord;
 import com.ke.bella.openapi.tables.records.SpaceRecord;
 import com.ke.bella.openapi.tables.records.SpaceRoleRecord;
 import com.ke.bella.openapi.tables.records.UserRecord;
+import com.ke.bella.openapi.tables.records.VideoJobRecord;
 
 import org.jooq.TableField;
 import org.jooq.UniqueKey;
@@ -42,7 +44,7 @@ import org.jooq.impl.Internal;
 
 
 /**
- * A class modelling foreign key relationships and constraints of tables in 
+ * A class modelling foreign key relationships and constraints of tables in
  * the default schema.
  */
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
@@ -83,4 +85,6 @@ public class Keys {
     public static final UniqueKey<SpaceRoleRecord> KEY_SPACE_ROLE_UNIQ_IDX_SPACE_CODE_ROLE_CODE = Internal.createUniqueKey(SpaceRole.SPACE_ROLE, DSL.name("KEY_space_role_uniq_idx_space_code_role_code"), new TableField[] { SpaceRole.SPACE_ROLE.SPACE_CODE, SpaceRole.SPACE_ROLE.ROLE_CODE }, true);
     public static final UniqueKey<UserRecord> KEY_USER_PRIMARY = Internal.createUniqueKey(User.USER, DSL.name("KEY_user_PRIMARY"), new TableField[] { User.USER.ID }, true);
     public static final UniqueKey<UserRecord> KEY_USER_UK_SOURCE_SOURCE_ID = Internal.createUniqueKey(User.USER, DSL.name("KEY_user_uk_source_source_id"), new TableField[] { User.USER.SOURCE, User.USER.SOURCE_ID }, true);
+    public static final UniqueKey<VideoJobRecord> KEY_VIDEO_JOB_PRIMARY = Internal.createUniqueKey(VideoJob.VIDEO_JOB, DSL.name("KEY_video_job_PRIMARY"), new TableField[] { VideoJob.VIDEO_JOB.ID }, true);
+    public static final UniqueKey<VideoJobRecord> KEY_VIDEO_JOB_UNIQ_IDX_JOB_ID = Internal.createUniqueKey(VideoJob.VIDEO_JOB, DSL.name("KEY_video_job_uniq_idx_job_id"), new TableField[] { VideoJob.VIDEO_JOB.VIDEO_ID }, true);
 }

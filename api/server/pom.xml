@@ -450,6 +450,19 @@
                                         <pojoImplements>com.ke.bella.openapi.db.repo.Operator</pojoImplements>
                                         <recordImplements>com.ke.bella.openapi.db.repo.Operator</recordImplements>
                                     </table>
+                                    <table>
+                                        <daoClass>
+                                            <transform>PASCAL</transform>
+                                            <expression>$0_D_B_Dao</expression>
+                                        </daoClass>
+                                        <pojoClass>
+                                            <transform>PASCAL</transform>
+                                            <expression>$0_D_B</expression>
+                                        </pojoClass>
+                                        <pojoImplements>com.ke.bella.openapi.db.repo.Timed</pojoImplements>
+                                        <recordImplements>com.ke.bella.openapi.db.repo.Timed</recordImplements>
+                                        <expression>video_job</expression>
+                                    </table>
                                 </tables>
                             </matchers>
                         </strategy>
