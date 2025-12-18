@@ -77,9 +77,17 @@ public class VertexAdaptor implements ImagesEditorAdaptor<ImagesEditorProperty> 
 	 * 使用 DirectByteBuffer 存储在堆外内存，减少 Young GC 和 Full GC
 	 */
 	private ByteBufferRequestBody buildHttpRequestBody(GeminiRequest geminiRequest) {
+		// 从 EndpointContext 获取预先计算的序列化大小
+		Integer serializedSize = com.ke.bella.openapi.EndpointContext.getSerializedSize();
+		if (serializedSize == null) {
+			// 如果没有预先计算，抛出异常（不应该发生）
+			throw new IllegalStateException("Serialized size not found in EndpointContext");
+		}
+
 		return ByteBufferRequestBody.fromObject(
 				MediaType.parse("application/json"),
-				geminiRequest
+				geminiRequest,
+				serializedSize
 		);
 	}
 

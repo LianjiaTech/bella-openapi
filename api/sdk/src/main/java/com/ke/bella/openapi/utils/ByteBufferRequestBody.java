@@ -59,11 +59,12 @@ public class ByteBufferRequestBody extends RequestBody {
      *
      * @param mediaType 媒体类型
      * @param obj 要序列化的对象
+     * @param size 序列化后的字节大小
      * @return ByteBufferRequestBody
      */
-    public static ByteBufferRequestBody fromObject(MediaType mediaType, Object obj) {
-        // 直接使用 toByteBuffer，避免先分配堆内存的 byte[] 再复制到 DirectByteBuffer
-        ByteBuffer buffer = JacksonUtils.toByteBuffer(obj);
+    public static ByteBufferRequestBody fromObject(MediaType mediaType, Object obj, int size) {
+        // 使用提供的 size 直接序列化，避免二次估算
+        ByteBuffer buffer = JacksonUtils.toByteBuffer(obj, size);
         return new ByteBufferRequestBody(mediaType, buffer);
     }
 

@@ -17,6 +17,8 @@ public class EndpointContext {
 
     private static final ThreadLocal<Boolean> isLastRequest = new ThreadLocal<>();
 
+    private static final ThreadLocal<Integer> serializedSize = new ThreadLocal<>();
+
     public static EndpointProcessData getProcessData() {
         if(endpointRequestInfo.get() == null) {
             EndpointProcessData endpointProcessData = new EndpointProcessData();
@@ -105,10 +107,19 @@ public class EndpointContext {
         return Boolean.TRUE.equals(isLastRequest.get());
     }
 
+    public static void setSerializedSize(Integer size) {
+        serializedSize.set(size);
+    }
+
+    public static Integer getSerializedSize() {
+        return serializedSize.get();
+    }
+
     public static void clearAll() {
         endpointRequestInfo.remove();
         requestCache.remove();
         isLastRequest.remove();
+        serializedSize.remove();
         BellaContext.clearAll();
     }
 

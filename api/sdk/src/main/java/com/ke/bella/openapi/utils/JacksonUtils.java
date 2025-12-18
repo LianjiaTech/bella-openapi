@@ -86,19 +86,17 @@ public class JacksonUtils {
      * 适合处理大对象（如图片数据、思维链等）
      *
      * @param obj 要序列化的对象
+     * @param size 序列化后的字节大小
      * @return DirectByteBuffer，如果序列化失败返回空的 DirectByteBuffer
      */
-    public static java.nio.ByteBuffer toByteBuffer(Object obj) {
+    public static java.nio.ByteBuffer toByteBuffer(Object obj, int size) {
         if (obj == null) {
             return java.nio.ByteBuffer.allocateDirect(0);
         }
 
         try {
-            // 先估算序列化大小（精确分配，不预留额外空间）
-            int estimatedSize = estimateSerializedSize(obj);
-
             // 分配精确大小的 DirectByteBuffer
-            java.nio.ByteBuffer buffer = java.nio.ByteBuffer.allocateDirect(estimatedSize);
+            java.nio.ByteBuffer buffer = java.nio.ByteBuffer.allocateDirect(size);
 
             // 使用 Netty 的 ByteBuf 包装 NIO ByteBuffer
             io.netty.buffer.ByteBuf byteBuf = io.netty.buffer.Unpooled.wrappedBuffer(buffer);
@@ -131,52 +129,6 @@ public class JacksonUtils {
                 return java.nio.ByteBuffer.allocateDirect(0);
             }
         }
-    }
-
-    /**
-     * 估算对象序列化后的大小
-     * 使用轻量级的计数输出流来测量，不实际分配内存
-     *
-     * @param obj 要估算的对象
-     * @return 估算的字节数
-     */
-    private static int estimateSerializedSize(Object obj) {
-        if (obj == null) {
-            return 0;
-        }
-
-        try {
-            // 使用计数输出流测量大小
-            CountingOutputStream counter = new CountingOutputStream();
-            com.fasterxml.jackson.core.JsonGenerator generator = MAPPER.getFactory().createGenerator(counter);
-            MAPPER.writeValue(generator, obj);
-            generator.close();
-            return counter.getCount();
-        } catch (Exception e) {
-            LOGGER.warn("大小估算失败，使用保守估算: " + e.getMessage());
-            // 保守估算：1MB
-            return 1024 * 1024;
-        }
-    }
-
-    /**
-     * 计数输出流
-     * 用于测量序列化大小，不实际写入数据
-     */
-    @Getter
-	private static class CountingOutputStream extends java.io.OutputStream {
-        private int count = 0;
-
-        @Override
-        public void write(int b) {
-            count++;
-        }
-
-        @Override
-        public void write(byte[] b, int off, int len) {
-            count += len;
-        }
-
     }
 
     public static <T> T deserialize(String jsonText, TypeReference<T> type) {
