@@ -26,11 +26,14 @@
     "ocr": "OCR"
   },
   "settings": {
+    "settingsTitle": "Settings",
+    "settingsDescription": "Manage your language and theme preferences",
     "language": "Language",
     "theme": "Theme",
     "light": "Light",
     "dark": "Dark",
-    "chinese": "简体中文",
+    "system": "System",
+    "chinese": "Simplified Chinese",
     "english": "English"
   },
   "home": {

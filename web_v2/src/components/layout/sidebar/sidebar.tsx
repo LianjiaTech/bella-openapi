@@ -29,8 +29,9 @@ import {
   type LucideIcon,
   LogOut,
 } from "lucide-react"
-import { useLanguage } from "../providers/language-provider"
+import { useLanguage } from "../../providers/language-provider"
 import { cn } from "@/lib/utils"
+import { SettingsDialog } from "./settings-dialog"
 
 
 interface NavItem {
@@ -71,6 +72,7 @@ export default function Sidebar() {
   const pathname = usePathname();
   const { t } = useLanguage();
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const toggleExpanded = (label: string) => {
     setExpandedItems(prev => {
@@ -197,28 +199,38 @@ export default function Sidebar() {
 
       {/* Bottom Navigation */}
       <div className="border-t border-sidebar-border p-3 space-y-1">
-        {[
-          { name: t("settings"), href: "/settings", icon: Settings },
-          { name: t("logout"), href: "/logout", icon: LogOut }
-        ].map((item) => {
-          const isActive = pathname === item.href
-          return (
-            <Link
-              key={item.name}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                isActive
-                  ? "bg-sidebar-accent text-sidebar-primary"
-                  : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-              )}
-            >
-              <item.icon className="h-5 w-5" />
-              {item.name}
-            </Link>
-          )
-        })}
+        {/* 设置按钮 - 使用弹窗 */}
+        <button
+          onClick={() => setIsSettingsOpen(true)}
+          className={cn(
+            "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors w-full",
+            "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+          )}
+        >
+          <Settings className="h-5 w-5" />
+          {t("settings")}
+        </button>
+
+        {/* 登出按钮 - 保持原有 Link 行为 */}
+        <Link
+          href="/logout"
+          className={cn(
+            "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+            pathname === "/logout"
+              ? "bg-sidebar-accent text-sidebar-primary"
+              : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+          )}
+        >
+          <LogOut className="h-5 w-5" />
+          {t("logout")}
+        </Link>
       </div>
+
+      {/* 设置弹窗 */}
+      <SettingsDialog
+        open={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+      />
     </aside>
   );
 }
