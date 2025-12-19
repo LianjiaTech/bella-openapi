@@ -3,7 +3,7 @@
 import type React from "react"
 import { createContext, useContext, useEffect, useState } from "react"
 import { useTranslations, useLocale } from 'next-intl'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from '@/i18n/routing'
 
 type Language = "zh-CN" | "en-US"
 
@@ -18,6 +18,7 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const locale = useLocale() as Language;
   const router = useRouter();
+  const pathname = usePathname();
 
   // Get all translations from next-intl
   const tNav = useTranslations('navigation');
@@ -53,8 +54,8 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       // Update cookie for next-intl
       document.cookie = `NEXT_LOCALE=${newLanguage}; path=/; max-age=31536000; SameSite=Lax`;
 
-      // Refresh to load new messages
-      router.refresh();
+      // Navigate to the same page with new locale
+      router.replace(pathname, { locale: newLanguage });
     }
   }
 
@@ -91,10 +92,13 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       "ocr": "navigation.ocr",
 
       // Settings
+      "settingsTitle": "settings.settingsTitle",
+      "settingsDescription": "settings.settingsDescription",
       "language": "settings.language",
       "theme": "settings.theme",
       "light": "settings.light",
       "dark": "settings.dark",
+      "system": "settings.system",
       "chinese": "settings.chinese",
       "english": "settings.english",
 
