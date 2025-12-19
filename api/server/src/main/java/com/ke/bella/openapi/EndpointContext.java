@@ -17,7 +17,7 @@ public class EndpointContext {
 
     private static final ThreadLocal<Boolean> isLastRequest = new ThreadLocal<>();
 
-    private static final ThreadLocal<Integer> serializedSize = new ThreadLocal<>();
+    private static final ThreadLocal<Integer> requestSize = new ThreadLocal<>();
 
     public static EndpointProcessData getProcessData() {
         if(endpointRequestInfo.get() == null) {
@@ -43,6 +43,13 @@ public class EndpointContext {
 
     public static void setRequest(HttpServletRequest request) {
         requestCache.set(request);
+
+        // 从原始请求获取大小并估算
+        int contentLength = request.getContentLength();
+        if (contentLength > 0) {
+            int estimatedSize = (int) (contentLength * 1.1);
+            requestSize.set(estimatedSize);
+        }
     }
 
     public static ApikeyInfo getApikey() {
@@ -107,19 +114,15 @@ public class EndpointContext {
         return Boolean.TRUE.equals(isLastRequest.get());
     }
 
-    public static void setSerializedSize(Integer size) {
-        serializedSize.set(size);
-    }
-
-    public static Integer getSerializedSize() {
-        return serializedSize.get();
+	public static Integer getRequestSize() {
+        return requestSize.get();
     }
 
     public static void clearAll() {
         endpointRequestInfo.remove();
         requestCache.remove();
         isLastRequest.remove();
-        serializedSize.remove();
+        requestSize.remove();
         BellaContext.clearAll();
     }
 

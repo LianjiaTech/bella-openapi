@@ -30,15 +30,6 @@ public class OpenapiRequestFilter extends BellaRequestFilter {
             EndpointContext.getProcessData().setRequestMillis(DateTimeUtils.getCurrentMills());
             EndpointContext.getProcessData().setRequestTime(DateTimeUtils.getCurrentSeconds());
             EndpointContext.setRequest(request);
-
-            // 从原始请求获取大小并估算（用于 DirectByteBuffer 分配）
-            int contentLength = request.getContentLength();
-            if (contentLength > 0) {
-                // 乘以 1.5 系数：base64 编码 (+33%) + JSON 结构开销 (+10-20%)
-                int estimatedSize = (int) (contentLength * 1.5);
-                EndpointContext.setSerializedSize(estimatedSize);
-            }
-
             chain.doFilter(request, response);
         } finally {
             BellaContext.clearAll();
