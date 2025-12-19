@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.ser.std.DateSerializer;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -78,6 +79,7 @@ public class JacksonUtils {
         }
         return new byte[0];
     }
+
 
     public static <T> T deserialize(String jsonText, TypeReference<T> type) {
         if (StringUtils.isBlank(jsonText)) {
