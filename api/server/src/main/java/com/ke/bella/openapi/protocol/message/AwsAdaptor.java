@@ -9,9 +9,18 @@ import org.springframework.stereotype.Component;
 public class AwsAdaptor implements MessageDelegatorAdaptor<AwsProperty> {
     @Autowired
     private com.ke.bella.openapi.protocol.completion.AwsAdaptor delegator;
+
+    @Autowired
+    private AnthropicAdaptor anthropicAdaptor;
+
     @Override
     public CompletionAdaptor<AwsProperty> delegator() {
         return delegator;
+    }
+
+    @Override
+    public AnthropicAdaptor anthropicAdaptor() {
+        return anthropicAdaptor;
     }
 
     @Override

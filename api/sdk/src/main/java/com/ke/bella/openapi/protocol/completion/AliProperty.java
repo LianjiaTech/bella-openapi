@@ -11,14 +11,7 @@ import java.util.Map;
 
 @Data
 @NoArgsConstructor
-@AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class AliProperty extends CompletionProperty {
-    AuthorizationProperty auth;
-    String deployName;
 
-    @Override
-    public Map<String, String> description() {
-        return ImmutableSortedMap.of("auth", "鉴权配置", "deployName", "部署名称");
-    }
 }

@@ -17,16 +17,12 @@ import java.util.Map;
 @NoArgsConstructor
 public class ResponsesApiProperty extends CompletionProperty {
 
-    AuthorizationProperty auth;
-    String deployName;
     String apiVersion;
 
 
     @Override
     public Map<String, String> description() {
         Map<String, String> map = super.description();
-        map.put("auth", "鉴权配置");
-        map.put("deployName", "部署名称");
         map.put("apiVersion", "API版本(url中需要拼接时填写)");
         return map;
     }

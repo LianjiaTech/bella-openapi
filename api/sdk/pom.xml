@@ -135,5 +135,10 @@
             <groupId>top.bella</groupId>
             <artifactId>openai-service</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-buffer</artifactId>
+            <version>4.1.100.Final</version>
+        </dependency>
     </dependencies>
 </project>

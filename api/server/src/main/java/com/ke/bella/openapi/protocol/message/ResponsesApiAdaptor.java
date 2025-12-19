@@ -10,9 +10,17 @@ public class ResponsesApiAdaptor implements MessageDelegatorAdaptor<ResponsesApi
     @Autowired
     private com.ke.bella.openapi.protocol.completion.ResponsesApiAdaptor delegator;
 
+    @Autowired
+    private AnthropicAdaptor anthropicAdaptor;
+
     @Override
     public CompletionAdaptor<ResponsesApiProperty> delegator() {
         return delegator;
+    }
+
+    @Override
+    public AnthropicAdaptor anthropicAdaptor() {
+        return anthropicAdaptor;
     }
 
     @Override

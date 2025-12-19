@@ -10,14 +10,22 @@ public class VertexAdaptor implements MessageDelegatorAdaptor<VertexProperty> {
     @Autowired
     private com.ke.bella.openapi.protocol.completion.VertexAdaptor delegator;
 
+    @Autowired
+    private AnthropicAdaptor anthropicAdaptor;
+
     @Override
     public CompletionAdaptor<VertexProperty> delegator() {
         return delegator;
     }
 
     @Override
+    public AnthropicAdaptor anthropicAdaptor() {
+        return anthropicAdaptor;
+    }
+
+    @Override
     public boolean isNativeSupport() {
-        return true;  // Vertex natively supports Messages API format
+        return false;
     }
 
     @Override

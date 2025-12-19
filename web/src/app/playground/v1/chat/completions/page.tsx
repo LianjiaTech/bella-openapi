@@ -76,7 +76,7 @@ interface EnhancedChatMessage extends ChatMessage {
   // 是否包含图像
   hasImage?: boolean;
   // Gemini模型的思维签名
-  thoughtSignature?: string;
+  reasoning_content_signature?: string;
 }
 
 // 多模态内容项类型
@@ -119,7 +119,7 @@ export default function ChatCompletions() {
   const [uploadedVideos, setUploadedVideos] = useState<{id: string, file: File, base64: string, objectUrl?: string}[]>([]);
   const [hasVideoCapability, setHasVideoCapability] = useState(false);
   const [videoFps, setVideoFps] = useState<string>(DEFAULT_VIDEO_FPS);
-  
+
   // 新增状态：用于处理内联数据
   const [isReceivingInline, setIsReceivingInline] = useState(false);
   const [inlineBuffer, setInlineBuffer] = useState('');
@@ -279,12 +279,12 @@ export default function ChatCompletions() {
     const regex = /<inline><data>(.*?)<\/data><mimeType>(.*?)<\/mimeType><\/inline>/g;
     let result = content;
     let match;
-    
+
     while ((match = regex.exec(content)) !== null) {
       const fullMatch = match[0];
       const base64Data = match[1];
       const mimeType = match[2];
-      
+
       if (mimeType.startsWith('image/')) {
         // 创建可显示的图像元素
         const imageElement = `<img src="data:${mimeType};base64,${base64Data}" alt="AI生成的图像" style="max-width: 100%;" />`;
@@ -294,57 +294,57 @@ export default function ChatCompletions() {
         result = result.replace(fullMatch, `[包含${mimeType}类型的数据]`);
       }
     }
-    
+
     return result;
   }
 
   // 提取内联图像数据
   function extractInlineImages(content: string): { text: string, images: Array<{mimeType: string, base64Data: string}> } {
     if (!content) return { text: '', images: [] };
-    
+
     const regex = /<inline><data>(.*?)<\/data><mimeType>(.*?)<\/mimeType><\/inline>/g;
     const images: Array<{mimeType: string, base64Data: string}> = [];
     let textContent = content;
     let match;
-    
+
     // 收集所有图像数据
     while ((match = regex.exec(content)) !== null) {
       const fullMatch = match[0];
       const base64Data = match[1];
       const mimeType = match[2];
-      
+
       if (mimeType.startsWith('image/')) {
         images.push({ mimeType, base64Data });
         // 在文本中用占位符替换图像
         textContent = textContent.replace(fullMatch, '');
       }
     }
-    
+
     return { text: textContent, images };
   }
 
   // 从HTML内容中提取图像
   function extractImagesFromHTML(content: string): { text: string, images: Array<{mimeType: string, base64Data: string}> } {
     if (!content) return { text: '', images: [] };
-    
+
     const regex = /<img\s+src="data:(.*?);base64,(.*?)"\s+alt=".*?"\s+style=".*?".*?\/>/g;
     const images: Array<{mimeType: string, base64Data: string}> = [];
     let textContent = content;
     let match;
-    
+
     // 收集所有图像数据
     while ((match = regex.exec(content)) !== null) {
       const fullMatch = match[0];
       const mimeType = match[1];
       const base64Data = match[2];
-      
+
       if (mimeType.startsWith('image/')) {
         images.push({ mimeType, base64Data });
         // 在文本中用占位符替换图像
         textContent = textContent.replace(fullMatch, '');
       }
     }
-    
+
     return { text: textContent, images };
   }
 
@@ -352,14 +352,14 @@ export default function ChatCompletions() {
   function createMultimodalContent(content: string): { multimodalContent: MultimodalContentItem[], hasImage: boolean } {
     // 首先尝试从原始内联格式提取图像
     let extracted = extractInlineImages(content);
-    
+
     // 如果没有找到图像，尝试从HTML格式提取
     if (extracted.images.length === 0) {
       extracted = extractImagesFromHTML(content);
     }
-    
+
     const multimodalContent: MultimodalContentItem[] = [];
-    
+
     // 添加文本内容（如果有）
     if (extracted.text.trim()) {
       multimodalContent.push({
@@ -367,7 +367,7 @@ export default function ChatCompletions() {
         text: extracted.text.trim()
       });
     }
-    
+
     // 添加图像内容
     for (const image of extracted.images) {
       multimodalContent.push({
@@ -377,10 +377,10 @@ export default function ChatCompletions() {
         }
       });
     }
-    
-    return { 
-      multimodalContent, 
-      hasImage: extracted.images.length > 0 
+
+    return {
+      multimodalContent,
+      hasImage: extracted.images.length > 0
     };
   }
 
@@ -396,22 +396,22 @@ export default function ChatCompletions() {
     let cleanedContent = content;
     // 1. 清理原始内联数据格式
     cleanedContent = cleanedContent.replace(
-      /<inline><data>.*?<\/data><mimeType>(.*?)<\/mimeType><\/inline>/g, 
+      /<inline><data>.*?<\/data><mimeType>(.*?)<\/mimeType><\/inline>/g,
       '[图像内容，MIME类型: $1]'
     );
-    
+
     // 2. 清理已转换为HTML的图像标签
     cleanedContent = cleanedContent.replace(
       /<img\s+src="data:(.*?);base64,.*?"\s+alt=".*?"\s+style=".*?".*?\/>/g,
       '[图像内容，MIME类型: $1]'
     );
-    
+
     // 3. 清理其他可能的base64数据
     cleanedContent = cleanedContent.replace(
       /data:(.*?);base64,[a-zA-Z0-9+/=]+/g,
       '[图像内容，MIME类型: $1]'
     );
-    
+
     return cleanedContent;
   }
 
@@ -499,14 +499,14 @@ export default function ChatCompletions() {
     });
 
     writer.on(ChatCompletionsEventType.DELTA, (data) => {
-      // 处理 thoughtSignature 字段（作为 delta 的独立字段）
-      if (data.thoughtSignature) {
+      // 处理 reasoning_content_signature 字段（作为 delta 的独立字段）
+      if (data.reasoning_content_signature) {
         setMessages(prev => {
           const messages = [...prev];
           if (messages.length > 0 && messages[messages.length - 1].role === 'assistant') {
             messages[messages.length - 1] = {
               ...messages[messages.length - 1],
-              thoughtSignature: data.thoughtSignature
+              reasoning_content_signature: data.reasoning_content_signature
             };
           }
           return messages;
@@ -521,7 +521,7 @@ export default function ChatCompletions() {
       if (processedContent.includes('<inline>') && !processedContent.includes('</inline>')) {
         setIsReceivingInline(true);
         setInlineBuffer(prev => prev + processedContent);
-        
+
         // 更新消息，但不处理内联数据
         setMessages(prev => {
           const messages = [...prev];
@@ -536,12 +536,12 @@ export default function ChatCompletions() {
         });
         return;
       }
-      
+
       // 处理内联数据的中间和结束
       if (isReceivingInline) {
         const updatedBuffer = inlineBuffer + processedContent;
         setInlineBuffer(updatedBuffer);
-        
+
         // 更新消息内容，但暂不处理
         setMessages(prev => {
           const messages = [...prev];
@@ -554,17 +554,17 @@ export default function ChatCompletions() {
           }
           return messages;
         });
-        
+
         // 检查是否接收完成
         if (processedContent.includes('</inline>')) {
           setIsReceivingInline(false);
-          
+
           // 处理完整的内联数据
           const processedInlineContent = processInlineContent(updatedBuffer);
-          
+
           // 创建多模态内容
           const { multimodalContent, hasImage } = createMultimodalContent(updatedBuffer);
-          
+
           // 更新消息，替换原始内联数据为处理后的内容
           setMessages(prev => {
             const messages = [...prev];
@@ -573,7 +573,7 @@ export default function ChatCompletions() {
               const currentContent = typeof lastMsg.content === 'string' ? lastMsg.content : '';
               // 替换内联数据部分
               const newContent = currentContent.replace(updatedBuffer, processedInlineContent);
-              
+
               messages[messages.length - 1] = {
                 ...lastMsg,
                 content: newContent,
@@ -586,18 +586,18 @@ export default function ChatCompletions() {
             }
             return messages;
           });
-          
+
           // 更新流式响应
           setStreamingResponse(prev => {
             return prev.replace(updatedBuffer, processedInlineContent);
           });
-          
+
           // 清空缓冲区
           setInlineBuffer('');
         }
         return;
       }
-      
+
       // 正常处理非内联数据
       setMessages(prev => {
         const messages = [...prev];
@@ -616,7 +616,7 @@ export default function ChatCompletions() {
             current.content = currentContentStr + processedContent;
             // 同时更新apiContent
             current.apiContent = cleanInlineContentForAPI(current.content);
-            
+
             // 检查是否需要更新多模态内容
             if (typeof current.content === 'string' && (current.content.includes('<img') || current.content.includes('data:image/'))) {
               const { multimodalContent, hasImage } = createMultimodalContent(current.content);
@@ -646,13 +646,13 @@ export default function ChatCompletions() {
           cacheReadTokens: prevTokens.cacheReadTokens + (data.usage.cache_read_tokens || 0)
         }));
       }
-      
+
       // 确保所有内联数据都已处理完成
       if (isReceivingInline && inlineBuffer) {
         // 如果还有未处理完的内联数据，尝试处理
         const processedContent = processInlineContent(inlineBuffer);
         const { multimodalContent, hasImage } = createMultimodalContent(inlineBuffer);
-        
+
         setMessages(prev => {
           const messages = [...prev];
           if (messages.length > 0 && messages[messages.length - 1].role === 'assistant') {
@@ -660,7 +660,7 @@ export default function ChatCompletions() {
             const currentContent = typeof lastMsg.content === 'string' ? lastMsg.content : '';
             // 替换内联数据部分
             const newContent = currentContent.replace(inlineBuffer, processedContent);
-            
+
             messages[messages.length - 1] = {
               ...lastMsg,
               content: newContent,
@@ -673,12 +673,12 @@ export default function ChatCompletions() {
           }
           return messages;
         });
-        
+
         // 重置内联数据状态
         setIsReceivingInline(false);
         setInlineBuffer('');
       }
-      
+
       // 最终检查所有消息，确保所有内联内容都已处理
       setMessages(prev => {
         return prev.map(msg => {
@@ -687,7 +687,7 @@ export default function ChatCompletions() {
             if (msg.content.includes('<inline>') && msg.content.includes('</inline>')) {
               const processedContent = processInlineContent(msg.content);
               const { multimodalContent, hasImage } = createMultimodalContent(msg.content);
-              
+
               return {
                 ...msg,
                 content: processedContent,
@@ -697,7 +697,7 @@ export default function ChatCompletions() {
                 hasImage: hasImage
               };
             }
-            
+
             // 检查是否需要更新多模态内容
             if (!msg.multimodalContent && (msg.content.includes('<img') || msg.content.includes('data:image/'))) {
               const { multimodalContent, hasImage } = createMultimodalContent(msg.content);
@@ -869,7 +869,7 @@ export default function ChatCompletions() {
       multimodalContent: userMessageHasImage ? userMessageMultimodalContent : undefined,
       hasImage: userMessageHasImage
     };
-    
+
     // 重置流式响应和思考内容
     setStreamingResponse('');
     // 重置内联数据状态
@@ -891,10 +891,10 @@ export default function ChatCompletions() {
     try {
       // 重要：先获取当前所有消息的副本
       const allCurrentMessages = [...messages];
-      
+
       // 添加用户消息到本地副本（不依赖状态更新）
       allCurrentMessages.push(userMessage);
-      
+
       // 确保首条消息是system prompt
       const systemMessage = allCurrentMessages.find(msg => msg.role === 'system') || {
         role: 'system',
@@ -903,13 +903,13 @@ export default function ChatCompletions() {
 
       // 构建请求消息，支持多模态格式
       const requestMessages = [];
-      
+
       // 添加系统消息
       requestMessages.push({
         role: systemMessage.role,
         content: systemMessage.content
       });
-      
+
       // 处理非系统消息
       for (const msg of allCurrentMessages.filter(msg => msg.role !== 'system')) {
         const messageObj: any = {
@@ -920,18 +920,18 @@ export default function ChatCompletions() {
         // 如果消息包含图像，使用多模态格式
         if (msg.hasImage && msg.multimodalContent) {
           messageObj.content = msg.multimodalContent;
-        } 
+        }
         // 否则，检查是否需要提取图像
         else if (typeof msg.content === 'string' && msg.content && (msg.content.includes('<inline>') ||
                  msg.content.includes('data:image/') ||
                  msg.content.includes('<img'))) {
-          
+
           const { multimodalContent, hasImage } = createMultimodalContent(msg.content);
-          
+
           if (hasImage) {
             // 使用多模态格式
             messageObj.content = multimodalContent;
-            
+
             // 更新消息对象以包含多模态内容
             msg.multimodalContent = multimodalContent;
             msg.hasImage = true;
@@ -939,16 +939,16 @@ export default function ChatCompletions() {
             // 没有图像，使用普通格式
             messageObj.content = msg.apiContent || cleanInlineContentForAPI(msg.content);
           }
-        } 
+        }
         // 普通文本消息
         else {
           messageObj.content = typeof msg.content === 'string' ? msg.content : '';
         }
 
-        // 如果消息存在 thoughtSignature，添加到请求中（适用于所有角色和模型）
-        // thoughtSignature 作为 Message 对象的顶层字段
-        if (msg.thoughtSignature) {
-          messageObj.thoughtSignature = msg.thoughtSignature;
+        // 如果消息存在 reasoning_content_signature，添加到请求中（适用于所有角色和模型）
+        // reasoning_content_signature 作为 Message 对象的顶层字段
+        if (msg.reasoning_content_signature) {
+          messageObj.reasoning_content_signature = msg.reasoning_content_signature;
         }
 
         requestMessages.push(messageObj);
