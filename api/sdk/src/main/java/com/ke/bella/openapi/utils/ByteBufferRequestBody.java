@@ -105,6 +105,10 @@ public class ByteBufferRequestBody extends RequestBody {
             throw new IllegalStateException("ByteBuffer has been released");
         }
 
+        // 重置 position 到 0，支持 OkHttp 重试机制
+        // OkHttp 在网络失败时会重用同一个 RequestBody，多次调用 writeTo()
+        buffer.rewind();
+
         // 创建临时数组用于传输数据
         // 对于图片编辑等大请求（通常 > 1MB），使用 16KB 缓冲区可以减少循环次数
         byte[] tmp = new byte[Math.min(16384, buffer.remaining())];
@@ -115,9 +119,8 @@ public class ByteBufferRequestBody extends RequestBody {
             sink.write(tmp, 0, length);
         }
 
-        // 注意：不再调用 rewind()
-        // OkHttp 不会重试 RequestBody，每次请求都会创建新的 RequestBody
-        // 如果调用 rewind()，会与 finally 块中的 release() 冲突
+        // 注意：读取完成后 position 已到达 limit
+        // 如果 OkHttp 重试，下次 writeTo() 开始时会再次 rewind()
     }
 
     /**
