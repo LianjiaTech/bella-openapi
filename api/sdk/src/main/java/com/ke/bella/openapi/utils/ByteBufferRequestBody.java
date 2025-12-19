@@ -45,11 +45,11 @@ public class ByteBufferRequestBody extends RequestBody {
      *
      * @param mediaType 媒体类型
      * @param obj 要序列化的对象
-     * @param size 序列化后的字节大小
+     * @param size 预估的 DirectByteBuffer 分配大小（建议略大于实际序列化大小）
      * @return ByteBufferRequestBody
      */
     public static ByteBufferRequestBody fromObject(MediaType mediaType, Object obj, int size) {
-        // 使用提供的 size 直接序列化，避免二次估算
+        // 使用预估的 size 分配 DirectByteBuffer
         ByteBuffer buffer = JacksonUtils.toByteBuffer(obj, size);
         return new ByteBufferRequestBody(mediaType, buffer);
     }

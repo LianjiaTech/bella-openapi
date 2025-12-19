@@ -86,7 +86,7 @@ public class JacksonUtils {
      * 适合处理大对象（如图片数据、思维链等）
      *
      * @param obj 要序列化的对象
-     * @param size 序列化后的字节大小
+     * @param size 预估的 DirectByteBuffer 分配大小（建议略大于实际序列化大小）
      * @return DirectByteBuffer，如果序列化失败返回空的 DirectByteBuffer
      */
     public static java.nio.ByteBuffer toByteBuffer(Object obj, int size) {

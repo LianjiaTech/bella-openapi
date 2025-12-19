@@ -44,11 +44,10 @@ public class EndpointContext {
     public static void setRequest(HttpServletRequest request) {
         requestCache.set(request);
 
-        // 从原始请求获取大小并估算
+        // 从原始请求获取大小
         int contentLength = request.getContentLength();
         if (contentLength > 0) {
-            int estimatedSize = (int) (contentLength * 1.1);
-            requestSize.set(estimatedSize);
+            requestSize.set(contentLength);
         }
     }
 
