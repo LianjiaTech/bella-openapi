@@ -80,56 +80,6 @@ public class JacksonUtils {
         return new byte[0];
     }
 
-    /**
-     * 将对象序列化到 ByteBuffer
-     * 使用 Netty 的 ByteBufOutputStream 直接写入 ByteBuffer，避免中间的 byte[] 分配
-     * 适合处理大对象（如图片数据、思维链等）
-     *
-     * @param obj 要序列化的对象
-     * @param size 预估的 DirectByteBuffer 分配大小（建议略大于实际序列化大小）
-     * @return DirectByteBuffer，如果序列化失败返回空的 DirectByteBuffer
-     */
-    public static java.nio.ByteBuffer toByteBuffer(Object obj, int size) {
-        if (obj == null) {
-            return java.nio.ByteBuffer.allocateDirect(0);
-        }
-
-        try {
-            // 分配精确大小的 DirectByteBuffer
-            java.nio.ByteBuffer buffer = java.nio.ByteBuffer.allocateDirect(size);
-
-            // 使用 Netty 的 ByteBuf 包装 NIO ByteBuffer
-            io.netty.buffer.ByteBuf byteBuf = io.netty.buffer.Unpooled.wrappedBuffer(buffer);
-            byteBuf.writerIndex(0); // 重置写入位置
-
-            // 使用 Netty 的 ByteBufOutputStream 进行流式序列化
-            io.netty.buffer.ByteBufOutputStream outputStream = new io.netty.buffer.ByteBufOutputStream(byteBuf);
-            // 显式转换为 OutputStream 以避免 Jackson 的 createGenerator 方法歧义
-            com.fasterxml.jackson.core.JsonGenerator generator = MAPPER.getFactory().createGenerator((java.io.OutputStream) outputStream);
-            MAPPER.writeValue(generator, obj);
-            generator.close();
-
-            // 调整 NIO ByteBuffer 的 position 和 limit
-            buffer.position(0);
-            buffer.limit(byteBuf.writerIndex());
-
-            return buffer;
-
-        } catch (java.io.IOException e) {
-            LOGGER.error("流式序列化失败，回退到 byte[] 方式: " + e.getMessage(), e);
-            // 回退到原始方式
-            try {
-                byte[] bytes = MAPPER.writeValueAsBytes(obj);
-                java.nio.ByteBuffer buffer = java.nio.ByteBuffer.allocateDirect(bytes.length);
-                buffer.put(bytes);
-                buffer.flip();
-                return buffer;
-            } catch (JsonProcessingException ex) {
-                LOGGER.error("序列化完全失败: " + ex.getMessage(), ex);
-                return java.nio.ByteBuffer.allocateDirect(0);
-            }
-        }
-    }
 
     public static <T> T deserialize(String jsonText, TypeReference<T> type) {
         if (StringUtils.isBlank(jsonText)) {
