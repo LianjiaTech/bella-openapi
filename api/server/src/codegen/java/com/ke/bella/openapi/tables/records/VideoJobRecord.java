@@ -120,241 +120,269 @@ public class VideoJobRecord extends UpdatableRecordImpl<VideoJobRecord> implemen
     }
 
     /**
+     * Setter for <code>video_job.input_reference_file_id</code>. 输入参考文件ID（用户上传的参考视频/图片）
+     */
+    public void setInputReferenceFileId(String value) {
+        set(7, value);
+    }
+
+    /**
+     * Getter for <code>video_job.input_reference_file_id</code>. 输入参考文件ID（用户上传的参考视频/图片）
+     */
+    public String getInputReferenceFileId() {
+        return (String) get(7);
+    }
+
+    /**
      * Setter for <code>video_job.seconds</code>. 时长
      */
     public void setSeconds(Long value) {
-        set(7, value);
+        set(8, value);
     }
 
     /**
      * Getter for <code>video_job.seconds</code>. 时长
      */
     public Long getSeconds() {
-        return (Long) get(7);
+        return (Long) get(8);
     }
 
     /**
      * Setter for <code>video_job.size</code>. 视频尺寸
      */
     public void setSize(String value) {
-        set(8, value);
+        set(9, value);
     }
 
     /**
      * Getter for <code>video_job.size</code>. 视频尺寸
      */
     public String getSize() {
-        return (String) get(8);
+        return (String) get(9);
     }
 
     /**
      * Setter for <code>video_job.remixed_from_video_id</code>. 源视频ID（remix任务）
      */
     public void setRemixedFromVideoId(String value) {
-        set(9, value);
+        set(10, value);
     }
 
     /**
      * Getter for <code>video_job.remixed_from_video_id</code>. 源视频ID（remix任务）
      */
     public String getRemixedFromVideoId() {
-        return (String) get(9);
+        return (String) get(10);
     }
 
     /**
      * Setter for <code>video_job.completed_at</code>. 视频任务完成时间
      */
     public void setCompletedAt(LocalDateTime value) {
-        set(10, value);
+        set(11, value);
     }
 
     /**
      * Getter for <code>video_job.completed_at</code>. 视频任务完成时间
      */
     public LocalDateTime getCompletedAt() {
-        return (LocalDateTime) get(10);
+        return (LocalDateTime) get(11);
     }
 
     /**
      * Setter for <code>video_job.expires_at</code>. 视频任务下载过期时间
      */
     public void setExpiresAt(LocalDateTime value) {
-        set(11, value);
+        set(12, value);
     }
 
     /**
      * Getter for <code>video_job.expires_at</code>. 视频任务下载过期时间
      */
     public LocalDateTime getExpiresAt() {
-        return (LocalDateTime) get(11);
+        return (LocalDateTime) get(12);
     }
 
     /**
-     * Setter for <code>video_job.status</code>. 任务状态(queued/processing/completed/failed/cancelled)
+     * Setter for <code>video_job.status</code>. 任务状态(queued/submitting/processing/completed/failed/cancelled)
      */
     public void setStatus(String value) {
-        set(12, value);
+        set(13, value);
     }
 
     /**
-     * Getter for <code>video_job.status</code>. 任务状态(queued/processing/completed/failed/cancelled)
+     * Getter for <code>video_job.status</code>. 任务状态(queued/submitting/processing/completed/failed/cancelled)
      */
     public String getStatus() {
-        return (String) get(12);
+        return (String) get(13);
+    }
+
+    /**
+     * Setter for <code>video_job.bound_file_id</code>. 绑定的文件ID（用于file api转储检索）
+     */
+    public void setBoundFileId(String value) {
+        set(14, value);
+    }
+
+    /**
+     * Getter for <code>video_job.bound_file_id</code>. 绑定的文件ID（用于file api转储检索）
+     */
+    public String getBoundFileId() {
+        return (String) get(14);
     }
 
     /**
      * Setter for <code>video_job.callback_url</code>. 回调URL
      */
     public void setCallbackUrl(String value) {
-        set(13, value);
+        set(15, value);
     }
 
     /**
      * Getter for <code>video_job.callback_url</code>. 回调URL
      */
     public String getCallbackUrl() {
-        return (String) get(13);
+        return (String) get(15);
     }
 
     /**
      * Setter for <code>video_job.callback_status</code>. 回调状态(-1：回调失败；0：未回调；1：回调成功)
      */
     public void setCallbackStatus(Byte value) {
-        set(14, value);
+        set(16, value);
     }
 
     /**
      * Getter for <code>video_job.callback_status</code>. 回调状态(-1：回调失败；0：未回调；1：回调成功)
      */
     public Byte getCallbackStatus() {
-        return (Byte) get(14);
+        return (Byte) get(16);
     }
 
     /**
      * Setter for <code>video_job.channel_code</code>. 渠道编码
      */
     public void setChannelCode(String value) {
-        set(15, value);
+        set(17, value);
     }
 
     /**
      * Getter for <code>video_job.channel_code</code>. 渠道编码
      */
     public String getChannelCode() {
-        return (String) get(15);
+        return (String) get(17);
     }
 
     /**
      * Setter for <code>video_job.channel_video_id</code>. 渠道视频ID
      */
     public void setChannelVideoId(String value) {
-        set(16, value);
+        set(18, value);
     }
 
     /**
      * Getter for <code>video_job.channel_video_id</code>. 渠道视频ID
      */
     public String getChannelVideoId() {
-        return (String) get(16);
+        return (String) get(18);
     }
 
     /**
      * Setter for <code>video_job.error</code>. 错误详情（JSON格式，包含code/message等）
      */
     public void setError(String value) {
-        set(17, value);
+        set(19, value);
     }
 
     /**
      * Getter for <code>video_job.error</code>. 错误详情（JSON格式，包含code/message等）
      */
     public String getError() {
-        return (String) get(17);
+        return (String) get(19);
     }
 
     /**
      * Setter for <code>video_job.cuid</code>. 创建人ID
      */
     public void setCuid(Long value) {
-        set(18, value);
+        set(20, value);
     }
 
     /**
      * Getter for <code>video_job.cuid</code>. 创建人ID
      */
     public Long getCuid() {
-        return (Long) get(18);
+        return (Long) get(20);
     }
 
     /**
      * Setter for <code>video_job.cu_name</code>. 创建人姓名
      */
     public void setCuName(String value) {
-        set(19, value);
+        set(21, value);
     }
 
     /**
      * Getter for <code>video_job.cu_name</code>. 创建人姓名
      */
     public String getCuName() {
-        return (String) get(19);
+        return (String) get(21);
     }
 
     /**
      * Setter for <code>video_job.muid</code>. 修改人ID
      */
     public void setMuid(Long value) {
-        set(20, value);
+        set(22, value);
     }
 
     /**
      * Getter for <code>video_job.muid</code>. 修改人ID
      */
     public Long getMuid() {
-        return (Long) get(20);
+        return (Long) get(22);
     }
 
     /**
      * Setter for <code>video_job.mu_name</code>. 修改人姓名
      */
     public void setMuName(String value) {
-        set(21, value);
+        set(23, value);
     }
 
     /**
      * Getter for <code>video_job.mu_name</code>. 修改人姓名
      */
     public String getMuName() {
-        return (String) get(21);
+        return (String) get(23);
     }
 
     /**
      * Setter for <code>video_job.ctime</code>.
      */
     public void setCtime(LocalDateTime value) {
-        set(22, value);
+        set(24, value);
     }
 
     /**
      * Getter for <code>video_job.ctime</code>.
      */
     public LocalDateTime getCtime() {
-        return (LocalDateTime) get(22);
+        return (LocalDateTime) get(24);
     }
 
     /**
      * Setter for <code>video_job.mtime</code>.
      */
     public void setMtime(LocalDateTime value) {
-        set(23, value);
+        set(25, value);
     }
 
     /**
      * Getter for <code>video_job.mtime</code>.
      */
     public LocalDateTime getMtime() {
-        return (LocalDateTime) get(23);
+        return (LocalDateTime) get(25);
     }
 
     // -------------------------------------------------------------------------
@@ -380,7 +408,7 @@ public class VideoJobRecord extends UpdatableRecordImpl<VideoJobRecord> implemen
     /**
      * Create a detached, initialised VideoJobRecord
      */
-    public VideoJobRecord(Long id, String videoId, String spaceCode, String akCode, String model, Integer progress, String prompt, Long seconds, String size, String remixedFromVideoId, LocalDateTime completedAt, LocalDateTime expiresAt, String status, String callbackUrl, Byte callbackStatus, String channelCode, String channelVideoId, String error, Long cuid, String cuName, Long muid, String muName, LocalDateTime ctime, LocalDateTime mtime) {
+    public VideoJobRecord(Long id, String videoId, String spaceCode, String akCode, String model, Integer progress, String prompt, String inputReferenceFileId, Long seconds, String size, String remixedFromVideoId, LocalDateTime completedAt, LocalDateTime expiresAt, String status, String boundFileId, String callbackUrl, Byte callbackStatus, String channelCode, String channelVideoId, String error, Long cuid, String cuName, Long muid, String muName, LocalDateTime ctime, LocalDateTime mtime) {
         super(VideoJob.VIDEO_JOB);
 
         setId(id);
@@ -390,12 +418,14 @@ public class VideoJobRecord extends UpdatableRecordImpl<VideoJobRecord> implemen
         setModel(model);
         setProgress(progress);
         setPrompt(prompt);
+        setInputReferenceFileId(inputReferenceFileId);
         setSeconds(seconds);
         setSize(size);
         setRemixedFromVideoId(remixedFromVideoId);
         setCompletedAt(completedAt);
         setExpiresAt(expiresAt);
         setStatus(status);
+        setBoundFileId(boundFileId);
         setCallbackUrl(callbackUrl);
         setCallbackStatus(callbackStatus);
         setChannelCode(channelCode);
