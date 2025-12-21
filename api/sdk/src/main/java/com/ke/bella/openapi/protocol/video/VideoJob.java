@@ -1,10 +1,13 @@
 package com.ke.bella.openapi.protocol.video;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ke.bella.openapi.protocol.OpenapiResponse;
+
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
@@ -16,9 +19,13 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 public class VideoJob extends OpenapiResponse {
 
+    @JsonIgnore
+    public static final String ENDPOINT = "/v1/videos";
+
     private String id;
 
-    private String object;
+    @Builder.Default
+    private String object = "video";
 
     private String model;
 
@@ -43,4 +50,8 @@ public class VideoJob extends OpenapiResponse {
 
     @JsonProperty("remixed_from_video_id")
     private String remixed_from_video_id;
+
+    public enum Status {
+        queued, submitting, processing, completed, failed, cancelled, deleted
+    }
 }
