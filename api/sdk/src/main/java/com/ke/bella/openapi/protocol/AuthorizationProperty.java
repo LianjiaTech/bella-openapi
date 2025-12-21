@@ -21,7 +21,6 @@ import java.util.concurrent.ConcurrentHashMap;
 public class AuthorizationProperty implements IProtocolProperty {
 
     private static Map<String, GoogleCredentials> credentialsMap = new ConcurrentHashMap<>();
-    private static Map<String, Object> credentialsLockMap = new ConcurrentHashMap<>();
 
     private static final String GOOGLE_CLOUD_PLATFORM_SCOPE =
             "https://www.googleapis.com/auth/cloud-platform";
@@ -49,18 +48,13 @@ public class AuthorizationProperty implements IProtocolProperty {
 
     public String getApiKey() {
         if(type == AuthType.GOOGLE_AUTH) {
-            String secret = getSecret();
             try {
-                GoogleCredentials credentials = credentialsMap.computeIfAbsent(secret, k -> getGoogleCredentials());
-                Object lock = credentialsLockMap.computeIfAbsent(secret, k -> new Object());
-                synchronized (lock) {
-                    credentials.refreshIfExpired();
-                    AccessToken accessToken = credentials.getAccessToken();
-                    return accessToken.getTokenValue();
-                }
+                GoogleCredentials credentials = credentialsMap.computeIfAbsent(getSecret(), k -> getGoogleCredentials());
+                credentials.refreshIfExpired();
+                AccessToken accessToken = credentials.getAccessToken();
+                return accessToken.getTokenValue();
             } catch (IOException e) {
-                String secretPrefix = secret.substring(0, Math.min(20, secret.length()));
-                throw new RuntimeException("google auth error, secret prefix: " + secretPrefix + ", error: " + e.getMessage(), e);
+                throw new RuntimeException("google auth error", e);
             }
         } else {
             return apiKey;
