@@ -12,6 +12,7 @@ import com.ke.bella.openapi.tables.Category;
 import com.ke.bella.openapi.tables.Channel;
 import com.ke.bella.openapi.tables.Endpoint;
 import com.ke.bella.openapi.tables.EndpointCategoryRel;
+import com.ke.bella.openapi.tables.Instance;
 import com.ke.bella.openapi.tables.Model;
 import com.ke.bella.openapi.tables.ModelAuthorizerRel;
 import com.ke.bella.openapi.tables.ModelEndpointRel;
@@ -67,6 +68,11 @@ public class Tables {
      * 能力点类目
      */
     public static final EndpointCategoryRel ENDPOINT_CATEGORY_REL = EndpointCategoryRel.ENDPOINT_CATEGORY_REL;
+
+    /**
+     * The table <code>instance</code>.
+     */
+    public static final Instance INSTANCE = Instance.INSTANCE;
 
     /**
      * 模型
