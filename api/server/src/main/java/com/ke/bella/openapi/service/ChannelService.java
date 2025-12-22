@@ -98,10 +98,10 @@ public class ChannelService {
         if (StringUtils.isEmpty(op.getVisibility())) {
             op.setVisibility(PUBLIC);
         }
-        
+
         // 验证队列配置
         validateQueueConfig(op.getQueueMode(), op.getQueueName());
-        
+
         //todo: 根据协议检查channelInfo
         ChannelDB channelDB = channelRepo.insert(op);
         updateCache(channelDB.getEntityType(), channelDB.getEntityCode());
@@ -146,6 +146,7 @@ public class ChannelService {
                 .build();
     }
 
+    @Cached(name = "channel:single:", key = "#channelCode", expire = 60, cacheType = CacheType.BOTH)
     public ChannelDB getOne(String channelCode) {
         return channelRepo.queryByUniqueKey(channelCode);
     }
