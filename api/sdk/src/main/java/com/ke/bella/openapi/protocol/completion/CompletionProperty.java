@@ -17,6 +17,7 @@ public class CompletionProperty implements IProtocolProperty {
     boolean functionCallSimulate = false;
     Map<String, String> extraHeaders;
     String queueName;
+    String safetyCheckMode = SafetyCheckMode.async.name();
     String anthropicVersion;
     String messageEndpointUrl;
     Integer defaultMaxToken;

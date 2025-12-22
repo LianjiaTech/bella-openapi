@@ -2,8 +2,6 @@ package com.ke.bella.openapi.endpoints;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -11,7 +9,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -40,8 +37,6 @@ import com.ke.bella.openapi.protocol.completion.callback.StreamCallbackProvider;
 import com.ke.bella.openapi.protocol.limiter.LimiterManager;
 import com.ke.bella.openapi.protocol.log.EndpointLogger;
 import com.ke.bella.openapi.safety.ISafetyCheckService;
-import com.ke.bella.openapi.safety.SafetyCheckMode;
-import com.ke.bella.openapi.safety.SafetyCheckRequest;
 import com.ke.bella.openapi.service.EndpointDataService;
 import com.ke.bella.openapi.tables.pojos.ChannelDB;
 import com.ke.bella.openapi.utils.JacksonUtils;
@@ -66,9 +61,6 @@ public class ChatController {
     private EndpointLogger logger;
     @Autowired
     private ISafetyCheckService.IChatSafetyCheckService safetyCheckService;
-    @Autowired
-    @Qualifier("safetyCheckExecutor")
-    private Executor safetyCheckExecutor;
     @Autowired
     private JobQueueProperties jobQueueProperties;
     @Autowired
@@ -144,14 +136,11 @@ public class ChatController {
             limiterManager.incrementConcurrentCount(EndpointContext.getProcessData().getAkCode(), model);
         }
 
-        // 根据Channel配置的safetyCheckMode执行安全检测
-        Object requestRiskData = executeSafetyCheckByMode(
-                property.getSafetyCheckMode(),
-                SafetyCheckRequest.Chat.convertFrom(request, EndpointContext.getProcessData(), EndpointContext.getApikey()),
-                isMock
-        );
-        EndpointContext.getProcessData().setRequestRiskData(requestRiskData);
+        // 执行请求输入安全检测
         EndpointProcessData processData = EndpointContext.getProcessData();
+        Object requestRiskData = safetyCheckService.checkRequestInput(
+                request, processData, EndpointContext.getApikey(), isMock
+        );
 
         CompletionAdaptor adaptor = ctx.adaptor;
         if(isMock) {
@@ -161,54 +150,19 @@ public class ChatController {
 
         if(request.isStream()) {
             SseEmitter sse = SseHelper.createSse(1000L * 60 * 30, processData.getRequestId());
-            adaptor.streamCompletion(request, ctx.url, property, StreamCallbackProvider.provide(sse, processData, EndpointContext.getApikey(), logger, safetyCheckService, property, safetyCheckExecutor));
+            adaptor.streamCompletion(request, ctx.url, property, StreamCallbackProvider.provide(sse, processData, EndpointContext.getApikey(), logger, safetyCheckService, property));
             return sse;
         }
 
         CompletionResponse response = adaptor.completion(request, ctx.url, property);
-        Object responseRiskData = executeSafetyCheckByMode(
-                property.getSafetyCheckMode(),
-                SafetyCheckRequest.Chat.convertFrom(response, processData, EndpointContext.getApikey()),
-                isMock
+
+        // 执行响应输出安全检测
+        Object responseRiskData = safetyCheckService.checkResponseOutput(
+                response, processData, EndpointContext.getApikey(), isMock
         );
         response.setSensitives(responseRiskData);
         response.setRequestRiskData(requestRiskData);
         return response;
-    }
-
-    /**
-     * 根据安全检测模式执行检测
-     * @param mode 安全检测模式：skip, async, sync
-     * @param request 安全检测请求
-     * @param isMock 是否Mock模式
-     * @return 检测结果（异步和跳过模式返回null）
-     */
-    private Object executeSafetyCheckByMode(String mode, SafetyCheckRequest.Chat request, boolean isMock) {
-        SafetyCheckMode checkMode = SafetyCheckMode.fromString(mode);
-
-        if (checkMode == SafetyCheckMode.async) {
-            // 异步模式：在独立线程池中执行检测，不等待结果，不阻塞主流程
-            CompletableFuture.runAsync(() -> {
-                try {
-                    safetyCheckService.safetyCheck(request, isMock);
-                } catch (ChannelException.SafetyCheckException e) {
-                    // 异步模式下检测到敏感数据：仅记录日志，不阻断主流程
-                    log.warn("异步安全检测发现敏感数据: requestId={}, stage={}, sensitiveData={}",
-                            request.getRequestId(), request.getType(), e.getSensitive());
-                } catch (Exception e) {
-                    // 其他异常（如网络错误）：仅记录日志，不阻断主流程
-                    log.warn("异步安全检测异常: requestId={}, stage={}, error={}",
-                            request.getRequestId(), request.getType(), e.getMessage(), e);
-                }
-            }, safetyCheckExecutor);
-            return null;
-        } else if (checkMode == SafetyCheckMode.skip) {
-            // 跳过模式：完全不检测
-            return null;
-        } else { // SafetyCheckMode.sync
-            // 同步模式：等待检测结果
-            return safetyCheckService.safetyCheck(request, isMock);
-        }
     }
 
     private void fillMockProperty(CompletionProperty property) {
@@ -264,6 +218,8 @@ public class ChatController {
         CompletionProperty property = (CompletionProperty) JacksonUtils.deserialize(channelInfo, adaptor.getPropertyClass());
 
         EndpointContext.setEncodingType(property.getEncodingType());
+        // 自动设置 safetyCheckMode 到 processData
+        processData.setSafetyCheckMode(property.getSafetyCheckMode());
 
         ChannelContext ctx = new ChannelContext();
         ctx.url = url;

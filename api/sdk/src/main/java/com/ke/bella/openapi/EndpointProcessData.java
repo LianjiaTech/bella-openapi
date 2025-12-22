@@ -85,6 +85,7 @@ public class EndpointProcessData {
     private Integer maxWaitSec;
     private boolean nativeSend;
     private boolean batch;
+    private String safetyCheckMode;
 
     public void setApikeyInfo(ApikeyInfo ak) {
         this.setApikey(ak.getApikey());
