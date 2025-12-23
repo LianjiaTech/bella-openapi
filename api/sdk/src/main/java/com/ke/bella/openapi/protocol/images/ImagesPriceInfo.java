@@ -12,6 +12,7 @@ import java.util.Map;
 
 @Data
 public class ImagesPriceInfo implements IPriceInfo, Serializable {
+    private static final long serialVersionUID = 1L;
     ImagesPriceInfoDetailsList details;
     private double batchDiscount = 1.0;
     @Override
@@ -28,6 +29,7 @@ public class ImagesPriceInfo implements IPriceInfo, Serializable {
 
 
     public static class ImagesPriceInfoDetailsList extends ArrayList<ImagesPriceInfoDetails> implements ComponentList<ImagesPriceInfoDetails> {
+        private static final long serialVersionUID = 1L;
         @Override
         public String toString() {
             if(size() == 0) {
@@ -51,6 +53,7 @@ public class ImagesPriceInfo implements IPriceInfo, Serializable {
 
     @Data
     public static class ImagesPriceInfoDetails implements IPriceInfo, Serializable {
+        private static final long serialVersionUID = 1L;
         private String size;
         private BigDecimal ldPricePerImage;
         private BigDecimal mdPricePerImage;
