@@ -7,6 +7,8 @@ export const config = {
   // API 基础配置
   api: {
     baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || '',
+    // 默认 API 端点（用于代码示例展示）
+    defaultEndpoint: process.env.NEXT_PUBLIC_DEFAULT_API_ENDPOINT || '//localhost/v1',
   },
   
   // 应用配置
