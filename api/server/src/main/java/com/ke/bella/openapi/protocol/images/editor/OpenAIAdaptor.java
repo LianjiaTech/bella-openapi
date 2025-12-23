@@ -92,10 +92,10 @@ public class OpenAIAdaptor implements ImagesEditorAdaptor<ImagesEditorProperty> 
             multipartBuilder.addFormDataPart("prompt", request.getPrompt());
         }
 
-        // 设置模型（如果未指定则使用默认模型）
-        String model = request.getModel();
+        // 设置模型（property.getDeployName() 优先，否则使用 request.getModel()）
+        String model = property.getDeployName();
         if (model == null || model.isEmpty()) {
-            model = property.getDeployName();
+            model = request.getModel();
         }
         multipartBuilder.addFormDataPart("model", model);
 

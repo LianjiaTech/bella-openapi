@@ -50,7 +50,7 @@ public class ImagesPriceInfo implements IPriceInfo, Serializable {
 
 
     @Data
-    public static class ImagesPriceInfoDetails implements IPriceInfo {
+    public static class ImagesPriceInfoDetails implements IPriceInfo, Serializable {
         private String size;
         private BigDecimal ldPricePerImage;
         private BigDecimal mdPricePerImage;
