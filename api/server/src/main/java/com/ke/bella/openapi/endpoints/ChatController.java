@@ -6,6 +6,7 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.ke.bella.queue.QueueClient;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,8 +16,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import com.ke.bella.job.queue.JobQueueClient;
-import com.ke.bella.job.queue.config.JobQueueProperties;
 import com.ke.bella.openapi.BellaContext;
 import com.ke.bella.openapi.EndpointContext;
 import com.ke.bella.openapi.EndpointProcessData;
@@ -64,11 +63,11 @@ public class ChatController {
     @Autowired
     private ISafetyCheckService.IChatSafetyCheckService safetyCheckService;
     @Autowired
-    private JobQueueProperties jobQueueProperties;
-    @Autowired
     private EndpointDataService endpointDataService;
     @Value("${bella.openapi.max-models-per-request:3}")
     private Integer maxModelsPerRequest;
+    @Autowired
+    private QueueClient queueClient;
 
     @PostMapping("/completions")
     public Object completion(HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException {
@@ -177,9 +176,7 @@ public class ChatController {
     private CompletionAdaptor<?> decorateAdaptor(CompletionAdaptor<?> adaptor, CompletionProperty property, EndpointProcessData processData) {
         if(StringUtils.isNotBlank(property.getQueueName())) {
             if(adaptor instanceof CompletionAdaptorDelegator) {
-                JobQueueClient jobQueueClient = JobQueueClient.getInstance(jobQueueProperties.getUrl());
-                adaptor = new QueueAdaptor<>((CompletionAdaptorDelegator<?>)adaptor, jobQueueClient, processData,
-                        jobQueueProperties.getDefaultTimeout());
+                adaptor = new QueueAdaptor<>((CompletionAdaptorDelegator<?>) adaptor, queueClient, processData);
             } else {
                 throw new IllegalStateException(adaptor.getClass().getSimpleName() + "不支持请求代理");
             }

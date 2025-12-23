@@ -1,38 +1,52 @@
 package com.ke.bella.openapi.protocol.completion;
 
-import com.ke.bella.job.queue.JobQueueClient;
 import com.ke.bella.openapi.EndpointProcessData;
 import com.ke.bella.openapi.protocol.Callbacks;
+import com.ke.bella.openapi.utils.JacksonUtils;
+import com.ke.bella.queue.QueueClient;
+import com.theokanning.openai.queue.Put;
 
 public class QueueAdaptor<T extends CompletionProperty> implements CompletionAdaptor<T> {
     private final CompletionAdaptorDelegator<T> delegator;
-    private final JobQueueClient jobQueueClient;
     private final EndpointProcessData processData;
-    private final Integer defaultTimeout;
+    private final QueueClient queueClient;
 
-    public QueueAdaptor(CompletionAdaptorDelegator<T> delegator, JobQueueClient jobQueueClient, EndpointProcessData processData, Integer defaultTimeout) {
+    public QueueAdaptor(CompletionAdaptorDelegator<T> delegator, QueueClient queueClient, EndpointProcessData processData) {
         this.delegator = delegator;
-        this.jobQueueClient = jobQueueClient;
+        this.queueClient = queueClient;
         this.processData = processData;
-        this.defaultTimeout = defaultTimeout;
     }
 
     Callbacks.HttpDelegator httpDelegator() {
-       return new Callbacks.HttpDelegator() {
+        return new Callbacks.HttpDelegator() {
             @Override
             public <T> T request(Object req, Class<T> clazz, Callbacks.ChannelErrorCallback<T> errorCallback) {
-                return jobQueueClient.blockingPut(jobQueueClient.buildTaskPutRequest(req, getTimeout(), processData.getEndpoint(), processData.getModel()), processData.getApikey(), clazz, errorCallback);
+                Put put = Put.builder()
+                        .data(JacksonUtils.toMap(req))
+                        .endpoint(processData.getEndpoint())
+                        .timeout(processData.getMaxWaitSec())
+                        .build();
+
+                return queueClient.blockingPut(put, processData.getApikey(), clazz, errorCallback);
             }
         };
     }
 
     Callbacks.StreamDelegator streamDelegator() {
-        return (req, listener) -> jobQueueClient.streamPut(jobQueueClient.buildTaskPutRequest(req, getTimeout(), processData.getEndpoint(), processData.getModel()), processData.getApikey(), listener);
+        return (req, listener) -> {
+            Put put = Put.builder()
+                    .data(JacksonUtils.toMap(req))
+                    .endpoint(processData.getEndpoint())
+                    .timeout(processData.getMaxWaitSec())
+                    .build();
+
+            queueClient.streamingPut(put, processData.getApikey(), listener);
+        };
     }
 
     @Override
     public CompletionResponse completion(CompletionRequest request, String url, T property) {
-       return delegator.completion(request, url, property, httpDelegator());
+        return delegator.completion(request, url, property, httpDelegator());
     }
 
     @Override
@@ -50,7 +64,4 @@ public class QueueAdaptor<T extends CompletionProperty> implements CompletionAda
         return delegator.getPropertyClass();
     }
 
-    private int getTimeout() {
-        return processData.getMaxWaitSec() != null ? processData.getMaxWaitSec() : defaultTimeout;
-    }
 }
