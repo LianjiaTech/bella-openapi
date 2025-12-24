@@ -1,9 +1,8 @@
 package com.ke.bella.openapi.safety;
 
+import com.ke.bella.openapi.TaskExecutor;
 import com.ke.bella.openapi.common.exception.ChannelException;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.concurrent.CompletableFuture;
 
 /**
  * 安全检查代理实现
@@ -73,9 +72,10 @@ public class SafetyCheckDelegator<T extends SafetyCheckRequest>
         try {
             Object result = delegate.safetyCheck(request, isMock);
 
-            // 如果配置了结果回调，调用回调处理结果（如SSE发送）
-            if (result != null && context.getResultCallback() != null) {
-                context.getResultCallback().accept(result);
+            // 同步模式：也写入 processData（统一数据源）
+            if (result != null && context.getProcessData() != null
+                && "output".equals(context.getStage())) {
+                context.getProcessData().setResponseRiskData(result);
             }
 
             return result;
@@ -87,26 +87,41 @@ public class SafetyCheckDelegator<T extends SafetyCheckRequest>
 
     /**
      * 执行异步安全检查
-     * 在独立线程池中执行检测，不等待结果，不阻断主流程
-     * 检测到敏感数据或异常时仅记录日志
+     * 在 TaskExecutor 线程池中执行检测，不等待结果，不阻断主流程
+     * 检测到敏感数据或异常时仅记录日志，并将结果写入 processData
      *
      * @param request 安全检查请求
      * @param isMock 是否Mock模式
      */
     private void executeAsyncCheck(T request, boolean isMock) {
-        CompletableFuture.runAsync(() -> {
+        TaskExecutor.submit(() -> {
             try {
-                delegate.safetyCheck(request, isMock);
+                Object result = delegate.safetyCheck(request, isMock);
+
+                // 异步模式：将结果写入 processData
+                if (result != null && context.getProcessData() != null
+                    && "output".equals(context.getStage())) {
+                    context.getProcessData().setResponseRiskData(result);
+                    log.debug("异步安全检测完成: requestId={}, stage={}",
+                             context.getRequestId(), context.getStage());
+                }
+
             } catch (ChannelException.SafetyCheckException e) {
                 // 异步模式：检测到敏感数据，仅记录日志，不阻断主流程
                 // 统一从 context 中获取日志所需信息
                 log.warn("异步安全检测发现敏感数据: requestId={}, stage={}, sensitiveData={}",
                         context.getRequestId(), context.getStage(), e.getSensitive());
+
+                // 将异常中的敏感数据也存储到 processData
+                if (context.getProcessData() != null && "output".equals(context.getStage())) {
+                    context.getProcessData().setResponseRiskData(e.getSensitive());
+                }
+
             } catch (Exception e) {
                 // 异步模式：其他异常（如网络错误），仅记录日志，不阻断主流程
                 log.warn("异步安全检测异常: requestId={}, stage={}, error={}",
                         context.getRequestId(), context.getStage(), e.getMessage(), e);
             }
-        }, context.getExecutor());
+        });
     }
 }

@@ -65,6 +65,8 @@ public class StreamCompletionCallback implements Callbacks.StreamCompletionCallb
         if(firstPackageTime == null) {
             firstPackageTime = DateTimeUtils.getCurrentMills();
         }
+
+        // 附加请求输入风险数据（首次发送）
         if(requestRiskData != null) {
             msg.setRequestRiskData(requestRiskData);
             requestRiskData = null;
@@ -72,11 +74,32 @@ public class StreamCompletionCallback implements Callbacks.StreamCompletionCallb
         send(msg);
         updateBuffer(msg.getStandardFormat() == null ? msg : msg.getStandardFormat());
         safetyCheck(false);
+
+        // 检查是否有安全检测结果（同步模式会立即有结果，异步模式可能有历史结果）
+        Object safetyResult = processData.getResponseRiskData();
+        if (safetyResult != null) {
+            StreamCompletionResponse safetyResponse = new StreamCompletionResponse();
+            safetyResponse.setSensitives(safetyResult);
+            safetyResponse.setCreated(DateTimeUtils.getCurrentSeconds());
+            send(safetyResponse);
+            processData.setResponseRiskData(null);  // 清空
+        }
     }
 
     @Override
     public void done() {
-        safetyCheck(true);
+        safetyCheck(true);  // 最后一次安全检查
+
+        // 检查是否还有未发送的异步结果
+        Object asyncResult = processData.getResponseRiskData();
+        if (asyncResult != null) {
+            StreamCompletionResponse response = new StreamCompletionResponse();
+            response.setSensitives(asyncResult);
+            response.setCreated(DateTimeUtils.getCurrentSeconds());
+            send(response);
+            processData.setResponseRiskData(null);  // 清空
+        }
+
         send("[DONE]");
     }
 
@@ -180,21 +203,12 @@ public class StreamCompletionCallback implements Callbacks.StreamCompletionCallb
         }
         responseBuffer.setChoices(Collections.singletonList(choice));
         if(safetyService != null) {
-            // 执行流式响应安全检测
+            // 执行流式响应安全检测，结果写入 processData
             safetyService.checkStreamOutput(
                     responseBuffer,
                     processData,
                     apikeyInfo,
-                    processData.isMock(),
-                    result -> {
-                        // 同步模式下通过 SSE 发送结果
-                        if (result != null) {
-                            StreamCompletionResponse response = new StreamCompletionResponse();
-                            response.setSensitives(result);
-                            response.setCreated(DateTimeUtils.getCurrentSeconds());
-                            send(response);
-                        }
-                    }
+                    processData.isMock()
             );
         }
         dirtyChoice = false;

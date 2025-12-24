@@ -22,19 +22,7 @@ package com.ke.bella.openapi.safety;
 public interface ISafetyCheckDelegatorService<T extends SafetyCheckRequest> extends ISafetyCheckService<T> {
 
     /**
-     * 执行安全检查
-     * 根据 context 中的 mode 决定执行策略（同步/异步/跳过）
-     *
-     * @param request 安全检查请求
-     * @param isMock 是否Mock模式
-     * @return 检查结果（异步模式和跳过模式返回null）
-     */
-    @Override
-    Object safetyCheck(T request, boolean isMock);
-
-    /**
      * 工厂方法：创建代理服务实例
-     * 从 delegate service 中自动获取 executor
      *
      * @param delegate 实际的安全检查服务（单例）
      * @param context 安全检查上下文
@@ -44,23 +32,6 @@ public interface ISafetyCheckDelegatorService<T extends SafetyCheckRequest> exte
     static <T extends SafetyCheckRequest> ISafetyCheckDelegatorService<T> create(
             ISafetyCheckService<T> delegate,
             SafetyCheckContext context) {
-        // 如果 context 中没有设置 executor，从 service 中获取
-        if (context.getExecutor() == null && delegate.getExecutor() != null) {
-            context = SafetyCheckContext.builder()
-                    .mode(context.getMode())
-                    .executor(delegate.getExecutor())
-                    .resultCallback(context.getResultCallback())
-                    .requestId(context.getRequestId())
-                    .stage(context.getStage())
-                    .build();
-        }
         return new SafetyCheckDelegator<>(delegate, context);
-    }
-
-    /**
-     * Chat 类型的代理服务接口
-     */
-    interface IChatSafetyCheckDelegatorService
-            extends ISafetyCheckDelegatorService<SafetyCheckRequest.Chat> {
     }
 }

@@ -87,6 +87,16 @@ public class EndpointProcessData {
     private boolean batch;
     private String safetyCheckMode;
 
+    /**
+     * 响应输出安全检查结果
+     * - 同步模式：立即设置
+     * - 异步模式：检查完成后异步设置
+     * - skip模式：保持null
+     * 使用volatile保证多线程可见性
+     */
+    @JsonIgnore
+    private volatile Object responseRiskData;
+
     public void setApikeyInfo(ApikeyInfo ak) {
         this.setApikey(ak.getApikey());
         this.setAkCode(ak.getCode());

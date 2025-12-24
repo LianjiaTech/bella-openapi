@@ -5,19 +5,8 @@ import com.ke.bella.openapi.apikey.ApikeyInfo;
 import com.ke.bella.openapi.protocol.completion.CompletionRequest;
 import com.ke.bella.openapi.protocol.completion.CompletionResponse;
 
-import java.util.concurrent.Executor;
-import java.util.function.Consumer;
-
 public interface ISafetyCheckService<T extends SafetyCheckRequest> {
     Object safetyCheck(T request, boolean isMock);
-
-    /**
-     * 获取异步执行器（用于异步安全检查）
-     * @return 异步执行器，如果返回null则使用默认执行器
-     */
-    default Executor getExecutor() {
-        return null;
-    }
 
     interface IChatSafetyCheckService extends ISafetyCheckService<SafetyCheckRequest.Chat> {
         /**
@@ -37,6 +26,7 @@ public interface ISafetyCheckService<T extends SafetyCheckRequest> {
                     .mode(SafetyCheckMode.fromString(processData.getSafetyCheckMode()))
                     .requestId(processData.getRequestId())
                     .stage("input")
+                    .processData(processData)
                     .build();
 
             Object requestRiskData = ISafetyCheckDelegatorService.create(this, context)
@@ -54,12 +44,13 @@ public interface ISafetyCheckService<T extends SafetyCheckRequest> {
         /**
          * 检查响应输出的安全性
          * 根据 processData 中配置的 safetyCheckMode 自动选择同步/异步/跳过模式
+         * 对于异步模式的非流式响应，会短暂等待结果（最多50ms）
          *
          * @param response 完成响应
          * @param processData 处理数据（包含 safetyCheckMode 配置）
          * @param apikeyInfo API密钥信息
          * @param isMock 是否Mock模式
-         * @return 风险数据（异步和跳过模式返回null）
+         * @return 风险数据（skip模式返回null，异步模式尽力返回）
          */
         default Object checkResponseOutput(CompletionResponse response, EndpointProcessData processData,
                                            ApikeyInfo apikeyInfo, boolean isMock) {
@@ -67,33 +58,50 @@ public interface ISafetyCheckService<T extends SafetyCheckRequest> {
                     .mode(SafetyCheckMode.fromString(processData.getSafetyCheckMode()))
                     .requestId(processData.getRequestId())
                     .stage("output")
+                    .processData(processData)
                     .build();
 
-            return ISafetyCheckDelegatorService.create(this, context)
+            Object result = ISafetyCheckDelegatorService.create(this, context)
                     .safetyCheck(
                             SafetyCheckRequest.Chat.convertFrom(response, processData, apikeyInfo),
                             isMock
                     );
+
+            // 如果是异步模式且返回null，短暂等待后从processData读取（5ms查一次，最多50ms）
+            if (result == null && SafetyCheckMode.async == context.getMode()) {
+                for (int i = 0; i < 10; i++) {
+                    result = processData.getResponseRiskData();
+                    if (result != null) {
+                        break;
+                    }
+                    try {
+                        Thread.sleep(5);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
+                }
+            }
+
+            return result;
         }
 
         /**
-         * 检查流式响应输出的安全性（用于 SSE 回调）
-         * 支持同步模式下通过 resultCallback 发送检测结果
+         * 检查流式响应输出的安全性
+         * 结果会写入 processData.responseRiskData，由调用方轮询获取
          *
          * @param response 完成响应
          * @param processData 处理数据（包含 safetyCheckMode 配置）
          * @param apikeyInfo API密钥信息
          * @param isMock 是否Mock模式
-         * @param resultCallback 结果回调（同步模式下调用）
          */
         default void checkStreamOutput(CompletionResponse response, EndpointProcessData processData,
-                                       ApikeyInfo apikeyInfo,
-                                       boolean isMock, Consumer<Object> resultCallback) {
+                                       ApikeyInfo apikeyInfo, boolean isMock) {
             SafetyCheckContext context = SafetyCheckContext.builder()
                     .mode(SafetyCheckMode.fromString(processData.getSafetyCheckMode()))
                     .requestId(processData.getRequestId())
                     .stage("output")
-                    .resultCallback(resultCallback)
+                    .processData(processData)
                     .build();
 
             ISafetyCheckDelegatorService.create(this, context)
