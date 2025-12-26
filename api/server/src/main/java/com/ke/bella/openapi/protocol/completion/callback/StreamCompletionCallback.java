@@ -11,7 +11,7 @@ import com.ke.bella.openapi.protocol.completion.ResponseHelper;
 import com.ke.bella.openapi.protocol.completion.StreamCompletionResponse;
 import com.ke.bella.openapi.protocol.log.EndpointLogger;
 import com.ke.bella.openapi.safety.ISafetyCheckService;
-import com.ke.bella.openapi.safety.SafetyCheckFacade;
+import com.ke.bella.openapi.safety.ISafetyCheckDelegatorService;
 import com.ke.bella.openapi.utils.DateTimeUtils;
 import com.ke.bella.openapi.utils.PunctuationUtils;
 import com.ke.bella.openapi.utils.SseHelper;
@@ -52,7 +52,10 @@ public class StreamCompletionCallback implements Callbacks.StreamCompletionCallb
         this.responseBuffer = new CompletionResponse();
         responseBuffer.setCreated(DateTimeUtils.getCurrentSeconds());
         this.choiceBuffer = new HashMap<>();
-        this.requestRiskData = processData.getRequestRiskData();
+
+        // 从 delegator 获取请求风险数据
+        ISafetyCheckDelegatorService delegator = (ISafetyCheckDelegatorService) processData.getSafetyCheckDelegator();
+        this.requestRiskData = delegator != null ? delegator.getRequestRiskData() : null;
     }
 
     @Override
@@ -76,32 +79,36 @@ public class StreamCompletionCallback implements Callbacks.StreamCompletionCallb
         updateBuffer(msg.getStandardFormat() == null ? msg : msg.getStandardFormat());
         safetyCheck(false);
 
-        // 检查是否有安全检测结果（同步模式会立即有结果，异步模式可能有历史结果）
-        Object safetyResult = processData.pollResponseRiskData();
-        if (safetyResult != null) {
-            StreamCompletionResponse safetyResponse = new StreamCompletionResponse();
-            safetyResponse.setSensitives(safetyResult);
-            safetyResponse.setCreated(DateTimeUtils.getCurrentSeconds());
-            send(safetyResponse);
-        }
+        // 发送所有可用的安全检测结果
+        sendAllSafetyResults();
     }
 
     @Override
     public void done() {
         safetyCheck(true);  // 最后一次安全检查
 
-        // 消费队列中已有的异步结果（不等待）
-        while (processData.hasResponseRiskData()) {
-            Object asyncResult = processData.pollResponseRiskData();
-            if (asyncResult != null) {
-                StreamCompletionResponse response = new StreamCompletionResponse();
-                response.setSensitives(asyncResult);
-                response.setCreated(DateTimeUtils.getCurrentSeconds());
-                send(response);
-            }
-        }
+        // 发送所有安全检测结果
+        sendAllSafetyResults();
 
         send("[DONE]");
+    }
+
+    /**
+     * 发送所有安全检测结果（消费队列中的所有结果）
+     */
+    private void sendAllSafetyResults() {
+        ISafetyCheckDelegatorService delegator = (ISafetyCheckDelegatorService) processData.getSafetyCheckDelegator();
+        if (delegator != null) {
+            while (delegator.hasResponseRiskData()) {
+                Object safetyResult = delegator.pollResponseRiskData();
+                if (safetyResult != null) {
+                    StreamCompletionResponse response = new StreamCompletionResponse();
+                    response.setSensitives(safetyResult);
+                    response.setCreated(DateTimeUtils.getCurrentSeconds());
+                    send(response);
+                }
+            }
+        }
     }
 
     public void finish() {
@@ -203,10 +210,11 @@ public class StreamCompletionCallback implements Callbacks.StreamCompletionCallb
             safetyCheckIndex = content.length();
         }
         responseBuffer.setChoices(Collections.singletonList(choice));
-        if(safetyService != null) {
-            // 执行流式响应安全检测，结果通过callback写入队列
-            SafetyCheckFacade.check(responseBuffer, processData, apikeyInfo, processData.isMock(),
-                    safetyService, processData::addResponseRiskData);
+
+        // 执行流式响应安全检测，结果通过callback写入队列
+        ISafetyCheckDelegatorService delegator = (ISafetyCheckDelegatorService) processData.getSafetyCheckDelegator();
+        if (delegator != null) {
+            delegator.checkResponse(responseBuffer, processData, apikeyInfo, processData.isMock());
         }
         dirtyChoice = false;
     }

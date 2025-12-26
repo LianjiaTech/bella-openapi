@@ -1,8 +1,14 @@
 package com.ke.bella.openapi.safety;
 
+import com.ke.bella.openapi.EndpointProcessData;
 import com.ke.bella.openapi.TaskExecutor;
+import com.ke.bella.openapi.apikey.ApikeyInfo;
 import com.ke.bella.openapi.common.exception.ChannelException;
+import com.ke.bella.openapi.protocol.completion.CompletionRequest;
+import com.ke.bella.openapi.protocol.completion.CompletionResponse;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * 安全检查代理实现
@@ -30,6 +36,16 @@ public class SafetyCheckDelegator<T extends SafetyCheckRequest>
      * 安全检查上下文（包含mode、executor等信息）
      */
     private final SafetyCheckContext context;
+
+    /**
+     * 请求输入安全检查结果
+     */
+    private Object requestRiskData;
+
+    /**
+     * 响应输出安全检查结果队列（支持异步多次检查）
+     */
+    private final ConcurrentLinkedQueue<Object> responseRiskDataQueue = new ConcurrentLinkedQueue<>();
 
     /**
      * 构造函数
@@ -121,5 +137,58 @@ public class SafetyCheckDelegator<T extends SafetyCheckRequest>
                         context.getRequestId(), e.getMessage(), e);
             }
         });
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public void checkRequest(CompletionRequest request, EndpointProcessData processData, ApikeyInfo apikeyInfo, boolean isMock) {
+        // 数据转换
+        SafetyCheckRequest.Chat safetyRequest =
+                SafetyCheckRequest.Chat.convertFrom(request, processData, apikeyInfo);
+        if (safetyRequest == null) return;
+
+        // 执行检查，结果保存到 requestRiskData
+        Object result = safetyCheck((T) safetyRequest, isMock, riskData -> {
+            this.requestRiskData = riskData;
+        });
+
+        // 同步模式会立即返回结果
+        if (result != null) {
+            this.requestRiskData = result;
+        }
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public void checkResponse(CompletionResponse response, EndpointProcessData processData, ApikeyInfo apikeyInfo, boolean isMock) {
+        // 数据转换
+        SafetyCheckRequest.Chat safetyRequest =
+                SafetyCheckRequest.Chat.convertFrom(response, processData, apikeyInfo);
+        if (safetyRequest == null) return;
+
+        // 执行检查，结果通过callback写入队列
+        safetyCheck((T) safetyRequest, isMock, this::addResponseRiskData);
+    }
+
+    @Override
+    public Object getRequestRiskData() {
+        return requestRiskData;
+    }
+
+    @Override
+    public void addResponseRiskData(Object riskData) {
+        if (riskData != null) {
+            responseRiskDataQueue.offer(riskData);
+        }
+    }
+
+    @Override
+    public Object pollResponseRiskData() {
+        return responseRiskDataQueue.poll();
+    }
+
+    @Override
+    public boolean hasResponseRiskData() {
+        return !responseRiskDataQueue.isEmpty();
     }
 }

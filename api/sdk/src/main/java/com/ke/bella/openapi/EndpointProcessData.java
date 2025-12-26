@@ -15,8 +15,6 @@ import org.apache.commons.lang3.SerializationUtils;
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 @Data
 @Builder
@@ -77,7 +75,6 @@ public class EndpointProcessData {
     private String priceInfo;
     private String encodingType;
     private String supplier;
-    private Object requestRiskData;
     private boolean isMock;
     private String bellaTraceId;
     private boolean functionCallSimulate;
@@ -87,17 +84,13 @@ public class EndpointProcessData {
     private Integer maxWaitSec;
     private boolean nativeSend;
     private boolean batch;
-    private String safetyCheckMode;
 
     /**
-     * 响应输出安全检查结果队列
-     * - 同步模式：立即添加结果到队列
-     * - 异步模式：检查完成后异步添加到队列
-     * - skip模式：队列保持空
-     * 使用ConcurrentLinkedQueue保证多线程安全
+     * 安全检查代理服务实例
+     * 在请求处理开始时创建并存储，整个请求生命周期中复用
      */
     @JsonIgnore
-    private final Queue<Object> responseRiskDataQueue = new ConcurrentLinkedQueue<>();
+    private transient Object safetyCheckDelegator;
 
     public void setApikeyInfo(ApikeyInfo ak) {
         this.setApikey(ak.getApikey());
@@ -164,34 +157,5 @@ public class EndpointProcessData {
         // 清理原始request引用，帮助GC
         this.request = null;
         log.debug("Request marked as optimized and original reference cleared for requestId: {}", requestId);
-    }
-
-    // ========== 响应安全检查结果队列相关方法 ==========
-
-    /**
-     * 添加响应安全检查结果到队列
-     */
-    public void addResponseRiskData(Object riskData) {
-        if (riskData != null) {
-            responseRiskDataQueue.offer(riskData);
-        }
-    }
-
-    /**
-     * 从队列中取出响应安全检查结果（消费性读取）
-     */
-    public Object pollResponseRiskData() {
-        Object result = responseRiskDataQueue.poll();
-        if (result != null) {
-            log.debug("Polled response risk data from queue for requestId: {}", requestId);
-        }
-        return result;
-    }
-
-    /**
-     * 检查队列中是否有响应安全检查结果
-     */
-    public boolean hasResponseRiskData() {
-        return !responseRiskDataQueue.isEmpty();
     }
 }

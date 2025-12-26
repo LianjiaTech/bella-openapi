@@ -37,7 +37,9 @@ import com.ke.bella.openapi.protocol.completion.callback.StreamCallbackProvider;
 import com.ke.bella.openapi.protocol.limiter.LimiterManager;
 import com.ke.bella.openapi.protocol.log.EndpointLogger;
 import com.ke.bella.openapi.safety.ISafetyCheckService;
-import com.ke.bella.openapi.safety.SafetyCheckFacade;
+import com.ke.bella.openapi.safety.ISafetyCheckDelegatorService;
+import com.ke.bella.openapi.safety.SafetyCheckContext;
+import com.ke.bella.openapi.safety.SafetyCheckMode;
 import com.ke.bella.openapi.service.EndpointDataService;
 import com.ke.bella.openapi.tables.pojos.ChannelDB;
 import com.ke.bella.openapi.utils.JacksonUtils;
@@ -133,15 +135,16 @@ public class ChatController {
         ChannelContext ctx = initializeChannel(endpoint, model, false);
         CompletionProperty property = ctx.property;
 
-        if(!EndpointContext.getProcessData().isPrivate()) {
-            limiterManager.incrementConcurrentCount(EndpointContext.getProcessData().getAkCode(), model);
+        EndpointProcessData processData = EndpointContext.getProcessData();
+        if(!processData.isPrivate()) {
+            limiterManager.incrementConcurrentCount(processData.getAkCode(), model);
         }
 
-        // 执行请求输入安全检测
-        EndpointProcessData processData = EndpointContext.getProcessData();
-        SafetyCheckFacade.check(request, processData,
-                EndpointContext.getApikey(), isMock, safetyCheckService,
-			processData::setRequestRiskData);
+        // 执行请求安全检测
+        ISafetyCheckDelegatorService<?> delegator = (ISafetyCheckDelegatorService<?>) processData.getSafetyCheckDelegator();
+        if (delegator != null) {
+            delegator.check(request, processData, EndpointContext.getApikey(), isMock);
+        }
 
         CompletionAdaptor adaptor = ctx.adaptor;
         if(isMock) {
@@ -157,12 +160,12 @@ public class ChatController {
 
         CompletionResponse response = adaptor.completion(request, ctx.url, property);
 
-        // 执行响应输出安全检测
-        Object responseRiskData = SafetyCheckFacade.check(response, processData,
-                EndpointContext.getApikey(), isMock, safetyCheckService,
-			processData::addResponseRiskData);
-        response.setSensitives(responseRiskData);
-        response.setRequestRiskData(processData.getRequestRiskData());
+        // 执行响应安全检测并填充风险数据
+        if (delegator != null) {
+            delegator.check(response, processData, EndpointContext.getApikey(), isMock);
+            response.setSensitives(delegator.pollResponseRiskData());
+            response.setRequestRiskData(delegator.getRequestRiskData());
+        }
         return response;
     }
 
@@ -219,8 +222,15 @@ public class ChatController {
         CompletionProperty property = (CompletionProperty) JacksonUtils.deserialize(channelInfo, adaptor.getPropertyClass());
 
         EndpointContext.setEncodingType(property.getEncodingType());
-        // 自动设置 safetyCheckMode 到 processData
-        processData.setSafetyCheckMode(property.getSafetyCheckMode());
+
+        // 初始化安全检查代理服务
+        SafetyCheckContext safetyContext = SafetyCheckContext.builder()
+                .mode(SafetyCheckMode.fromString(property.getSafetyCheckMode()))
+                .requestId(processData.getRequestId())
+                .processData(processData)
+                .build();
+        ISafetyCheckDelegatorService safetyDelegator = ISafetyCheckDelegatorService.create(safetyCheckService, safetyContext);
+        processData.setSafetyCheckDelegator(safetyDelegator);
 
         ChannelContext ctx = new ChannelContext();
         ctx.url = url;
