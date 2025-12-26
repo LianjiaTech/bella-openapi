@@ -11,6 +11,7 @@ import com.ke.bella.openapi.protocol.completion.ResponseHelper;
 import com.ke.bella.openapi.protocol.completion.StreamCompletionResponse;
 import com.ke.bella.openapi.protocol.log.EndpointLogger;
 import com.ke.bella.openapi.safety.ISafetyCheckService;
+import com.ke.bella.openapi.safety.SafetyCheckFacade;
 import com.ke.bella.openapi.utils.DateTimeUtils;
 import com.ke.bella.openapi.utils.PunctuationUtils;
 import com.ke.bella.openapi.utils.SseHelper;
@@ -76,13 +77,12 @@ public class StreamCompletionCallback implements Callbacks.StreamCompletionCallb
         safetyCheck(false);
 
         // 检查是否有安全检测结果（同步模式会立即有结果，异步模式可能有历史结果）
-        Object safetyResult = processData.getResponseRiskData();
+        Object safetyResult = processData.pollResponseRiskData();
         if (safetyResult != null) {
             StreamCompletionResponse safetyResponse = new StreamCompletionResponse();
             safetyResponse.setSensitives(safetyResult);
             safetyResponse.setCreated(DateTimeUtils.getCurrentSeconds());
             send(safetyResponse);
-            processData.setResponseRiskData(null);  // 清空
         }
     }
 
@@ -90,14 +90,15 @@ public class StreamCompletionCallback implements Callbacks.StreamCompletionCallb
     public void done() {
         safetyCheck(true);  // 最后一次安全检查
 
-        // 检查是否还有未发送的异步结果
-        Object asyncResult = processData.getResponseRiskData();
-        if (asyncResult != null) {
-            StreamCompletionResponse response = new StreamCompletionResponse();
-            response.setSensitives(asyncResult);
-            response.setCreated(DateTimeUtils.getCurrentSeconds());
-            send(response);
-            processData.setResponseRiskData(null);  // 清空
+        // 消费队列中已有的异步结果（不等待）
+        while (processData.hasResponseRiskData()) {
+            Object asyncResult = processData.pollResponseRiskData();
+            if (asyncResult != null) {
+                StreamCompletionResponse response = new StreamCompletionResponse();
+                response.setSensitives(asyncResult);
+                response.setCreated(DateTimeUtils.getCurrentSeconds());
+                send(response);
+            }
         }
 
         send("[DONE]");
@@ -203,13 +204,9 @@ public class StreamCompletionCallback implements Callbacks.StreamCompletionCallb
         }
         responseBuffer.setChoices(Collections.singletonList(choice));
         if(safetyService != null) {
-            // 执行流式响应安全检测，结果写入 processData
-            safetyService.checkStreamOutput(
-                    responseBuffer,
-                    processData,
-                    apikeyInfo,
-                    processData.isMock()
-            );
+            // 执行流式响应安全检测，结果通过callback写入队列
+            SafetyCheckFacade.check(responseBuffer, processData, apikeyInfo, processData.isMock(),
+                    safetyService, processData::addResponseRiskData);
         }
         dirtyChoice = false;
     }

@@ -37,6 +37,7 @@ import com.ke.bella.openapi.protocol.completion.callback.StreamCallbackProvider;
 import com.ke.bella.openapi.protocol.limiter.LimiterManager;
 import com.ke.bella.openapi.protocol.log.EndpointLogger;
 import com.ke.bella.openapi.safety.ISafetyCheckService;
+import com.ke.bella.openapi.safety.SafetyCheckFacade;
 import com.ke.bella.openapi.service.EndpointDataService;
 import com.ke.bella.openapi.tables.pojos.ChannelDB;
 import com.ke.bella.openapi.utils.JacksonUtils;
@@ -138,9 +139,9 @@ public class ChatController {
 
         // 执行请求输入安全检测
         EndpointProcessData processData = EndpointContext.getProcessData();
-        Object requestRiskData = safetyCheckService.checkRequestInput(
-                request, processData, EndpointContext.getApikey(), isMock
-        );
+        SafetyCheckFacade.check(request, processData,
+                EndpointContext.getApikey(), isMock, safetyCheckService,
+			processData::setRequestRiskData);
 
         CompletionAdaptor adaptor = ctx.adaptor;
         if(isMock) {
@@ -157,11 +158,11 @@ public class ChatController {
         CompletionResponse response = adaptor.completion(request, ctx.url, property);
 
         // 执行响应输出安全检测
-        Object responseRiskData = safetyCheckService.checkResponseOutput(
-                response, processData, EndpointContext.getApikey(), isMock
-        );
+        Object responseRiskData = SafetyCheckFacade.check(response, processData,
+                EndpointContext.getApikey(), isMock, safetyCheckService,
+			processData::addResponseRiskData);
         response.setSensitives(responseRiskData);
-        response.setRequestRiskData(requestRiskData);
+        response.setRequestRiskData(processData.getRequestRiskData());
         return response;
     }
 

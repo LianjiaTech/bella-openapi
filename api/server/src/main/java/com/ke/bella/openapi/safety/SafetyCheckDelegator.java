@@ -44,19 +44,25 @@ public class SafetyCheckDelegator<T extends SafetyCheckRequest>
 
     @Override
     public Object safetyCheck(T request, boolean isMock) {
+        return safetyCheck(request, isMock, null);
+    }
+
+    @Override
+    public Object safetyCheck(T request, boolean isMock, java.util.function.Consumer<Object> resultCallback) {
         SafetyCheckMode mode = context.getMode() != null ? context.getMode() : SafetyCheckMode.getDefault();
 
         switch (mode) {
             case sync:
-                return executeSyncCheck(request, isMock);
+                return executeSyncCheck(request, isMock, resultCallback);
             case async:
-                executeAsyncCheck(request, isMock);
+                executeAsyncCheck(request, isMock, resultCallback);
                 return null;
             case skip:
                 return null;
             default:
-                // 默认使用同步模式
-                return executeSyncCheck(request, isMock);
+                // 默认使用异步模式
+                executeAsyncCheck(request, isMock, resultCallback);
+                return null;
         }
     }
 
@@ -66,61 +72,53 @@ public class SafetyCheckDelegator<T extends SafetyCheckRequest>
      *
      * @param request 安全检查请求
      * @param isMock 是否Mock模式
+     * @param resultCallback 结果回调函数
      * @return 检查结果
      */
-    private Object executeSyncCheck(T request, boolean isMock) {
-        try {
-            Object result = delegate.safetyCheck(request, isMock);
+    private Object executeSyncCheck(T request, boolean isMock, java.util.function.Consumer<Object> resultCallback) {
+        Object result = delegate.safetyCheck(request, isMock);
 
-            // 同步模式：也写入 processData（统一数据源）
-            if (result != null && context.getProcessData() != null
-                && "output".equals(context.getStage())) {
-                context.getProcessData().setResponseRiskData(result);
-            }
-
-            return result;
-        } catch (ChannelException.SafetyCheckException e) {
-            // 同步模式：直接抛出异常，阻断主流程
-            throw e;
+        // 同步模式：立即调用callback处理结果
+        if (result != null && resultCallback != null) {
+            resultCallback.accept(result);
         }
+
+        return result;
     }
 
     /**
      * 执行异步安全检查
      * 在 TaskExecutor 线程池中执行检测，不等待结果，不阻断主流程
-     * 检测到敏感数据或异常时仅记录日志，并将结果写入 processData
+     * 检测到敏感数据或异常时仅记录日志，并通过callback处理结果
      *
      * @param request 安全检查请求
      * @param isMock 是否Mock模式
+     * @param resultCallback 结果回调函数
      */
-    private void executeAsyncCheck(T request, boolean isMock) {
+    private void executeAsyncCheck(T request, boolean isMock, java.util.function.Consumer<Object> resultCallback) {
         TaskExecutor.submit(() -> {
             try {
                 Object result = delegate.safetyCheck(request, isMock);
 
-                // 异步模式：将结果写入 processData
-                if (result != null && context.getProcessData() != null
-                    && "output".equals(context.getStage())) {
-                    context.getProcessData().setResponseRiskData(result);
-                    log.debug("异步安全检测完成: requestId={}, stage={}",
-                             context.getRequestId(), context.getStage());
+                // 异步模式：在线程池中执行后调用callback
+                if (result != null && resultCallback != null) {
+                    resultCallback.accept(result);
                 }
 
             } catch (ChannelException.SafetyCheckException e) {
                 // 异步模式：检测到敏感数据，仅记录日志，不阻断主流程
-                // 统一从 context 中获取日志所需信息
-                log.warn("异步安全检测发现敏感数据: requestId={}, stage={}, sensitiveData={}",
-                        context.getRequestId(), context.getStage(), e.getSensitive());
+                log.warn("异步安全检测发现敏感数据: requestId={}, sensitiveData={}",
+                        context.getRequestId(), e.getSensitive());
 
-                // 将异常中的敏感数据也存储到 processData
-                if (context.getProcessData() != null && "output".equals(context.getStage())) {
-                    context.getProcessData().setResponseRiskData(e.getSensitive());
+                // 将异常中的敏感数据也通过callback返回
+                if (e.getSensitive() != null && resultCallback != null) {
+                    resultCallback.accept(e.getSensitive());
                 }
 
             } catch (Exception e) {
                 // 异步模式：其他异常（如网络错误），仅记录日志，不阻断主流程
-                log.warn("异步安全检测异常: requestId={}, stage={}, error={}",
-                        context.getRequestId(), context.getStage(), e.getMessage(), e);
+                log.warn("异步安全检测异常: requestId={}, error={}",
+                        context.getRequestId(), e.getMessage(), e);
             }
         });
     }
