@@ -10,8 +10,10 @@ import com.ke.bella.openapi.server.OpenapiProperties;
 import com.ke.bella.openapi.service.ChannelService;
 import com.ke.bella.openapi.tables.pojos.ChannelDB;
 import com.theokanning.openai.service.OpenAiService;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RedissonClient;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
@@ -44,6 +46,10 @@ public class WorkerManager {
     private LuaScriptExecutor luaScriptExecutor;
     @Resource
     private LimiterManager limiterManager;
+
+    @Value("${bella.openapi.as-worker.remaining-capacity-threshold:0.7}")
+    @Getter
+    private double remainingCapacityThreshold;
 
     private OpenAiService openAiService;
 
@@ -89,6 +95,7 @@ public class WorkerManager {
                             .adaptorManager(adaptorManager)
                             .luaScriptExecutor(luaScriptExecutor)
                             .limiterManager(limiterManager)
+                            .workerManager(this)
                             .build();
                     workerContext.start();
                     runningWorkers.put(channel.getChannelCode(), workerContext);
