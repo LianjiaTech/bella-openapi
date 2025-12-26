@@ -37,7 +37,9 @@ import com.ke.bella.openapi.protocol.completion.callback.StreamCallbackProvider;
 import com.ke.bella.openapi.protocol.limiter.LimiterManager;
 import com.ke.bella.openapi.protocol.log.EndpointLogger;
 import com.ke.bella.openapi.safety.ISafetyCheckService;
-import com.ke.bella.openapi.safety.SafetyCheckRequest;
+import com.ke.bella.openapi.safety.ISafetyCheckDelegatorService;
+import com.ke.bella.openapi.safety.SafetyCheckContext;
+import com.ke.bella.openapi.safety.SafetyCheckMode;
 import com.ke.bella.openapi.service.EndpointDataService;
 import com.ke.bella.openapi.tables.pojos.ChannelDB;
 import com.ke.bella.openapi.utils.JacksonUtils;
@@ -131,32 +133,39 @@ public class ChatController {
 
         // Initialize channel using common method
         ChannelContext ctx = initializeChannel(endpoint, model, false);
+        CompletionProperty property = ctx.property;
 
-        if(!EndpointContext.getProcessData().isPrivate()) {
-            limiterManager.incrementConcurrentCount(EndpointContext.getProcessData().getAkCode(), model);
-        }
-        Object requestRiskData = safetyCheckService.safetyCheck(SafetyCheckRequest.Chat.convertFrom(request,
-                    EndpointContext.getProcessData(), EndpointContext.getApikey()), isMock);
-        EndpointContext.getProcessData().setRequestRiskData(requestRiskData);
         EndpointProcessData processData = EndpointContext.getProcessData();
+        if(!processData.isPrivate()) {
+            limiterManager.incrementConcurrentCount(processData.getAkCode(), model);
+        }
+
+        // 执行请求安全检测
+        ISafetyCheckDelegatorService<?> delegator = (ISafetyCheckDelegatorService<?>) processData.getSafetyCheckDelegator();
+        if (delegator != null) {
+            delegator.check(request, processData, EndpointContext.getApikey(), isMock);
+        }
 
         CompletionAdaptor adaptor = ctx.adaptor;
-        CompletionProperty property = ctx.property;
         if(isMock) {
             fillMockProperty(property);
         }
         adaptor = decorateAdaptor(adaptor, property, processData);
 
         if(request.isStream()) {
-            SseEmitter sse = SseHelper.createSse(1000L * 60 * 30, EndpointContext.getProcessData().getRequestId());
+            SseEmitter sse = SseHelper.createSse(1000L * 60 * 30, processData.getRequestId());
             adaptor.streamCompletion(request, ctx.url, property, StreamCallbackProvider.provide(sse, processData, EndpointContext.getApikey(), logger, safetyCheckService, property));
             return sse;
         }
 
         CompletionResponse response = adaptor.completion(request, ctx.url, property);
-        Object responseRiskData = safetyCheckService.safetyCheck(SafetyCheckRequest.Chat.convertFrom(response, EndpointContext.getProcessData(), EndpointContext.getApikey()), isMock);
-        response.setSensitives(responseRiskData);
-        response.setRequestRiskData(requestRiskData);
+
+        // 执行响应安全检测并填充风险数据
+        if (delegator != null) {
+            delegator.check(response, processData, EndpointContext.getApikey(), isMock);
+            response.setSensitives(delegator.pollResponseRiskData());
+            response.setRequestRiskData(delegator.getRequestRiskData());
+        }
         return response;
     }
 
@@ -213,6 +222,15 @@ public class ChatController {
         CompletionProperty property = (CompletionProperty) JacksonUtils.deserialize(channelInfo, adaptor.getPropertyClass());
 
         EndpointContext.setEncodingType(property.getEncodingType());
+
+        // 初始化安全检查代理服务
+        SafetyCheckContext safetyContext = SafetyCheckContext.builder()
+                .mode(SafetyCheckMode.fromString(property.getSafetyCheckMode()))
+                .requestId(processData.getRequestId())
+                .processData(processData)
+                .build();
+        ISafetyCheckDelegatorService safetyDelegator = ISafetyCheckDelegatorService.create(safetyCheckService, safetyContext);
+        processData.setSafetyCheckDelegator(safetyDelegator);
 
         ChannelContext ctx = new ChannelContext();
         ctx.url = url;

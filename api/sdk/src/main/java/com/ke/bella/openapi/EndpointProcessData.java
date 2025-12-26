@@ -75,7 +75,6 @@ public class EndpointProcessData {
     private String priceInfo;
     private String encodingType;
     private String supplier;
-    private Object requestRiskData;
     private boolean isMock;
     private String bellaTraceId;
     private boolean functionCallSimulate;
@@ -85,6 +84,13 @@ public class EndpointProcessData {
     private Integer maxWaitSec;
     private boolean nativeSend;
     private boolean batch;
+
+    /**
+     * 安全检查代理服务实例
+     * 在请求处理开始时创建并存储，整个请求生命周期中复用
+     */
+    @JsonIgnore
+    private transient Object safetyCheckDelegator;
 
     public void setApikeyInfo(ApikeyInfo ak) {
         this.setApikey(ak.getApikey());
