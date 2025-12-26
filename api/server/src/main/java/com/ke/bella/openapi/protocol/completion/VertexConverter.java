@@ -528,22 +528,31 @@ public class VertexConverter {
                 .completion_tokens(calculateCompletionTokens(usageMetadata))
                 .total_tokens(usageMetadata.getTotalTokenCount() != null ? usageMetadata.getTotalTokenCount() : 0);
         
+        CompletionResponse.TokensDetail promptTokensDetail = null;
+        
         if(usageMetadata.getCachedContentTokenCount() != null && usageMetadata.getCachedContentTokenCount() > 0) {
-            builder.cache_read_tokens(usageMetadata.getCachedContentTokenCount());
+            int cachedCount = usageMetadata.getCachedContentTokenCount();
+            builder.cache_read_tokens(cachedCount);
+            promptTokensDetail = new CompletionResponse.TokensDetail();
+            promptTokensDetail.setCached_tokens(cachedCount);
         }
         
         if(usageMetadata.getPromptTokensDetails() != null) {
-            CompletionResponse.TokensDetail tokensDetail = new CompletionResponse.TokensDetail();
+            if(promptTokensDetail == null) {
+                promptTokensDetail = new CompletionResponse.TokensDetail();
+            }
+            CompletionResponse.TokensDetail finalDetail = promptTokensDetail;
             usageMetadata.getPromptTokensDetails().forEach(detail -> {
                 if(Modality.IMAGE.name().equals(detail.getModality())) {
-                    tokensDetail.setImage_tokens(tokensDetail.getImage_tokens() + detail.getTokenCount());
+                    finalDetail.setImage_tokens(finalDetail.getImage_tokens() + detail.getTokenCount());
                 } else if(Modality.AUDIO.name().equals(detail.getModality())) {
-                    tokensDetail.setAudio_tokens(tokensDetail.getAudio_tokens() + detail.getTokenCount());
+                    finalDetail.setAudio_tokens(finalDetail.getAudio_tokens() + detail.getTokenCount());
                 }
             });
-            if(tokensDetail.getImage_tokens() > 0 || tokensDetail.getAudio_tokens() > 0) {
-                builder.prompt_tokens_details(tokensDetail);
-            }
+        }
+        
+        if(promptTokensDetail != null) {
+            builder.prompt_tokens_details(promptTokensDetail);
         }
 
         if(usageMetadata.getCandidatesTokensDetails() != null) {
