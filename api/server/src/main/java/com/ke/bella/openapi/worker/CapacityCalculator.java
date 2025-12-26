@@ -12,7 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
 import org.redisson.api.RedissonClient;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -33,15 +32,10 @@ public class CapacityCalculator {
     private volatile double cachedCapacity = -1.0;
     private volatile long cacheTimestamp = 0;
     private volatile long maxFinishRpm = 0;
+    private volatile long lastLogTime = 0;
     private static final long CACHE_DURATION_MS = 5 * 60 * 1000;
+    private static final long LOG_INTERVAL_MS = 30 * 1000; // 30秒打印一次
     private static final String RPM_429_HISTORY_METRIC = "rpm_429_history";
-
-    public CapacityCalculator(ChannelDB channelDB, RedissonClient redissonClient) {
-        this.channel = channelDB;
-        this.channelCode = channelDB.getChannelCode();
-        this.fittingAlgorithm = new EmaFittingAlgorithm(0.3);
-        this.redissonClient = redissonClient;
-    }
 
     public CapacityCalculator(ChannelDB channelDB, RedissonClient redissonClient, LuaScriptExecutor luaScriptExecutor, LimiterManager limiterManager) {
         this.channel = channelDB;
@@ -55,15 +49,23 @@ public class CapacityCalculator {
     public double getRemainingCapacity() {
         double capacity = getCapacity();
         if(capacity == 0) {
-            capacity = 0.7 * getCurrentMaxRpm();
+            capacity = getCurrentMaxRpm();
         }
         if(capacity == 0) {
             return 1.0;
         }
 
         long currentRequests = limiterManager.getCurrentRequests(channel.getEntityCode());
-        long requestCapacity = currentRequests + getCompletedRpm();
+        long completedRpm = getCompletedRpm();
+        long requestCapacity = currentRequests + completedRpm;
         double remainingCapacity = 1.0 - (requestCapacity / capacity);
+
+        long currentTime = System.currentTimeMillis();
+        if(currentTime - lastLogTime >= LOG_INTERVAL_MS) {
+            lastLogTime = currentTime;
+            log.info("CapCalc[{}] cap={}, curReq={}, compRpm={}, remain={}", channelCode, capacity, currentRequests, completedRpm, remainingCapacity);
+        }
+        
         return Math.max(0.0, Math.min(1.0, remainingCapacity));
     }
 
