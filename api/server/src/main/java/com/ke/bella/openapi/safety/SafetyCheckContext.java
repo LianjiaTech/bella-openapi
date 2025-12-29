@@ -35,11 +35,6 @@ public class SafetyCheckContext {
     private String stage;
 
     /**
-     * 处理数据（用于存储检测结果）
-     */
-    private EndpointProcessData processData;
-
-    /**
      * 安全检查代理服务（执行器）
      */
     private transient ISafetyCheckDelegatorService<?> delegator;

@@ -227,7 +227,6 @@ public class ChatController {
         SafetyCheckContext safetyContext = SafetyCheckContext.builder()
                 .mode(SafetyCheckMode.fromString(property.getSafetyCheckMode()))
                 .requestId(processData.getRequestId())
-                .processData(processData)
                 .build();
         ISafetyCheckDelegatorService safetyDelegator = ISafetyCheckDelegatorService.create(safetyCheckService, safetyContext);
 
