@@ -140,10 +140,12 @@ public class ChatController {
             limiterManager.incrementConcurrentCount(processData.getAkCode(), model);
         }
 
+        // 获取安全检查上下文（统一入口）
+        SafetyCheckContext safetyContext = (SafetyCheckContext) processData.getSafetyCheckContext();
+
         // 执行请求安全检测
-        ISafetyCheckDelegatorService<?> delegator = (ISafetyCheckDelegatorService<?>) processData.getSafetyCheckDelegator();
-        if (delegator != null) {
-            delegator.check(request, processData, EndpointContext.getApikey(), isMock);
+        if (safetyContext != null) {
+            safetyContext.checkRequest(request, processData, EndpointContext.getApikey(), isMock);
         }
 
         CompletionAdaptor adaptor = ctx.adaptor;
@@ -160,11 +162,9 @@ public class ChatController {
 
         CompletionResponse response = adaptor.completion(request, ctx.url, property);
 
-        // 执行响应安全检测并填充风险数据
-        if (delegator != null) {
-            delegator.check(response, processData, EndpointContext.getApikey(), isMock);
-            response.setSensitives(delegator.pollResponseRiskData());
-            response.setRequestRiskData(delegator.getRequestRiskData());
+        // 执行响应安全检测并填充风险数据（一次调用完成）
+        if (safetyContext != null) {
+            safetyContext.checkResponseAndFillRiskData(response, processData, EndpointContext.getApikey(), isMock);
         }
         return response;
     }
@@ -223,14 +223,19 @@ public class ChatController {
 
         EndpointContext.setEncodingType(property.getEncodingType());
 
-        // 初始化安全检查代理服务
+        // 初始化安全检查上下文
         SafetyCheckContext safetyContext = SafetyCheckContext.builder()
                 .mode(SafetyCheckMode.fromString(property.getSafetyCheckMode()))
                 .requestId(processData.getRequestId())
                 .processData(processData)
                 .build();
         ISafetyCheckDelegatorService safetyDelegator = ISafetyCheckDelegatorService.create(safetyCheckService, safetyContext);
-        processData.setSafetyCheckDelegator(safetyDelegator);
+
+        // 将 delegator 设置到 context 中，实现统一入口
+        safetyContext.setDelegator(safetyDelegator);
+
+        // 存储 context（统一入口）
+        processData.setSafetyCheckContext(safetyContext);
 
         ChannelContext ctx = new ChannelContext();
         ctx.url = url;

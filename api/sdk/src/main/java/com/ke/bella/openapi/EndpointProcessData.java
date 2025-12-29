@@ -86,11 +86,11 @@ public class EndpointProcessData {
     private boolean batch;
 
     /**
-     * 安全检查代理服务实例
-     * 在请求处理开始时创建并存储，整个请求生命周期中复用
+     * 安全检查上下文
+     * 存储安全检查配置和检查结果数据
      */
     @JsonIgnore
-    private transient Object safetyCheckDelegator;
+    private transient Object safetyCheckContext;
 
     public void setApikeyInfo(ApikeyInfo ak) {
         this.setApikey(ak.getApikey());

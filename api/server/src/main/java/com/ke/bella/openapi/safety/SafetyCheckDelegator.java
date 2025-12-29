@@ -8,8 +8,6 @@ import com.ke.bella.openapi.protocol.completion.CompletionRequest;
 import com.ke.bella.openapi.protocol.completion.CompletionResponse;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.concurrent.ConcurrentLinkedQueue;
-
 /**
  * 安全检查代理实现
  * 通过适配器模式根据不同的 mode 执行不同的安全检查策略
@@ -20,6 +18,9 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  *   <li>async: 异步模式，在独立线程池执行，不阻断主流程，异常仅记录日志</li>
  *   <li>skip: 跳过模式，不执行任何检查</li>
  * </ul>
+ *
+ * <p>数据存储说明：
+ * 本类不再存储风险数据，所有数据由 SafetyCheckContext 管理
  *
  * @param <T> 安全检查请求类型
  */
@@ -33,19 +34,9 @@ public class SafetyCheckDelegator<T extends SafetyCheckRequest>
     private final ISafetyCheckService<T> delegate;
 
     /**
-     * 安全检查上下文（包含mode、executor等信息）
+     * 安全检查上下文（包含mode、数据存储等信息）
      */
     private final SafetyCheckContext context;
-
-    /**
-     * 请求输入安全检查结果
-     */
-    private Object requestRiskData;
-
-    /**
-     * 响应输出安全检查结果队列（支持异步多次检查）
-     */
-    private final ConcurrentLinkedQueue<Object> responseRiskDataQueue = new ConcurrentLinkedQueue<>();
 
     /**
      * 构造函数
@@ -147,14 +138,12 @@ public class SafetyCheckDelegator<T extends SafetyCheckRequest>
                 SafetyCheckRequest.Chat.convertFrom(request, processData, apikeyInfo);
         if (safetyRequest == null) return;
 
-        // 执行检查，结果保存到 requestRiskData
-        Object result = safetyCheck((T) safetyRequest, isMock, riskData -> {
-            this.requestRiskData = riskData;
-        });
+        // 执行检查，结果通过 callback 写入 context
+        Object result = safetyCheck((T) safetyRequest, isMock, context::setRequestRiskData);
 
         // 同步模式会立即返回结果
         if (result != null) {
-            this.requestRiskData = result;
+            context.setRequestRiskData(result);
         }
     }
 
@@ -166,29 +155,7 @@ public class SafetyCheckDelegator<T extends SafetyCheckRequest>
                 SafetyCheckRequest.Chat.convertFrom(response, processData, apikeyInfo);
         if (safetyRequest == null) return;
 
-        // 执行检查，结果通过callback写入队列
-        safetyCheck((T) safetyRequest, isMock, this::addResponseRiskData);
-    }
-
-    @Override
-    public Object getRequestRiskData() {
-        return requestRiskData;
-    }
-
-    @Override
-    public void addResponseRiskData(Object riskData) {
-        if (riskData != null) {
-            responseRiskDataQueue.offer(riskData);
-        }
-    }
-
-    @Override
-    public Object pollResponseRiskData() {
-        return responseRiskDataQueue.poll();
-    }
-
-    @Override
-    public boolean hasResponseRiskData() {
-        return !responseRiskDataQueue.isEmpty();
+        // 执行检查，结果通过 callback 写入 context 的队列
+        safetyCheck((T) safetyRequest, isMock, context::addResponseRiskData);
     }
 }

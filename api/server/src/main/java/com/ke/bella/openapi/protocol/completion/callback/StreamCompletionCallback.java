@@ -11,7 +11,7 @@ import com.ke.bella.openapi.protocol.completion.ResponseHelper;
 import com.ke.bella.openapi.protocol.completion.StreamCompletionResponse;
 import com.ke.bella.openapi.protocol.log.EndpointLogger;
 import com.ke.bella.openapi.safety.ISafetyCheckService;
-import com.ke.bella.openapi.safety.ISafetyCheckDelegatorService;
+import com.ke.bella.openapi.safety.SafetyCheckContext;
 import com.ke.bella.openapi.utils.DateTimeUtils;
 import com.ke.bella.openapi.utils.PunctuationUtils;
 import com.ke.bella.openapi.utils.SseHelper;
@@ -53,9 +53,9 @@ public class StreamCompletionCallback implements Callbacks.StreamCompletionCallb
         responseBuffer.setCreated(DateTimeUtils.getCurrentSeconds());
         this.choiceBuffer = new HashMap<>();
 
-        // 从 delegator 获取请求风险数据
-        ISafetyCheckDelegatorService delegator = (ISafetyCheckDelegatorService) processData.getSafetyCheckDelegator();
-        this.requestRiskData = delegator != null ? delegator.getRequestRiskData() : null;
+        // 从 context 获取请求风险数据
+        SafetyCheckContext context = (SafetyCheckContext) processData.getSafetyCheckContext();
+        this.requestRiskData = context != null ? context.getRequestRiskData() : null;
     }
 
     @Override
@@ -95,12 +95,13 @@ public class StreamCompletionCallback implements Callbacks.StreamCompletionCallb
 
     /**
      * 发送所有安全检测结果（消费队列中的所有结果）
+     * 直接从 context 获取风险数据
      */
     private void sendAllSafetyResults() {
-        ISafetyCheckDelegatorService delegator = (ISafetyCheckDelegatorService) processData.getSafetyCheckDelegator();
-        if (delegator != null) {
-            while (delegator.hasResponseRiskData()) {
-                Object safetyResult = delegator.pollResponseRiskData();
+        SafetyCheckContext context = (SafetyCheckContext) processData.getSafetyCheckContext();
+        if (context != null) {
+            while (context.hasResponseRiskData()) {
+                Object safetyResult = context.pollResponseRiskData();
                 if (safetyResult != null) {
                     StreamCompletionResponse response = new StreamCompletionResponse();
                     response.setSensitives(safetyResult);
@@ -212,9 +213,9 @@ public class StreamCompletionCallback implements Callbacks.StreamCompletionCallb
         responseBuffer.setChoices(Collections.singletonList(choice));
 
         // 执行流式响应安全检测，结果通过callback写入队列
-        ISafetyCheckDelegatorService delegator = (ISafetyCheckDelegatorService) processData.getSafetyCheckDelegator();
-        if (delegator != null) {
-            delegator.checkResponse(responseBuffer, processData, apikeyInfo, processData.isMock());
+        SafetyCheckContext context = (SafetyCheckContext) processData.getSafetyCheckContext();
+        if (context != null) {
+            context.checkResponse(responseBuffer, processData, apikeyInfo, processData.isMock());
         }
         dirtyChoice = false;
     }

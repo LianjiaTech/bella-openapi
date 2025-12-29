@@ -20,15 +20,16 @@ import java.util.function.Consumer;
  *     .processData(processData)
  *     .build();
  * ISafetyCheckDelegatorService delegator = ISafetyCheckDelegatorService.create(safetyCheckService, context);
- * processData.setSafetyCheckDelegator(delegator);
+ * context.setDelegator(delegator);
+ * processData.setSafetyCheckContext(context);
  *
- * // 使用阶段
- * delegator.checkRequest(request, processData, apikeyInfo, isMock);
- * delegator.checkResponse(response, processData, apikeyInfo, isMock);
+ * // 使用阶段 - 执行安全检查（统一通过 context 入口）
+ * context.checkRequest(request, processData, apikeyInfo, isMock);
+ * context.checkResponseAndFillRiskData(response, processData, apikeyInfo, isMock);
  *
- * // 获取结果
- * response.setRequestRiskData(delegator.getRequestRiskData());
- * response.setSensitives(delegator.pollResponseRiskData());
+ * // 或者获取结果 - 直接从 context 获取
+ * response.setRequestRiskData(context.getRequestRiskData());
+ * response.setSensitives(context.pollResponseRiskData());
  * </pre>
  *
  * @param <T> 安全检查请求类型
@@ -82,34 +83,6 @@ public interface ISafetyCheckDelegatorService<T extends SafetyCheckRequest> exte
      * @param isMock 是否Mock模式
      */
     void checkResponse(CompletionResponse response, EndpointProcessData processData, ApikeyInfo apikeyInfo, boolean isMock);
-
-    /**
-     * 获取请求输入安全检查结果
-     *
-     * @return 请求输入风险数据
-     */
-    Object getRequestRiskData();
-
-    /**
-     * 添加响应输出安全检查结果到队列
-     *
-     * @param riskData 响应输出风险数据
-     */
-    void addResponseRiskData(Object riskData);
-
-    /**
-     * 从队列中取出响应安全检查结果（消费性读取）
-     *
-     * @return 响应输出风险数据
-     */
-    Object pollResponseRiskData();
-
-    /**
-     * 检查队列中是否有响应安全检查结果
-     *
-     * @return true if 队列中有数据
-     */
-    boolean hasResponseRiskData();
 
     /**
      * 执行安全检查（底层方法，带结果回调）
