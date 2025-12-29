@@ -17,13 +17,23 @@ public class GoogleAdaptor implements CompletionAdaptor<OpenAIProperty> {
     @Override
     public CompletionResponse completion(CompletionRequest request, String url, OpenAIProperty property) {
         fillExtraBody(request);
-        return openAIAdaptor.completion(request, url, property);
+        CompletionResponse response = openAIAdaptor.completion(request, url, property);
+        normalizeGoogleUsage(response);
+        return response;
     }
 
     @Override
     public void streamCompletion(CompletionRequest request, String url, OpenAIProperty property, Callbacks.StreamCompletionCallback callback) {
         fillExtraBody(request);
-        openAIAdaptor.streamCompletion(request, url, property, callback);
+        Callbacks.StreamCompletionCallbackNode wrappedCallback = new Callbacks.StreamCompletionCallbackNode() {
+            @Override
+            public StreamCompletionResponse doCallback(StreamCompletionResponse msg) {
+                normalizeGoogleUsage(msg);
+                return msg;
+            }
+        };
+        wrappedCallback.addLast(callback);
+        openAIAdaptor.streamCompletion(request, url, property, wrappedCallback);
     }
 
     @Override
@@ -40,6 +50,36 @@ public class GoogleAdaptor implements CompletionAdaptor<OpenAIProperty> {
         if(request.getReasoning_effort() != null) {
             request.setRealExtraBody(new ExtraBody.ExtraBodyBuilder().google(new GoogleExtraBody(true)).build());
             request.setReasoning_effort(null);
+        }
+    }
+
+    private void normalizeGoogleUsage(CompletionResponse response) {
+        if (response == null || response.getUsage() == null) {
+            return;
+        }
+        CompletionResponse.TokenUsage usage = response.getUsage();
+        CompletionResponse.TokensDetail details = usage.getCompletion_tokens_details();
+        if (details != null) {
+            int detailsTotal = details.getReasoning_tokens() + details.getAudio_tokens() + details.getImage_tokens();
+            if (detailsTotal > 0) {
+                usage.setCompletion_tokens(usage.getCompletion_tokens() + detailsTotal);
+                usage.setTotal_tokens(usage.getPrompt_tokens() + usage.getCompletion_tokens());
+            }
+        }
+    }
+
+    private void normalizeGoogleUsage(StreamCompletionResponse response) {
+        if (response == null || response.getUsage() == null) {
+            return;
+        }
+        CompletionResponse.TokenUsage usage = response.getUsage();
+        CompletionResponse.TokensDetail details = usage.getCompletion_tokens_details();
+        if (details != null) {
+            int detailsTotal = details.getReasoning_tokens() + details.getAudio_tokens() + details.getImage_tokens();
+            if (detailsTotal > 0) {
+                usage.setCompletion_tokens(usage.getCompletion_tokens() + detailsTotal);
+                usage.setTotal_tokens(usage.getPrompt_tokens() + usage.getCompletion_tokens());
+            }
         }
     }
 
