@@ -5,20 +5,19 @@ import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.ke.bella.openapi.protocol.ocr.provider.baidu.BaiduBaseResponse;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 /**
  * 百度OCR API原始响应
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Data
-public class BaiduResponse implements Serializable {
+@EqualsAndHashCode(callSuper = true)
+public class BaiduResponse extends BaiduBaseResponse {
     private static final long serialVersionUID = 1L;
-
-    // 基本响应字段
-    @JsonProperty("log_id")
-    private Long logId;                 // 唯一log id
 
     @JsonProperty("direction")
     private Integer direction;          // 图像方向
@@ -40,13 +39,6 @@ public class BaiduResponse implements Serializable {
 
     @JsonProperty("idcard_type")
     private String idcardType;          // 身份证类型：normal(正常)或temporary(临时)
-
-    // 错误信息
-    @JsonProperty("error_code")
-    private String errorCode;
-
-    @JsonProperty("error_msg")
-    private String errorMsg;
 
     /**
      * 单个识别字段结果

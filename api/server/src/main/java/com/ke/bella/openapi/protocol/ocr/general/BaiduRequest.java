@@ -1,47 +1,33 @@
 package com.ke.bella.openapi.protocol.ocr.general;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
-import com.ke.bella.openapi.protocol.IMemoryClearable;
-import com.ke.bella.openapi.protocol.ITransfer;
+import com.ke.bella.openapi.protocol.ocr.provider.baidu.BaiduBaseRequest;
 
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 @Data
-@Builder
+@SuperBuilder
+@NoArgsConstructor
+@EqualsAndHashCode(callSuper = true)
 @JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
-public class BaiduRequest implements IMemoryClearable, ITransfer {
-    String image;
-    String url;
-    String pdfFile;
-    String pdfFileNum;
-    String ofdFile;
-    String ofdFileNum;
-    String languageType;
-    String detectDirection;
-    String detectLanguage;
+public class BaiduRequest extends BaiduBaseRequest {
+
+    private String pdfFile;
+    private String pdfFileNum;
+    private String ofdFile;
+    private String ofdFileNum;
+    private String languageType;
+    private String detectDirection;
+    private String detectLanguage;
+
     @Builder.Default
-    String paragraph = "false";
+    private String paragraph = "false";
+
     @Builder.Default
-    String probability = "false";
-
-    @JsonIgnore
-    private volatile boolean cleared = false;
-
-    @Override
-    public void clearLargeData() {
-        if(!cleared) {
-            this.image = null;
-            this.pdfFile = null;
-            this.ofdFile = null;
-            this.cleared = true;
-        }
-    }
-
-    @Override
-    public boolean isCleared() {
-        return cleared;
-    }
+    private String probability = "false";
 }
