@@ -6,19 +6,20 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import com.ke.bella.openapi.protocol.ocr.provider.baidu.BaiduBaseResponse;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 /**
  * 百度通用文字识别OCR API响应
  */
 @Data
+@EqualsAndHashCode(callSuper = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
-public class BaiduResponse implements Serializable {
+public class BaiduResponse extends BaiduBaseResponse {
     private static final long serialVersionUID = 1L;
-
-    private Long logId;                     // 唯一的log id，用于问题定位
     private Integer direction;              // 图像方向：-1未定义，0正向，1逆时针90度，2逆时针180度，3逆时针270度
     private Integer wordsResultNum;         // 识别结果数，表示words_result的元素个数
     private List<WordsResult> wordsResult;  // 识别结果数组
@@ -27,10 +28,6 @@ public class BaiduResponse implements Serializable {
     private Integer language;               // 语种类型：-1未定义，0英文，1日文，2韩文，3中文
     private String pdfFileSize;             // 传入PDF文件的总页数
     private String ofdFileSize;             // 传入OFD文件的总页数
-
-    // 错误信息
-    private String errorCode;
-    private String errorMsg;
 
     /**
      * 识别结果单行数据

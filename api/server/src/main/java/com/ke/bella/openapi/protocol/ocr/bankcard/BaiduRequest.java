@@ -1,41 +1,24 @@
 package com.ke.bella.openapi.protocol.ocr.bankcard;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.ke.bella.openapi.protocol.IMemoryClearable;
-import com.ke.bella.openapi.protocol.ITransfer;
+import com.ke.bella.openapi.protocol.ocr.provider.baidu.BaiduBaseRequest;
 
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 @Data
-@Builder
-public class BaiduRequest implements IMemoryClearable, ITransfer {
-    String image;
-    String url;
+@SuperBuilder
+@NoArgsConstructor
+@EqualsAndHashCode(callSuper = true)
+public class BaiduRequest extends BaiduBaseRequest {
+
     @Builder.Default
-    String location = "false";
+    private String location = "false";
+
     @Builder.Default
     @JsonProperty("detect_quality")
-    String detectQuality = "false";
-
-    // 内存清理相关字段和方法
-    @JsonIgnore
-    private volatile boolean cleared = false;
-
-    @Override
-    public void clearLargeData() {
-        if (!cleared) {
-            // 清理最大的内存占用 - 图像数据
-            this.image = null;
-
-            // 标记为已清理
-            this.cleared = true;
-        }
-    }
-
-    @Override
-    public boolean isCleared() {
-        return cleared;
-    }
+    private String detectQuality = "false";
 }

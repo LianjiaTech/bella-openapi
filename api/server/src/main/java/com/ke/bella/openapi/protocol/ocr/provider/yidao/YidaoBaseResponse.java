@@ -1,4 +1,4 @@
-package com.ke.bella.openapi.protocol.ocr;
+package com.ke.bella.openapi.protocol.ocr.provider.yidao;
 
 import java.io.Serializable;
 

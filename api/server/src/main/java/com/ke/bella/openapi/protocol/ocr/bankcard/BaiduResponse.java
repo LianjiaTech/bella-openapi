@@ -4,32 +4,25 @@ import java.io.Serializable;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.ke.bella.openapi.protocol.ocr.provider.baidu.BaiduBaseResponse;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 /**
  * 百度银行卡OCR API原始响应
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Data
-public class BaiduResponse implements Serializable {
+@EqualsAndHashCode(callSuper = true)
+public class BaiduResponse extends BaiduBaseResponse {
     private static final long serialVersionUID = 1L;
-
-    @JsonProperty("log_id")
-    private Long logId;                 // 请求标识码
 
     @JsonProperty("direction")
     private Integer direction;          // 图像方向：-1未定义，0正向，1逆时针90度，2逆时针180度，3逆时针270度
 
     @JsonProperty("result")
     private BankcardResult result;      // 返回结果
-
-    // 错误信息
-    @JsonProperty("error_code")
-    private String errorCode;
-
-    @JsonProperty("error_msg")
-    private String errorMsg;
 
     /**
      * 银行卡识别结果
