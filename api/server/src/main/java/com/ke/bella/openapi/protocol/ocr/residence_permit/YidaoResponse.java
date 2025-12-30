@@ -4,7 +4,7 @@ import java.io.Serializable;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.ke.bella.openapi.protocol.ocr.YidaoBaseResponse;
+import com.ke.bella.openapi.protocol.ocr.provider.yidao.YidaoBaseResponse;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;

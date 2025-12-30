@@ -1,4 +1,4 @@
-package com.ke.bella.openapi.protocol.ocr;
+package com.ke.bella.openapi.protocol.ocr.provider.yidao;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
