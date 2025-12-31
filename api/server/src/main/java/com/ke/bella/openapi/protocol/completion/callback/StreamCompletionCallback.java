@@ -11,7 +11,7 @@ import com.ke.bella.openapi.protocol.completion.ResponseHelper;
 import com.ke.bella.openapi.protocol.completion.StreamCompletionResponse;
 import com.ke.bella.openapi.protocol.log.EndpointLogger;
 import com.ke.bella.openapi.safety.ISafetyCheckService;
-import com.ke.bella.openapi.safety.SafetyCheckRequest;
+import com.ke.bella.openapi.safety.SafetyCheckContext;
 import com.ke.bella.openapi.utils.DateTimeUtils;
 import com.ke.bella.openapi.utils.PunctuationUtils;
 import com.ke.bella.openapi.utils.SseHelper;
@@ -52,7 +52,10 @@ public class StreamCompletionCallback implements Callbacks.StreamCompletionCallb
         this.responseBuffer = new CompletionResponse();
         responseBuffer.setCreated(DateTimeUtils.getCurrentSeconds());
         this.choiceBuffer = new HashMap<>();
-        this.requestRiskData = processData.getRequestRiskData();
+
+        // 从 context 获取请求风险数据
+        SafetyCheckContext context = (SafetyCheckContext) processData.getSafetyCheckContext();
+        this.requestRiskData = context != null ? context.getRequestRiskData() : null;
     }
 
     @Override
@@ -66,6 +69,8 @@ public class StreamCompletionCallback implements Callbacks.StreamCompletionCallb
         if(firstPackageTime == null) {
             firstPackageTime = DateTimeUtils.getCurrentMills();
         }
+
+        // 附加请求输入风险数据（首次发送）
         if(requestRiskData != null) {
             msg.setRequestRiskData(requestRiskData);
             requestRiskData = null;
@@ -73,12 +78,38 @@ public class StreamCompletionCallback implements Callbacks.StreamCompletionCallb
         send(msg);
         updateBuffer(msg.getStandardFormat() == null ? msg : msg.getStandardFormat());
         safetyCheck(false);
+
+        // 发送所有可用的安全检测结果
+        sendAllSafetyResults();
     }
 
     @Override
     public void done() {
-        safetyCheck(true);
+        safetyCheck(true);  // 最后一次安全检查
+
+        // 发送所有安全检测结果
+        sendAllSafetyResults();
+
         send("[DONE]");
+    }
+
+    /**
+     * 发送所有安全检测结果（消费队列中的所有结果）
+     * 直接从 context 获取风险数据
+     */
+    private void sendAllSafetyResults() {
+        SafetyCheckContext context = (SafetyCheckContext) processData.getSafetyCheckContext();
+        if (context != null) {
+            while (context.hasResponseRiskData()) {
+                Object safetyResult = context.pollResponseRiskData();
+                if (safetyResult != null) {
+                    StreamCompletionResponse response = new StreamCompletionResponse();
+                    response.setSensitives(safetyResult);
+                    response.setCreated(DateTimeUtils.getCurrentSeconds());
+                    send(response);
+                }
+            }
+        }
     }
 
     public void finish() {
@@ -180,16 +211,11 @@ public class StreamCompletionCallback implements Callbacks.StreamCompletionCallb
             safetyCheckIndex = content.length();
         }
         responseBuffer.setChoices(Collections.singletonList(choice));
-        if(safetyService != null) {
-            Object result = safetyService.safetyCheck(SafetyCheckRequest.Chat.convertFrom(responseBuffer, processData, apikeyInfo),
-                    processData.isMock());
 
-            if(result != null) {
-                StreamCompletionResponse response = new StreamCompletionResponse();
-                response.setSensitives(result);
-                response.setCreated(DateTimeUtils.getCurrentSeconds());
-                send(response);
-            }
+        // 执行流式响应安全检测，结果通过callback写入队列
+        SafetyCheckContext context = (SafetyCheckContext) processData.getSafetyCheckContext();
+        if (context != null) {
+            context.checkResponse(responseBuffer, processData, apikeyInfo, processData.isMock());
         }
         dirtyChoice = false;
     }

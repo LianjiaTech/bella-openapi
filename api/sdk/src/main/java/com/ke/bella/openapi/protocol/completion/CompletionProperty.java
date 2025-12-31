@@ -2,6 +2,7 @@ package com.ke.bella.openapi.protocol.completion;
 
 import com.ke.bella.openapi.protocol.AuthorizationProperty;
 import com.ke.bella.openapi.protocol.IProtocolProperty;
+import com.ke.bella.openapi.safety.SafetyCheckMode;
 import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
 
@@ -16,6 +17,7 @@ public class CompletionProperty implements IProtocolProperty {
     boolean functionCallSimulate = false;
     Map<String, String> extraHeaders;
     String queueName;
+    String safetyCheckMode = SafetyCheckMode.async.name();
     String anthropicVersion;
     String messageEndpointUrl;
     Integer defaultMaxToken;
