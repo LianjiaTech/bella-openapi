@@ -2,6 +2,7 @@ package com.ke.bella.openapi.configuration;
 
 import java.util.List;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,7 +10,9 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import com.ke.bella.openapi.db.IDGenerator;
 import com.ke.bella.openapi.db.log.LogRepo;
+import com.ke.bella.openapi.db.repo.InstanceRepo;
 import com.ke.bella.openapi.protocol.AdaptorManager;
 import com.ke.bella.openapi.protocol.IProtocolAdaptor;
 import com.ke.bella.openapi.protocol.cost.CostCounter;
@@ -21,6 +24,7 @@ import com.ke.bella.openapi.protocol.log.LogExceptionHandler;
 import com.ke.bella.openapi.protocol.log.LogRecordHandler;
 import com.ke.bella.openapi.protocol.log.MetricsLogHandler;
 import com.ke.bella.openapi.protocol.metrics.MetricsManager;
+import com.ke.bella.openapi.server.BellaServerContextHolder;
 import com.ke.bella.openapi.server.OpenapiProperties;
 import com.ke.bella.openapi.service.ApikeyService;
 import com.ke.bella.openapi.service.EndpointService;
@@ -30,10 +34,11 @@ import com.lmax.disruptor.dsl.Disruptor;
 import com.lmax.disruptor.dsl.ProducerType;
 import com.lmax.disruptor.util.DaemonThreadFactory;
 
-
 @EnableConfigurationProperties(OpenapiProperties.class)
 @Configuration
 public class BellaAutoConf {
+    @Autowired
+    private InstanceRepo instanceRepo;
     private final SleepingWaitStrategy sleepingWaitStrategy = new SleepingWaitStrategy();
     private Disruptor<LogEvent> logDisruptor;
     private CostCounter costCounter;
@@ -41,6 +46,13 @@ public class BellaAutoConf {
     private MetricsManager metricsManager;
     @Autowired
     private LimiterManager limiterManager;
+
+    @PostConstruct
+    public void registerInstance() {
+        Long id = instanceRepo.register(BellaServerContextHolder.getIp(), BellaServerContextHolder.getPort());
+        IDGenerator.setInstanceId(id);
+    }
+
     @Bean
     public AdaptorManager adaptorManager(@Autowired List<IProtocolAdaptor> adaptors) {
         AdaptorManager manager = new AdaptorManager();
@@ -84,5 +96,7 @@ public class BellaAutoConf {
         if(costCounter != null) {
             costCounter.flush();
         }
+
+        instanceRepo.unregister(BellaServerContextHolder.getIp(), BellaServerContextHolder.getPort());
     }
 }

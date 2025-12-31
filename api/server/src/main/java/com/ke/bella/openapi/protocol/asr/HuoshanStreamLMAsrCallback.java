@@ -55,6 +55,8 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
     // Message Compression
     private static final byte NO_COMPRESSION = 0b0000;
     private static final byte GZIP = 0b0001;
+    
+    private static final int ERROR_CODE_RATE_LIMIT = 45000292;
 
     private final HuoshanRealTimeAsrRequest request;
     private final Callbacks.Sender sender;
@@ -462,7 +464,7 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
 
                 String errorMsg = new String(payload);
                 log.error("服务器错误: code={}, message={}", errorCode, errorMsg);
-                handleTranscriptionFailed(500, errorMsg);
+                handleTranscriptionFailed(mapErrorCodeToHttpStatus(errorCode), errorMsg);
             }
         } else if (messageType == FULL_SERVER_RESPONSE) {
             // FULL_SERVER_RESPONSE: payloadSize在payload的开头（已跳过序列号）
@@ -582,6 +584,23 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
      */
     private int getHttpCode(int code) {
         return code == 0 ? 200 : 500;
+    }
+
+    /**
+     * 将火山引擎错误码映射为HTTP状态码
+     */
+    private int mapErrorCodeToHttpStatus(int errorCode) {
+        if (errorCode == ERROR_CODE_RATE_LIMIT) {
+            return 429;
+        }
+        
+        if (errorCode >= 40000000 && errorCode < 50000000) {
+            return 400;
+        } else if (errorCode >= 50000000 && errorCode < 60000000) {
+            return 500;
+        }
+        
+        return 500;
     }
 
     /**

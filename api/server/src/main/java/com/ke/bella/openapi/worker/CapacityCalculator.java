@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
 import org.redisson.api.RedissonClient;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -42,12 +43,13 @@ public class CapacityCalculator {
         this.redissonClient = redissonClient;
     }
 
-    public CapacityCalculator(ChannelDB channelDB, RedissonClient redissonClient, LuaScriptExecutor luaScriptExecutor) {
+    public CapacityCalculator(ChannelDB channelDB, RedissonClient redissonClient, LuaScriptExecutor luaScriptExecutor, LimiterManager limiterManager) {
         this.channel = channelDB;
         this.channelCode = channelDB.getChannelCode();
         this.fittingAlgorithm = new EmaFittingAlgorithm(0.3);
         this.redissonClient = redissonClient;
         this.luaScriptExecutor = luaScriptExecutor;
+        this.limiterManager = limiterManager;
     }
 
     public double getRemainingCapacity() {
@@ -59,7 +61,8 @@ public class CapacityCalculator {
             return 1.0;
         }
 
-        long requestCapacity = getCurrentRequests() + getCompletedRpm();
+        long currentRequests = limiterManager.getCurrentRequests(channel.getEntityCode());
+        long requestCapacity = currentRequests + getCompletedRpm();
         double remainingCapacity = 1.0 - (requestCapacity / capacity);
         return Math.max(0.0, Math.min(1.0, remainingCapacity));
     }
@@ -87,12 +90,6 @@ public class CapacityCalculator {
             log.warn("Failed to get completed RPM for channel {}: {}", channelCode, e.getMessage());
         }
         return 0;
-    }
-
-    private long getCurrentRequests() {
-        String concurrentKey = "bella-openapi-channel-concurrent:" + channel.getEntityCode();
-        Object count = redissonClient.getBucket(concurrentKey).get();
-        return count != null ? Long.parseLong(count.toString()) : 0L;
     }
 
     public double getCapacity() {

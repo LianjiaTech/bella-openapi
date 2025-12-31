@@ -45,6 +45,7 @@ public abstract class ChannelException extends RuntimeException {
             @Override
             public Integer getHttpCode() {
                 if(e instanceof IllegalArgumentException
+                        || e instanceof UnsupportedOperationException
                         || e instanceof ServletException
                         || e instanceof MethodArgumentNotValidException
                         || e instanceof HttpMessageConversionException) {
@@ -60,6 +61,9 @@ public abstract class ChannelException extends RuntimeException {
             public String getType() {
                 if(e instanceof IllegalArgumentException) {
                     return "Illegal Argument";
+                }
+                if(e instanceof UnsupportedOperationException) {
+                    return "Unsupported Operation";
                 }
                 return "Internal Exception";
             }

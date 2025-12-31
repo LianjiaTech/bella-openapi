@@ -86,6 +86,11 @@ public class VideoJob extends TableImpl<VideoJobRecord> {
     public final TableField<VideoJobRecord, String> PROMPT = createField(DSL.name("prompt"), SQLDataType.CLOB, this, "提示词");
 
     /**
+     * The column <code>video_job.input_reference_file_id</code>. 输入参考文件ID（用户上传的参考视频/图片）
+     */
+    public final TableField<VideoJobRecord, String> INPUT_REFERENCE_FILE_ID = createField(DSL.name("input_reference_file_id"), SQLDataType.VARCHAR(256).nullable(false).defaultValue(DSL.inline("", SQLDataType.VARCHAR)), this, "输入参考文件ID（用户上传的参考视频/图片）");
+
+    /**
      * The column <code>video_job.seconds</code>. 时长
      */
     public final TableField<VideoJobRecord, Long> SECONDS = createField(DSL.name("seconds"), SQLDataType.BIGINT.nullable(false).defaultValue(DSL.inline("0", SQLDataType.BIGINT)), this, "时长");
@@ -111,9 +116,14 @@ public class VideoJob extends TableImpl<VideoJobRecord> {
     public final TableField<VideoJobRecord, LocalDateTime> EXPIRES_AT = createField(DSL.name("expires_at"), SQLDataType.LOCALDATETIME(0), this, "视频任务下载过期时间");
 
     /**
-     * The column <code>video_job.status</code>. 任务状态(queued/processing/completed/failed/cancelled)
+     * The column <code>video_job.status</code>. 任务状态(queued/submitting/processing/completed/failed/cancelled)
      */
-    public final TableField<VideoJobRecord, String> STATUS = createField(DSL.name("status"), SQLDataType.VARCHAR(32).nullable(false).defaultValue(DSL.inline("queued", SQLDataType.VARCHAR)), this, "任务状态(queued/processing/completed/failed/cancelled)");
+    public final TableField<VideoJobRecord, String> STATUS = createField(DSL.name("status"), SQLDataType.VARCHAR(32).nullable(false).defaultValue(DSL.inline("queued", SQLDataType.VARCHAR)), this, "任务状态(queued/submitting/processing/completed/failed/cancelled)");
+
+    /**
+     * The column <code>video_job.bound_file_id</code>. 绑定的文件ID（用于file api转储检索）
+     */
+    public final TableField<VideoJobRecord, String> BOUND_FILE_ID = createField(DSL.name("bound_file_id"), SQLDataType.VARCHAR(256).nullable(false).defaultValue(DSL.inline("", SQLDataType.VARCHAR)), this, "绑定的文件ID（用于file api转储检索）");
 
     /**
      * The column <code>video_job.callback_url</code>. 回调URL

@@ -12,6 +12,7 @@ import com.ke.bella.openapi.tables.Category;
 import com.ke.bella.openapi.tables.Channel;
 import com.ke.bella.openapi.tables.Endpoint;
 import com.ke.bella.openapi.tables.EndpointCategoryRel;
+import com.ke.bella.openapi.tables.Instance;
 import com.ke.bella.openapi.tables.Model;
 import com.ke.bella.openapi.tables.ModelAuthorizerRel;
 import com.ke.bella.openapi.tables.ModelEndpointRel;
@@ -83,6 +84,11 @@ public class DefaultSchema extends SchemaImpl {
     public final EndpointCategoryRel ENDPOINT_CATEGORY_REL = EndpointCategoryRel.ENDPOINT_CATEGORY_REL;
 
     /**
+     * The table <code>instance</code>.
+     */
+    public final Instance INSTANCE = Instance.INSTANCE;
+
+    /**
      * 模型
      */
     public final Model MODEL = Model.MODEL;
@@ -146,6 +152,7 @@ public class DefaultSchema extends SchemaImpl {
             Channel.CHANNEL,
             Endpoint.ENDPOINT,
             EndpointCategoryRel.ENDPOINT_CATEGORY_REL,
+            Instance.INSTANCE,
             Model.MODEL,
             ModelAuthorizerRel.MODEL_AUTHORIZER_REL,
             ModelEndpointRel.MODEL_ENDPOINT_REL,

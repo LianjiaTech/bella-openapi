@@ -351,4 +351,27 @@ public class HttpUtils {
             throw new RuntimeException(e);
         }
     }
+
+    public static InputStream downloadStream(String url) throws IOException {
+        Request request = new Request.Builder()
+                .url(url)
+                .get()
+                .build();
+        
+        Response response = httpRequest(request, defaultConnectionTimeout, defaultReadTimeout);
+        
+        if (!response.isSuccessful()) {
+            String errorMsg = String.format("Failed to download from URL: %s, code: %d", url, response.code());
+            response.close();
+            throw new IOException(errorMsg);
+        }
+        
+        ResponseBody body = response.body();
+        if (body == null) {
+            response.close();
+            throw new IOException("Response body is null for URL: " + url);
+        }
+        
+        return body.byteStream();
+    }
 }

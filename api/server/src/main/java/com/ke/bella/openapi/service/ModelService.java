@@ -182,6 +182,10 @@ public class ModelService {
         return dbs.stream().map(ModelEndpointRelDB::getEndpoint).collect(Collectors.toList());
     }
 
+    public List<String> listModelNamesByEndpoint(String endpoint) {
+        return modelRepo.listModelNamesByEndpoint(endpoint);
+    }
+
     private void checkEndpoint(Set<String> endpoints) {
         Condition.EndpointCondition condition = Condition.EndpointCondition.builder()
                 .endpoints(endpoints)

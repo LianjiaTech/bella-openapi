@@ -25,12 +25,14 @@ public class VideoJobDB implements Operator, Serializable {
     private String        model;
     private Integer       progress;
     private String        prompt;
+    private String        inputReferenceFileId;
     private Long          seconds;
     private String        size;
     private String        remixedFromVideoId;
     private LocalDateTime completedAt;
     private LocalDateTime expiresAt;
     private String        status;
+    private String        boundFileId;
     private String        callbackUrl;
     private Byte          callbackStatus;
     private String        channelCode;
@@ -53,12 +55,14 @@ public class VideoJobDB implements Operator, Serializable {
         this.model = value.model;
         this.progress = value.progress;
         this.prompt = value.prompt;
+        this.inputReferenceFileId = value.inputReferenceFileId;
         this.seconds = value.seconds;
         this.size = value.size;
         this.remixedFromVideoId = value.remixedFromVideoId;
         this.completedAt = value.completedAt;
         this.expiresAt = value.expiresAt;
         this.status = value.status;
+        this.boundFileId = value.boundFileId;
         this.callbackUrl = value.callbackUrl;
         this.callbackStatus = value.callbackStatus;
         this.channelCode = value.channelCode;
@@ -80,12 +84,14 @@ public class VideoJobDB implements Operator, Serializable {
         String        model,
         Integer       progress,
         String        prompt,
+        String        inputReferenceFileId,
         Long          seconds,
         String        size,
         String        remixedFromVideoId,
         LocalDateTime completedAt,
         LocalDateTime expiresAt,
         String        status,
+        String        boundFileId,
         String        callbackUrl,
         Byte          callbackStatus,
         String        channelCode,
@@ -105,12 +111,14 @@ public class VideoJobDB implements Operator, Serializable {
         this.model = model;
         this.progress = progress;
         this.prompt = prompt;
+        this.inputReferenceFileId = inputReferenceFileId;
         this.seconds = seconds;
         this.size = size;
         this.remixedFromVideoId = remixedFromVideoId;
         this.completedAt = completedAt;
         this.expiresAt = expiresAt;
         this.status = status;
+        this.boundFileId = boundFileId;
         this.callbackUrl = callbackUrl;
         this.callbackStatus = callbackStatus;
         this.channelCode = channelCode;
@@ -223,6 +231,20 @@ public class VideoJobDB implements Operator, Serializable {
     }
 
     /**
+     * Getter for <code>video_job.input_reference_file_id</code>. 输入参考文件ID（用户上传的参考视频/图片）
+     */
+    public String getInputReferenceFileId() {
+        return this.inputReferenceFileId;
+    }
+
+    /**
+     * Setter for <code>video_job.input_reference_file_id</code>. 输入参考文件ID（用户上传的参考视频/图片）
+     */
+    public void setInputReferenceFileId(String inputReferenceFileId) {
+        this.inputReferenceFileId = inputReferenceFileId;
+    }
+
+    /**
      * Getter for <code>video_job.seconds</code>. 时长
      */
     public Long getSeconds() {
@@ -293,17 +315,31 @@ public class VideoJobDB implements Operator, Serializable {
     }
 
     /**
-     * Getter for <code>video_job.status</code>. 任务状态(queued/processing/completed/failed/cancelled)
+     * Getter for <code>video_job.status</code>. 任务状态(queued/submitting/processing/completed/failed/cancelled)
      */
     public String getStatus() {
         return this.status;
     }
 
     /**
-     * Setter for <code>video_job.status</code>. 任务状态(queued/processing/completed/failed/cancelled)
+     * Setter for <code>video_job.status</code>. 任务状态(queued/submitting/processing/completed/failed/cancelled)
      */
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    /**
+     * Getter for <code>video_job.bound_file_id</code>. 绑定的文件ID（用于file api转储检索）
+     */
+    public String getBoundFileId() {
+        return this.boundFileId;
+    }
+
+    /**
+     * Setter for <code>video_job.bound_file_id</code>. 绑定的文件ID（用于file api转储检索）
+     */
+    public void setBoundFileId(String boundFileId) {
+        this.boundFileId = boundFileId;
     }
 
     /**
@@ -471,12 +507,14 @@ public class VideoJobDB implements Operator, Serializable {
         sb.append(", ").append(model);
         sb.append(", ").append(progress);
         sb.append(", ").append(prompt);
+        sb.append(", ").append(inputReferenceFileId);
         sb.append(", ").append(seconds);
         sb.append(", ").append(size);
         sb.append(", ").append(remixedFromVideoId);
         sb.append(", ").append(completedAt);
         sb.append(", ").append(expiresAt);
         sb.append(", ").append(status);
+        sb.append(", ").append(boundFileId);
         sb.append(", ").append(callbackUrl);
         sb.append(", ").append(callbackStatus);
         sb.append(", ").append(channelCode);

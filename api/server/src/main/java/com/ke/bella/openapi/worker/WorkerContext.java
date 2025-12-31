@@ -3,6 +3,7 @@ package com.ke.bella.openapi.worker;
 import com.ke.bella.openapi.TaskExecutor;
 import com.ke.bella.openapi.client.OpenapiClient;
 import com.ke.bella.openapi.protocol.AdaptorManager;
+import com.ke.bella.openapi.protocol.limiter.LimiterManager;
 import com.ke.bella.openapi.script.LuaScriptExecutor;
 import com.ke.bella.openapi.tables.pojos.ChannelDB;
 import com.ke.bella.queue.worker.Worker;
@@ -28,6 +29,7 @@ public class WorkerContext {
     private final OpenapiClient openapiClient;
     private final AdaptorManager adaptorManager;
     private final LuaScriptExecutor luaScriptExecutor;
+    private final LimiterManager limiterManager;
 
     private volatile BackoffTask backoffTask;
 
@@ -38,7 +40,7 @@ public class WorkerContext {
                 .openapiClient(openapiClient)
                 .build();
         Worker worker = new Worker(taskProcessor::executeTask, openAiService);
-        CapacityCalculator capacityCalculator = new CapacityCalculator(channel, redissonClient, luaScriptExecutor);
+        CapacityCalculator capacityCalculator = new CapacityCalculator(channel, redissonClient, luaScriptExecutor, limiterManager);
         backoffTask = new BackoffTask(worker, capacityCalculator, channel, redissonClient);
         TaskExecutor.submit(backoffTask);
     }

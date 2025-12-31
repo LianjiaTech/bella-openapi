@@ -3,6 +3,7 @@ package com.ke.bella.openapi.worker;
 import com.ke.bella.openapi.TaskExecutor;
 import com.ke.bella.openapi.client.OpenapiClient;
 import com.ke.bella.openapi.protocol.AdaptorManager;
+import com.ke.bella.openapi.protocol.limiter.LimiterManager;
 import com.ke.bella.openapi.script.LuaScriptExecutor;
 import com.ke.bella.openapi.server.OpenAiServiceFactory;
 import com.ke.bella.openapi.server.OpenapiProperties;
@@ -41,6 +42,8 @@ public class WorkerManager {
     private OpenapiClient openapiClient;
     @Resource
     private LuaScriptExecutor luaScriptExecutor;
+    @Resource
+    private LimiterManager limiterManager;
 
     private OpenAiService openAiService;
 
@@ -85,6 +88,7 @@ public class WorkerManager {
                             .openapiClient(openapiClient)
                             .adaptorManager(adaptorManager)
                             .luaScriptExecutor(luaScriptExecutor)
+                            .limiterManager(limiterManager)
                             .build();
                     workerContext.start();
                     runningWorkers.put(channel.getChannelCode(), workerContext);

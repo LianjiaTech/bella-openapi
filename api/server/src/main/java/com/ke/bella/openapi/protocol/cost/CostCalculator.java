@@ -24,6 +24,8 @@ import com.ke.bella.openapi.protocol.realtime.RealTimePriceInfo;
 import com.ke.bella.openapi.protocol.speaker.SpeakerEmbeddingLogHandler;
 import com.ke.bella.openapi.protocol.speaker.SpeakerEmbeddingPriceInfo;
 import com.ke.bella.openapi.protocol.tts.TtsPriceInfo;
+import com.ke.bella.openapi.protocol.video.VideoPriceInfo;
+import com.ke.bella.openapi.protocol.video.VideoUsage;
 import com.ke.bella.openapi.protocol.web.WebCrawlPriceInfo;
 import com.ke.bella.openapi.protocol.web.WebCrawlUsage;
 import com.ke.bella.openapi.protocol.web.WebExtractPriceInfo;
@@ -80,6 +82,7 @@ public class CostCalculator  {
         WEB_CRAWL("/v*/web/crawl", webCrawl),
         WEB_EXTRACT("/v*/web/extract", webExtract),
         OCR("/v*/ocr/*", ocr),
+        VIDEOS("/v*/videos", video),
         ;
         final String endpoint;
         final EndpointCostCalculator calculator;
@@ -225,7 +228,7 @@ public class CostCalculator  {
             return imageCost;
         }
 
-        
+
 
 
         @Override
@@ -278,13 +281,13 @@ public class CostCalculator  {
             if (priceConfig.getPrice() == null) {
                 return BigDecimal.ZERO;
             }
-            
+
             // usage可能是Double类型(duration秒数)或者SpeakerEmbeddingUsage类型
             double durationSeconds = 0.0;
             if (usage instanceof Double) {
                 durationSeconds = (Double) usage;
             } else if (usage instanceof SpeakerEmbeddingLogHandler.SpeakerEmbeddingUsage) {
-                SpeakerEmbeddingLogHandler.SpeakerEmbeddingUsage speakerUsage = 
+                SpeakerEmbeddingLogHandler.SpeakerEmbeddingUsage speakerUsage =
                     (SpeakerEmbeddingLogHandler.SpeakerEmbeddingUsage) usage;
                 durationSeconds = speakerUsage.getDurationSeconds();
             } else if (usage != null) {
@@ -295,7 +298,7 @@ public class CostCalculator  {
                     return BigDecimal.ZERO;
                 }
             }
-            
+
             // 基于时长计算成本：price（元/小时） × duration（小时）
             // 将秒转换为小时：durationSeconds / 3600
             double durationHours = durationSeconds / 3600.0;
@@ -305,7 +308,7 @@ public class CostCalculator  {
         @Override
         public boolean checkPriceInfo(String priceInfo) {
             SpeakerEmbeddingPriceInfo priceConfig = JacksonUtils.deserialize(priceInfo, SpeakerEmbeddingPriceInfo.class);
-            return priceConfig != null && priceConfig.getPrice() != null && 
+            return priceConfig != null && priceConfig.getPrice() != null &&
                    priceConfig.getPrice().compareTo(BigDecimal.ZERO) >= 0;
         }
     };
@@ -317,26 +320,26 @@ public class CostCalculator  {
             if (priceConfig.getPrice() == null) {
                 return BigDecimal.ZERO;
             }
-            
+
             // usage 就是 SpeakerDiarizationUsage 类型
             if (usage instanceof SpeakerDiarizationLogHandler.SpeakerDiarizationUsage) {
-                SpeakerDiarizationLogHandler.SpeakerDiarizationUsage diarizationUsage = 
+                SpeakerDiarizationLogHandler.SpeakerDiarizationUsage diarizationUsage =
                     (SpeakerDiarizationLogHandler.SpeakerDiarizationUsage) usage;
                 int audioDurationSeconds = diarizationUsage.getAudioDurationSeconds();
-                
+
                 // 基于音频时长计算成本：price（元/小时） × audioDurationHours（小时）
                 // 将秒转换为小时：audioDurationSeconds / 3600.0
                 double audioDurationHours = audioDurationSeconds / 3600.0;
                 return priceConfig.getPrice().multiply(BigDecimal.valueOf(audioDurationHours));
             }
-            
+
             return BigDecimal.ZERO;
         }
 
         @Override
         public boolean checkPriceInfo(String priceInfo) {
             SpeakerDiarizationPriceInfo priceConfig = JacksonUtils.deserialize(priceInfo, SpeakerDiarizationPriceInfo.class);
-            return priceConfig != null && priceConfig.getPrice() != null && 
+            return priceConfig != null && priceConfig.getPrice() != null &&
                    priceConfig.getPrice().compareTo(BigDecimal.ZERO) >= 0;
         }
     };
@@ -448,6 +451,29 @@ public class CostCalculator  {
         public boolean checkPriceInfo(String priceInfo) {
             OcrPriceInfo price = JacksonUtils.deserialize(priceInfo, OcrPriceInfo.class);
             return price != null && price.getPricePerRequest() != null;
+        }
+    };
+
+    static EndpointCostCalculator video = new EndpointCostCalculator() {
+        @Override
+        public BigDecimal calculate(String priceInfo, Object usage) {
+            VideoPriceInfo price = JacksonUtils.deserialize(priceInfo, VideoPriceInfo.class);
+            VideoUsage videoUsage;
+            if (usage instanceof VideoUsage) {
+                videoUsage = (VideoUsage) usage;
+            } else {
+                String usageJson = JacksonUtils.serialize(usage);
+                videoUsage = JacksonUtils.deserialize(usageJson, VideoUsage.class);
+            }
+
+            int completionTokens = videoUsage.getCompletion_tokens() != null ? videoUsage.getCompletion_tokens() : 0;
+            return price.getOutput().multiply(BigDecimal.valueOf(completionTokens / 1000.0));
+        }
+
+        @Override
+        public boolean checkPriceInfo(String priceInfo) {
+            VideoPriceInfo price = JacksonUtils.deserialize(priceInfo, VideoPriceInfo.class);
+            return price != null && price.getOutput() != null;
         }
     };
 

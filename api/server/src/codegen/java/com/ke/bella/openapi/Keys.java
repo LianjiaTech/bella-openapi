@@ -12,6 +12,7 @@ import com.ke.bella.openapi.tables.Category;
 import com.ke.bella.openapi.tables.Channel;
 import com.ke.bella.openapi.tables.Endpoint;
 import com.ke.bella.openapi.tables.EndpointCategoryRel;
+import com.ke.bella.openapi.tables.Instance;
 import com.ke.bella.openapi.tables.Model;
 import com.ke.bella.openapi.tables.ModelAuthorizerRel;
 import com.ke.bella.openapi.tables.ModelEndpointRel;
@@ -28,6 +29,7 @@ import com.ke.bella.openapi.tables.records.CategoryRecord;
 import com.ke.bella.openapi.tables.records.ChannelRecord;
 import com.ke.bella.openapi.tables.records.EndpointCategoryRelRecord;
 import com.ke.bella.openapi.tables.records.EndpointRecord;
+import com.ke.bella.openapi.tables.records.InstanceRecord;
 import com.ke.bella.openapi.tables.records.ModelAuthorizerRelRecord;
 import com.ke.bella.openapi.tables.records.ModelEndpointRelRecord;
 import com.ke.bella.openapi.tables.records.ModelRecord;
@@ -44,7 +46,7 @@ import org.jooq.impl.Internal;
 
 
 /**
- * A class modelling foreign key relationships and constraints of tables in
+ * A class modelling foreign key relationships and constraints of tables in 
  * the default schema.
  */
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
@@ -72,6 +74,8 @@ public class Keys {
     public static final UniqueKey<EndpointRecord> KEY_ENDPOINT_UNIQ_IDX_UNI_ENDPOINT_CODE = Internal.createUniqueKey(Endpoint.ENDPOINT, DSL.name("KEY_endpoint_uniq_idx_uni_endpoint_code"), new TableField[] { Endpoint.ENDPOINT.ENDPOINT_CODE }, true);
     public static final UniqueKey<EndpointCategoryRelRecord> KEY_ENDPOINT_CATEGORY_REL_PRIMARY = Internal.createUniqueKey(EndpointCategoryRel.ENDPOINT_CATEGORY_REL, DSL.name("KEY_endpoint_category_rel_PRIMARY"), new TableField[] { EndpointCategoryRel.ENDPOINT_CATEGORY_REL.ID }, true);
     public static final UniqueKey<EndpointCategoryRelRecord> KEY_ENDPOINT_CATEGORY_REL_UNIQ_IDX_UNI_ENDPOINT_CATEGORY_CODE = Internal.createUniqueKey(EndpointCategoryRel.ENDPOINT_CATEGORY_REL, DSL.name("KEY_endpoint_category_rel_uniq_idx_uni_endpoint_category_code"), new TableField[] { EndpointCategoryRel.ENDPOINT_CATEGORY_REL.ENDPOINT, EndpointCategoryRel.ENDPOINT_CATEGORY_REL.CATEGORY_CODE }, true);
+    public static final UniqueKey<InstanceRecord> KEY_INSTANCE_IDX_IP_PORT = Internal.createUniqueKey(Instance.INSTANCE, DSL.name("KEY_instance_idx_ip_port"), new TableField[] { Instance.INSTANCE.IP, Instance.INSTANCE.PORT }, true);
+    public static final UniqueKey<InstanceRecord> KEY_INSTANCE_PRIMARY = Internal.createUniqueKey(Instance.INSTANCE, DSL.name("KEY_instance_PRIMARY"), new TableField[] { Instance.INSTANCE.ID }, true);
     public static final UniqueKey<ModelRecord> KEY_MODEL_PRIMARY = Internal.createUniqueKey(Model.MODEL, DSL.name("KEY_model_PRIMARY"), new TableField[] { Model.MODEL.ID }, true);
     public static final UniqueKey<ModelRecord> KEY_MODEL_UNIQ_IDX_UNI_MODEL_NAME = Internal.createUniqueKey(Model.MODEL, DSL.name("KEY_model_uniq_idx_uni_model_name"), new TableField[] { Model.MODEL.MODEL_NAME }, true);
     public static final UniqueKey<ModelAuthorizerRelRecord> KEY_MODEL_AUTHORIZER_REL_PRIMARY = Internal.createUniqueKey(ModelAuthorizerRel.MODEL_AUTHORIZER_REL, DSL.name("KEY_model_authorizer_rel_PRIMARY"), new TableField[] { ModelAuthorizerRel.MODEL_AUTHORIZER_REL.ID }, true);
