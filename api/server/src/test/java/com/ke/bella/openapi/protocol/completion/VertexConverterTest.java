@@ -1,11 +1,15 @@
 package com.ke.bella.openapi.protocol.completion;
 
+import com.ke.bella.openapi.protocol.completion.gemini.Content;
+import com.ke.bella.openapi.protocol.completion.gemini.GeminiRequest;
 import com.ke.bella.openapi.protocol.completion.gemini.UsageMetadata;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -493,5 +497,152 @@ class VertexConverterTest {
 		assertEquals(0, result.getPrompt_tokens());
 		assertEquals(0, result.getCompletion_tokens());
 		assertEquals(0, result.getTotal_tokens());
+	}
+
+	@Test
+	void testConvertToVertexRequest_WithEmptyStringContent_ShouldPreserveEmptyString() {
+		CompletionRequest request = CompletionRequest.builder()
+				.messages(Arrays.asList(
+						Message.builder()
+								.role("user")
+								.content("")
+								.build()
+				))
+				.build();
+
+		VertexProperty property = new VertexProperty();
+		property.setSupportSystemInstruction(true);
+
+		GeminiRequest result = VertexConverter.convertToVertexRequest(request, property);
+
+		assertNotNull(result);
+		assertNotNull(result.getContents());
+		assertEquals(1, result.getContents().size());
+		Content content = result.getContents().get(0);
+		assertEquals("user", content.getRole());
+		assertNotNull(content.getParts());
+		assertEquals(1, content.getParts().size());
+		assertEquals("", content.getParts().get(0).getText());
+	}
+
+	@Test
+	void testConvertToVertexRequest_WithWhitespaceContent_ShouldPreserveWhitespace() {
+		CompletionRequest request = CompletionRequest.builder()
+				.messages(Arrays.asList(
+						Message.builder()
+								.role("user")
+								.content("   ")
+								.build()
+				))
+				.build();
+
+		VertexProperty property = new VertexProperty();
+		property.setSupportSystemInstruction(true);
+
+		GeminiRequest result = VertexConverter.convertToVertexRequest(request, property);
+
+		assertNotNull(result);
+		assertNotNull(result.getContents());
+		assertEquals(1, result.getContents().size());
+		Content content = result.getContents().get(0);
+		assertEquals("user", content.getRole());
+		assertNotNull(content.getParts());
+		assertEquals(1, content.getParts().size());
+		assertEquals("   ", content.getParts().get(0).getText());
+	}
+
+	@Test
+	void testConvertToVertexRequest_WithMultimodalEmptyTextContent_ShouldPreserveEmptyText() {
+		List<Map<String, Object>> contentList = new ArrayList<>();
+		
+		Map<String, Object> textPart = new HashMap<>();
+		textPart.put("type", "text");
+		textPart.put("text", "");
+		contentList.add(textPart);
+
+		CompletionRequest request = CompletionRequest.builder()
+				.messages(Arrays.asList(
+						Message.builder()
+								.role("user")
+								.content(contentList)
+								.build()
+				))
+				.build();
+
+		VertexProperty property = new VertexProperty();
+		property.setSupportSystemInstruction(true);
+
+		GeminiRequest result = VertexConverter.convertToVertexRequest(request, property);
+
+		assertNotNull(result);
+		assertNotNull(result.getContents());
+		assertEquals(1, result.getContents().size());
+		Content content = result.getContents().get(0);
+		assertEquals("user", content.getRole());
+		assertNotNull(content.getParts());
+		assertEquals(1, content.getParts().size());
+		assertEquals("", content.getParts().get(0).getText());
+	}
+
+	@Test
+	void testConvertToVertexRequest_WithMultimodalWhitespaceTextContent_ShouldPreserveWhitespace() {
+		List<Map<String, Object>> contentList = new ArrayList<>();
+		
+		Map<String, Object> textPart = new HashMap<>();
+		textPart.put("type", "text");
+		textPart.put("text", "  \t\n  ");
+		contentList.add(textPart);
+
+		CompletionRequest request = CompletionRequest.builder()
+				.messages(Arrays.asList(
+						Message.builder()
+								.role("user")
+								.content(contentList)
+								.build()
+				))
+				.build();
+
+		VertexProperty property = new VertexProperty();
+		property.setSupportSystemInstruction(true);
+
+		GeminiRequest result = VertexConverter.convertToVertexRequest(request, property);
+
+		assertNotNull(result);
+		assertNotNull(result.getContents());
+		assertEquals(1, result.getContents().size());
+		Content content = result.getContents().get(0);
+		assertEquals("user", content.getRole());
+		assertNotNull(content.getParts());
+		assertEquals(1, content.getParts().size());
+		assertEquals("  \t\n  ", content.getParts().get(0).getText());
+	}
+
+	@Test
+	void testConvertToVertexRequest_WithMapContentEmptyText_ShouldPreserveEmptyText() {
+		Map<String, Object> contentMap = new HashMap<>();
+		contentMap.put("text", "");
+
+		CompletionRequest request = CompletionRequest.builder()
+				.messages(Arrays.asList(
+						Message.builder()
+								.role("user")
+								.content(contentMap)
+								.build()
+				))
+				.build();
+
+		VertexProperty property = new VertexProperty();
+		property.setSupportSystemInstruction(true);
+
+		GeminiRequest result = VertexConverter.convertToVertexRequest(request, property);
+
+		assertNotNull(result);
+		assertNotNull(result.getContents());
+		assertEquals(1, result.getContents().size());
+		Content content = result.getContents().get(0);
+		assertEquals("user", content.getRole());
+		assertNotNull(content.getParts());
+		assertEquals(1, content.getParts().size());
+		assertEquals("", content.getParts().get(0).getText());
 	}
 }
