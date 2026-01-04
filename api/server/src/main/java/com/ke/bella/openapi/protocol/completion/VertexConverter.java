@@ -216,19 +216,17 @@ public class VertexConverter {
         // Handle content (can be String, Map, or List for multimodal)
         if (content instanceof String) {
             String textContent = (String) content;
-            if (StringUtils.hasText(textContent)) {
-                Part part = applyThoughtSignature(
-                    Part.builder().text(textContent),
-                    thoughtSignature
-                ).build();
-                parts.add(part);
-            }
+            Part part = applyThoughtSignature(
+                Part.builder().text(textContent),
+                thoughtSignature
+            ).build();
+            parts.add(part);
         } else if (content instanceof Map) {
             // Handle content as a map with text field
             @SuppressWarnings("unchecked")
             Map<String, Object> contentMap = (Map<String, Object>) content;
             String text = (String) contentMap.get("text");
-            if (StringUtils.hasText(text)) {
+            if (text != null) {
                 Part part = applyThoughtSignature(
                     Part.builder().text(text),
                     thoughtSignature
@@ -255,10 +253,13 @@ public class VertexConverter {
         switch (type) {
             case "text":
                 String text = (String) contentItem.get("text");
-                return applyThoughtSignature(
-                    Part.builder().text(text),
-                    thoughtSignature
-                ).build();
+                if (text != null) {
+                    return applyThoughtSignature(
+                        Part.builder().text(text),
+                        thoughtSignature
+                    ).build();
+                }
+                return null;
             case "image_url":
                 @SuppressWarnings("unchecked")
                 Map<String, Object> imageUrl = (Map<String, Object>) contentItem.get("image_url");
