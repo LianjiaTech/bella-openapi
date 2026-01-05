@@ -9,12 +9,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ke.bella.openapi.EndpointContext;
-import com.ke.bella.openapi.EndpointProcessData;
 import com.ke.bella.openapi.annotations.EndpointAPI;
 import com.ke.bella.openapi.protocol.AdaptorManager;
 import com.ke.bella.openapi.protocol.ChannelRouter;
-import com.ke.bella.openapi.protocol.IProtocolAdaptor;
 import com.ke.bella.openapi.protocol.limiter.LimiterManager;
+import com.ke.bella.openapi.protocol.ocr.OcrContext;
 import com.ke.bella.openapi.protocol.ocr.OcrProperty;
 import com.ke.bella.openapi.protocol.ocr.OcrRequest;
 import com.ke.bella.openapi.protocol.ocr.bankcard.BankcardAdaptor;
@@ -23,7 +22,6 @@ import com.ke.bella.openapi.protocol.ocr.idcard.IdcardAdaptor;
 import com.ke.bella.openapi.protocol.ocr.residence_permit.ResidencePermitAdaptor;
 import com.ke.bella.openapi.protocol.ocr.tmp_idcard.TmpIdcardAdaptor;
 import com.ke.bella.openapi.service.EndpointDataService;
-import com.ke.bella.openapi.tables.pojos.ChannelDB;
 import com.ke.bella.openapi.utils.JacksonUtils;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -42,77 +40,64 @@ public class OcrController {
     @Autowired
     private EndpointDataService endpointDataService;
 
-    private static class OcrChannelContext<T extends IProtocolAdaptor> {
-        String url;
-        T adaptor;
-        OcrProperty property;
-    }
-
-    private <T extends IProtocolAdaptor> OcrChannelContext<T> initializeOcrChannel(
-            OcrRequest request,
-            Class<T> adaptorClass) {
-
-        String endpoint = EndpointContext.getRequest().getRequestURI();
-        String model = request.getModel();
-
-        endpointDataService.setEndpointData(endpoint, model, request.summary());
-        EndpointProcessData processData = EndpointContext.getProcessData();
-
-        ChannelDB channel = router.route(endpoint, model, EndpointContext.getApikey(), processData.isMock());
-        endpointDataService.setChannel(channel);
-
-        if(!processData.isPrivate()) {
-            limiterManager.incrementConcurrentCount(processData.getAkCode(), model);
-        }
-
-        String protocol = processData.getProtocol();
-        String url = processData.getForwardUrl();
-        String channelInfo = channel.getChannelInfo();
-        T adaptor = adaptorManager.getProtocolAdaptor(endpoint, protocol, adaptorClass);
-        OcrProperty property = (OcrProperty) JacksonUtils.deserialize(channelInfo, adaptor.getPropertyClass());
-
-        EndpointContext.setEncodingType(property.getEncodingType());
-
-        OcrChannelContext<T> ctx = new OcrChannelContext<>();
-        ctx.url = url;
-        ctx.adaptor = adaptor;
-        ctx.property = property;
-        return ctx;
-    }
-
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @PostMapping("/idcard")
     public Object idcard(@RequestBody @Valid OcrRequest request) {
-        OcrChannelContext<IdcardAdaptor> ctx = initializeOcrChannel(request, IdcardAdaptor.class);
-        return ctx.adaptor.idcard(request, ctx.url, ctx.property);
+        OcrContext ctx = OcrContext.initialize(request, endpointDataService, router, limiterManager);
+
+        IdcardAdaptor adaptor = adaptorManager.getProtocolAdaptor(ctx.getEndpoint(), ctx.getProtocol(), IdcardAdaptor.class);
+        OcrProperty property = (OcrProperty) JacksonUtils.deserialize(ctx.getChannelInfo(), adaptor.getPropertyClass());
+        EndpointContext.setEncodingType(property.getEncodingType());
+
+        return adaptor.idcard(request, ctx.getUrl(), property);
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @PostMapping("/bankcard")
     public Object bankcard(@RequestBody @Valid OcrRequest request) {
-        OcrChannelContext<BankcardAdaptor> ctx = initializeOcrChannel(request, BankcardAdaptor.class);
-        return ctx.adaptor.bankcard(request, ctx.url, ctx.property);
+        OcrContext ctx = OcrContext.initialize(request, endpointDataService, router, limiterManager);
+
+        BankcardAdaptor adaptor = adaptorManager.getProtocolAdaptor(ctx.getEndpoint(), ctx.getProtocol(), BankcardAdaptor.class);
+        OcrProperty property = (OcrProperty) JacksonUtils.deserialize(ctx.getChannelInfo(), adaptor.getPropertyClass());
+        EndpointContext.setEncodingType(property.getEncodingType());
+
+        return adaptor.bankcard(request, ctx.getUrl(), property);
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @PostMapping("/hmt-residence-permit")
     public Object hmtResidencePermit(@RequestBody @Valid OcrRequest request) {
-        OcrChannelContext<ResidencePermitAdaptor> ctx = initializeOcrChannel(request, ResidencePermitAdaptor.class);
-        return ctx.adaptor.hmtResidencePermit(request, ctx.url, ctx.property);
+        OcrContext ctx = OcrContext.initialize(request, endpointDataService, router, limiterManager);
+
+        ResidencePermitAdaptor adaptor = adaptorManager.getProtocolAdaptor(ctx.getEndpoint(), ctx.getProtocol(), ResidencePermitAdaptor.class);
+        OcrProperty property = (OcrProperty) JacksonUtils.deserialize(ctx.getChannelInfo(), adaptor.getPropertyClass());
+        EndpointContext.setEncodingType(property.getEncodingType());
+
+        return adaptor.hmtResidencePermit(request, ctx.getUrl(), property);
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @PostMapping("/tmp-idcard")
     public Object tmpIdcard(@RequestBody @Valid OcrRequest request) {
-        OcrChannelContext<TmpIdcardAdaptor> ctx = initializeOcrChannel(request, TmpIdcardAdaptor.class);
-        return ctx.adaptor.tmpIdcard(request, ctx.url, ctx.property);
+        OcrContext ctx = OcrContext.initialize(request, endpointDataService, router, limiterManager);
+
+        TmpIdcardAdaptor adaptor = adaptorManager.getProtocolAdaptor(ctx.getEndpoint(), ctx.getProtocol(), TmpIdcardAdaptor.class);
+        OcrProperty property = (OcrProperty) JacksonUtils.deserialize(ctx.getChannelInfo(), adaptor.getPropertyClass());
+        EndpointContext.setEncodingType(property.getEncodingType());
+
+        return adaptor.tmpIdcard(request, ctx.getUrl(), property);
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @PostMapping("/general")
     public Object general(@RequestBody @Valid OcrRequest request) {
-        OcrChannelContext<GeneralAdaptor> ctx = initializeOcrChannel(request, GeneralAdaptor.class);
-        return ctx.adaptor.general(request, ctx.url, ctx.property);
+        OcrContext ctx = OcrContext.initialize(request, endpointDataService, router, limiterManager);
+
+        GeneralAdaptor adaptor = adaptorManager.getProtocolAdaptor(ctx.getEndpoint(), ctx.getProtocol(), GeneralAdaptor.class);
+        OcrProperty property = (OcrProperty) JacksonUtils.deserialize(ctx.getChannelInfo(), adaptor.getPropertyClass());
+        EndpointContext.setEncodingType(property.getEncodingType());
+
+        return adaptor.general(request, ctx.getUrl(), property);
     }
 
 }
