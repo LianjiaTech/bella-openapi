@@ -6,6 +6,7 @@ import com.ke.bella.openapi.protocol.completion.StreamCompletionResponse;
 import com.ke.bella.openapi.protocol.completion.callback.StreamCompletionCallback;
 import com.ke.bella.openapi.protocol.log.EndpointLogger;
 import com.ke.bella.openapi.safety.ISafetyCheckService;
+import com.ke.bella.openapi.safety.SafetyCheckRequest;
 import com.ke.bella.openapi.utils.DateTimeUtils;
 import com.ke.bella.openapi.utils.SseHelper;
 import lombok.extern.slf4j.Slf4j;
@@ -32,7 +33,7 @@ public class StreamMessagesCallback extends StreamCompletionCallback {
     public StreamMessagesCallback(SseEmitter sse,
             EndpointProcessData processData, ApikeyInfo apikeyInfo,
             EndpointLogger logger,
-            ISafetyCheckService.IChatSafetyCheckService safetyService) {
+            ISafetyCheckService<SafetyCheckRequest.Chat> safetyService) {
         super(sse, processData, apikeyInfo, logger, safetyService);
     }
 
