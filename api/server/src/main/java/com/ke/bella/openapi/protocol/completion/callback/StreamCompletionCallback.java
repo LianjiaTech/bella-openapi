@@ -109,7 +109,7 @@ public class StreamCompletionCallback implements Callbacks.StreamCompletionCallb
             int index = 9;
             do {
                 index--;
-                Object riskData = safetyResultStorage.getRequestRiskData();
+                Object riskData = safetyResultStorage.getResponseRiskData();
                 if(riskData == null) {
                     break;
                 }
