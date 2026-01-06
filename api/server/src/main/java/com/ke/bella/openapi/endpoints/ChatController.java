@@ -37,6 +37,7 @@ import com.ke.bella.openapi.protocol.completion.callback.StreamCallbackProvider;
 import com.ke.bella.openapi.protocol.limiter.LimiterManager;
 import com.ke.bella.openapi.protocol.log.EndpointLogger;
 import com.ke.bella.openapi.safety.ISafetyCheckService;
+import com.ke.bella.openapi.safety.SafetyCheckHelper;
 import com.ke.bella.openapi.safety.SafetyCheckRequest;
 import com.ke.bella.openapi.service.EndpointDataService;
 import com.ke.bella.openapi.tables.pojos.ChannelDB;
@@ -131,32 +132,35 @@ public class ChatController {
 
         // Initialize channel using common method
         ChannelContext ctx = initializeChannel(endpoint, model, false);
+        CompletionProperty property = ctx.property;
 
-        if(!EndpointContext.getProcessData().isPrivate()) {
-            limiterManager.incrementConcurrentCount(EndpointContext.getProcessData().getAkCode(), model);
-        }
-        Object requestRiskData = safetyCheckService.safetyCheck(SafetyCheckRequest.Chat.convertFrom(request,
-                    EndpointContext.getProcessData(), EndpointContext.getApikey()), isMock);
-        EndpointContext.getProcessData().setRequestRiskData(requestRiskData);
         EndpointProcessData processData = EndpointContext.getProcessData();
+        if(!processData.isPrivate()) {
+            limiterManager.incrementConcurrentCount(processData.getAkCode(), model);
+        }
+
+        ISafetyCheckService<SafetyCheckRequest.Chat> chatSafetyCheckService = ctx.safetyService;
+
+        chatSafetyCheckService.safetyCheck(SafetyCheckRequest.Chat.convertFrom(request, processData, EndpointContext.getApikey()), isMock);
 
         CompletionAdaptor adaptor = ctx.adaptor;
-        CompletionProperty property = ctx.property;
         if(isMock) {
             fillMockProperty(property);
         }
         adaptor = decorateAdaptor(adaptor, property, processData);
 
         if(request.isStream()) {
-            SseEmitter sse = SseHelper.createSse(1000L * 60 * 30, EndpointContext.getProcessData().getRequestId());
-            adaptor.streamCompletion(request, ctx.url, property, StreamCallbackProvider.provide(sse, processData, EndpointContext.getApikey(), logger, safetyCheckService, property));
+            SseEmitter sse = SseHelper.createSse(1000L * 60 * 30, processData.getRequestId());
+            adaptor.streamCompletion(request, ctx.url, property, StreamCallbackProvider.provide(sse, processData, EndpointContext.getApikey(), logger, chatSafetyCheckService, property));
             return sse;
         }
 
         CompletionResponse response = adaptor.completion(request, ctx.url, property);
-        Object responseRiskData = safetyCheckService.safetyCheck(SafetyCheckRequest.Chat.convertFrom(response, EndpointContext.getProcessData(), EndpointContext.getApikey()), isMock);
-        response.setSensitives(responseRiskData);
-        response.setRequestRiskData(requestRiskData);
+
+        chatSafetyCheckService.safetyCheck(SafetyCheckRequest.Chat.convertFrom(response, processData, EndpointContext.getApikey()), isMock);
+
+        response.setRequestRiskData(SafetyCheckHelper.getRequestRiskData(chatSafetyCheckService));
+        response.setSensitives(SafetyCheckHelper.getResponseRiskData(chatSafetyCheckService));
         return response;
     }
 
@@ -191,8 +195,9 @@ public class ChatController {
      */
     private static class ChannelContext {
         String url;
-        CompletionAdaptor adaptor;
+        CompletionAdaptor<?> adaptor;
         CompletionProperty property;
+        ISafetyCheckService<SafetyCheckRequest.Chat> safetyService;
     }
 
     private ChannelContext initializeChannel(String endpoint, String model, boolean isDirectMode) {
@@ -209,15 +214,19 @@ public class ChatController {
         String channelInfo = channel.getChannelInfo();
 
         // Get adaptor and property
-        CompletionAdaptor adaptor = adaptorManager.getProtocolAdaptor(endpoint, protocol, CompletionAdaptor.class);
+        CompletionAdaptor<?> adaptor = adaptorManager.getProtocolAdaptor(endpoint, protocol, CompletionAdaptor.class);
         CompletionProperty property = (CompletionProperty) JacksonUtils.deserialize(channelInfo, adaptor.getPropertyClass());
 
         EndpointContext.setEncodingType(property.getEncodingType());
+
+        // 初始化安全检查上下文
+        ISafetyCheckService<SafetyCheckRequest.Chat> delegator = SafetyCheckHelper.createDelegator(safetyCheckService, property.getSafetyCheckMode());
 
         ChannelContext ctx = new ChannelContext();
         ctx.url = url;
         ctx.adaptor = adaptor;
         ctx.property = property;
+        ctx.safetyService = delegator;
         return ctx;
     }
 

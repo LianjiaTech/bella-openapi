@@ -108,7 +108,7 @@ export function CreateChannelForm({
             try {
                 const newChannelInfoSchema = await getChannelInfoSchema(entityType, entityCode, selectedProtocol);
                 setChannelInfoSchema(newChannelInfoSchema);
-                setChannelInfoValue({});
+                setChannelInfoValue({ safetyCheckMode: 'async' });
             } catch (error) {
                 console.error("Error fetching schemas:", error);
                 toast({
@@ -277,6 +277,43 @@ export function CreateChannelForm({
                                 />
                             </div>
                         ) : null}
+
+                        <div className="space-y-2">
+                            <Label htmlFor="safetyCheckMode">安全检测模式</Label>
+                            <Select
+                                value={channelInfoValue.safetyCheckMode as string || 'async'}
+                                onValueChange={(value) => handleChannelInfoChange('safetyCheckMode', value)}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="选择安全检测模式"/>
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="skip">
+                                        <div className="flex flex-col items-start py-1">
+                                            <span className="font-medium">跳过检测</span>
+                                            <span className="text-xs text-gray-500">不执行安全检测</span>
+                                        </div>
+                                    </SelectItem>
+                                    <SelectItem value="async">
+                                        <div className="flex flex-col items-start py-1">
+                                            <span className="font-medium">异步检测（推荐）</span>
+                                            <span className="text-xs text-gray-500">不阻塞主流程，用于审计</span>
+                                        </div>
+                                    </SelectItem>
+                                    <SelectItem value="sync">
+                                        <div className="flex flex-col items-start py-1">
+                                            <span className="font-medium">同步检测</span>
+                                            <span className="text-xs text-gray-500">检测到敏感数据会拦截</span>
+                                        </div>
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <p className="text-xs text-gray-500 mt-1">
+                                {channelInfoValue.safetyCheckMode === 'skip' && '⚠️ 不执行任何安全检测'}
+                                {(channelInfoValue.safetyCheckMode === 'async' || !channelInfoValue.safetyCheckMode) && '✓ 异步检测，不阻塞主流程（默认）'}
+                                {channelInfoValue.safetyCheckMode === 'sync' && '⚡ 同步检测，会拦截敏感请求'}
+                            </p>
+                        </div>
 
                         {channelInfoSchema && (
                             <div className="space-y-2">

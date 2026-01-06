@@ -1,20 +1,22 @@
 package com.ke.bella.openapi;
 
+import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.commons.lang3.SerializationUtils;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ke.bella.openapi.apikey.ApikeyInfo;
 import com.ke.bella.openapi.protocol.OpenapiResponse;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.SerializationUtils;
-
-import java.math.BigDecimal;
-import java.util.HashMap;
-import java.util.Map;
 
 @Data
 @Builder
@@ -75,7 +77,6 @@ public class EndpointProcessData {
     private String priceInfo;
     private String encodingType;
     private String supplier;
-    private Object requestRiskData;
     private boolean isMock;
     private String bellaTraceId;
     private boolean functionCallSimulate;
