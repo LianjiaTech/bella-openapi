@@ -86,29 +86,21 @@ public class StreamCompletionCallback implements Callbacks.StreamCompletionCallb
         updateBuffer(msg.getStandardFormat() == null ? msg : msg.getStandardFormat());
         safetyCheck(false);
 
-        // 发送所有可用的安全检测结果
-        sendAllSafetyResults();
+        sendSafetyResults(false);
     }
 
     @Override
     public void done() {
         safetyCheck(true);  // 最后一次安全检查
 
-        // 发送所有安全检测结果
-        sendAllSafetyResults();
+        sendSafetyResults(true);
 
         send("[DONE]");
     }
 
-    /**
-     * 发送所有安全检测结果（消费队列中的所有结果）
-     * 直接从 storage 获取风险数据
-     */
-    private void sendAllSafetyResults() {
+    private void sendSafetyResults(boolean done) {
         if (safetyResultStorage != null) {
-            int index = 9;
-            do {
-                index--;
+            for (int index = done ? 10 : Integer.MAX_VALUE; index > 0; index--) {
                 Object riskData = safetyResultStorage.getResponseRiskData();
                 if(riskData == null) {
                     break;
@@ -117,7 +109,7 @@ public class StreamCompletionCallback implements Callbacks.StreamCompletionCallb
                 response.setSensitives(riskData);
                 response.setCreated(DateTimeUtils.getCurrentSeconds());
                 send(response);
-            } while (index > 0);
+            }
         }
     }
 
