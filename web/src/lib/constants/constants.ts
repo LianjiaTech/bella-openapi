@@ -1,0 +1,1 @@
+export const DEFAULT_ENDPOINT = "/v1/chat/completions"

@@ -3,6 +3,7 @@ import React, { createContext, useState, useEffect, useContext, useCallback, use
 import { useSearchParams, useRouter } from 'next/navigation';
 import { getAllCategoryTrees } from '@/lib/api/meta';
 import { CategoryTree } from '@/lib/types/openapi';
+import { DEFAULT_ENDPOINT } from '@/lib/constants/constants';
 
 interface SidebarContextType {
     categoryTrees: CategoryTree[];
@@ -36,7 +37,7 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({ child
             if (saved) return saved;
         }
 
-        return '/v1/chat/completions';
+        return DEFAULT_ENDPOINT;
     });
 
     // 初始化折叠状态：从 sessionStorage 恢复

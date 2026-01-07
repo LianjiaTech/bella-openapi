@@ -100,7 +100,7 @@ const ModelsPage = () => {
    * 处理添加渠道操作
    */
   const handleAddChannel = (model: Model) => {
-    console.log("添加私有渠道:", model.modelName)
+    
   }
 
   return (
