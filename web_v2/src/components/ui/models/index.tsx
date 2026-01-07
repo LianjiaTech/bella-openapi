@@ -56,36 +56,32 @@ export function ModelFilterPanel({
   )
 
   // 同步外部初始值变化（受控组件模式）
+  // 只在 props 初始化时同步，避免在渲染期间更新状态
   useEffect(() => {
-    if (initialEndpoint !== localSelectedCapability) {
-      setLocalSelectedCapability(initialEndpoint)
-    }
-  }, [initialEndpoint, localSelectedCapability])
+    setLocalSelectedCapability(initialEndpoint)
+  }, [initialEndpoint])
 
   useEffect(() => {
-    const tagsChanged = JSON.stringify(initialTags.sort()) !== JSON.stringify(localSelectedTags.sort())
-    if (tagsChanged) {
-      setLocalSelectedTags(initialTags)
-    }
-  }, [initialTags, localSelectedTags])
+    setLocalSelectedTags(initialTags)
+  }, [initialTags])
 
   // 处理能力分类变化
   const handleCapabilityChange = useCallback((endpoint: string) => {
     setLocalSelectedCapability(endpoint)
     setLocalSelectedTags([])  // 清空标签选择
     onCapabilityChange(endpoint)
-  }, [onCapabilityChange])
+    onTagsChange([])  // 同步清空父组件的标签状态
+  }, [onCapabilityChange, onTagsChange])
 
   // 处理标签切换
   const handleTagToggle = useCallback((tag: string) => {
-    setLocalSelectedTags(prev => {
-      const newTags = prev.includes(tag)
-        ? prev.filter(t => t !== tag)
-        : [...prev, tag]
-      onTagsChange(newTags)
-      return newTags
-    })
-  }, [onTagsChange])
+    const newTags = localSelectedTags.includes(tag)
+      ? localSelectedTags.filter(t => t !== tag)
+      : [...localSelectedTags, tag]
+    
+    setLocalSelectedTags(newTags)
+    onTagsChange(newTags)
+  }, [localSelectedTags, onTagsChange])
 
   // 处理搜索变化
   const handleSearchChange = useCallback((value: string) => {
