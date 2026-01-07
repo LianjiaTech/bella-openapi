@@ -2,15 +2,16 @@
 import { TopBar } from "@/components/layout"
 import { useLanguage } from "@/components/providers/language-provider"
 import { useSidebar } from "@/components/providers"
-import { useMemo } from "react"
+import { useMemo, useDeferredValue } from "react"
 import { ModelFilterPanel } from "@/components/ui/models"
 import { useSearchParams } from "next/navigation"
 import { useState, useEffect, useCallback } from "react"
 import { useEndpointData } from "./hooks/useEndpointData"
 import { getInitialEndpoint } from "@/lib/utils"
 import { Model } from "@/lib/types/openapi"
-import { Loader } from "lucide-react"
+import { Loader, AlertCircle } from "lucide-react"
 import { ModelCard } from "@/components/ui/modelCard"
+import { Button } from "@/components/common/button"
 
 // 标签颜色配置
 const tagColors = [
@@ -35,15 +36,20 @@ const ModelsPage = () => {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   // 使用自定义 Hook 获取端点数据
-  const { features, models, initialLoading, modelsLoading } = useEndpointData(selectedCapability, selectedTags)
+  const { features, models, initialLoading, modelsLoading, error, refetch } = useEndpointData(selectedCapability, selectedTags)
+
+  // 使用 useDeferredValue 实现搜索防抖，优化大数据量场景下的性能
+  const deferredSearchQuery = useDeferredValue(searchQuery)
+
   /**
    * 根据搜索关键词筛选模型列表
+   * 使用 deferredSearchQuery 而不是 searchQuery，避免用户快速输入时频繁计算
    */
   const filteredModels = useMemo(() => {
     if (!models) return []
-    if (!searchQuery.trim()) return models
+    if (!deferredSearchQuery.trim()) return models
 
-    const query = searchQuery.toLowerCase().trim()
+    const query = deferredSearchQuery.toLowerCase().trim()
     return models.filter((model) => {
       // 搜索模型名称
       if (model.modelName?.toLowerCase().includes(query)) return true
@@ -58,7 +64,7 @@ const ModelsPage = () => {
       if (modelFeatures.some(f => f.toLowerCase().includes(query))) return true
       return false
     })
-  }, [models, searchQuery])
+  }, [models, deferredSearchQuery])
 
   /**
    * 初始化选中的能力分类选项 endpoint
@@ -115,6 +121,26 @@ const ModelsPage = () => {
               onSearchChange={handleSearchChange}
             />
 
+            {/* 错误提示 */}
+            {error && (
+              <div className="mb-4 rounded-lg border border-red-500/20 bg-red-500/10 p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-500" />
+                    <p className="text-sm text-red-500">{error.message}</p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={refetch}
+                    className="ml-4 flex-shrink-0"
+                  >
+                    {t("retry")}
+                  </Button>
+                </div>
+              </div>
+            )}
+
             {/* 模型列表 */}
             <div className="mb-4">
               <h2 className="text-sm font-medium text-muted-foreground">
@@ -125,7 +151,7 @@ const ModelsPage = () => {
             {modelsLoading ? (
               <div className="flex items-center justify-center py-12 text-muted-foreground">
                 <Loader className="h-6 w-6 animate-spin mr-2" />
-                <span className="text-sm">正在加载模型...</span>
+                <span className="text-sm">{t("loadingModels")}</span>
               </div>
             ) : (
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">

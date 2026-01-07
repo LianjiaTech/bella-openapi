@@ -1,257 +1,52 @@
 import { NextResponse } from 'next/server';
+import endpointDetailsData from '@/mocks/data/endpointDetails.json';
 
 /**
- * Mock API: 获取所有分类树
- * GET /v1/meta/category/tree/all
+ * API: 获取 Endpoint 详情
+ * GET /api/v1/meta/endpoint/details
+ *
+ * 环境变量控制:
+ * - NEXT_PUBLIC_USE_MOCK=true: 使用 Mock 数据
+ * - NEXT_PUBLIC_USE_MOCK=false: 调用真实后端 API
  */
 export async function GET() {
-  // Mock 数据
-  const mockData = {
-    "code": 200,
-    "message": null,
-    "timestamp": 1767686860503,
-    "data": {
-        "endpoint": "/v1/chat/completions",
-        "models": [
-            {
-                "modelName": "qwen2.5-7b-instruct",
-                "documentUrl": "https://help.aliyun.com/zh/model-studio/getting-started/models",
-                "properties": "{\"max_input_context\":131072,\"max_output_context\":129024}",
-                "features": "{\"stream\":true,\"function_call\":true,\"stream_function_call\":true,\"parallel_tool_calls\":false,\"vision\":false,\"json_format\":false}"
-            },
-            {
-                "modelName": "qwen2.5-72b-instruct",
-                "documentUrl": "https://help.aliyun.com/zh/model-studio/getting-started/models",
-                "properties": "{\"max_input_context\":131072,\"max_output_context\":129024}",
-                "features": "{\"stream\":true,\"function_call\":true,\"stream_function_call\":true,\"parallel_tool_calls\":false,\"vision\":false,\"json_format\":false}"
-            },
-            {
-                "modelName": "qwen2.5-32b-instruct",
-                "documentUrl": "https://help.aliyun.com/zh/model-studio/getting-started/models",
-                "properties": "{\"max_input_context\":131072,\"max_output_context\":129024}",
-                "features": "{\"stream\":true,\"function_call\":true,\"stream_function_call\":true,\"parallel_tool_calls\":false,\"vision\":false,\"json_format\":false}"
-            },
-            {
-                "modelName": "qwen2.5-14b-instruct",
-                "documentUrl": "https://help.aliyun.com/zh/model-studio/getting-started/models",
-                "properties": "{\"max_input_context\":131072,\"max_output_context\":129024}",
-                "features": "{\"stream\":true,\"function_call\":true,\"stream_function_call\":true,\"parallel_tool_calls\":false,\"vision\":false,\"json_format\":false}"
-            },
-            {
-                "modelName": "qwen2-72b-instruct",
-                "documentUrl": "https://help.aliyun.com/zh/model-studio/getting-started/models",
-                "properties": "{\"max_input_context\":131072,\"max_output_context\":129024}",
-                "features": "{\"stream\":true,\"function_call\":true,\"stream_function_call\":true,\"parallel_tool_calls\":false,\"vision\":false,\"json_format\":false}"
-            },
-            {
-                "modelName": "qwen-vl-plus",
-                "documentUrl": "https://help.aliyun.com/zh/model-studio/getting-started/models",
-                "properties": "{\"max_input_context\":129024,\"max_output_context\":8192}",
-                "features": "{\"json_format\":true,\"stream_function_call\":true,\"vision\":true,\"stream\":true,\"parallel_tool_calls\":false,\"function_call\":true,\"json_schema\":false}"
-            },
-            {
-                "modelName": "qwen-vl-max",
-                "documentUrl": "https://help.aliyun.com/zh/model-studio/getting-started/models",
-                "properties": "{\"max_input_context\":129024,\"max_output_context\":8192}",
-                "features": "{\"vision\":true,\"json_format\":true,\"stream_function_call\":true,\"parallel_tool_calls\":false,\"stream\":true,\"function_call\":true,\"json_schema\":false}"
-            },
-            {
-                "modelName": "qwen-turbo",
-                "documentUrl": "https://help.aliyun.com/zh/model-studio/getting-started/models",
-                "properties": "{\"max_input_context\":1000000,\"max_output_context\":8192}",
-                "features": "{\"stream\":true,\"function_call\":true,\"stream_function_call\":true,\"parallel_tool_calls\":false,\"vision\":false,\"json_format\":false}"
-            },
-            {
-                "modelName": "qwen-plus",
-                "documentUrl": "https://help.aliyun.com/zh/model-studio/getting-started/models",
-                "properties": "{\"max_input_context\":129024,\"max_output_context\":8192}",
-                "features": "{\"stream\":true,\"function_call\":true,\"stream_function_call\":true,\"parallel_tool_calls\":false,\"vision\":false,\"json_format\":false}"
-            },
-            {
-                "modelName": "qwen-max",
-                "documentUrl": "https://help.aliyun.com/zh/model-studio/getting-started/models",
-                "properties": "{\"max_input_context\":30720,\"max_output_context\":8192}",
-                "features": "{\"stream\":true,\"function_call\":true,\"stream_function_call\":true,\"parallel_tool_calls\":false,\"vision\":false,\"json_format\":false}"
-            },
-            {
-                "modelName": "qwen-long",
-                "documentUrl": "https://help.aliyun.com/zh/model-studio/getting-started/models",
-                "properties": "{\"max_input_context\":10000000,\"max_output_context\":6000}",
-                "features": "{\"stream\":true,\"function_call\":true,\"stream_function_call\":true,\"parallel_tool_calls\":false,\"vision\":false,\"json_format\":false}"
-            },
-            {
-                "modelName": "o3-mini",
-                "documentUrl": "https://platform.openai.com/docs/models",
-                "properties": "{\"max_input_context\":200000,\"max_output_context\":100000}",
-                "features": "{\"stream\":true,\"function_call\":true,\"stream_function_call\":true,\"parallel_tool_calls\":true,\"vision\":false,\"json_format\":true,\"json_schema\":true}"
-            },
-            {
-                "modelName": "o3",
-                "documentUrl": "https://platform.openai.com/docs/models",
-                "properties": "{\"max_input_context\":200000,\"max_output_context\":100000}",
-                "features": "{\"stream\":true,\"function_call\":true,\"stream_function_call\":true,\"parallel_tool_calls\":true,\"vision\":true,\"json_format\":true,\"json_schema\":true}"
-            },
-            {
-                "modelName": "o1-mini",
-                "documentUrl": "https://platform.openai.com/docs/models",
-                "properties": "{\"max_input_context\":128000,\"max_output_context\":65536}",
-                "features": "{\"stream\":true,\"function_call\":true,\"stream_function_call\":true,\"parallel_tool_calls\":true,\"vision\":false,\"json_format\":true,\"json_schema\":true}"
-            },
-            {
-                "modelName": "o1",
-                "documentUrl": "https://platform.openai.com/docs/models",
-                "properties": "{\"max_input_context\":200000,\"max_output_context\":100000}",
-                "features": "{\"stream\":true,\"function_call\":true,\"stream_function_call\":true,\"parallel_tool_calls\":true,\"vision\":true,\"json_format\":true,\"json_schema\":true}"
-            },
-            {
-                "modelName": "moonshot-v1-8k",
-                "documentUrl": "https://platform.moonshot.cn/docs",
-                "properties": "{\"max_input_context\":8000,\"max_output_context\":4096}",
-                "features": "{\"stream\":true,\"function_call\":true,\"stream_function_call\":true,\"parallel_tool_calls\":false,\"vision\":false,\"json_format\":false}"
-            },
-            {
-                "modelName": "moonshot-v1-32k",
-                "documentUrl": "https://platform.moonshot.cn/docs",
-                "properties": "{\"max_input_context\":32000,\"max_output_context\":4096}",
-                "features": "{\"stream\":true,\"function_call\":true,\"stream_function_call\":true,\"parallel_tool_calls\":false,\"vision\":false,\"json_format\":false}"
-            },
-            {
-                "modelName": "moonshot-v1-128k",
-                "documentUrl": "https://platform.moonshot.cn/docs",
-                "properties": "{\"max_input_context\":128000,\"max_output_context\":4096}",
-                "features": "{\"stream\":true,\"function_call\":true,\"stream_function_call\":true,\"parallel_tool_calls\":false,\"vision\":false,\"json_format\":false}"
-            },
-            {
-                "modelName": "gpt-4o-mini",
-                "documentUrl": "https://platform.openai.com/docs/models",
-                "properties": "{\"max_input_context\":128000,\"max_output_context\":16384}",
-                "features": "{\"stream\":true,\"function_call\":true,\"stream_function_call\":true,\"parallel_tool_calls\":true,\"vision\":true,\"json_format\":true,\"json_schema\":true}"
-            },
-            {
-                "modelName": "gpt-4o",
-                "documentUrl": "https://platform.openai.com/docs/models",
-                "properties": "{\"max_input_context\":128000,\"max_output_context\": 16384}",
-                "features": "{\"stream\":true,\"function_call\":true,\"stream_function_call\":true,\"parallel_tool_calls\":true,\"vision\":true,\"json_format\":true,\"json_schema\":true}"
-            },
-            {
-                "modelName": "doubao-pro-32k",
-                "documentUrl": "https://www.volcengine.com/docs/82379/1330310",
-                "properties": "{\"max_input_context\":32000,\"max_output_context\":4096}",
-                "features": "{\"stream\":true,\"function_call\":true,\"stream_function_call\":true,\"parallel_tool_calls\":false,\"vision\":false,\"json_format\":false}"
-            },
-            {
-                "modelName": "doubao-pro-256k",
-                "documentUrl": "https://www.volcengine.com/docs/82379/1330310",
-                "properties": "{\"max_input_context\":256000,\"max_output_context\":4096}",
-                "features": "{\"json_format\":true,\"function_call\":true,\"stream_function_call\":false,\"stream\":true}"
-            },
-            {
-                "modelName": "deepseek-reasoner",
-                "documentUrl": "https://api-docs.deepseek.com/zh-cn/",
-                "properties": "{\"max_input_context\":64000,\"max_output_context\":8192}",
-                "features": "{\"json_format\":false,\"stream_function_call\":true,\"stream\":true,\"function_call\":true,\"agent_thought\":true,\"reason_content\":true}"
-            },
-            {
-                "modelName": "deepseek-chat",
-                "documentUrl": "https://api-docs.deepseek.com/zh-cn/",
-                "properties": "{\"max_input_context\":64000,\"max_output_context\":8192}",
-                "features": "{\"json_format\":false,\"stream_function_call\":true,\"stream\":true,\"function_call\":true,\"parallel_tool_calls\":false}"
-            },
-            {
-                "modelName": "claude-3.7-sonnet",
-                "documentUrl": "https://docs.anthropic.com/en/docs/intro-to-claude",
-                "properties": "{\"max_input_context\":128000,\"max_output_context\":128000}",
-                "features": "{\"vision\":true,\"json_format\":false,\"stream_function_call\":true,\"parallel_tool_calls\":false,\"stream\":true,\"function_call\":true}"
-            },
-            {
-                "modelName": "claude-3.5-sonnet",
-                "documentUrl": "https://docs.anthropic.com/en/docs/intro-to-claude",
-                "properties": "{\"max_input_context\":200000,\"max_output_context\":200000}",
-                "features": "{\"vision\":true,\"json_format\":false,\"stream_function_call\":true,\"parallel_tool_calls\":false,\"stream\":true,\"function_call\":true,\"reason_content\":true}"
-            },
-            {
-                "modelName": "GLM-3-130B",
-                "documentUrl": "https://open.bigmodel.cn/console/modelcenter/square",
-                "properties": "{\"max_input_context\":8000,\"max_output_context\":4096}",
-                "features": "{\"stream\":true,\"function_call\":true,\"stream_function_call\":true,\"parallel_tool_calls\":false,\"vision\":false,\"json_format\":false}"
-            },
-            {
-                "modelName": "Doubao-1.5-vision-pro-32k",
-                "documentUrl": "https://www.volcengine.com/docs/82379/1330310",
-                "properties": "{\"max_input_context\":32000,\"max_output_context\":12288}",
-                "features": "{\"vision\":true,\"json_format\":true,\"stream_function_call\":false,\"parallel_tool_calls\":false,\"stream\":true,\"function_call\":false,\"json_schema\":false}"
-            },
-            {
-                "modelName": "Doubao-1.5-pro-32k",
-                "documentUrl": "https://www.volcengine.com/docs/82379/1330310",
-                "properties": "{\"max_input_context\":32000,\"max_output_context\":12288}",
-                "features": "{\"json_format\":true,\"stream_function_call\":true,\"parallel_tool_calls\":false,\"stream\":true,\"function_call\":true,\"json_schema\":true}"
-            },
-            {
-                "modelName": "Doubao-1.5-pro-256k",
-                "documentUrl": "https://www.volcengine.com/docs/82379/1330310",
-                "properties": "{\"max_input_context\":256000,\"max_output_context\":12288}",
-                "features": "{\"json_format\":true,\"stream\":true}"
-            }
-        ],
-        "features": [
-            {
-                "code": "overseas",
-                "name": "国外"
-            },
-            {
-                "code": "mainland",
-                "name": "国内"
-            },
-            {
-                "code": "inner",
-                "name": "内部"
-            },
-            {
-                "code": "protected",
-                "name": "内部已备案"
-            },
-            {
-                "code": "long_input_context",
-                "name": "超长上下文"
-            },
-            {
-                "code": "long_output_context",
-                "name": "超长输出"
-            },
-            {
-                "code": "reason_content",
-                "name": "深度思索"
-            },
-            {
-                "code": "stream",
-                "name": "流式"
-            },
-            {
-                "code": "function_call",
-                "name": "工具调用"
-            },
-            {
-                "code": "stream_function_call",
-                "name": "流式工具调用"
-            },
-            {
-                "code": "vision",
-                "name": "视觉"
-            },
-            {
-                "code": "json_format",
-                "name": "json格式"
-            },
-            {
-                "code": "prompt_cache",
-                "name": "提示词缓存"
-            }
-        ]
-    },
-    "stacktrace": null
-}
+  const useMock = process.env.NEXT_PUBLIC_USE_MOCK === 'true';
 
-  // 返回 mock 数据
-  return NextResponse.json(mockData);
+  if (useMock) {
+    // 返回 Mock 数据
+    const mockResponse = {
+      code: 200,
+      message: null,
+      timestamp: Date.now(),
+      data: endpointDetailsData,
+      stacktrace: null,
+    };
+
+    return NextResponse.json(mockResponse);
+  }
+
+  // TODO: 调用真实后端 API
+  // 示例实现:
+  // try {
+  //   const backendUrl = process.env.BACKEND_API_URL || 'http://localhost:8080';
+  //   const response = await fetch(`${backendUrl}/api/v1/meta/endpoint/details`);
+  //   const data = await response.json();
+  //   return NextResponse.json(data);
+  // } catch (error) {
+  //   return NextResponse.json(
+  //     { code: 500, message: 'Backend API error', data: null },
+  //     { status: 500 }
+  //   );
+  // }
+
+  // 当前未实现真实 API 调用，返回错误提示
+  return NextResponse.json(
+    {
+      code: 501,
+      message: 'Real API not implemented. Please set NEXT_PUBLIC_USE_MOCK=true to use mock data.',
+      data: null,
+      stacktrace: null,
+    },
+    { status: 501 }
+  );
 }

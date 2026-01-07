@@ -3,11 +3,12 @@
 import { useState, useMemo, useCallback, useEffect } from "react"
 import { Button } from "@/components/common/button"
 import { Input } from "@/components/common/input"
-import { Badge } from "@/components/common/badge"
 import { Search, Layers, Loader, X } from "lucide-react"
 import { CategoryTree, MetadataFeature } from "@/lib/types/openapi"
 import { flattenCategoryTrees } from "./utils"
 import { useLanguage } from "@/components/providers/language-provider"
+import { FeatureTagList } from "./FeatureTagList"
+import { TAG_COLORS } from "@/lib/constants/theme"
 
 export interface ModelFilterPanelProps {
   // 数据输入
@@ -28,16 +29,6 @@ export interface ModelFilterPanelProps {
   className?: string
   searchPlaceholder?: string
 }
-const tagColors = [
-  "bg-green-500/10 text-green-500 border-green-500/20",
-  "bg-blue-500/10 text-blue-500 border-blue-500/20",
-  "bg-purple-500/10 text-purple-500 border-purple-500/20",
-  "bg-orange-500/10 text-orange-500 border-orange-500/20",
-  "bg-pink-500/10 text-pink-500 border-pink-500/20",
-  "bg-indigo-500/10 text-indigo-500 border-indigo-500/20",
-  "bg-cyan-500/10 text-cyan-500 border-cyan-500/20",
-  "bg-red-500/10 text-red-500 border-red-500/20",
-]
 export function ModelFilterPanel({
   categoryTrees,
   features,
@@ -169,24 +160,17 @@ export function ModelFilterPanel({
         {isLoadingFeatures ? (
           <div className="flex items-center gap-2 text-muted-foreground">
             <Loader className="h-4 w-4 animate-spin" />
-            <span className="text-sm">加载中...</span>
+            <span className="text-sm">{t("loading")}</span>
           </div>
+        ) : features.length === 0 ? (
+          <span className="text-sm text-muted-foreground">{t("noFilterTags")}</span>
         ) : (
-          <div className="flex flex-wrap gap-2">
-            {features.map((feature,idx) => (
-              <Badge
-                key={feature.code}
-                variant={localSelectedTags.includes(feature.code) ? "default" : "outline"}
-                className={`cursor-pointer transition-colors font-normal rounded-md ${localSelectedTags.includes(feature.code) ? tagColors[idx] : ""}`}
-                onClick={() => handleTagToggle(feature.code)}
-              >
-                {feature.name}
-              </Badge>
-            ))}
-            {features.length === 0 && (
-              <span className="text-sm text-muted-foreground">暂无可用筛选标签</span>
-            )}
-          </div>
+          <FeatureTagList
+            features={features}
+            selectedTags={localSelectedTags}
+            onTagToggle={handleTagToggle}
+            tagColors={TAG_COLORS}
+          />
         )}
       </div>
     </div>

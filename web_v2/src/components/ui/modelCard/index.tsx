@@ -4,28 +4,22 @@ import { Badge } from "@/components/common/badge"
 import { MessageSquare,ImageIcon, Mic,Volume2,Layers,FileText,Waves,ExternalLink, Plus } from "lucide-react"
 import Link from "next/link"
 import { Model } from "@/lib/types/openapi"
+import { formatPriceInfo } from "@/lib/utils/price"
+import { TAG_COLORS } from "@/lib/constants/theme"
 
 interface ModelCardProps {
   model: Model
   onAddChannel?: (model: Model) => void
-  tagColors?: string[]
+  tagColors?: readonly string[]
 }
 
-const defaultTagColors = [
-  "bg-green-500/10 text-green-500 border-green-500/20",
-  "bg-blue-500/10 text-blue-500 border-blue-500/20",
-  "bg-purple-500/10 text-purple-500 border-purple-500/20",
-  "bg-orange-500/10 text-orange-500 border-orange-500/20",
-  "bg-pink-500/10 text-pink-500 border-pink-500/20",
-  "bg-indigo-500/10 text-indigo-500 border-indigo-500/20",
-  "bg-cyan-500/10 text-cyan-500 border-cyan-500/20",
-  "bg-red-500/10 text-red-500 border-red-500/20",
-]
-
-export function ModelCard({ model, onAddChannel, tagColors = defaultTagColors }: ModelCardProps) {
+export function ModelCard({ model, onAddChannel, tagColors = TAG_COLORS }: ModelCardProps) {
   const features = typeof model.features === 'string'
     ? model.features.split(',').filter(f => f.trim())
     : []
+
+  // 使用工具函数格式化价格信息
+  const priceInfo = formatPriceInfo(model.priceDetails)
 
   return (
     <Card
@@ -59,21 +53,21 @@ export function ModelCard({ model, onAddChannel, tagColors = defaultTagColors }:
             <div className="flex justify-between">
               <span className="text-muted-foreground">输入/输出长度:</span>
               <span className="font-medium">
-                {model.properties?.max_input_context ?? "?"} / {model.properties?.max_output_context ?? "?"}
+                {String(model.properties?.max_input_context ?? "?")} / {String(model.properties?.max_output_context ?? "?")}
               </span>
             </div>
           )}
           <div className="flex justify-between">
-            <span className="text-muted-foreground">输入/输出定价（{model.priceDetails?.unit ?? "?"}）:</span>
+            <span className="text-muted-foreground">输入/输出定价（{priceInfo.unit}）:</span>
             <span className="font-medium">
-              ¥{model.priceDetails?.priceInfo?.input ?? "?"} / ¥{model.priceDetails?.priceInfo?.output ?? "?"}
+              ¥{priceInfo.input} / ¥{priceInfo.output}
             </span>
           </div>
-          {model.priceDetails?.priceInfo?.cachedRead !== undefined && (
+          {priceInfo.cachedRead !== null && (
             <div className="flex justify-between">
-              <span className="text-muted-foreground">命中缓存定价（{model.priceDetails?.unit ?? "?"}）:</span>
+              <span className="text-muted-foreground">命中缓存定价（{priceInfo.unit}）:</span>
               <span className="font-medium">
-                ¥{model.priceDetails?.priceInfo?.cachedRead ?? "?"}
+                ¥{priceInfo.cachedRead}
               </span>
             </div>
           )}

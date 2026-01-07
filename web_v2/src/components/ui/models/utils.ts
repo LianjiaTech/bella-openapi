@@ -94,7 +94,7 @@ const formatNumber = (value: number | string): string => {
  * 解析 properties 字段
  * 将 JSON 字符串解析为对象,并对特定数字字段应用千分位格式化
  */
-const parseProperties = (properties: string | object): object => {
+const parseProperties = (properties: string | object): { [key: string]: unknown } => {
   try {
     let parsed: any
 
