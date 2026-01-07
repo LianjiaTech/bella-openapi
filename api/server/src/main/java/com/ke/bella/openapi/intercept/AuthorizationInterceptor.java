@@ -43,7 +43,10 @@ public class AuthorizationInterceptor extends com.ke.bella.openapi.server.interc
         } else {
             String auth = request.getHeader(getHeader(request.getRequestURI()));
             if(StringUtils.isEmpty(auth)) {
-                throw new ChannelException.AuthorizationException("Authorization is empty");
+				auth = request.getHeader("x-goog-api-key");
+				if(StringUtils.isEmpty(auth)) {
+					throw new ChannelException.AuthorizationException("Authorization is empty");
+				}
             }
             ApikeyInfo apikeyInfo = apikeyService.verifyAuth(auth);
             hasPermission = apikeyInfo.hasPermission(url);

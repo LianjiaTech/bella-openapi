@@ -67,6 +67,7 @@ public class CostCalculator {
     enum CostCalculators {
         COMPLETION("/v*/chat/completions", completion),
         MESSAGES("/v*/messages", completion),
+        GEMINI("/v*/models", completion),
         EMBEDDING("/v*/embeddings", embedding),
         TTS("/v*/audio/speech", tts),
         ASR_FLASH("/v*/audio/asr/flash", asr_flash),
