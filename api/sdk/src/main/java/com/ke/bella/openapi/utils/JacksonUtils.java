@@ -251,12 +251,6 @@ public class JacksonUtils {
                 .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
                 .setTimeZone(TimeZone.getTimeZone("Asia/Shanghai"));
 
-        // 序列化成json时，将所有的Long变成string，以解决js中的精度丢失。
-        SimpleModule simpleModule = new SimpleModule();
-        simpleModule.addSerializer(Long.class, ToStringSerializer.instance);
-        simpleModule.addSerializer(Long.TYPE, ToStringSerializer.instance);
-        objectMapper.registerModule(simpleModule);
-
         // 忽略不存在的字段
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         // 空值不序列化
