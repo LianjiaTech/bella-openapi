@@ -5,6 +5,7 @@ import java.util.List;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
+import com.ke.bella.queue.QueueClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -86,6 +87,11 @@ public class BellaAutoConf {
         disruptor.start();
         logDisruptor = disruptor;
         return disruptor.getRingBuffer();
+    }
+
+    @Bean
+    public QueueClient queueClient(@Autowired OpenapiProperties openapiProperties) {
+        return QueueClient.getInstance(openapiProperties.getHost());
     }
 
     @PreDestroy

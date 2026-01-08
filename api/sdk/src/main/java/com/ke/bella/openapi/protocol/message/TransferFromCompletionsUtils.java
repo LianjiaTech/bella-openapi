@@ -337,7 +337,7 @@ public class TransferFromCompletionsUtils {
                     .type(schema.getType())
                     .properties(schema.getProperties())
                     .required(schema.getRequired())
-                    .additionalProperties(schema.isAdditionalProperties());
+                    .additionalProperties(schema.getAdditionalProperties());
             functionBuilder.parameters(paramBuilder.build());
         }
         

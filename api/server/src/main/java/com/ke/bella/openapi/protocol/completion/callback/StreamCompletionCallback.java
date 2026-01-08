@@ -1,5 +1,13 @@
 package com.ke.bella.openapi.protocol.completion.callback;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
 import com.google.common.collect.Lists;
 import com.ke.bella.openapi.EndpointProcessData;
 import com.ke.bella.openapi.apikey.ApikeyInfo;
@@ -11,19 +19,14 @@ import com.ke.bella.openapi.protocol.completion.ResponseHelper;
 import com.ke.bella.openapi.protocol.completion.StreamCompletionResponse;
 import com.ke.bella.openapi.protocol.log.EndpointLogger;
 import com.ke.bella.openapi.safety.ISafetyCheckService;
+import com.ke.bella.openapi.safety.ISafetyResultStorage;
 import com.ke.bella.openapi.safety.SafetyCheckRequest;
 import com.ke.bella.openapi.utils.DateTimeUtils;
 import com.ke.bella.openapi.utils.PunctuationUtils;
 import com.ke.bella.openapi.utils.SseHelper;
+
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 
 @Slf4j
 public class StreamCompletionCallback implements Callbacks.StreamCompletionCallback {
@@ -32,7 +35,8 @@ public class StreamCompletionCallback implements Callbacks.StreamCompletionCallb
     protected final EndpointProcessData processData;
     protected final ApikeyInfo apikeyInfo;
     protected final EndpointLogger logger;
-    protected final ISafetyCheckService.IChatSafetyCheckService safetyService;
+    protected final ISafetyCheckService<SafetyCheckRequest.Chat> safetyService;
+    protected final ISafetyResultStorage safetyResultStorage;
     protected final CompletionResponse responseBuffer;
     protected final Map<Integer, CompletionResponse.Choice> choiceBuffer;
     protected boolean dirtyChoice;
@@ -42,7 +46,7 @@ public class StreamCompletionCallback implements Callbacks.StreamCompletionCallb
     protected Integer thinkStage = 0; // 0: 推理未开始; 1: 推理开始; 2: 推理进行中；3:推理完成；-1:推理已结束
 
     public StreamCompletionCallback(SseEmitter sse, EndpointProcessData processData, ApikeyInfo apikeyInfo,
-            EndpointLogger logger, ISafetyCheckService.IChatSafetyCheckService safetyService) {
+            EndpointLogger logger, ISafetyCheckService<SafetyCheckRequest.Chat> safetyService) {
         this.sse = sse;
         this.processData = processData;
         this.apikeyInfo = apikeyInfo;
@@ -52,7 +56,13 @@ public class StreamCompletionCallback implements Callbacks.StreamCompletionCallb
         this.responseBuffer = new CompletionResponse();
         responseBuffer.setCreated(DateTimeUtils.getCurrentSeconds());
         this.choiceBuffer = new HashMap<>();
-        this.requestRiskData = processData.getRequestRiskData();
+        if(safetyService instanceof ISafetyResultStorage) {
+            this.safetyResultStorage = (ISafetyResultStorage) safetyService;
+            this.requestRiskData = this.safetyResultStorage.getRequestRiskData();
+        } else {
+            this.safetyResultStorage = null;
+        }
+
     }
 
     @Override
@@ -66,6 +76,8 @@ public class StreamCompletionCallback implements Callbacks.StreamCompletionCallb
         if(firstPackageTime == null) {
             firstPackageTime = DateTimeUtils.getCurrentMills();
         }
+
+        // 附加请求输入风险数据（首次发送）
         if(requestRiskData != null) {
             msg.setRequestRiskData(requestRiskData);
             requestRiskData = null;
@@ -73,12 +85,32 @@ public class StreamCompletionCallback implements Callbacks.StreamCompletionCallb
         send(msg);
         updateBuffer(msg.getStandardFormat() == null ? msg : msg.getStandardFormat());
         safetyCheck(false);
+
+        sendSafetyResults(false);
     }
 
     @Override
     public void done() {
-        safetyCheck(true);
+        safetyCheck(true);  // 最后一次安全检查
+
+        sendSafetyResults(true);
+
         send("[DONE]");
+    }
+
+    private void sendSafetyResults(boolean done) {
+        if (safetyResultStorage != null) {
+            for (int index = done ? 10 : Integer.MAX_VALUE; index > 0; index--) {
+                Object riskData = safetyResultStorage.getResponseRiskData();
+                if(riskData == null) {
+                    break;
+                }
+                StreamCompletionResponse response = new StreamCompletionResponse();
+                response.setSensitives(riskData);
+                response.setCreated(DateTimeUtils.getCurrentSeconds());
+                send(response);
+            }
+        }
     }
 
     public void finish() {
@@ -180,16 +212,9 @@ public class StreamCompletionCallback implements Callbacks.StreamCompletionCallb
             safetyCheckIndex = content.length();
         }
         responseBuffer.setChoices(Collections.singletonList(choice));
-        if(safetyService != null) {
-            Object result = safetyService.safetyCheck(SafetyCheckRequest.Chat.convertFrom(responseBuffer, processData, apikeyInfo),
-                    processData.isMock());
 
-            if(result != null) {
-                StreamCompletionResponse response = new StreamCompletionResponse();
-                response.setSensitives(result);
-                response.setCreated(DateTimeUtils.getCurrentSeconds());
-                send(response);
-            }
+        if(safetyService != null) {
+            safetyService.safetyCheck(SafetyCheckRequest.Chat.convertFrom(responseBuffer, processData, apikeyInfo), processData.isMock());
         }
         dirtyChoice = false;
     }

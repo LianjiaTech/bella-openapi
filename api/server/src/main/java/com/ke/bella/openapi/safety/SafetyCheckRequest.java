@@ -30,6 +30,7 @@ public class SafetyCheckRequest {
     private String userId;
     private String model;
     private String supplier;
+    private boolean isRequest;
 
     @EqualsAndHashCode(callSuper = true)
     @SuperBuilder
@@ -60,7 +61,8 @@ public class SafetyCheckRequest {
                     .model(processData.getModel())
                     .supplier(processData.getSupplier())
                     .endpoint(processData.getEndpoint())
-                    .messages(SafetyCheckRequest.Chat.convertFrom(message))
+                    .messages(Chat.convertFrom(message))
+                    .isRequest(true)
                     .build();
         }
 
@@ -71,7 +73,7 @@ public class SafetyCheckRequest {
             List<com.ke.bella.openapi.protocol.completion.Message> messages = completionResponse.getChoices().stream()
                     .map(CompletionResponse.Choice::getMessage)
                     .collect(Collectors.toList());
-            return SafetyCheckRequest.Chat.builder()
+            return Chat.builder()
                     .requestId(processData.getRequestId())
                     .type("output")
                     .akCode(apikeyInfo.getCode())
@@ -82,6 +84,7 @@ public class SafetyCheckRequest {
                     .supplier(processData.getSupplier())
                     .endpoint(processData.getEndpoint())
                     .messages(SafetyCheckRequest.Chat.convertFrom(messages))
+                    .isRequest(false)
                     .build();
         }
 

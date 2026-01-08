@@ -1,19 +1,19 @@
 package com.ke.bella.openapi.endpoints;
 
+import javax.validation.Valid;
+
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.util.Assert;
-import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ke.bella.openapi.EndpointContext;
-import com.ke.bella.openapi.EndpointProcessData;
 import com.ke.bella.openapi.annotations.EndpointAPI;
 import com.ke.bella.openapi.protocol.AdaptorManager;
 import com.ke.bella.openapi.protocol.ChannelRouter;
 import com.ke.bella.openapi.protocol.limiter.LimiterManager;
+import com.ke.bella.openapi.protocol.ocr.OcrContext;
 import com.ke.bella.openapi.protocol.ocr.OcrProperty;
 import com.ke.bella.openapi.protocol.ocr.OcrRequest;
 import com.ke.bella.openapi.protocol.ocr.bankcard.BankcardAdaptor;
@@ -22,14 +22,10 @@ import com.ke.bella.openapi.protocol.ocr.idcard.IdcardAdaptor;
 import com.ke.bella.openapi.protocol.ocr.residence_permit.ResidencePermitAdaptor;
 import com.ke.bella.openapi.protocol.ocr.tmp_idcard.TmpIdcardAdaptor;
 import com.ke.bella.openapi.service.EndpointDataService;
-import com.ke.bella.openapi.tables.pojos.ChannelDB;
 import com.ke.bella.openapi.utils.JacksonUtils;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-/**
- * OCR识别控制器
- */
 @EndpointAPI
 @RestController
 @RequestMapping("/v1/ocr")
@@ -46,180 +42,62 @@ public class OcrController {
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @PostMapping("/idcard")
-    public Object idcard(@RequestBody OcrRequest request) {
-        // 1. 设置请求上下文
-        String endpoint = EndpointContext.getRequest().getRequestURI();
-        String model = request.getModel();
-        endpointDataService.setEndpointData(endpoint, model, request);
-        EndpointProcessData processData = EndpointContext.getProcessData();
+    public Object idcard(@RequestBody @Valid OcrRequest request) {
+        OcrContext ctx = OcrContext.initialize(request, endpointDataService, router, limiterManager);
 
-        // 2. 参数校验
-        validateRequest(request);
-
-        // 3. 渠道路由选择
-        ChannelDB channel = router.route(endpoint, model, EndpointContext.getApikey(), processData.isMock());
-        endpointDataService.setChannel(channel);
-
-        // 4. 并发限制管理
-        if(!EndpointContext.getProcessData().isPrivate()) {
-            limiterManager.incrementConcurrentCount(EndpointContext.getProcessData().getAkCode(), model);
-        }
-
-        // 5. 获取协议适配器
-        String protocol = processData.getProtocol();
-        String url = processData.getForwardUrl();
-        String channelInfo = channel.getChannelInfo();
-        IdcardAdaptor adaptor = adaptorManager.getProtocolAdaptor(endpoint, protocol, IdcardAdaptor.class);
-        OcrProperty property = (OcrProperty) JacksonUtils.deserialize(channelInfo, adaptor.getPropertyClass());
+        IdcardAdaptor adaptor = adaptorManager.getProtocolAdaptor(ctx.getEndpoint(), ctx.getProtocol(), IdcardAdaptor.class);
+        OcrProperty property = (OcrProperty) JacksonUtils.deserialize(ctx.getChannelInfo(), adaptor.getPropertyClass());
         EndpointContext.setEncodingType(property.getEncodingType());
 
-        // 6. 调用适配器处理
-        return adaptor.idcard(request, url, property);
+        return adaptor.idcard(request, ctx.getUrl(), property);
     }
 
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     @PostMapping("/bankcard")
-    public Object bankcard(@RequestBody OcrRequest request) {
-        // 1. 设置请求上下文
-        String endpoint = EndpointContext.getRequest().getRequestURI();
-        String model = request.getModel();
-        endpointDataService.setEndpointData(endpoint, model, request.summary());
-        EndpointProcessData processData = EndpointContext.getProcessData();
+    public Object bankcard(@RequestBody @Valid OcrRequest request) {
+        OcrContext ctx = OcrContext.initialize(request, endpointDataService, router, limiterManager);
 
-        // 2. 参数校验
-        validateRequest(request);
-
-        // 3. 渠道路由选择
-        ChannelDB channel = router.route(endpoint, model, EndpointContext.getApikey(), processData.isMock());
-        endpointDataService.setChannel(channel);
-
-        // 4. 并发限制管理
-        if(!EndpointContext.getProcessData().isPrivate()) {
-            limiterManager.incrementConcurrentCount(EndpointContext.getProcessData().getAkCode(), model);
-        }
-
-        // 5. 获取协议适配器
-        String protocol = processData.getProtocol();
-        String url = processData.getForwardUrl();
-        String channelInfo = channel.getChannelInfo();
-        BankcardAdaptor adaptor = adaptorManager.getProtocolAdaptor(endpoint, protocol, BankcardAdaptor.class);
-        OcrProperty property = (OcrProperty) JacksonUtils.deserialize(channelInfo, adaptor.getPropertyClass());
+        BankcardAdaptor adaptor = adaptorManager.getProtocolAdaptor(ctx.getEndpoint(), ctx.getProtocol(), BankcardAdaptor.class);
+        OcrProperty property = (OcrProperty) JacksonUtils.deserialize(ctx.getChannelInfo(), adaptor.getPropertyClass());
         EndpointContext.setEncodingType(property.getEncodingType());
 
-        // 6. 调用适配器处理
-        return adaptor.bankcard(request, url, property);
+        return adaptor.bankcard(request, ctx.getUrl(), property);
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @PostMapping("/hmt-residence-permit")
-    public Object hmtResidencePermit(@RequestBody OcrRequest request) {
-        // 1. 设置请求上下文
-        String endpoint = EndpointContext.getRequest().getRequestURI();
-        String model = request.getModel();
-        endpointDataService.setEndpointData(endpoint, model, request);
-        EndpointProcessData processData = EndpointContext.getProcessData();
+    public Object hmtResidencePermit(@RequestBody @Valid OcrRequest request) {
+        OcrContext ctx = OcrContext.initialize(request, endpointDataService, router, limiterManager);
 
-        // 2. 参数校验
-        validateRequest(request);
-
-        // 3. 渠道路由选择
-        ChannelDB channel = router.route(endpoint, model, EndpointContext.getApikey(), processData.isMock());
-        endpointDataService.setChannel(channel);
-
-        // 4. 并发限制管理
-        if(!EndpointContext.getProcessData().isPrivate()) {
-            limiterManager.incrementConcurrentCount(EndpointContext.getProcessData().getAkCode(), model);
-        }
-
-        // 5. 获取协议适配器
-        String protocol = processData.getProtocol();
-        String url = processData.getForwardUrl();
-        String channelInfo = channel.getChannelInfo();
-        ResidencePermitAdaptor adaptor = adaptorManager.getProtocolAdaptor(endpoint, protocol, ResidencePermitAdaptor.class);
-        OcrProperty property = (OcrProperty) JacksonUtils.deserialize(channelInfo, adaptor.getPropertyClass());
+        ResidencePermitAdaptor adaptor = adaptorManager.getProtocolAdaptor(ctx.getEndpoint(), ctx.getProtocol(), ResidencePermitAdaptor.class);
+        OcrProperty property = (OcrProperty) JacksonUtils.deserialize(ctx.getChannelInfo(), adaptor.getPropertyClass());
         EndpointContext.setEncodingType(property.getEncodingType());
 
-        // 6. 调用适配器处理
-        return adaptor.hmtResidencePermit(request, url, property);
+        return adaptor.hmtResidencePermit(request, ctx.getUrl(), property);
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @PostMapping("/tmp-idcard")
-    public Object tmpIdcard(@RequestBody OcrRequest request) {
-        // 1. 设置请求上下文
-        String endpoint = EndpointContext.getRequest().getRequestURI();
-        String model = request.getModel();
-        endpointDataService.setEndpointData(endpoint, model, request);
-        EndpointProcessData processData = EndpointContext.getProcessData();
+    public Object tmpIdcard(@RequestBody @Valid OcrRequest request) {
+        OcrContext ctx = OcrContext.initialize(request, endpointDataService, router, limiterManager);
 
-        // 2. 参数校验
-        validateRequest(request);
-
-        // 3. 渠道路由选择
-        ChannelDB channel = router.route(endpoint, model, EndpointContext.getApikey(), processData.isMock());
-        endpointDataService.setChannel(channel);
-
-        // 4. 并发限制管理
-        if(!EndpointContext.getProcessData().isPrivate()) {
-            limiterManager.incrementConcurrentCount(EndpointContext.getProcessData().getAkCode(), model);
-        }
-
-        // 5. 获取协议适配器
-        String protocol = processData.getProtocol();
-        String url = processData.getForwardUrl();
-        String channelInfo = channel.getChannelInfo();
-        TmpIdcardAdaptor adaptor = adaptorManager.getProtocolAdaptor(endpoint, protocol, TmpIdcardAdaptor.class);
-        OcrProperty property = (OcrProperty) JacksonUtils.deserialize(channelInfo, adaptor.getPropertyClass());
+        TmpIdcardAdaptor adaptor = adaptorManager.getProtocolAdaptor(ctx.getEndpoint(), ctx.getProtocol(), TmpIdcardAdaptor.class);
+        OcrProperty property = (OcrProperty) JacksonUtils.deserialize(ctx.getChannelInfo(), adaptor.getPropertyClass());
         EndpointContext.setEncodingType(property.getEncodingType());
 
-        // 6. 调用适配器处理
-        return adaptor.tmpIdcard(request, url, property);
+        return adaptor.tmpIdcard(request, ctx.getUrl(), property);
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @PostMapping("/general")
-    public Object general(@RequestBody OcrRequest request) {
-        // 1. 设置请求上下文
-        String endpoint = EndpointContext.getRequest().getRequestURI();
-        String model = request.getModel();
-        endpointDataService.setEndpointData(endpoint, model, request);
-        EndpointProcessData processData = EndpointContext.getProcessData();
+    public Object general(@RequestBody @Valid OcrRequest request) {
+        OcrContext ctx = OcrContext.initialize(request, endpointDataService, router, limiterManager);
 
-        // 2. 参数校验
-        validateRequest(request);
-
-        // 3. 渠道路由选择
-        ChannelDB channel = router.route(endpoint, model, EndpointContext.getApikey(), processData.isMock());
-        endpointDataService.setChannel(channel);
-
-        // 4. 并发限制管理
-        if(!EndpointContext.getProcessData().isPrivate()) {
-            limiterManager.incrementConcurrentCount(EndpointContext.getProcessData().getAkCode(), model);
-        }
-
-        // 5. 获取协议适配器
-        String protocol = processData.getProtocol();
-        String url = processData.getForwardUrl();
-        String channelInfo = channel.getChannelInfo();
-        GeneralAdaptor adaptor = adaptorManager.getProtocolAdaptor(endpoint, protocol, GeneralAdaptor.class);
-        OcrProperty property = (OcrProperty) JacksonUtils.deserialize(channelInfo, adaptor.getPropertyClass());
+        GeneralAdaptor adaptor = adaptorManager.getProtocolAdaptor(ctx.getEndpoint(), ctx.getProtocol(), GeneralAdaptor.class);
+        OcrProperty property = (OcrProperty) JacksonUtils.deserialize(ctx.getChannelInfo(), adaptor.getPropertyClass());
         EndpointContext.setEncodingType(property.getEncodingType());
 
-        // 6. 调用适配器处理
-        return adaptor.general(request, url, property);
+        return adaptor.general(request, ctx.getUrl(), property);
     }
-    private void validateRequest(OcrRequest request) {
-        // 校验模型参数
-        Assert.hasText(request.getModel(), "model参数不能为空");
 
-        // 校验图片输入：三选一
-        int imageInputCount = 0;
-        if(StringUtils.hasText(request.getImageBase64()))
-            imageInputCount++;
-        if(StringUtils.hasText(request.getImageUrl()))
-            imageInputCount++;
-        if(StringUtils.hasText(request.getFileId()))
-            imageInputCount++;
-
-        Assert.isTrue(imageInputCount == 1, "image_base64、image_url、file_id必须三选一");
-    }
 }

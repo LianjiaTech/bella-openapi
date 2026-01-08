@@ -30,6 +30,8 @@ public class WorkerContext {
     private final AdaptorManager adaptorManager;
     private final LuaScriptExecutor luaScriptExecutor;
     private final LimiterManager limiterManager;
+    private final WorkerManager workerManager;
+
 
     private volatile BackoffTask backoffTask;
 
@@ -41,7 +43,7 @@ public class WorkerContext {
                 .build();
         Worker worker = new Worker(taskProcessor::executeTask, openAiService);
         CapacityCalculator capacityCalculator = new CapacityCalculator(channel, redissonClient, luaScriptExecutor, limiterManager);
-        backoffTask = new BackoffTask(worker, capacityCalculator, channel, redissonClient);
+        backoffTask = new BackoffTask(worker, capacityCalculator, channel, redissonClient, workerManager);
         TaskExecutor.submit(backoffTask);
     }
 
@@ -71,14 +73,16 @@ public class WorkerContext {
         private final CapacityCalculator capacityCalculator;
         private final ChannelDB channel;
         private final BackoffState backoff = new BackoffState();
+        private final WorkerManager workerManager;
 
         private volatile boolean stopped = false;
-
-        public BackoffTask(Worker worker, CapacityCalculator capacityCalculator, ChannelDB channel, RedissonClient redissonClient) {
+        
+        public BackoffTask(Worker worker, CapacityCalculator capacityCalculator, ChannelDB channel, RedissonClient redissonClient, WorkerManager workerManager) {
             this.worker = worker;
             this.capacityCalculator = capacityCalculator;
             this.channel = channel;
             this.redissonClient = redissonClient;
+            this.workerManager = workerManager;
         }
 
         /**
@@ -127,7 +131,7 @@ public class WorkerContext {
 
         private ProcessResult processTask() {
             double capacity = capacityCalculator.getRemainingCapacity();
-            boolean hasCapacity = capacity > 0.7;
+            boolean hasCapacity = capacity > workerManager.getRemainingCapacityThreshold();
 
             if(!hasCapacity) {
                 return new ProcessResult(false, false);
