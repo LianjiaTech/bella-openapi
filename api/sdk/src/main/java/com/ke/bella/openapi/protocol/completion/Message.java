@@ -172,7 +172,7 @@ public class Message implements Serializable {
             private String type;
             private List<String> required;
             private Object properties;
-            private Boolean additionalProperties;
+            private Object additionalProperties;
         }
     }
 
