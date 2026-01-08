@@ -333,11 +333,16 @@ public class TransferFromCompletionsUtils {
         
         if (apiTool.getInputSchema() != null) {
             MessageRequest.InputSchema schema = apiTool.getInputSchema();
+            // Convert additionalProperties from Object to Boolean
+            Boolean additionalProps = null;
+            if (schema.getAdditionalProperties() instanceof Boolean) {
+                additionalProps = (Boolean) schema.getAdditionalProperties();
+            }
             Message.Function.FunctionParameter.FunctionParameterBuilder paramBuilder = Message.Function.FunctionParameter.builder()
                     .type(schema.getType())
                     .properties(schema.getProperties())
                     .required(schema.getRequired())
-                    .additionalProperties(schema.isAdditionalProperties());
+                    .additionalProperties(additionalProps);
             functionBuilder.parameters(paramBuilder.build());
         }
         
