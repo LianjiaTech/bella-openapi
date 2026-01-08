@@ -6,6 +6,7 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.ke.bella.queue.QueueClient;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,8 +16,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import com.ke.bella.job.queue.JobQueueClient;
-import com.ke.bella.job.queue.config.JobQueueProperties;
 import com.ke.bella.openapi.BellaContext;
 import com.ke.bella.openapi.EndpointContext;
 import com.ke.bella.openapi.EndpointProcessData;
@@ -37,6 +36,7 @@ import com.ke.bella.openapi.protocol.completion.callback.StreamCallbackProvider;
 import com.ke.bella.openapi.protocol.limiter.LimiterManager;
 import com.ke.bella.openapi.protocol.log.EndpointLogger;
 import com.ke.bella.openapi.safety.ISafetyCheckService;
+import com.ke.bella.openapi.safety.SafetyCheckHelper;
 import com.ke.bella.openapi.safety.SafetyCheckRequest;
 import com.ke.bella.openapi.service.EndpointDataService;
 import com.ke.bella.openapi.tables.pojos.ChannelDB;
@@ -63,11 +63,11 @@ public class ChatController {
     @Autowired
     private ISafetyCheckService.IChatSafetyCheckService safetyCheckService;
     @Autowired
-    private JobQueueProperties jobQueueProperties;
-    @Autowired
     private EndpointDataService endpointDataService;
     @Value("${bella.openapi.max-models-per-request:3}")
     private Integer maxModelsPerRequest;
+    @Autowired
+    private QueueClient queueClient;
 
     @PostMapping("/completions")
     public Object completion(HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException {
@@ -131,32 +131,35 @@ public class ChatController {
 
         // Initialize channel using common method
         ChannelContext ctx = initializeChannel(endpoint, model, false);
+        CompletionProperty property = ctx.property;
 
-        if(!EndpointContext.getProcessData().isPrivate()) {
-            limiterManager.incrementConcurrentCount(EndpointContext.getProcessData().getAkCode(), model);
-        }
-        Object requestRiskData = safetyCheckService.safetyCheck(SafetyCheckRequest.Chat.convertFrom(request,
-                    EndpointContext.getProcessData(), EndpointContext.getApikey()), isMock);
-        EndpointContext.getProcessData().setRequestRiskData(requestRiskData);
         EndpointProcessData processData = EndpointContext.getProcessData();
+        if(!processData.isPrivate()) {
+            limiterManager.incrementConcurrentCount(processData.getAkCode(), model);
+        }
+
+        ISafetyCheckService<SafetyCheckRequest.Chat> chatSafetyCheckService = ctx.safetyService;
+
+        chatSafetyCheckService.safetyCheck(SafetyCheckRequest.Chat.convertFrom(request, processData, EndpointContext.getApikey()), isMock);
 
         CompletionAdaptor adaptor = ctx.adaptor;
-        CompletionProperty property = ctx.property;
         if(isMock) {
             fillMockProperty(property);
         }
         adaptor = decorateAdaptor(adaptor, property, processData);
 
         if(request.isStream()) {
-            SseEmitter sse = SseHelper.createSse(1000L * 60 * 30, EndpointContext.getProcessData().getRequestId());
-            adaptor.streamCompletion(request, ctx.url, property, StreamCallbackProvider.provide(sse, processData, EndpointContext.getApikey(), logger, safetyCheckService, property));
+            SseEmitter sse = SseHelper.createSse(1000L * 60 * 30, processData.getRequestId());
+            adaptor.streamCompletion(request, ctx.url, property, StreamCallbackProvider.provide(sse, processData, EndpointContext.getApikey(), logger, chatSafetyCheckService, property));
             return sse;
         }
 
         CompletionResponse response = adaptor.completion(request, ctx.url, property);
-        Object responseRiskData = safetyCheckService.safetyCheck(SafetyCheckRequest.Chat.convertFrom(response, EndpointContext.getProcessData(), EndpointContext.getApikey()), isMock);
-        response.setSensitives(responseRiskData);
-        response.setRequestRiskData(requestRiskData);
+
+        chatSafetyCheckService.safetyCheck(SafetyCheckRequest.Chat.convertFrom(response, processData, EndpointContext.getApikey()), isMock);
+
+        response.setRequestRiskData(SafetyCheckHelper.getRequestRiskData(chatSafetyCheckService));
+        response.setSensitives(SafetyCheckHelper.getResponseRiskData(chatSafetyCheckService));
         return response;
     }
 
@@ -173,9 +176,7 @@ public class ChatController {
     private CompletionAdaptor<?> decorateAdaptor(CompletionAdaptor<?> adaptor, CompletionProperty property, EndpointProcessData processData) {
         if(StringUtils.isNotBlank(property.getQueueName())) {
             if(adaptor instanceof CompletionAdaptorDelegator) {
-                JobQueueClient jobQueueClient = JobQueueClient.getInstance(jobQueueProperties.getUrl());
-                adaptor = new QueueAdaptor<>((CompletionAdaptorDelegator<?>)adaptor, jobQueueClient, processData,
-                        jobQueueProperties.getDefaultTimeout());
+                adaptor = new QueueAdaptor<>((CompletionAdaptorDelegator<?>) adaptor, queueClient, processData);
             } else {
                 throw new IllegalStateException(adaptor.getClass().getSimpleName() + "不支持请求代理");
             }
@@ -191,8 +192,9 @@ public class ChatController {
      */
     private static class ChannelContext {
         String url;
-        CompletionAdaptor adaptor;
+        CompletionAdaptor<?> adaptor;
         CompletionProperty property;
+        ISafetyCheckService<SafetyCheckRequest.Chat> safetyService;
     }
 
     private ChannelContext initializeChannel(String endpoint, String model, boolean isDirectMode) {
@@ -209,15 +211,19 @@ public class ChatController {
         String channelInfo = channel.getChannelInfo();
 
         // Get adaptor and property
-        CompletionAdaptor adaptor = adaptorManager.getProtocolAdaptor(endpoint, protocol, CompletionAdaptor.class);
+        CompletionAdaptor<?> adaptor = adaptorManager.getProtocolAdaptor(endpoint, protocol, CompletionAdaptor.class);
         CompletionProperty property = (CompletionProperty) JacksonUtils.deserialize(channelInfo, adaptor.getPropertyClass());
 
         EndpointContext.setEncodingType(property.getEncodingType());
+
+        // 初始化安全检查上下文
+        ISafetyCheckService<SafetyCheckRequest.Chat> delegator = SafetyCheckHelper.createDelegator(safetyCheckService, property.getSafetyCheckMode());
 
         ChannelContext ctx = new ChannelContext();
         ctx.url = url;
         ctx.adaptor = adaptor;
         ctx.property = property;
+        ctx.safetyService = delegator;
         return ctx;
     }
 
