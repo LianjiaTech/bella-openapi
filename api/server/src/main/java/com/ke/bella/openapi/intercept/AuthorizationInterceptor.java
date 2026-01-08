@@ -64,6 +64,12 @@ public class AuthorizationInterceptor extends com.ke.bella.openapi.server.interc
     }
 
     private String getHeader(String uri) {
+        // Gemini API 使用 x-goog-api-key 作为认证 header
+        if (uri.startsWith("/v1beta/models") || uri.startsWith("/v1beta1/publishers/google/models")) {
+            return "x-goog-api-key";
+        }
+
+        // 默认使用标准 Authorization header
         return HttpHeaders.AUTHORIZATION;
     }
 }
