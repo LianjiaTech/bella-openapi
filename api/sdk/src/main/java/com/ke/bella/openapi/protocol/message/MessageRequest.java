@@ -424,7 +424,7 @@ public class MessageRequest implements IMemoryClearable {
         private String type; // e.g., "object"
         private Object properties;
         private List<String> required;
-        private boolean additionalProperties;
+        private Object additionalProperties; // Can be Boolean or schema object
     }
 
     @Data
