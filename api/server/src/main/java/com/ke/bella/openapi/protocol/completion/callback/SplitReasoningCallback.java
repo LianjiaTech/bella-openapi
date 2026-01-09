@@ -10,7 +10,8 @@ public class SplitReasoningCallback extends Callbacks.StreamCompletionCallbackNo
 
     private final CompletionProperty property;
 
-    private Integer thinkStage = 0; // 0: 推理未开始; 1: 推理开始; 2: 推理进行中；3: 推理完成；-1:推理已结束
+    private Integer thinkStage = 0; // 0: 推理未开始; 1: 推理开始; 2: 推理进行中；3:
+                                    // 推理完成；-1:推理已结束
 
     public SplitReasoningCallback(CompletionProperty property) {
         this.property = property;
@@ -55,7 +56,6 @@ public class SplitReasoningCallback extends Callbacks.StreamCompletionCallbackNo
         msg.setReasoning(msg.content().substring(ResponseHelper.START_THINK.length()));
         msg.setContent(StringUtils.EMPTY);
     }
-
 
     private static void handleEndThink(StreamCompletionResponse msg) {
         String content = msg.content();

@@ -15,6 +15,7 @@ import java.util.regex.Pattern;
 @Slf4j
 public class CompletionMetricsResolver implements MetricsResolver {
     private static final Pattern timePattern = Pattern.compile("(?<time>\\d+)\\s+(?<unit>milliseconds|seconds)");
+
     private boolean canResolve(OpenapiResponse response, String supplier) {
         return response.getError() != null && response.getError().getHttpCode() == 429 && supplier.equals("Azure");
     }
@@ -39,7 +40,7 @@ public class CompletionMetricsResolver implements MetricsResolver {
                 default:
                     break;
                 }
-                //防止穿透惩罚，多禁1s
+                // 防止穿透惩罚，多禁1s
                 seconds += 1;
             }
         }

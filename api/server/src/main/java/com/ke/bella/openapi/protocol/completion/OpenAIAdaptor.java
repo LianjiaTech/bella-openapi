@@ -68,6 +68,7 @@ public class OpenAIAdaptor implements CompletionAdaptorDelegator<OpenAIProperty>
             delegator.request(request, listener);
         }
     }
+
     @Override
     public CompletionResponse completion(CompletionRequest request, String url, OpenAIProperty property) {
         return completion(request, url, property, null);
@@ -83,7 +84,7 @@ public class OpenAIAdaptor implements CompletionAdaptorDelegator<OpenAIProperty>
             request.setStream_options(new CompletionRequest.StreamOptions());
         }
         if(MapUtils.isNotEmpty(request.getExtra_body()) && property.getAbandonFields() != null) {
-             Arrays.stream(property.getAbandonFields()).forEach(f -> request.getExtra_body().remove(f));
+            Arrays.stream(property.getAbandonFields()).forEach(f -> request.getExtra_body().remove(f));
         }
         request.setModel(property.getDeployName());
         if(StringUtils.isNotEmpty(property.getApiVersion())) {

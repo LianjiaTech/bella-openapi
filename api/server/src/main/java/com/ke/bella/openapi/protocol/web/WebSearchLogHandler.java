@@ -15,7 +15,7 @@ public class WebSearchLogHandler implements EndpointLogHandler {
     @Override
     public void process(EndpointProcessData endpointProcessData) {
         OpenapiResponse openapiResponse = endpointProcessData.getResponse();
-        if (openapiResponse instanceof WebSearchResponse) {
+        if(openapiResponse instanceof WebSearchResponse) {
             WebSearchResponse response = (WebSearchResponse) openapiResponse;
 
             // Create usage object from request and response data
@@ -51,15 +51,15 @@ public class WebSearchLogHandler implements EndpointLogHandler {
      */
     private String getSearchDepthFromRequest(WebSearchResponse response, EndpointProcessData processData) {
         // First check auto_parameters in response
-        if (response.getAutoParameters() != null && response.getAutoParameters().getSearchDepth() != null) {
+        if(response.getAutoParameters() != null && response.getAutoParameters().getSearchDepth() != null) {
             return response.getAutoParameters().getSearchDepth();
         }
 
         // Fall back to request parameters if available
         Object request = processData.getRequest();
-        if (request instanceof WebSearchRequest) {
+        if(request instanceof WebSearchRequest) {
             WebSearchRequest searchRequest = (WebSearchRequest) request;
-            if (searchRequest.getSearch_depth() != null) {
+            if(searchRequest.getSearch_depth() != null) {
                 return searchRequest.getSearch_depth().getValue();
             }
         }

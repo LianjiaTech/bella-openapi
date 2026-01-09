@@ -47,7 +47,7 @@ public class LuaScriptManager {
         if(!resource.exists() && StringUtils.isNotEmpty(defaultName)) {
             resource = resourceLoader.getResource(luaDir + defaultName);
         }
-        try(InputStream inputStream = resource.getInputStream()) {
+        try (InputStream inputStream = resource.getInputStream()) {
             String scriptContent = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
             return redissonClient.getScript().scriptLoad(scriptContent);
         }

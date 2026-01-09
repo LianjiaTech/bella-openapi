@@ -32,7 +32,6 @@ public class WorkerContext {
     private final LimiterManager limiterManager;
     private final WorkerManager workerManager;
 
-
     private volatile BackoffTask backoffTask;
 
     public void start() {
@@ -76,8 +75,9 @@ public class WorkerContext {
         private final WorkerManager workerManager;
 
         private volatile boolean stopped = false;
-        
-        public BackoffTask(Worker worker, CapacityCalculator capacityCalculator, ChannelDB channel, RedissonClient redissonClient, WorkerManager workerManager) {
+
+        public BackoffTask(Worker worker, CapacityCalculator capacityCalculator, ChannelDB channel, RedissonClient redissonClient,
+                WorkerManager workerManager) {
             this.worker = worker;
             this.capacityCalculator = capacityCalculator;
             this.channel = channel;

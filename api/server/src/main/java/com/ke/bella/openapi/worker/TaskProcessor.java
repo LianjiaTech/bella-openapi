@@ -62,7 +62,7 @@ public class TaskProcessor {
     }
 
     private OpenapiResponse processRequest(Map<String, Object> requestData) {
-        //todo:: support more entity types
+        // todo:: support more entity types
         if(EntityConstants.MODEL.equals(channel.getEntityType())) {
             return processCompletionRequest(requestData);
         } else {

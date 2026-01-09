@@ -78,7 +78,7 @@ public class LarkClientUtils {
                 .build();
         try {
             GetImportTaskResp resp = client.drive().v1().importTask().get(req);
-            if(resp.getCode() != 0){
+            if(resp.getCode() != 0) {
                 throw ChannelException.fromResponse(502, resp.getMsg());
             }
             DocParseResponse response = new DocParseResponse();
@@ -102,9 +102,11 @@ public class LarkClientUtils {
 
     /**
      * 删除文件
-     * @param client Lark客户端
+     * 
+     * @param client    Lark客户端
      * @param fileToken 文件token
-     * @param fileType 文件类型
+     * @param fileType  文件类型
+     * 
      * @return 删除是否成功
      */
     public static boolean deleteFile(Client client, String fileToken, String fileType) {
@@ -115,7 +117,7 @@ public class LarkClientUtils {
                     .build();
 
             DeleteFileResp resp = client.drive().v1().file().delete(req);
-            if (resp.getCode() != 0) {
+            if(resp.getCode() != 0) {
                 log.error("Failed to delete file {}: {}", fileToken, resp.getMsg());
                 return false;
             }
@@ -129,8 +131,10 @@ public class LarkClientUtils {
 
     /**
      * 获取图片
+     * 
      * @param imageBlock 图片Block对象
-     * @param client LarkClient
+     * @param client     LarkClient
+     * 
      * @return 图片Base64String
      */
     public static String getImageUrl(Image imageBlock, Client client) {

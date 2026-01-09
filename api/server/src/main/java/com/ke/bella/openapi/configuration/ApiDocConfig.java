@@ -9,6 +9,7 @@ import org.springdoc.core.GroupedOpenApi;
 import org.springdoc.core.customizers.OpenApiCustomiser;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
 @Configuration
 public class ApiDocConfig {
     @Bean
@@ -22,6 +23,7 @@ public class ApiDocConfig {
                                 .in(SecurityScheme.In.HEADER)
                                 .name("Authorization")));
     }
+
     @Bean
     public GroupedOpenApi metadataConsoleApi() {
         return GroupedOpenApi.builder()
@@ -30,6 +32,7 @@ public class ApiDocConfig {
                 .addOpenApiCustomiser(customiseOpenApi())
                 .build();
     }
+
     @Bean
     public GroupedOpenApi apiKeyConsoleApi() {
         return GroupedOpenApi.builder()
@@ -38,6 +41,7 @@ public class ApiDocConfig {
                 .addOpenApiCustomiser(customiseOpenApi())
                 .build();
     }
+
     @Bean
     public GroupedOpenApi informationQueryApi() {
         return GroupedOpenApi.builder()
@@ -46,6 +50,7 @@ public class ApiDocConfig {
                 .addOpenApiCustomiser(customiseOpenApi())
                 .build();
     }
+
     @Bean
     public GroupedOpenApi endpointApi() {
         return GroupedOpenApi.builder()
@@ -59,7 +64,7 @@ public class ApiDocConfig {
     private OpenApiCustomiser customiseOpenApi() {
         return openApi -> openApi.getPaths().values().stream()
                 .flatMap(pathItem -> pathItem.readOperations().stream())
-                .forEach(operation ->  operation.addParametersItem(new Parameter()
+                .forEach(operation -> operation.addParametersItem(new Parameter()
                         .in("header")
                         .name("Authorization")
                         .required(true)

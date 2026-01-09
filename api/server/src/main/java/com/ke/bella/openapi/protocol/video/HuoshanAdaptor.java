@@ -16,32 +16,28 @@ public class HuoshanAdaptor implements VideoAdaptor<HuoshanProperty> {
 
     @Override
     public String submitVideoTask(
-        VideoCreateRequest request,
-        String baseUrl,
-        HuoshanProperty property,
-        String videoId
-    ) {
+            VideoCreateRequest request,
+            String baseUrl,
+            HuoshanProperty property,
+            String videoId) {
         HuoshanVideoRequest huoshanRequest = HuoshanVideoConverter.convertToHuoshanRequest(
-            request,
-            property
-        );
+                request,
+                property);
 
         Request httpRequest = buildHttpRequest(baseUrl, huoshanRequest, property);
 
         HuoshanVideoResponse response = HttpUtils.httpRequest(
-            httpRequest,
-            HuoshanVideoResponse.class
-        );
+                httpRequest,
+                HuoshanVideoResponse.class);
 
-        if (response.getCode() != null && response.getCode() != 0) {
+        if(response.getCode() != null && response.getCode() != 0) {
             throw new RuntimeException(
-                "Huoshan API error: code=" + response.getCode() +
-                ", message=" + response.getMessage()
-            );
+                    "Huoshan API error: code=" + response.getCode() +
+                            ", message=" + response.getMessage());
         }
 
         String channelVideoId = response.getId();
-        if (channelVideoId == null) {
+        if(channelVideoId == null) {
             throw new RuntimeException("Huoshan API returned null id");
         }
 
@@ -50,24 +46,21 @@ public class HuoshanAdaptor implements VideoAdaptor<HuoshanProperty> {
 
     @Override
     public ChannelVideoResult queryVideoTask(
-        String channelVideoId,
-        String baseUrl,
-        HuoshanProperty property
-    ) {
+            String channelVideoId,
+            String baseUrl,
+            HuoshanProperty property) {
         String queryUrl = baseUrl + "/" + channelVideoId;
 
         Request httpRequest = buildHttpGetRequest(queryUrl, property);
 
         HuoshanVideoQueryResponse response = HttpUtils.httpRequest(
-            httpRequest,
-            HuoshanVideoQueryResponse.class
-        );
+                httpRequest,
+                HuoshanVideoQueryResponse.class);
 
-        if (response.getCode() != null && response.getCode() != 0) {
+        if(response.getCode() != null && response.getCode() != 0) {
             throw new RuntimeException(
-                "Huoshan query API error: code=" + response.getCode() +
-                ", message=" + response.getMessage()
-            );
+                    "Huoshan query API error: code=" + response.getCode() +
+                            ", message=" + response.getMessage());
         }
 
         return HuoshanVideoConverter.convertFromHuoshanQuery(response);
@@ -75,27 +68,24 @@ public class HuoshanAdaptor implements VideoAdaptor<HuoshanProperty> {
 
     @Override
     public com.theokanning.openai.file.File transferVideoToFile(
-        String channelVideoId,
-        String baseUrl,
-        HuoshanProperty property,
-        com.theokanning.openai.service.OpenAiService openAiService
-    ) {
+            String channelVideoId,
+            String baseUrl,
+            HuoshanProperty property,
+            com.theokanning.openai.service.OpenAiService openAiService) {
         String queryUrl = baseUrl + "/" + channelVideoId;
         Request httpRequest = buildHttpGetRequest(queryUrl, property);
 
         HuoshanVideoQueryResponse response = HttpUtils.httpRequest(
-            httpRequest,
-            HuoshanVideoQueryResponse.class
-        );
+                httpRequest,
+                HuoshanVideoQueryResponse.class);
 
-        if (response.getCode() != null && response.getCode() != 0) {
+        if(response.getCode() != null && response.getCode() != 0) {
             throw new RuntimeException(
-                "Huoshan query API error: code=" + response.getCode() +
-                ", message=" + response.getMessage()
-            );
+                    "Huoshan query API error: code=" + response.getCode() +
+                            ", message=" + response.getMessage());
         }
 
-        if (response.getContent() == null || response.getContent().getVideo_url() == null) {
+        if(response.getContent() == null || response.getContent().getVideo_url() == null) {
             throw new RuntimeException("Video URL not found in Huoshan response");
         }
 
@@ -103,10 +93,9 @@ public class HuoshanAdaptor implements VideoAdaptor<HuoshanProperty> {
 
         try (java.io.InputStream videoStream = HttpUtils.downloadStream(videoUrl)) {
             com.theokanning.openai.file.File file = openAiService.uploadFile(
-                "temp",
-                videoStream,
-                "video.mp4"
-            );
+                    "temp",
+                    videoStream,
+                    "video.mp4");
 
             return file;
 
@@ -127,31 +116,28 @@ public class HuoshanAdaptor implements VideoAdaptor<HuoshanProperty> {
     }
 
     private Request buildHttpRequest(
-        String url,
-        HuoshanVideoRequest request,
-        HuoshanProperty property
-    ) {
+            String url,
+            HuoshanVideoRequest request,
+            HuoshanProperty property) {
         byte[] requestBytes = JacksonUtils.toByte(request);
         RequestBody body = RequestBody.create(
-            MediaType.parse("application/json"),
-            requestBytes
-        );
+                MediaType.parse("application/json"),
+                requestBytes);
 
         Request.Builder builder = authorizationRequestBuilder(property.getAuth())
-            .url(url)
-            .post(body)
-            .header("Content-Type", "application/json");
+                .url(url)
+                .post(body)
+                .header("Content-Type", "application/json");
 
         return builder.build();
     }
 
     private Request buildHttpGetRequest(
-        String url,
-        HuoshanProperty property
-    ) {
+            String url,
+            HuoshanProperty property) {
         Request.Builder builder = authorizationRequestBuilder(property.getAuth())
-            .url(url)
-            .get();
+                .url(url)
+                .get();
 
         return builder.build();
     }

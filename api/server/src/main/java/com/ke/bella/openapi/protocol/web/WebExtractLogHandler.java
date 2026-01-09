@@ -15,7 +15,7 @@ public class WebExtractLogHandler implements EndpointLogHandler {
     @Override
     public void process(EndpointProcessData endpointProcessData) {
         OpenapiResponse openapiResponse = endpointProcessData.getResponse();
-        if (openapiResponse instanceof WebExtractResponse) {
+        if(openapiResponse instanceof WebExtractResponse) {
             WebExtractResponse response = (WebExtractResponse) openapiResponse;
 
             // Create usage object from request and response data
@@ -57,9 +57,9 @@ public class WebExtractLogHandler implements EndpointLogHandler {
      */
     private String getExtractDepthFromRequest(EndpointProcessData processData) {
         Object request = processData.getRequest();
-        if (request instanceof WebExtractRequest) {
+        if(request instanceof WebExtractRequest) {
             WebExtractRequest extractRequest = (WebExtractRequest) request;
-            if (extractRequest.getExtractDepth() != null) {
+            if(extractRequest.getExtractDepth() != null) {
                 return extractRequest.getExtractDepth().getValue();
             }
         }
@@ -73,7 +73,7 @@ public class WebExtractLogHandler implements EndpointLogHandler {
      */
     private boolean getIncludeImagesFromRequest(EndpointProcessData processData) {
         Object request = processData.getRequest();
-        if (request instanceof WebExtractRequest) {
+        if(request instanceof WebExtractRequest) {
             WebExtractRequest extractRequest = (WebExtractRequest) request;
             return Boolean.TRUE.equals(extractRequest.getIncludeImages());
         }
@@ -85,7 +85,7 @@ public class WebExtractLogHandler implements EndpointLogHandler {
      */
     private boolean getIncludeFaviconFromRequest(EndpointProcessData processData) {
         Object request = processData.getRequest();
-        if (request instanceof WebExtractRequest) {
+        if(request instanceof WebExtractRequest) {
             WebExtractRequest extractRequest = (WebExtractRequest) request;
             return Boolean.TRUE.equals(extractRequest.getIncludeFavicon());
         }

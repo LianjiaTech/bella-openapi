@@ -14,9 +14,10 @@ public interface WebExtractAdaptor<T extends IProtocolProperty> extends IProtoco
     /**
      * Extract content from specified URLs
      *
-     * @param request The web extract request containing URLs and configuration
-     * @param url The endpoint URL to send the request to
+     * @param request  The web extract request containing URLs and configuration
+     * @param url      The endpoint URL to send the request to
      * @param property The protocol-specific properties (authentication, etc.)
+     * 
      * @return WebExtractResponse containing extracted content and metadata
      */
     WebExtractResponse extract(WebExtractRequest request, String url, T property);
