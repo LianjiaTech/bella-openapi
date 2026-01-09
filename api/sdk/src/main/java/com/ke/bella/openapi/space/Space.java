@@ -16,9 +16,9 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 public class Space {
 
-	private String spaceCode;
+    private String spaceCode;
 
-	private String spaceName;
+    private String spaceName;
 
-	private String ownerUid;
+    private String ownerUid;
 }

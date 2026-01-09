@@ -57,7 +57,7 @@ public class JacksonUtils {
     }
 
     public static String serialize(Object obj) {
-        if (obj == null) {
+        if(obj == null) {
             return "";
         }
         try {
@@ -69,7 +69,7 @@ public class JacksonUtils {
     }
 
     public static byte[] toByte(Object obj) {
-        if (obj == null) {
+        if(obj == null) {
             return new byte[0];
         }
         try {
@@ -80,9 +80,8 @@ public class JacksonUtils {
         return new byte[0];
     }
 
-
     public static <T> T deserialize(String jsonText, TypeReference<T> type) {
-        if (StringUtils.isBlank(jsonText)) {
+        if(StringUtils.isBlank(jsonText)) {
             return null;
         }
         try {
@@ -94,7 +93,7 @@ public class JacksonUtils {
     }
 
     public static <T> T deserialize(String jsonText, Class<T> beanClass) {
-        if (StringUtils.isBlank(jsonText)) {
+        if(StringUtils.isBlank(jsonText)) {
             return null;
         }
         try {
@@ -106,7 +105,7 @@ public class JacksonUtils {
     }
 
     public static <T> T deserialize(byte[] bytes, Class<T> beanClass) {
-        if (bytes.length == 0) {
+        if(bytes.length == 0) {
             return null;
         }
         try {
@@ -118,7 +117,7 @@ public class JacksonUtils {
     }
 
     public static <T> T deserialize(byte[] bytes, TypeReference<T> tTypeReference) {
-        if (bytes.length == 0) {
+        if(bytes.length == 0) {
             return null;
         }
         try {
@@ -130,7 +129,7 @@ public class JacksonUtils {
     }
 
     public static JsonNode deserialize(String jsonText) {
-        if (StringUtils.isBlank(jsonText)) {
+        if(StringUtils.isBlank(jsonText)) {
             return null;
         }
         try {
@@ -142,7 +141,7 @@ public class JacksonUtils {
     }
 
     public static JsonNode toJsonNode(Object obj) {
-        if (obj == null) {
+        if(obj == null) {
             return null;
         }
         try {
@@ -172,12 +171,13 @@ public class JacksonUtils {
     }
 
     public static Map<String, Object> toMap(byte[] bytes) {
-        if (bytes.length == 0) {
+        if(bytes.length == 0) {
             return null;
         }
         Map<String, Object> map = new HashMap<>();
         try {
-            map = MAPPER.readValue(bytes, new TypeReference<Map<String, Object>>() {});
+            map = MAPPER.readValue(bytes, new TypeReference<Map<String, Object>>() {
+            });
         } catch (IOException e) {
             LOGGER.warn(e.getMessage(), e);
         }
@@ -190,7 +190,8 @@ public class JacksonUtils {
         }
         Map<String, Object> map = new HashMap<>();
         try {
-            map = MAPPER.readValue(jsonStr, new TypeReference<Map<String, Object>>() {});
+            map = MAPPER.readValue(jsonStr, new TypeReference<Map<String, Object>>() {
+            });
         } catch (IOException e) {
             LOGGER.warn(e.getMessage(), e);
         }
@@ -203,7 +204,8 @@ public class JacksonUtils {
         }
         Map<String, Object> map = new HashMap<>();
         try {
-            map = MAPPER.readValue(MAPPER.writeValueAsString(objEntity), new TypeReference<Map<String, Object>>() {});
+            map = MAPPER.readValue(MAPPER.writeValueAsString(objEntity), new TypeReference<Map<String, Object>>() {
+            });
         } catch (IOException e) {
             LOGGER.error(e.getMessage(), e);
         }
@@ -213,7 +215,6 @@ public class JacksonUtils {
     public static <T> T convertValue(Map<String, Object> source, Class<T> clazz) {
         return MAPPER.convertValue(source, clazz);
     }
-
 
     /**
      * jackson2 json序列化 null字段输出为空串
@@ -250,12 +251,6 @@ public class JacksonUtils {
                 .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
                 .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
                 .setTimeZone(TimeZone.getTimeZone("Asia/Shanghai"));
-
-        // 序列化成json时，将所有的Long变成string，以解决js中的精度丢失。
-        SimpleModule simpleModule = new SimpleModule();
-        simpleModule.addSerializer(Long.class, ToStringSerializer.instance);
-        simpleModule.addSerializer(Long.TYPE, ToStringSerializer.instance);
-        objectMapper.registerModule(simpleModule);
 
         // 忽略不存在的字段
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);

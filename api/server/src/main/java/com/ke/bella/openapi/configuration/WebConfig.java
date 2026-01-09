@@ -29,12 +29,12 @@ public class WebConfig implements WebMvcConfigurer {
                 .addPathPatterns(endpointPathPatterns)
                 .order(110);
     }
-    
+
     @Override
     public void configureContentNegotiation(ContentNegotiationConfigurer configurer) {
         configurer
-            .defaultContentType(MediaType.APPLICATION_JSON)
-            .ignoreAcceptHeader(true);
+                .defaultContentType(MediaType.APPLICATION_JSON)
+                .ignoreAcceptHeader(true);
     }
 
     @Bean

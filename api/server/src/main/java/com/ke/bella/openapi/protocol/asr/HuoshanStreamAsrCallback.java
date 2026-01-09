@@ -28,7 +28,6 @@ import okhttp3.Response;
 import okhttp3.WebSocket;
 import okio.ByteString;
 
-
 @Slf4j
 public class HuoshanStreamAsrCallback implements Callbacks.WebSocketCallback {
     // 协议版本常量
@@ -67,8 +66,8 @@ public class HuoshanStreamAsrCallback implements Callbacks.WebSocketCallback {
         static final int CUSTOM_COMPRESS = 0b1111;
     }
 
-	// 默认自定义工作流
-	private static String DEFAULT_WORKFLOW = "audio_in,resample,partition,vad,fe,decode";
+    // 默认自定义工作流
+    private static String DEFAULT_WORKFLOW = "audio_in,resample,partition,vad,fe,decode";
 
     private final HuoshanRealTimeAsrRequest request;
     private final Sender sender;
@@ -88,7 +87,6 @@ public class HuoshanStreamAsrCallback implements Callbacks.WebSocketCallback {
 
     // 序列号管理
     private int audioSequence = 0;
-
 
     public HuoshanStreamAsrCallback(HuoshanRealTimeAsrRequest request, Callbacks.Sender sender, EndpointProcessData processData,
             EndpointLogger logger, Function<HuoshanRealTimeAsrResponse, List<String>> converter) {
@@ -168,7 +166,7 @@ public class HuoshanStreamAsrCallback implements Callbacks.WebSocketCallback {
      * 完成处理并关闭连接
      */
     private void complete() {
-        if (!end) {
+        if(!end) {
             processData.getMetrics().put("ttlt", DateTimeUtils.getCurrentMills() - startTime);
             sender.close();
             if(request.isAsync() && logger != null) {
@@ -239,18 +237,18 @@ public class HuoshanStreamAsrCallback implements Callbacks.WebSocketCallback {
         modelRequest.setReqid(processData.getRequestId());
         modelRequest.setShow_utterances(true);
         modelRequest.setResult_type(request.getResultType());
-		modelRequest.setSequence(1);
+        modelRequest.setSequence(1);
 
-		// 设置自定义工作流
-		StringBuilder workflowBuilder = new StringBuilder();
-		workflowBuilder.append(DEFAULT_WORKFLOW);
-		if (request.isEnable_itn()) {
-			workflowBuilder.append(",itn");
-		}
-		if (request.isEnable_punc()) {
-			workflowBuilder.append(",nlu_punctuate");
-		}
-		modelRequest.setWorkflow(workflowBuilder.toString());
+        // 设置自定义工作流
+        StringBuilder workflowBuilder = new StringBuilder();
+        workflowBuilder.append(DEFAULT_WORKFLOW);
+        if(request.isEnable_itn()) {
+            workflowBuilder.append(",itn");
+        }
+        if(request.isEnable_punc()) {
+            workflowBuilder.append(",nlu_punctuate");
+        }
+        modelRequest.setWorkflow(workflowBuilder.toString());
         clientRequest.setRequest(modelRequest);
 
         // 设置音频信息
@@ -298,7 +296,7 @@ public class HuoshanStreamAsrCallback implements Callbacks.WebSocketCallback {
         byte[] header = new byte[headerLen];
         header[0] = (byte) (ProtocolVersion.PROTOCOL_VERSION << 4 | (headerLen >> 2));
 
-        if (!isLast) {
+        if(!isLast) {
             // 非最后一块，使用无序列号
             header[1] = (byte) (MessageType.AUDIO_ONLY_CLIENT_REQUEST << 4 | MessageTypeFlag.NO_SEQUENCE_NUMBER);
         } else {
@@ -327,7 +325,7 @@ public class HuoshanStreamAsrCallback implements Callbacks.WebSocketCallback {
      * 分块发送音频数据
      */
     public void sendAudioDataInChunks(WebSocket webSocket, byte[] audioData, int chunkSize, int intervalMs) {
-        if (audioData == null || audioData.length == 0) {
+        if(audioData == null || audioData.length == 0) {
             onProcessError(ChannelException.fromResponse(400, "No audio data to send"));
             return;
         }
@@ -344,7 +342,7 @@ public class HuoshanStreamAsrCallback implements Callbacks.WebSocketCallback {
                     sendAudioData(webSocket, chunk, isLast);
                     offset += length;
                     // 如果不是最后一个块，等待指定的间隔时间
-                    if (!isLast && intervalMs > 0) {
+                    if(!isLast && intervalMs > 0) {
                         Thread.sleep(intervalMs);
                     }
                 }
@@ -366,14 +364,14 @@ public class HuoshanStreamAsrCallback implements Callbacks.WebSocketCallback {
         byte[] payload;
         int payloadOffset = headerLen;
 
-        if (messageType == MessageType.FULL_SERVER_RESPONSE) {
+        if(messageType == MessageType.FULL_SERVER_RESPONSE) {
             payloadOffset += 4;
-        } else if (messageType == MessageType.SERVER_ACK) {
+        } else if(messageType == MessageType.SERVER_ACK) {
             payloadOffset += 4;
-            if (message.length > 8) {
+            if(message.length > 8) {
                 payloadOffset += 4;
             }
-        } else if (messageType == MessageType.ERROR_MESSAGE_FROM_SERVER) {
+        } else if(messageType == MessageType.ERROR_MESSAGE_FROM_SERVER) {
             payloadOffset += 4;
             payloadOffset += 4;
         } else {
@@ -384,18 +382,17 @@ public class HuoshanStreamAsrCallback implements Callbacks.WebSocketCallback {
         payload = new byte[message.length - payloadOffset];
         System.arraycopy(message, payloadOffset, payload, 0, payload.length);
 
-        if (messageCompress == MessageCompress.GZIP) {
+        if(messageCompress == MessageCompress.GZIP) {
             payload = gzipDecompress(payload);
         }
 
-        if (messageSerial == MessageSerial.JSON) {
+        if(messageSerial == MessageSerial.JSON) {
             String responseText = new String(payload, java.nio.charset.StandardCharsets.UTF_8);
-
 
             HuoshanRealTimeAsrResponse response = JacksonUtils.deserialize(payload, HuoshanRealTimeAsrResponse.class);
 
             // 处理响应
-            if (response.getCode() != 1000) {
+            if(response.getCode() != 1000) {
                 log.error("ASR response error: {}", responseText);
                 handleTranscriptionFailed(response.getCode(), response.getMessage());
                 return;
@@ -404,7 +401,7 @@ public class HuoshanStreamAsrCallback implements Callbacks.WebSocketCallback {
             if(!isRunning) {
                 // 设置运行标志
                 isRunning = true;
-                //非流式请求直接发送文件，流式请求由客户端发送文件
+                // 非流式请求直接发送文件，流式请求由客户端发送文件
                 if(!request.isAsync()) {
                     sendAudioDataInChunks(webSocket, request.getAudioData(), request.getChunkSize(), request.getIntervalMs());
                 } else {
@@ -427,7 +424,7 @@ public class HuoshanStreamAsrCallback implements Callbacks.WebSocketCallback {
      * 处理中间响应
      */
     private void handleIntermediateResponse(HuoshanRealTimeAsrResponse response) {
-        if (first) {
+        if(first) {
             processData.getMetrics().put("ttft", DateTimeUtils.getCurrentMills() - startTime);
             first = false;
         }
@@ -553,7 +550,7 @@ public class HuoshanStreamAsrCallback implements Callbacks.WebSocketCallback {
         private boolean show_utterances = true;
         private String result_type;
         private Integer sequence;
-		private String workflow;
+        private String workflow;
     }
 
     @Data

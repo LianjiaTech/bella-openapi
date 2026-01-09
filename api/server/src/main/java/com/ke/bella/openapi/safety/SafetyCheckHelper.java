@@ -2,7 +2,7 @@ package com.ke.bella.openapi.safety;
 
 public class SafetyCheckHelper {
 
-    public static <T extends SafetyCheckRequest> SafetyCheckDelegator<T>  createDelegator(
+    public static <T extends SafetyCheckRequest> SafetyCheckDelegator<T> createDelegator(
             ISafetyCheckService<T> safetyService,
             String safetyCheckMode) {
 
@@ -15,14 +15,14 @@ public class SafetyCheckHelper {
 
     public static Object getRequestRiskData(ISafetyCheckService<?> safetyService) {
         if(safetyService instanceof ISafetyResultStorage) {
-            return ((ISafetyResultStorage)safetyService).getRequestRiskData();
+            return ((ISafetyResultStorage) safetyService).getRequestRiskData();
         }
         return null;
     }
 
     public static Object getResponseRiskData(ISafetyCheckService<?> safetyService) {
         if(safetyService instanceof ISafetyResultStorage) {
-            return ((ISafetyResultStorage)safetyService).getResponseRiskData();
+            return ((ISafetyResultStorage) safetyService).getResponseRiskData();
         }
         return null;
     }

@@ -62,10 +62,7 @@ public class MessageRequest implements IMemoryClearable {
         private Object content; // String or List<ContentBlock>
     }
 
-    @JsonTypeInfo(
-            use = JsonTypeInfo.Id.NAME,
-            include = JsonTypeInfo.As.PROPERTY,
-            property = "type")
+    @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
     @JsonSubTypes({
             @JsonSubTypes.Type(value = TextContentBlock.class, name = "text"),
             @JsonSubTypes.Type(value = ImageContentBlock.class, name = "image"),
@@ -88,6 +85,7 @@ public class MessageRequest implements IMemoryClearable {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class TextContentBlock extends ContentBlock {
         private String text;
+
         public String getType() {
             return "text";
         }
@@ -100,6 +98,7 @@ public class MessageRequest implements IMemoryClearable {
     public static class ThinkingContentBlock extends ContentBlock {
         private String thinking;
         private String signature;
+
         public String getType() {
             return "thinking";
         }
@@ -111,11 +110,11 @@ public class MessageRequest implements IMemoryClearable {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class RedactedThinkingContentBlock extends ContentBlock {
         private String data;
+
         public String getType() {
             return "redacted_thinking";
         }
     }
-
 
     @Data
     @NoArgsConstructor
@@ -123,6 +122,7 @@ public class MessageRequest implements IMemoryClearable {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class ImageContentBlock extends ContentBlock {
         private ImageSource source;
+
         public String getType() {
             return "image";
         }
@@ -134,6 +134,7 @@ public class MessageRequest implements IMemoryClearable {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class DocumentContentBlock extends ContentBlock {
         private DocumentSource source;
+
         public String getType() {
             return "document";
         }
@@ -146,7 +147,8 @@ public class MessageRequest implements IMemoryClearable {
     public static class ToolUseContentBlock extends ContentBlock {
         private String id;
         private String name;
-        private Object input; // Consider defining a more specific type if schema is known
+        private Object input; // Consider defining a more specific type if
+                              // schema is known
 
         public String getType() {
             return "tool_use";
@@ -161,7 +163,8 @@ public class MessageRequest implements IMemoryClearable {
     public static class ToolResultContentBlock extends ContentBlock {
         @JsonProperty("tool_use_id")
         private String toolUseId;
-        private Object content; // String or List<ContentBlock> for complex results
+        private Object content; // String or List<ContentBlock> for complex
+                                // results
         @JsonProperty("is_error")
         private Boolean isError;
 
@@ -170,14 +173,10 @@ public class MessageRequest implements IMemoryClearable {
         }
     }
 
-
-    @JsonTypeInfo(
-        use = JsonTypeInfo.Id.NAME,
-        include = JsonTypeInfo.As.PROPERTY,
-        property = "type")
+    @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
     @JsonSubTypes({
-        @JsonSubTypes.Type(value = Base64ImageSource.class, name = "base64"),
-        @JsonSubTypes.Type(value = URLImageSource.class, name = "url")
+            @JsonSubTypes.Type(value = Base64ImageSource.class, name = "base64"),
+            @JsonSubTypes.Type(value = URLImageSource.class, name = "url")
     })
     @JsonInclude(JsonInclude.Include.NON_NULL)
     @Data
@@ -193,6 +192,7 @@ public class MessageRequest implements IMemoryClearable {
         @JsonProperty("media_type")
         private String mediaType;
         private String data;
+
         public String getType() {
             return "base64";
         }
@@ -204,21 +204,19 @@ public class MessageRequest implements IMemoryClearable {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class URLImageSource extends ImageSource {
         private String url;
+
         public String getType() {
             return "url";
         }
     }
 
-    @JsonTypeInfo(
-        use = JsonTypeInfo.Id.NAME,
-        include = JsonTypeInfo.As.PROPERTY,
-        property = "type")
+    @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
     @JsonSubTypes({
-        @JsonSubTypes.Type(value = UrlDocumentSource.class, name = "url"),
-        @JsonSubTypes.Type(value = Base64DocumentSource.class, name = "base64"),
-        @JsonSubTypes.Type(value = FileDocumentSource.class, name = "file"),
-        @JsonSubTypes.Type(value = ContentDocumentSource.class, name = "content"),
-        @JsonSubTypes.Type(value = TextDocumentSource.class, name = "text")
+            @JsonSubTypes.Type(value = UrlDocumentSource.class, name = "url"),
+            @JsonSubTypes.Type(value = Base64DocumentSource.class, name = "base64"),
+            @JsonSubTypes.Type(value = FileDocumentSource.class, name = "file"),
+            @JsonSubTypes.Type(value = ContentDocumentSource.class, name = "content"),
+            @JsonSubTypes.Type(value = TextDocumentSource.class, name = "text")
     })
     @JsonInclude(JsonInclude.Include.NON_NULL)
     @Data
@@ -232,6 +230,7 @@ public class MessageRequest implements IMemoryClearable {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class UrlDocumentSource extends DocumentSource {
         private String url;
+
         public String getType() {
             return "url";
         }
@@ -245,6 +244,7 @@ public class MessageRequest implements IMemoryClearable {
         @JsonProperty("media_type")
         private String mediaType;
         private String data;
+
         public String getType() {
             return "base64";
         }
@@ -257,6 +257,7 @@ public class MessageRequest implements IMemoryClearable {
     public static class FileDocumentSource extends DocumentSource {
         @JsonProperty("file_id")
         private String fileId;
+
         public String getType() {
             return "file";
         }
@@ -268,6 +269,7 @@ public class MessageRequest implements IMemoryClearable {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class ContentDocumentSource extends DocumentSource {
         private String content;
+
         public String getType() {
             return "content";
         }
@@ -281,6 +283,7 @@ public class MessageRequest implements IMemoryClearable {
         private String data;
         @JsonProperty("media_type")
         private String mediaType; // "text/plain"
+
         public String getType() {
             return "text";
         }
@@ -308,22 +311,23 @@ public class MessageRequest implements IMemoryClearable {
         private CacheControl cache_control;
     }
 
-
-    @JsonTypeInfo(
-        use = JsonTypeInfo.Id.NAME,
-        include = JsonTypeInfo.As.PROPERTY,
-        property = "type",
-        defaultImpl = ThinkingConfigEnabled.class) // Default might be tricky; adjust as needed
+    @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type", defaultImpl = ThinkingConfigEnabled.class) // Default
+                                                                                                                                                // might
+                                                                                                                                                // be
+                                                                                                                                                // tricky;
+                                                                                                                                                // adjust
+                                                                                                                                                // as
+                                                                                                                                                // needed
     @JsonSubTypes({
-        @JsonSubTypes.Type(value = ThinkingConfigEnabled.class, name = "enabled"),
-        @JsonSubTypes.Type(value = ThinkingConfigDisabled.class, name = "disabled")
+            @JsonSubTypes.Type(value = ThinkingConfigEnabled.class, name = "enabled"),
+            @JsonSubTypes.Type(value = ThinkingConfigDisabled.class, name = "disabled")
     })
     @JsonInclude(JsonInclude.Include.NON_NULL)
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
     public static abstract class ThinkingConfig {
-         private String type;
+        private String type;
     }
 
     @Data
@@ -332,6 +336,7 @@ public class MessageRequest implements IMemoryClearable {
     @NoArgsConstructor
     public static class ThinkingConfigEnabled extends ThinkingConfig {
         private Integer budget_tokens;
+
         public ThinkingConfigEnabled(Integer budget_tokens) {
             super("enabled");
             this.budget_tokens = budget_tokens;
@@ -347,11 +352,12 @@ public class MessageRequest implements IMemoryClearable {
         }
     }
 
-
-    @JsonTypeInfo(
-            use = JsonTypeInfo.Id.NAME,
-            include = JsonTypeInfo.As.PROPERTY,
-            property = "type") // 'type' is the discriminator for ToolChoice
+    @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type") // 'type'
+                                                                                                     // is
+                                                                                                     // the
+                                                                                                     // discriminator
+                                                                                                     // for
+                                                                                                     // ToolChoice
     @JsonSubTypes({
             @JsonSubTypes.Type(value = ToolChoiceAuto.class, name = "auto"),
             @JsonSubTypes.Type(value = ToolChoiceAny.class, name = "any"),
@@ -397,6 +403,7 @@ public class MessageRequest implements IMemoryClearable {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class ToolChoiceTool extends ToolChoice {
         private String name;
+
         public String getType() {
             return "tool";
         }
@@ -424,7 +431,7 @@ public class MessageRequest implements IMemoryClearable {
         private String type; // e.g., "object"
         private Object properties;
         private List<String> required;
-        private boolean additionalProperties;
+        private Object additionalProperties; // Can be Boolean or schema object
     }
 
     @Data
@@ -434,8 +441,8 @@ public class MessageRequest implements IMemoryClearable {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class CacheControl {
         private String type;
-        //todo: 暂时不支持，兼容aws协议，标准/v1/message协议是支持的
-        //private String ttl;
+        // todo: 暂时不支持，兼容aws协议，标准/v1/message协议是支持的
+        // private String ttl;
 
         public static CacheControl convertToCacheControl(Object o) {
             if(o instanceof CacheControl) {
@@ -450,14 +457,15 @@ public class MessageRequest implements IMemoryClearable {
         }
     }
 
-
     public static class SystemFieldDeserializer extends StdDeserializer<Object> {
         public SystemFieldDeserializer() {
             this(null);
         }
+
         public SystemFieldDeserializer(Class<?> vc) {
             super(vc);
         }
+
         @Override
         public Object deserialize(JsonParser p, DeserializationContext ctxt)
                 throws IOException {
@@ -467,7 +475,8 @@ public class MessageRequest implements IMemoryClearable {
                 return node.asText();
             } else if(node.isArray()) {
                 ObjectMapper mapper = (ObjectMapper) p.getCodec();
-                return mapper.convertValue(node, new TypeReference<List<RequestTextBlock>>() {});
+                return mapper.convertValue(node, new TypeReference<List<RequestTextBlock>>() {
+                });
 
             } else {
                 throw new JsonMappingException(p, "System field must be either String or List<RequestTextBlock>");
@@ -479,9 +488,11 @@ public class MessageRequest implements IMemoryClearable {
         public ContentFieldDeserializer() {
             this(null);
         }
+
         public ContentFieldDeserializer(Class<?> vc) {
             super(vc);
         }
+
         @Override
         public Object deserialize(JsonParser p, DeserializationContext ctxt)
                 throws IOException {
@@ -491,7 +502,8 @@ public class MessageRequest implements IMemoryClearable {
                 return node.asText();
             } else if(node.isArray()) {
                 ObjectMapper mapper = (ObjectMapper) p.getCodec();
-                return mapper.convertValue(node, new TypeReference<List<ContentBlock>>() {});
+                return mapper.convertValue(node, new TypeReference<List<ContentBlock>>() {
+                });
 
             } else {
                 throw new JsonMappingException(p, "Content field must be either String or List<ContentBlock>");
@@ -505,7 +517,7 @@ public class MessageRequest implements IMemoryClearable {
 
     @Override
     public void clearLargeData() {
-        if (!cleared) {
+        if(!cleared) {
             // 清理占用大量内存的字段
             this.messages = null;
             this.system = null;

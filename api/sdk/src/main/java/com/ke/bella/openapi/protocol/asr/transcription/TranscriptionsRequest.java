@@ -53,6 +53,6 @@ public class TranscriptionsRequest implements IUssrRequest, ISummary {
 
     @Override
     public String[] ignoreFields() {
-        return new String[] {"file"};
+        return new String[] { "file" };
     }
 }

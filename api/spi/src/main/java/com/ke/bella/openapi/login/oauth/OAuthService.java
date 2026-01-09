@@ -6,6 +6,7 @@ import java.io.IOException;
 public interface OAuthService {
     /**
      * 获取OAuth认证URL
+     * 
      * @return 认证URL
      */
     String getAuthorizationUrl(String state);

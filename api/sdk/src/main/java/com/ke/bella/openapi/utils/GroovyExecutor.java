@@ -36,7 +36,8 @@ public class GroovyExecutor {
      * 执行Groovy脚本
      *
      * @param scriptText 脚本文本
-     * @param params 脚本参数
+     * @param params     脚本参数
+     * 
      * @return 脚本执行结果
      */
     public static Object executeScript(String scriptText, Map<String, Object> params) {
@@ -54,11 +55,13 @@ public class GroovyExecutor {
     /**
      * 测试Groovy脚本执行，带有时间和内存限制
      *
-     * @param scriptText 脚本文本
-     * @param params 脚本参数
-     * @param timeoutMs 超时时间（毫秒）
+     * @param scriptText       脚本文本
+     * @param params           脚本参数
+     * @param timeoutMs        超时时间（毫秒）
      * @param memoryLimitBytes 内存限制（字节）
+     * 
      * @return 脚本执行结果
+     * 
      * @throws Exception 执行过程中的异常
      */
     public static Object testScript(String scriptText, Map<String, Object> params, long timeoutMs, long memoryLimitBytes) {
@@ -79,7 +82,7 @@ public class GroovyExecutor {
 
             // 检查内存使用是否超过限制
             long usedMemory = getUsedMemory() - initialMemory;
-            if (usedMemory > memoryLimitBytes) {
+            if(usedMemory > memoryLimitBytes) {
                 throw new MemoryLimitExceededException(
                         "脚本超出内存限制: 使用了 " + usedMemory + " 字节, 限制为 " +
                                 memoryLimitBytes + " 字节");
@@ -119,7 +122,7 @@ public class GroovyExecutor {
      */
     private static Binding createBinding(Map<String, Object> params) {
         Binding binding = new Binding();
-        if (params != null) {
+        if(params != null) {
             params.forEach(binding::setVariable);
         }
         return binding;

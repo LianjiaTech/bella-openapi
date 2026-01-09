@@ -9,7 +9,7 @@ import com.ke.bella.openapi.protocol.log.EndpointLogHandler;
  * 提供通用的日志处理逻辑，子类只需实现具体的endpoint方法
  */
 public abstract class ImagesLogHandler implements EndpointLogHandler {
-    
+
     @Override
     public void process(EndpointProcessData endpointProcessData) {
         OpenapiResponse openapiResponse = endpointProcessData.getResponse();
@@ -30,12 +30,14 @@ public abstract class ImagesLogHandler implements EndpointLogHandler {
 
     /**
      * 从响应中获取质量信息
+     * 
      * @param response 图片响应对象
+     * 
      * @return 质量信息，默认为"high"
      */
     protected String getQualityFromResponse(ImagesResponse response) {
         // 从响应的 ImageData 中获取质量信息
-        if (response.getData() != null && !response.getData().isEmpty()) {
+        if(response.getData() != null && !response.getData().isEmpty()) {
             String quality = response.getData().get(0).getQuality();
             return quality != null ? quality : "high";
         }
@@ -44,12 +46,14 @@ public abstract class ImagesLogHandler implements EndpointLogHandler {
 
     /**
      * 从响应中获取尺寸信息
+     * 
      * @param response 图片响应对象
+     * 
      * @return 尺寸信息，默认为"1024x1024"
      */
     protected String getSizeFromResponse(ImagesResponse response) {
         // 从响应的 ImageData 中获取尺寸信息
-        if (response.getData() != null && !response.getData().isEmpty()) {
+        if(response.getData() != null && !response.getData().isEmpty()) {
             String size = response.getData().get(0).getSize();
             return size != null ? size : "1024x1024";
         }

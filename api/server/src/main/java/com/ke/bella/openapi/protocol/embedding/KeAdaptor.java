@@ -25,7 +25,7 @@ public class KeAdaptor extends OpenAIAdaptor {
         } else {
             response.setObject("list");
             List<EmbeddingResponse.EmbeddingData> data = new ArrayList<>();
-            for(int i = 0; i < keResponse.getEmbed_res().size(); i++) {
+            for (int i = 0; i < keResponse.getEmbed_res().size(); i++) {
                 EmbeddingResponse.EmbeddingData embeddingData = new EmbeddingResponse.EmbeddingData();
                 embeddingData.setEmbedding(keResponse.getEmbed_res().get(i));
                 embeddingData.setIndex(i);
@@ -42,4 +42,3 @@ public class KeAdaptor extends OpenAIAdaptor {
         return "贝壳私有协议（未实现OpenAI协议）";
     }
 }
-

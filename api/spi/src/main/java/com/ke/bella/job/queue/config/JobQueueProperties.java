@@ -4,6 +4,6 @@ import lombok.Data;
 
 @Data
 public class JobQueueProperties {
-   private String url;
-   private Integer defaultTimeout = 300;
+    private String url;
+    private Integer defaultTimeout = 300;
 }

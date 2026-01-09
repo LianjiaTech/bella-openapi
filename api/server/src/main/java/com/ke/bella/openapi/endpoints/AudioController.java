@@ -94,7 +94,7 @@ public class AudioController {
     /**
      * 实时语音识别WebSocket接口
      */
-    @RequestMapping({"/realtime", "/asr/stream"})
+    @RequestMapping({ "/realtime", "/asr/stream" })
     public void asrStream(@RequestParam(required = false) String model,
             HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -212,13 +212,14 @@ public class AudioController {
         return TranscriptionsConverter.convertFlashAsrToOpenAI(flashResponse, request.getResponseFormat());
     }
 
-
     @PostMapping("/transcriptions/file")
     public AudioTranscriptionResp transcribeAudio(@RequestBody AudioTranscriptionReq audioTranscriptionReq) {
         validateRequestParams(audioTranscriptionReq);
         String endpoint = EndpointContext.getRequest().getRequestURI();
         JobQueueClient client = JobQueueClient.getInstance(jobQueueProperties.getUrl());
-        String taskId = client.put(client.buildTaskPutRequest(audioTranscriptionReq, null, endpoint, audioTranscriptionReq.getModel()), EndpointContext.getProcessData().getApikey(), TaskResp.TaskPutResp.class)
+        String taskId = client
+                .put(client.buildTaskPutRequest(audioTranscriptionReq, null, endpoint, audioTranscriptionReq.getModel()),
+                        EndpointContext.getProcessData().getApikey(), TaskResp.TaskPutResp.class)
                 .getTaskId();
         return AudioTranscriptionResp.builder()
                 .taskId(taskId)
@@ -238,14 +239,14 @@ public class AudioController {
         List<Object> result = new ArrayList<>();
         for (String taskId : taskIds) {
             TaskResp.DetailData data = client.getTaskDetail(taskId, apikey).getData();
-            if (data == null) {
+            if(data == null) {
                 continue;
             }
             Object outputData = data.getOutputData();
             String outputFileId = data.getOutputFileId();
-            if (outputData != null) {
+            if(outputData != null) {
                 result.add(outputData);
-            } else if (outputFileId != null && !outputFileId.isEmpty()) {
+            } else if(outputFileId != null && !outputFileId.isEmpty()) {
                 Map<String, String> map = new HashMap<>();
                 map.put("file_id", outputFileId);
                 result.add(map);
@@ -268,23 +269,23 @@ public class AudioController {
     }
 
     private void validateRequestParams(AudioTranscriptionReq audioTranscriptionReq) {
-        if (audioTranscriptionReq.getModel() == null || audioTranscriptionReq.getModel().isEmpty()) {
+        if(audioTranscriptionReq.getModel() == null || audioTranscriptionReq.getModel().isEmpty()) {
             throw new IllegalArgumentException("Model is required");
         }
-        if (audioTranscriptionReq.getCallbackUrl() == null || audioTranscriptionReq.getCallbackUrl().isEmpty()) {
+        if(audioTranscriptionReq.getCallbackUrl() == null || audioTranscriptionReq.getCallbackUrl().isEmpty()) {
             throw new IllegalArgumentException("Callback url is required");
         }
-        if (audioTranscriptionReq.getUrl() == null || audioTranscriptionReq.getUrl().isEmpty()) {
+        if(audioTranscriptionReq.getUrl() == null || audioTranscriptionReq.getUrl().isEmpty()) {
             throw new IllegalArgumentException("Url is required");
         }
-        if (audioTranscriptionReq.getUser() == null || audioTranscriptionReq.getUser().isEmpty()) {
+        if(audioTranscriptionReq.getUser() == null || audioTranscriptionReq.getUser().isEmpty()) {
             throw new IllegalArgumentException("User is required");
         }
     }
 
     @PostMapping("/asr/flash")
     public FlashAsrResponse flashAsr(@RequestHeader(value = "format", defaultValue = "wav") String format,
-            @RequestHeader(value = "sample_rate",defaultValue = "16000") int sampleRate,
+            @RequestHeader(value = "sample_rate", defaultValue = "16000") int sampleRate,
             @RequestHeader(value = "max_sentence_silence", defaultValue = "3000") int maxSentenceSilence,
             @RequestHeader(value = "model", required = false) String model,
             @RequestHeader(value = "hot_words", defaultValue = "") String hotWords,
@@ -294,7 +295,7 @@ public class AudioController {
         String endpoint = EndpointContext.getRequest().getRequestURI();
         // 手动解码hot_words中的中文字符
         String decodedHotWords = hotWords;
-        if (StringUtils.isNotBlank(hotWords)) {
+        if(StringUtils.isNotBlank(hotWords)) {
             try {
                 decodedHotWords = URLDecoder.decode(hotWords, StandardCharsets.UTF_8.name());
             } catch (Exception e) {
@@ -302,7 +303,7 @@ public class AudioController {
                 decodedHotWords = hotWords;
             }
         }
-        
+
         AsrRequest request = AsrRequest.builder()
                 .model(model)
                 .format(format)

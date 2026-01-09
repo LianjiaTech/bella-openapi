@@ -6,6 +6,7 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.ke.bella.queue.QueueClient;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,8 +16,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import com.ke.bella.job.queue.JobQueueClient;
-import com.ke.bella.job.queue.config.JobQueueProperties;
 import com.ke.bella.openapi.BellaContext;
 import com.ke.bella.openapi.EndpointContext;
 import com.ke.bella.openapi.EndpointProcessData;
@@ -64,18 +63,18 @@ public class ChatController {
     @Autowired
     private ISafetyCheckService.IChatSafetyCheckService safetyCheckService;
     @Autowired
-    private JobQueueProperties jobQueueProperties;
-    @Autowired
     private EndpointDataService endpointDataService;
     @Value("${bella.openapi.max-models-per-request:3}")
     private Integer maxModelsPerRequest;
+    @Autowired
+    private QueueClient queueClient;
 
     @PostMapping("/completions")
     public Object completion(HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException {
         String endpoint = httpRequest.getRequestURI();
 
         // Check for direct mode - skip body deserialization for performance
-        if (BellaContext.isDirectMode()) {
+        if(BellaContext.isDirectMode()) {
             return processDirectModeRequest(endpoint, httpRequest, httpResponse);
         }
 
@@ -83,27 +82,27 @@ public class ChatController {
         byte[] bodyBytes = IOUtils.toByteArray(httpRequest.getInputStream());
         CompletionRequest request = JacksonUtils.deserialize(bodyBytes, CompletionRequest.class);
         String model = request.getModel();
-        
+
         // Handle multi-model requests
-        if (model != null && model.contains(",")) {
-            
+        if(model != null && model.contains(",")) {
+
             // Try each model in order
             String[] models = model.split(",");
             int maxNum = models.length;
             // Validate model count
-            if (models.length > maxModelsPerRequest) {
+            if(models.length > maxModelsPerRequest) {
                 log.warn("请求模型数量超过最大限制: " + maxModelsPerRequest);
                 maxNum = maxModelsPerRequest;
             }
             Exception lastException = null;
-            
+
             for (int i = 0; i < maxNum; i++) {
                 CompletionRequest processedRequest = request.copyRequest();
                 String singleModel = models[i];
                 String trimmedModel = singleModel.trim();
                 // Create a copy of the request with just this model
                 processedRequest.setModel(trimmedModel);
-                
+
                 try {
                     // Try to process with this model
                     return processCompletionRequest(endpoint, trimmedModel, processedRequest);
@@ -112,15 +111,15 @@ public class ChatController {
                     lastException = e;
                 }
             }
-            
+
             // If we get here, all models failed
-            if (lastException != null) {
+            if(lastException != null) {
                 throw ChannelException.fromException(lastException);
             } else {
                 throw new BizParamCheckException("所有指定的模型都无法处理请求");
             }
         }
-        
+
         // Single model processing
         return processCompletionRequest(endpoint, model, request);
     }
@@ -151,7 +150,8 @@ public class ChatController {
 
         if(request.isStream()) {
             SseEmitter sse = SseHelper.createSse(1000L * 60 * 30, processData.getRequestId());
-            adaptor.streamCompletion(request, ctx.url, property, StreamCallbackProvider.provide(sse, processData, EndpointContext.getApikey(), logger, chatSafetyCheckService, property));
+            adaptor.streamCompletion(request, ctx.url, property,
+                    StreamCallbackProvider.provide(sse, processData, EndpointContext.getApikey(), logger, chatSafetyCheckService, property));
             return sse;
         }
 
@@ -177,9 +177,7 @@ public class ChatController {
     private CompletionAdaptor<?> decorateAdaptor(CompletionAdaptor<?> adaptor, CompletionProperty property, EndpointProcessData processData) {
         if(StringUtils.isNotBlank(property.getQueueName())) {
             if(adaptor instanceof CompletionAdaptorDelegator) {
-                JobQueueClient jobQueueClient = JobQueueClient.getInstance(jobQueueProperties.getUrl());
-                adaptor = new QueueAdaptor<>((CompletionAdaptorDelegator<?>)adaptor, jobQueueClient, processData,
-                        jobQueueProperties.getDefaultTimeout());
+                adaptor = new QueueAdaptor<>((CompletionAdaptorDelegator<?>) adaptor, queueClient, processData);
             } else {
                 throw new IllegalStateException(adaptor.getClass().getSimpleName() + "不支持请求代理");
             }
@@ -244,7 +242,7 @@ public class ChatController {
         ChannelContext ctx = initializeChannel(endpoint, model, true);
 
         // Direct mode requires CompletionAdaptorDelegator
-        if (!(ctx.adaptor instanceof CompletionAdaptorDelegator)) {
+        if(!(ctx.adaptor instanceof CompletionAdaptorDelegator)) {
             throw new IllegalStateException("Direct mode requires CompletionAdaptorDelegator, got: " + ctx.adaptor.getClass().getSimpleName());
         }
         CompletionAdaptorDelegator delegator = (CompletionAdaptorDelegator) ctx.adaptor;
@@ -252,7 +250,8 @@ public class ChatController {
         EndpointProcessData processData = EndpointContext.getProcessData();
 
         // Create DirectPassthroughAdaptor with HttpServletResponse
-        // The adaptor will automatically detect stream vs non-stream based on response Content-Type
+        // The adaptor will automatically detect stream vs non-stream based on
+        // response Content-Type
         CompletionAdaptor adaptor = new DirectPassthroughAdaptor(delegator, httpRequest.getInputStream(), ctx.property, httpResponse, logger);
         adaptor.completion(null, ctx.url, ctx.property);
         return null; // Response already written directly

@@ -15,6 +15,7 @@ public class ImagesPriceInfo implements IPriceInfo, Serializable {
     private static final long serialVersionUID = 1L;
     ImagesPriceInfoDetailsList details;
     private double batchDiscount = 1.0;
+
     @Override
     public String getUnit() {
         return "元/张";
@@ -27,16 +28,16 @@ public class ImagesPriceInfo implements IPriceInfo, Serializable {
         return map;
     }
 
-
     public static class ImagesPriceInfoDetailsList extends ArrayList<ImagesPriceInfoDetails> implements ComponentList<ImagesPriceInfoDetails> {
         private static final long serialVersionUID = 1L;
+
         @Override
         public String toString() {
             if(size() == 0) {
                 return "N/A";
             }
             ImagesPriceInfoDetails details = get(0);
-            for(ImagesPriceInfoDetails d : this) {
+            for (ImagesPriceInfoDetails d : this) {
                 if("1024x1024".equals(d.getSize())) {
                     details = d;
                 }
@@ -49,7 +50,6 @@ public class ImagesPriceInfo implements IPriceInfo, Serializable {
             return ImagesPriceInfoDetails.class;
         }
     }
-
 
     @Data
     public static class ImagesPriceInfoDetails implements IPriceInfo, Serializable {

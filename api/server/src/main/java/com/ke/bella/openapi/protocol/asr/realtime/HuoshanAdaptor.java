@@ -89,7 +89,7 @@ public class HuoshanAdaptor implements RealTimeAsrAdaptor<HuoshanProperty> {
         public List<String> apply(HuoshanRealTimeAsrResponse response) {
             List<String> result = new ArrayList<>();
             if(response.getResult() != null) {
-                for(HuoshanRealTimeAsrResponse.Result tempResult : response.getResult()) {
+                for (HuoshanRealTimeAsrResponse.Result tempResult : response.getResult()) {
                     if(CollectionUtils.isEmpty(tempResult.getUtterances())) {
                         continue;
                     }
@@ -102,7 +102,7 @@ public class HuoshanAdaptor implements RealTimeAsrAdaptor<HuoshanProperty> {
                         result.add(JacksonUtils.serialize(start));
                         sentenceStart = false;
                     }
-                    for(HuoshanRealTimeAsrResponse.Result huoshanResult : tempResult.getUtterances()) {
+                    for (HuoshanRealTimeAsrResponse.Result huoshanResult : tempResult.getUtterances()) {
                         RealTimeMessage.Payload payload = new RealTimeMessage.Payload();
                         payload.setIndex(index);
                         payload.setTime(huoshanResult.getTime());

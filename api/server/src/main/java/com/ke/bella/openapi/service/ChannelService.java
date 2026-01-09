@@ -95,14 +95,14 @@ public class ChannelService {
         endpoints.forEach(endpoint -> Assert.isTrue(CostCalculator.validate(endpoint, op.getPriceInfo()), "priceInfo invalid"));
         endpoints.forEach(endpoint -> Assert.isTrue(adaptorManager.support(endpoint, op.getProtocol()), "不支持的协议"));
 
-        if (StringUtils.isEmpty(op.getVisibility())) {
+        if(StringUtils.isEmpty(op.getVisibility())) {
             op.setVisibility(PUBLIC);
         }
 
         // 验证队列配置
         validateQueueConfig(op.getQueueMode(), op.getQueueName());
 
-        //todo: 根据协议检查channelInfo
+        // todo: 根据协议检查channelInfo
         ChannelDB channelDB = channelRepo.insert(op);
         updateCache(channelDB.getEntityType(), channelDB.getEntityCode());
         return channelDB;
@@ -125,7 +125,7 @@ public class ChannelService {
 
         validateQueueConfig(op.getQueueMode(), op.getQueueName());
 
-        //todo: 根据协议检查channelInfo
+        // todo: 根据协议检查channelInfo
         channelRepo.update(op, op.getChannelCode());
         updateCache(op.getChannelCode());
     }

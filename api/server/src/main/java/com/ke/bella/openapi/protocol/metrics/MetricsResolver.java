@@ -6,6 +6,8 @@ import java.util.List;
 
 public interface MetricsResolver {
     Integer resolveUnavailableSeconds(EndpointProcessData processData);
+
     List<String> metricsName();
+
     String support();
 }

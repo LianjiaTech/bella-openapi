@@ -51,8 +51,8 @@ public class EmbeddingLogHandler implements EndpointLogHandler {
      * 获取token使用量 - 优先使用RequestMetrics中预计算的值
      */
     private EmbeddingResponse.TokenUsage getTokenUsage(EndpointProcessData processData,
-                                                       EmbeddingResponse response,
-                                                       String encodingType) {
+            EmbeddingResponse response,
+            String encodingType) {
         // 1. 优先使用response中的usage
         if(response != null && response.getUsage() != null) {
             return response.getUsage();
@@ -69,7 +69,7 @@ public class EmbeddingLogHandler implements EndpointLogHandler {
 
         // 3. 使用预计算的RequestMetrics
         RequestMetrics metrics = processData.getRequestMetrics();
-        if (metrics != null && metrics.getEmbeddingTokens() != null) {
+        if(metrics != null && metrics.getEmbeddingTokens() != null) {
             EmbeddingResponse.TokenUsage tokenUsage = new EmbeddingResponse.TokenUsage();
             tokenUsage.setPrompt_tokens(metrics.getEmbeddingTokens());
             tokenUsage.setTotal_tokens(metrics.getEmbeddingTokens());
@@ -78,7 +78,7 @@ public class EmbeddingLogHandler implements EndpointLogHandler {
 
         // 4. 尝试从原始request计算
         Object request = processData.getRequest();
-        if (request instanceof EmbeddingRequest) {
+        if(request instanceof EmbeddingRequest) {
             EncodingType encoding = EncodingType.fromName(encodingType).orElse(EncodingType.CL100K_BASE);
             int inputToken = TokenCalculationUtils.calculateEmbeddingTokens((EmbeddingRequest) request, encoding);
             EmbeddingResponse.TokenUsage tokenUsage = new EmbeddingResponse.TokenUsage();
@@ -88,9 +88,9 @@ public class EmbeddingLogHandler implements EndpointLogHandler {
         }
 
         // 5. Double check: 如果request是null，再检查一次metrics
-        if (request == null) {
+        if(request == null) {
             metrics = processData.getRequestMetrics(); // 再检查一次
-            if (metrics != null && metrics.getEmbeddingTokens() != null) {
+            if(metrics != null && metrics.getEmbeddingTokens() != null) {
                 log.debug("Got embeddingTokens from metrics on double-check: {}", metrics.getEmbeddingTokens());
                 EmbeddingResponse.TokenUsage tokenUsage = new EmbeddingResponse.TokenUsage();
                 tokenUsage.setPrompt_tokens(metrics.getEmbeddingTokens());
@@ -100,7 +100,7 @@ public class EmbeddingLogHandler implements EndpointLogHandler {
         }
 
         log.warn("Unable to calculate tokens, both RequestMetrics and original request are unavailable. RequestId: {}",
-                 processData.getRequestId());
+                processData.getRequestId());
         int inputToken = 0;
 
         EmbeddingResponse.TokenUsage tokenUsage = new EmbeddingResponse.TokenUsage();
@@ -108,7 +108,6 @@ public class EmbeddingLogHandler implements EndpointLogHandler {
         tokenUsage.setTotal_tokens(inputToken);
         return tokenUsage;
     }
-
 
     @Override
     public String endpoint() {

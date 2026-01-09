@@ -42,22 +42,22 @@ public class OAuthLoginFilter implements Filter {
     }
 
     @Override
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) 
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
         HttpServletRequest httpRequest = (HttpServletRequest) request;
         HttpServletResponse httpResponse = (HttpServletResponse) response;
 
         String requestUri = httpRequest.getRequestURI();
-        
+
         // Handle OAuth callback
-        if (requestUri.startsWith("/openapi/oauth/callback/")) {
+        if(requestUri.startsWith("/openapi/oauth/callback/")) {
             String provider = requestUri.substring("/openapi/oauth/callback/".length());
             handleCallback(provider, httpRequest, httpResponse);
             return;
         }
 
         // Handle OAuth config request
-        if (requestUri.equals("/openapi/oauth/config")) {
+        if(requestUri.equals("/openapi/oauth/config")) {
             handleOAuthConfig(httpRequest, httpResponse);
             return;
         }
@@ -71,12 +71,11 @@ public class OAuthLoginFilter implements Filter {
         String state = UUID.randomUUID() + (StringUtils.isNotBlank(redirect) ? ":" + redirect : "");
         ticketManager.saveTicket(state);
 
-
         List<Map<String, Object>> providers = new ArrayList<>();
         for (String type : oauthServices.keySet()) {
             OAuthService service = oauthServices.get(type);
             String authUrl = service.getAuthorizationUrl(state);
-            
+
             Map<String, Object> provider = new HashMap<>();
             provider.put("type", service.getProviderType());
             provider.put("authUrl", authUrl);
@@ -92,13 +91,13 @@ public class OAuthLoginFilter implements Filter {
 
     private void handleCallback(String provider, HttpServletRequest request, HttpServletResponse response) throws IOException {
         OAuthService service = oauthServices.get(provider);
-        if (service == null) {
+        if(service == null) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid provider");
             return;
         }
 
         String error = request.getParameter("error");
-        if (StringUtils.isNotBlank(error)) {
+        if(StringUtils.isNotBlank(error)) {
             LOGGER.error("{} OAuth error: {}", provider, error);
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Authentication failed");
             return;
@@ -107,8 +106,7 @@ public class OAuthLoginFilter implements Filter {
         String code = request.getParameter("code");
         String state = request.getParameter("state");
 
-
-        if (!ticketManager.isValidTicket(state)) {
+        if(!ticketManager.isValidTicket(state)) {
             LOGGER.error("OAuth validation failed - code: {}, state: {}", code, state);
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid state");
             return;
@@ -116,12 +114,12 @@ public class OAuthLoginFilter implements Filter {
 
         // 从 state 中解析出 redirect 参数
         String redirect = null;
-        if (state.contains(":")) {
+        if(state.contains(":")) {
             redirect = state.substring(state.indexOf(":") + 1);
         }
 
         Operator operator = service.handleCallback(code, state);
-        if (operator == null) {
+        if(operator == null) {
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Failed to get user info");
             return;
         }

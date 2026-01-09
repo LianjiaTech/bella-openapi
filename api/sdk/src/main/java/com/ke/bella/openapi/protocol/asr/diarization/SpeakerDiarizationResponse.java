@@ -12,7 +12,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Speaker diarization response containing transcribed segments with speaker identification
+ * Speaker diarization response containing transcribed segments with speaker
+ * identification
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @EqualsAndHashCode(callSuper = true)

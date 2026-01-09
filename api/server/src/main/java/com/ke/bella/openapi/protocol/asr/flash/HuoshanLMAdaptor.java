@@ -28,17 +28,16 @@ public class HuoshanLMAdaptor extends HuoshanAdaptor {
                 .build();
     }
 
-
     @Override
     protected Callbacks.WebSocketCallback createCallback(
             HuoshanRealTimeAsrRequest huoshanRequest, Callbacks.Sender sender, EndpointProcessData processData) {
         return new HuoshanStreamLMAsrCallback(huoshanRequest, sender, processData, null, response -> {
             List<String> results = Lists.newArrayList();
-            
+
             // 处理大模型ASR响应
-            if (response.getResult() != null) {
+            if(response.getResult() != null) {
                 // 如果有分句信息
-                if (response.getResult().getUtterances() != null && !response.getResult().getUtterances().isEmpty()) {
+                if(response.getResult().getUtterances() != null && !response.getResult().getUtterances().isEmpty()) {
                     // 处理每个分句结果
                     for (HuoshanLMRealTimeAsrResponse.Utterance utterance : response.getResult().getUtterances()) {
                         if(utterance.isDefinite()) {
@@ -52,7 +51,7 @@ public class HuoshanLMAdaptor extends HuoshanAdaptor {
                     }
                 }
                 // 如果只有完整文本
-                else if (response.getResult().getText() != null && !response.getResult().getText().isEmpty()) {
+                else if(response.getResult().getText() != null && !response.getResult().getText().isEmpty()) {
                     Text text = Text.builder()
                             .beginTime(0)
                             .endTime(response.getDuration())
@@ -61,7 +60,7 @@ public class HuoshanLMAdaptor extends HuoshanAdaptor {
                     results.add(JacksonUtils.serialize(text));
                 }
             }
-            
+
             return results;
         });
     }

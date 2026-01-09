@@ -137,8 +137,8 @@ public class VideoController {
         ModelDB modelDB = modelService.getOne(model);
         Assert.notNull(modelDB, "model not found: " + model);
 
-		List<ChannelDB> channels = channelService.listActives("model", model);
-		if(CollectionUtils.isEmpty(channels)) {
+        List<ChannelDB> channels = channelService.listActives("model", model);
+        if(CollectionUtils.isEmpty(channels)) {
             throw new ChannelException.OpenAIException(503, "no_channel",
                     "No channel available for model: " + model);
         }

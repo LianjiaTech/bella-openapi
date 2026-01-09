@@ -32,7 +32,6 @@ public class BellaWebSocketListener extends WebSocketListener {
         callback.onMessage(webSocket, bytes);
     }
 
-
     @Override
     public void onMessage(WebSocket webSocket, String text) {
         callback.onMessage(webSocket, text);

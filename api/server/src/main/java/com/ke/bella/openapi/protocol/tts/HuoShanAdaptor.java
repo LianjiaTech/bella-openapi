@@ -26,8 +26,9 @@ import okhttp3.RequestBody;
 public class HuoShanAdaptor implements TtsAdaptor<HuoShanProperty> {
     @Autowired
     private static final Base64.Decoder BASE64_DECODER = Base64.getDecoder();
+
     @Override
-    public byte[] tts(TtsRequest request, String url, HuoShanProperty property){
+    public byte[] tts(TtsRequest request, String url, HuoShanProperty property) {
         HuoShanRequest huoShanRequest = convertTtsRequestToHuoShanRequest(request, property);
         Request.Builder builder = authorizationRequestBuilder(property.getAuth())
                 .url(url)
@@ -88,39 +89,41 @@ public class HuoShanAdaptor implements TtsAdaptor<HuoShanProperty> {
 
     private byte[] processHuoShanResponse(Request httpRequest) {
         HuoShanResponse huoshanResponse = HttpUtils.httpRequest(httpRequest, HuoShanResponse.class);
-        if (huoshanResponse == null || huoshanResponse.getCode()!= HuoShanResponseCodeEnum.OK.code || huoshanResponse.getData() == null) {
-            HttpStatus status = getHttpStatus(HuoShanAdaptor.HuoShanResponseCodeEnum.getByCode(huoshanResponse == null ? HuoShanResponseCodeEnum.OTHER_ERROR.code : huoshanResponse.getCode()));
-            throw new ChannelException.OpenAIException(status.value(), status.getReasonPhrase(), huoshanResponse == null ? HuoShanResponseCodeEnum.OTHER_ERROR.message : huoshanResponse.getMessage());
+        if(huoshanResponse == null || huoshanResponse.getCode() != HuoShanResponseCodeEnum.OK.code || huoshanResponse.getData() == null) {
+            HttpStatus status = getHttpStatus(HuoShanAdaptor.HuoShanResponseCodeEnum
+                    .getByCode(huoshanResponse == null ? HuoShanResponseCodeEnum.OTHER_ERROR.code : huoshanResponse.getCode()));
+            throw new ChannelException.OpenAIException(status.value(), status.getReasonPhrase(),
+                    huoshanResponse == null ? HuoShanResponseCodeEnum.OTHER_ERROR.message : huoshanResponse.getMessage());
         }
         return BASE64_DECODER.decode(huoshanResponse.getData());
     }
 
     private HttpStatus getHttpStatus(HuoShanResponseCodeEnum responseCode) {
         switch (responseCode) {
-            case INVALID_REQUEST:
-                return HttpStatus.BAD_REQUEST;
-            case CONCURRENT_LIMIT_EXCEEDED:
-                return HttpStatus.TOO_MANY_REQUESTS;
-            case BACKEND_SERVICE_BUSY:
-                return HttpStatus.SERVICE_UNAVAILABLE;
-            case SERVICE_INTERRUPTED:
-                return HttpStatus.SERVICE_UNAVAILABLE;
-            case TEXT_LENGTH_LIMIT_EXCEEDED:
-                return HttpStatus.PAYLOAD_TOO_LARGE;
-            case INVALID_TEXT:
-                return HttpStatus.BAD_REQUEST;
-            case PROCESSING_TIMEOUT:
-                return HttpStatus.SERVICE_UNAVAILABLE;
-            case PROCESSING_ERROR:
-                return HttpStatus.INTERNAL_SERVER_ERROR;
-            case AUDIO_ACQUISITION_TIMEOUT:
-                return HttpStatus.GATEWAY_TIMEOUT;
-            case BACKEND_LINK_ERROR:
-                return HttpStatus.BAD_GATEWAY;
-            case VOICE_STYLE_NOT_EXIST:
-                return HttpStatus.NOT_FOUND;
-            default:
-                return HttpStatus.INTERNAL_SERVER_ERROR;
+        case INVALID_REQUEST:
+            return HttpStatus.BAD_REQUEST;
+        case CONCURRENT_LIMIT_EXCEEDED:
+            return HttpStatus.TOO_MANY_REQUESTS;
+        case BACKEND_SERVICE_BUSY:
+            return HttpStatus.SERVICE_UNAVAILABLE;
+        case SERVICE_INTERRUPTED:
+            return HttpStatus.SERVICE_UNAVAILABLE;
+        case TEXT_LENGTH_LIMIT_EXCEEDED:
+            return HttpStatus.PAYLOAD_TOO_LARGE;
+        case INVALID_TEXT:
+            return HttpStatus.BAD_REQUEST;
+        case PROCESSING_TIMEOUT:
+            return HttpStatus.SERVICE_UNAVAILABLE;
+        case PROCESSING_ERROR:
+            return HttpStatus.INTERNAL_SERVER_ERROR;
+        case AUDIO_ACQUISITION_TIMEOUT:
+            return HttpStatus.GATEWAY_TIMEOUT;
+        case BACKEND_LINK_ERROR:
+            return HttpStatus.BAD_GATEWAY;
+        case VOICE_STYLE_NOT_EXIST:
+            return HttpStatus.NOT_FOUND;
+        default:
+            return HttpStatus.INTERNAL_SERVER_ERROR;
         }
     }
 
@@ -133,6 +136,7 @@ public class HuoShanAdaptor implements TtsAdaptor<HuoShanProperty> {
     public Class<?> getPropertyClass() {
         return HuoShanProperty.class;
     }
+
     public enum HuoShanResponseCodeEnum {
         OK(3000, "请求正确"),
         INVALID_REQUEST(3001, "无效的请求"),
@@ -158,7 +162,7 @@ public class HuoShanAdaptor implements TtsAdaptor<HuoShanProperty> {
 
         public static HuoShanResponseCodeEnum getByCode(Integer code) {
             for (HuoShanResponseCodeEnum value : HuoShanResponseCodeEnum.values()) {
-                if (value.code.equals(code)) {
+                if(value.code.equals(code)) {
                     return value;
                 }
             }

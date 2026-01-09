@@ -24,4 +24,3 @@ public class CasProperties {
     private String emailAttribute = "email";
     private List<String> optionalAttributes = Lists.newArrayList();
 }
-

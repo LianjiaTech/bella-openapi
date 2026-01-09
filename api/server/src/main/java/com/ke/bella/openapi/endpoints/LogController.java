@@ -32,7 +32,7 @@ public class LogController {
         Assert.hasText(processData.getEndpoint(), "endpoint can not be null");
         Assert.hasText(processData.getAkSha(), "akSha sha can not be null");
         Assert.hasText(processData.getBellaTraceId(), "bella trace id can not be null");
-        ApikeyInfo apikeyInfo =  apikeyService.queryBySha(processData.getAkSha(), true);
+        ApikeyInfo apikeyInfo = apikeyService.queryBySha(processData.getAkSha(), true);
         if(apikeyInfo == null) {
             throw new BizParamCheckException("用户的Apikey不存在");
         }

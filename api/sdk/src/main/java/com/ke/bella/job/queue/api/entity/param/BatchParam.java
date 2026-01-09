@@ -59,18 +59,18 @@ public class BatchParam {
 
         public static final Integer DEFAULT = 24;
 
-        public static LocalDateTime calculateTime(LocalDateTime localDateTime, int value, String code ) {
+        public static LocalDateTime calculateTime(LocalDateTime localDateTime, int value, String code) {
             switch (code) {
-                case "m":
-                    return localDateTime.plusMinutes(value);
-                case "h":
-                    return localDateTime.plusHours(value);
-                case "d":
-                    return localDateTime.plusDays(value);
-                default:
-                    return localDateTime.plusHours(24); // 默认加24小时
+            case "m":
+                return localDateTime.plusMinutes(value);
+            case "h":
+                return localDateTime.plusHours(value);
+            case "d":
+                return localDateTime.plusDays(value);
+            default:
+                return localDateTime.plusHours(24); // 默认加24小时
             }
         }
 
-     }
+    }
 }

@@ -36,7 +36,7 @@ import javax.servlet.http.HttpServletRequest;
 @Tag(name = "images")
 @Slf4j
 public class ImagesController {
-    
+
     @Autowired
     private ChannelRouter router;
     @Autowired
@@ -45,6 +45,7 @@ public class ImagesController {
     private LimiterManager limiterManager;
     @Autowired
     private EndpointDataService endpointDataService;
+
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @PostMapping("/generations")
     public ImagesResponse generateImages(@RequestBody ImagesRequest request) {
@@ -65,17 +66,19 @@ public class ImagesController {
         ImagesProperty property = (ImagesProperty) JacksonUtils.deserialize(channelInfo, adaptor.getPropertyClass());
         return adaptor.generateImages(request, url, property);
     }
-    
+
     /**
      * 图片编辑接口 - 使用工具类处理multipart请求
+     * 
      * @param servletRequest HTTP请求对象
+     * 
      * @return 编辑后的图片响应
      */
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @PostMapping("/edits")
     public ImagesResponse editImages(HttpServletRequest servletRequest) {
         // 使用工具类处理multipart请求
-        if (!(servletRequest instanceof MultipartHttpServletRequest)) {
+        if(!(servletRequest instanceof MultipartHttpServletRequest)) {
             throw new IllegalArgumentException("Request must be multipart/form-data");
         }
 
@@ -98,10 +101,12 @@ public class ImagesController {
         ImagesEditorProperty property = (ImagesEditorProperty) JacksonUtils.deserialize(channelInfo, adaptor.getPropertyClass());
         return adaptor.editImages(request, url, property);
     }
-    
+
     /**
      * 图片变化接口
+     * 
      * @param request 图片变化请求参数
+     * 
      * @return 变化后的图片响应
      */
     @SuppressWarnings({ "rawtypes", "unchecked" })
