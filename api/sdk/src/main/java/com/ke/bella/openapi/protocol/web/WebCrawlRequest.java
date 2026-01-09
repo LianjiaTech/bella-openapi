@@ -21,7 +21,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Web Crawl Request based on Tavily Crawl API Provides comprehensive web crawling functionality with configurable depth and filtering options
+ * Web Crawl Request based on Tavily Crawl API Provides comprehensive web
+ * crawling functionality with configurable depth and filtering options
  */
 @Data
 @SuperBuilder
@@ -46,14 +47,16 @@ public class WebCrawlRequest implements UserRequest, Serializable, IMemoryCleara
     private String user;
 
     /**
-     * Natural language instructions for the crawler When specified, the mapping cost increases to 2 API credits per 10 successful pages instead of 1
+     * Natural language instructions for the crawler When specified, the mapping
+     * cost increases to 2 API credits per 10 successful pages instead of 1
      * API credit per 10 pages Example: "Find all pages about the Python SDK"
      */
     @Nullable
     private String instructions;
 
     /**
-     * Max depth of the crawl. Defines how far from the base URL the crawler can explore Default: 1
+     * Max depth of the crawl. Defines how far from the base URL the crawler can
+     * explore Default: 1
      */
     @Nullable
     @Min(value = 1, message = "max_depth must be at least 1")
@@ -61,7 +64,8 @@ public class WebCrawlRequest implements UserRequest, Serializable, IMemoryCleara
     private Integer maxDepth = 1;
 
     /**
-     * Max number of links to follow per level of the tree (i.e., per page) Default: 20
+     * Max number of links to follow per level of the tree (i.e., per page)
+     * Default: 20
      */
     @Nullable
     @Min(value = 1, message = "max_breadth must be at least 1")
@@ -69,42 +73,48 @@ public class WebCrawlRequest implements UserRequest, Serializable, IMemoryCleara
     private Integer maxBreadth = 20;
 
     /**
-     * Total number of links the crawler will process before stopping Default: 50
+     * Total number of links the crawler will process before stopping Default:
+     * 50
      */
     @Nullable
     @Min(value = 1, message = "limit must be at least 1")
     private Integer limit = 50;
 
     /**
-     * Regex patterns to select only URLs with specific path patterns Example: ["/docs/.*", "/api/v1.*"]
+     * Regex patterns to select only URLs with specific path patterns Example:
+     * ["/docs/.*", "/api/v1.*"]
      */
     @Nullable
     @JsonProperty("select_paths")
     private List<String> selectPaths;
 
     /**
-     * Regex patterns to select crawling to specific domains or subdomains Example: ["^docs\\.example\\.com$"]
+     * Regex patterns to select crawling to specific domains or subdomains
+     * Example: ["^docs\\.example\\.com$"]
      */
     @Nullable
     @JsonProperty("select_domains")
     private List<String> selectDomains;
 
     /**
-     * Regex patterns to exclude URLs with specific path patterns Example: ["/private/.*", "/admin/.*"]
+     * Regex patterns to exclude URLs with specific path patterns Example:
+     * ["/private/.*", "/admin/.*"]
      */
     @Nullable
     @JsonProperty("exclude_paths")
     private List<String> excludePaths;
 
     /**
-     * Regex patterns to exclude specific domains or subdomains from crawling Example: ["^private\\.example\\.com$"]
+     * Regex patterns to exclude specific domains or subdomains from crawling
+     * Example: ["^private\\.example\\.com$"]
      */
     @Nullable
     @JsonProperty("exclude_domains")
     private List<String> excludeDomains;
 
     /**
-     * Whether to include external domain links in the final results list Default: true
+     * Whether to include external domain links in the final results list
+     * Default: true
      */
     @Nullable
     @JsonProperty("allow_external")
@@ -118,15 +128,18 @@ public class WebCrawlRequest implements UserRequest, Serializable, IMemoryCleara
     private Boolean includeImages = false;
 
     /**
-     * Advanced extraction retrieves more data, including tables and embedded content, with higher success but may increase latency - basic: costs 1
-     * credit per 5 successful extractions - advanced: costs 2 credits per 5 successful extractions Default: basic
+     * Advanced extraction retrieves more data, including tables and embedded
+     * content, with higher success but may increase latency - basic: costs 1
+     * credit per 5 successful extractions - advanced: costs 2 credits per 5
+     * successful extractions Default: basic
      */
     @Nullable
     @JsonProperty("extract_depth")
     private ExtractDepth extractDepth = ExtractDepth.BASIC;
 
     /**
-     * The format of the extracted web page content - markdown: returns content in markdown format - text: returns plain text and may increase latency
+     * The format of the extracted web page content - markdown: returns content
+     * in markdown format - text: returns plain text and may increase latency
      * Default: markdown
      */
     @Nullable
@@ -157,7 +170,8 @@ public class WebCrawlRequest implements UserRequest, Serializable, IMemoryCleara
     }
 
     /**
-     * Handle unknown properties during deserialization and store them in extra_body
+     * Handle unknown properties during deserialization and store them in
+     * extra_body
      */
     @JsonAnySetter
     public void setExtraBodyField(String key, Object value) {

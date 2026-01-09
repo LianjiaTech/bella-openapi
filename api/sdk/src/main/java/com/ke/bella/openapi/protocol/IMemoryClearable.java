@@ -16,7 +16,8 @@ public interface IMemoryClearable {
 
     /**
      * 检查对象是否已经被清理
+     * 
      * @return true 如果对象已被清理
      */
-     boolean isCleared();
+    boolean isCleared();
 }

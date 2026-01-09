@@ -14,7 +14,7 @@ public class DocParseRequest implements UserRequest {
     private SourceFile file;
     private String user;
     private String model;
-    private String type; //task, blocking
+    private String type; // task, blocking
     private String callbackUrl;
     private int maxTimeoutMillis;
 }

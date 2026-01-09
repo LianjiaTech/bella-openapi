@@ -29,7 +29,7 @@ public class TtsRequest implements UserRequest, Serializable, IMemoryClearable {
 
     @Override
     public void clearLargeData() {
-        if (!cleared) {
+        if(!cleared) {
             // 清理最大的内存占用 - 输入文本可能很长
             this.input = null;
 

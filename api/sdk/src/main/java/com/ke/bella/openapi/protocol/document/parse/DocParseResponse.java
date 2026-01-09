@@ -6,7 +6,7 @@ import lombok.Data;
 @Data
 public class DocParseResponse {
     private DocParseResult result;
-    private String status; //success, failed, processing
+    private String status; // success, failed, processing
     private String message;
     @JsonIgnore
     private String token;

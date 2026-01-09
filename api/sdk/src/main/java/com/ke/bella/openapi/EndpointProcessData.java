@@ -38,8 +38,8 @@ public class EndpointProcessData {
     private boolean isPrivate;
     private String user;
     private long requestMillis;
-    private long requestTime; //s
-    private long firstPackageTime; //ms
+    private long requestTime; // s
+    private long firstPackageTime; // ms
     private long transcriptionDuration;
     private long duration;
     private Object request;
@@ -56,8 +56,7 @@ public class EndpointProcessData {
     /**
      * 请求摘要 - 用于日志记录的精简版请求内容
      * -- SETTER --
-     *  设置请求摘要
-
+     * 设置请求摘要
      */
     @Setter
     @JsonIgnore
@@ -129,7 +128,7 @@ public class EndpointProcessData {
      */
     @JsonProperty("request")
     public Object getRequestForLogging() {
-        if (requestOptimized && requestSummary != null) {
+        if(requestOptimized && requestSummary != null) {
             return requestSummary;
         }
         return request;

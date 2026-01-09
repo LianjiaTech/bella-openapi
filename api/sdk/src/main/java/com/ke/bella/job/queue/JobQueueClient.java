@@ -38,7 +38,7 @@ public class JobQueueClient {
     }
 
     private JobQueueClient(String url) {
-        if (StringUtils.isBlank(url)) {
+        if(StringUtils.isBlank(url)) {
             throw new IllegalStateException("Queue Service URL is not configured.");
         }
         this.url = url;
@@ -115,7 +115,6 @@ public class JobQueueClient {
         Request request = getPostRequest(resultUrl, apikey, JacksonUtils.serialize(req));
         return HttpUtils.httpRequest(request, TaskResp.TaskGetDetailResp.class);
     }
-
 
     public Request getPostRequest(String url, String apikey, String json) {
         RequestBody requestBody = RequestBody.create(MediaType.parse("application/json; charset=utf-8"), json);

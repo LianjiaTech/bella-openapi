@@ -21,7 +21,7 @@ public class BellaInterceptor implements Interceptor {
 
     private String openapiHost;
 
-    //在异步线程中使用时需要传入context
+    // 在异步线程中使用时需要传入context
     private Map<String, Object> context;
 
     public BellaInterceptor(String openapiHost, Map<String, Object> context) {
@@ -30,13 +30,13 @@ public class BellaInterceptor implements Interceptor {
     }
 
     private String stripProtocol(String url) {
-        if (url == null) {
+        if(url == null) {
             return null;
         }
-        if (url.startsWith("https://")) {
+        if(url.startsWith("https://")) {
             return url.substring(8);
         }
-        if (url.startsWith("http://")) {
+        if(url.startsWith("http://")) {
             return url.substring(7);
         }
         return url;
@@ -68,6 +68,6 @@ public class BellaInterceptor implements Interceptor {
         if(user != null) {
             bellaRequest.header("ucid", user);
         }
-         return chain.proceed(bellaRequest.build());
+        return chain.proceed(bellaRequest.build());
     }
 }
