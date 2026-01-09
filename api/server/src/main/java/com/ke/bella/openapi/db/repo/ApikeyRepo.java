@@ -60,12 +60,13 @@ public class ApikeyRepo extends StatusRepo<ApikeyDB, ApikeyRecord, String> imple
                 .and(StringUtils.isEmpty(op.getName()) ? DSL.noCondition() : APIKEY.NAME.eq(op.getName()))
                 .and(StringUtils.isEmpty(op.getServiceId()) ? DSL.noCondition() : APIKEY.SERVICE_ID.eq(op.getServiceId()))
                 .and(StringUtils.isEmpty(op.getOutEntityCode()) ? DSL.noCondition() : APIKEY.OUT_ENTITY_CODE.eq(op.getOutEntityCode()))
-                .and(StringUtils.isEmpty(op.getSearchParam()) ? DSL.noCondition() : APIKEY.NAME.like(op.getSearchParam() + "%")
-                        .or(APIKEY.SERVICE_ID.like(op.getSearchParam() + "%")))
+                .and(StringUtils.isEmpty(op.getSearchParam()) ? DSL.noCondition()
+                        : APIKEY.NAME.like(op.getSearchParam() + "%")
+                                .or(APIKEY.SERVICE_ID.like(op.getSearchParam() + "%")))
                 .and(op.isIncludeChild() || StringUtils.isNotEmpty(op.getParentCode()) ? DSL.noCondition() : APIKEY.PARENT_CODE.eq(StringUtils.EMPTY))
                 .and(StringUtils.isEmpty(op.getStatus()) ? DSL.noCondition() : APIKEY.STATUS.eq(op.getStatus()))
-                .and(StringUtils.isEmpty(op.getPersonalCode()) ? DSL.noCondition() :
-                                APIKEY.OWNER_TYPE.eq(EntityConstants.PERSON).and(APIKEY.OWNER_CODE.eq(op.getPersonalCode())))
+                .and(StringUtils.isEmpty(op.getPersonalCode()) ? DSL.noCondition()
+                        : APIKEY.OWNER_TYPE.eq(EntityConstants.PERSON).and(APIKEY.OWNER_CODE.eq(op.getPersonalCode())))
                 .orderBy(APIKEY.ID.desc());
     }
 
@@ -93,11 +94,13 @@ public class ApikeyRepo extends StatusRepo<ApikeyDB, ApikeyRecord, String> imple
     protected TableField<ApikeyRecord, String> uniqueKey() {
         return APIKEY.CODE;
     }
-    
+
     /**
      * 批量更新子API Key的所有者信息
-     * @param updateDB 更新的字段信息
+     * 
+     * @param updateDB   更新的字段信息
      * @param parentCode 父API Key的code
+     * 
      * @return 更新的记录数
      */
     @Transactional

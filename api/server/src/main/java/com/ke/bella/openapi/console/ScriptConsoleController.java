@@ -37,7 +37,7 @@ public class ScriptConsoleController {
         return modelService.queryWithCache("all");
     }
 
-   @PostMapping("/model/map/refresh")
+    @PostMapping("/model/map/refresh")
     public Boolean refresh() {
         modelService.refreshModelMap();
         return true;

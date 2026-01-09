@@ -69,7 +69,7 @@ public class AwsClientManager {
     }
 
     private static AwsAuthorizationProvider provide(String accessKeyId, String secretKey) {
-        return authCache.computeIfAbsent(accessKeyId, k ->  new AwsAuthorizationProvider(accessKeyId, secretKey));
+        return authCache.computeIfAbsent(accessKeyId, k -> new AwsAuthorizationProvider(accessKeyId, secretKey));
     }
 
     public static class AwsAuthorizationProvider implements AwsCredentialsProvider {

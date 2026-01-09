@@ -28,10 +28,9 @@ public class CostCounter {
             Set<String> current = costCache.keySet();
             String month = DateTimeUtils.getCurrentMonth();
             current.forEach(apikey -> {
-                        AtomicReference<BigDecimal> cost = costCache.remove(apikey);
-                        costRecorder.recordCost(apikey, month, cost.get());
-                    }
-            );
+                AtomicReference<BigDecimal> cost = costCache.remove(apikey);
+                costRecorder.recordCost(apikey, month, cost.get());
+            });
         }
     }
 

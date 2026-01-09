@@ -67,12 +67,12 @@ public class ResponseHelper {
             } else {
                 target.setContent(target.getContent() + content);
             }
-        }  else if(CollectionUtils.isNotEmpty(toolCallList)) {
+        } else if(CollectionUtils.isNotEmpty(toolCallList)) {
             if(target.getTool_calls() == null) {
                 target.setTool_calls(new ArrayList<>());
             }
             for (Message.ToolCall streamToolCall : toolCallList) {
-                //拼接对应index的function
+                // 拼接对应index的function
                 int toolIndex = streamToolCall.getIndex();
                 String name = streamToolCall.getFunction().getName();
                 String arguments = streamToolCall.getFunction().getArguments();

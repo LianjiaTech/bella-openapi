@@ -54,14 +54,14 @@ public class GoogleAdaptor implements CompletionAdaptor<OpenAIProperty> {
     }
 
     private void normalizeGoogleUsage(CompletionResponse response) {
-        if (response == null || response.getUsage() == null) {
+        if(response == null || response.getUsage() == null) {
             return;
         }
         CompletionResponse.TokenUsage usage = response.getUsage();
         CompletionResponse.TokensDetail details = usage.getCompletion_tokens_details();
-        if (details != null) {
+        if(details != null) {
             int detailsTotal = details.getReasoning_tokens() + details.getAudio_tokens() + details.getImage_tokens();
-            if (detailsTotal > 0) {
+            if(detailsTotal > 0) {
                 usage.setCompletion_tokens(usage.getCompletion_tokens() + detailsTotal);
                 usage.setTotal_tokens(usage.getPrompt_tokens() + usage.getCompletion_tokens());
             }
@@ -69,14 +69,14 @@ public class GoogleAdaptor implements CompletionAdaptor<OpenAIProperty> {
     }
 
     private void normalizeGoogleUsage(StreamCompletionResponse response) {
-        if (response == null || response.getUsage() == null) {
+        if(response == null || response.getUsage() == null) {
             return;
         }
         CompletionResponse.TokenUsage usage = response.getUsage();
         CompletionResponse.TokensDetail details = usage.getCompletion_tokens_details();
-        if (details != null) {
+        if(details != null) {
             int detailsTotal = details.getReasoning_tokens() + details.getAudio_tokens() + details.getImage_tokens();
-            if (detailsTotal > 0) {
+            if(detailsTotal > 0) {
                 usage.setCompletion_tokens(usage.getCompletion_tokens() + detailsTotal);
                 usage.setTotal_tokens(usage.getPrompt_tokens() + usage.getCompletion_tokens());
             }

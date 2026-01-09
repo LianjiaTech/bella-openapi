@@ -16,7 +16,7 @@ import java.util.List;
 public class LogprobsResult {
     private List<TopCandidates> topCandidates;
     private List<ChosenCandidate> chosenCandidates;
-    
+
     @Data
     @Builder
     @NoArgsConstructor
@@ -25,7 +25,7 @@ public class LogprobsResult {
     public static class TopCandidates {
         private List<TokenCandidate> candidates;
     }
-    
+
     @Data
     @Builder
     @NoArgsConstructor
@@ -35,7 +35,7 @@ public class LogprobsResult {
         private String token;
         private Double logProbability;
     }
-    
+
     @Data
     @Builder
     @NoArgsConstructor

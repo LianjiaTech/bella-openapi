@@ -54,43 +54,43 @@ public class StageLoggingProcessor {
         RejectedExecutionHandler rejectedHandler = (r, executor) -> {
             rejectedTaskCount.incrementAndGet();
             log.warn("Thread pool rejected task, falling back to sync processing. Rejected count: {}",
-                rejectedTaskCount.get());
+                    rejectedTaskCount.get());
 
             // 在当前线程同步执行（降级策略）
-            if (r instanceof OptimizationTask) {
+            if(r instanceof OptimizationTask) {
                 OptimizationTask task = (OptimizationTask) r;
                 syncFallbackCount.incrementAndGet();
                 log.debug("Executing optimization task synchronously. Sync fallback count: {}",
-                    syncFallbackCount.get());
+                        syncFallbackCount.get());
                 task.runSynchronously();
             }
         };
 
         asyncExecutor = new ThreadPoolExecutor(
-            corePoolSize,
-            maximumPoolSize,
-            keepAliveTime,
-            unit,
-            workQueue,
-            new ThreadFactory() {
-                private final AtomicInteger threadNumber = new AtomicInteger(1);
-                @Override
-                public Thread newThread(Runnable r) {
-                    Thread t = new Thread(r, "request-optimization-" + threadNumber.getAndIncrement());
-                    t.setDaemon(true);
-                    return t;
-                }
-            },
-            rejectedHandler
-        );
+                corePoolSize,
+                maximumPoolSize,
+                keepAliveTime,
+                unit,
+                workQueue,
+                new ThreadFactory() {
+                    private final AtomicInteger threadNumber = new AtomicInteger(1);
+
+                    @Override
+                    public Thread newThread(Runnable r) {
+                        Thread t = new Thread(r, "request-optimization-" + threadNumber.getAndIncrement());
+                        t.setDaemon(true);
+                        return t;
+                    }
+                },
+                rejectedHandler);
 
         log.info("StageLoggingProcessor initialized - CorePool: {}, MaxPool: {}, Queue: {}",
-            corePoolSize, maximumPoolSize, workQueue.remainingCapacity());
+                corePoolSize, maximumPoolSize, workQueue.remainingCapacity());
     }
 
     @PreDestroy
     public void destroy() {
-        if (asyncExecutor != null && !asyncExecutor.isShutdown()) {
+        if(asyncExecutor != null && !asyncExecutor.isShutdown()) {
             asyncExecutor.shutdown();
             log.info("StageLoggingProcessor executor shutdown");
         }
@@ -100,7 +100,7 @@ public class StageLoggingProcessor {
      * 异步预处理请求数据
      */
     public void preprocessRequestAsync(EndpointProcessData processData, Object request) {
-        if (!config.isEnabled()) {
+        if(!config.isEnabled()) {
             return;
         }
 
@@ -131,7 +131,7 @@ public class StageLoggingProcessor {
                 preprocessRequest(processData, request);
             } catch (Exception e) {
                 log.warn("Request preprocessing failed for endpoint: {}, requestId: {}",
-                    processData.getEndpoint(), processData.getRequestId(), e);
+                        processData.getEndpoint(), processData.getRequestId(), e);
             }
         }
 
@@ -151,7 +151,7 @@ public class StageLoggingProcessor {
 
         try {
             String endpoint = processData.getEndpoint();
-            if (endpoint == null) {
+            if(endpoint == null) {
                 log.debug("Endpoint is null, skipping preprocessing");
                 return;
             }
@@ -169,8 +169,8 @@ public class StageLoggingProcessor {
 
             long processingTime = System.currentTimeMillis() - startTime;
             log.debug("Request preprocessing completed for endpoint: {}, processing time: {}ms, " +
-                "optimized to metrics + summary",
-                endpoint, processingTime);
+                    "optimized to metrics + summary",
+                    endpoint, processingTime);
 
         } catch (Exception e) {
             log.error("Error during request preprocessing", e);
@@ -182,24 +182,24 @@ public class StageLoggingProcessor {
      */
     private RequestMetrics extractRequestMetrics(Object request, String endpoint, EndpointProcessData processData) {
         RequestMetrics.RequestMetricsBuilder builder = RequestMetrics.builder()
-            .encodingType(processData.getEncodingType());
+                .encodingType(processData.getEncodingType());
 
         // 根据不同endpoint提取特定指标
         switch (endpoint) {
-            case "/v1/audio/speech":
-                extractTtsMetrics(request, builder);
-                break;
+        case "/v1/audio/speech":
+            extractTtsMetrics(request, builder);
+            break;
 
-            case "/v1/chat/completions":
-                extractCompletionMetrics(request, builder, processData.getEncodingType());
-                break;
+        case "/v1/chat/completions":
+            extractCompletionMetrics(request, builder, processData.getEncodingType());
+            break;
 
-            case "/v1/embeddings":
-                extractEmbeddingMetrics(request, builder, processData.getEncodingType());
-                break;
+        case "/v1/embeddings":
+            extractEmbeddingMetrics(request, builder, processData.getEncodingType());
+            break;
 
-            default:
-                log.debug("No specific metrics extraction for endpoint: {}", endpoint);
+        default:
+            log.debug("No specific metrics extraction for endpoint: {}", endpoint);
         }
 
         return builder.build();
@@ -209,7 +209,7 @@ public class StageLoggingProcessor {
      * 提取TTS请求指标 - 只提取inputLength
      */
     private void extractTtsMetrics(Object request, RequestMetrics.RequestMetricsBuilder builder) {
-        if (request instanceof TtsRequest) {
+        if(request instanceof TtsRequest) {
             TtsRequest tts = (TtsRequest) request;
             builder.inputLength(tts.getInput() != null ? tts.getInput().length() : 0);
         }
@@ -219,7 +219,7 @@ public class StageLoggingProcessor {
      * 提取Completion请求指标 - 只预计算inputTokens
      */
     private void extractCompletionMetrics(Object request, RequestMetrics.RequestMetricsBuilder builder, String encodingType) {
-        if (request instanceof CompletionRequest) {
+        if(request instanceof CompletionRequest) {
             CompletionRequest completion = (CompletionRequest) request;
 
             // 预计算输入token数量
@@ -233,12 +233,11 @@ public class StageLoggingProcessor {
         }
     }
 
-
     /**
      * 提取Embedding请求指标 - 只预计算embeddingTokens
      */
     private void extractEmbeddingMetrics(Object request, RequestMetrics.RequestMetricsBuilder builder, String encodingType) {
-        if (request instanceof EmbeddingRequest) {
+        if(request instanceof EmbeddingRequest) {
             EmbeddingRequest embedding = (EmbeddingRequest) request;
             EncodingType encoding = EncodingType.fromName(encodingType).orElse(EncodingType.CL100K_BASE);
 
@@ -259,7 +258,7 @@ public class StageLoggingProcessor {
             String fullContent = JacksonUtils.serialize(request);
             int maxLength = config.getRequestSummaryMaxLength();
 
-            if (fullContent.length() <= maxLength) {
+            if(fullContent.length() <= maxLength) {
                 return fullContent;
             }
 

@@ -2,7 +2,7 @@ package com.ke.bella.openapi.protocol.embedding;
 
 import com.ke.bella.openapi.protocol.IProtocolAdaptor;
 
-public interface EmbeddingAdaptor <T extends EmbeddingProperty> extends IProtocolAdaptor {
+public interface EmbeddingAdaptor<T extends EmbeddingProperty> extends IProtocolAdaptor {
 
     EmbeddingResponse embedding(EmbeddingRequest request, String url, T property);
 

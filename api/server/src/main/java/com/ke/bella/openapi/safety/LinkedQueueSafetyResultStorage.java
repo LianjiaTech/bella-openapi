@@ -13,7 +13,7 @@ public class LinkedQueueSafetyResultStorage implements ISafetyResultStorage {
 
     @Override
     public void addRiskData(Object riskData, boolean isRequest) {
-        if (riskData != null) {
+        if(riskData != null) {
             if(isRequest) {
                 requestRiskDataQueue.offer(riskData);
             } else {
@@ -26,7 +26,6 @@ public class LinkedQueueSafetyResultStorage implements ISafetyResultStorage {
     public Object getRequestRiskData() {
         return requestRiskDataQueue.poll();
     }
-
 
     @Override
     public Object getResponseRiskData() {

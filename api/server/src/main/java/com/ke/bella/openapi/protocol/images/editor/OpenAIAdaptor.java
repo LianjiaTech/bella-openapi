@@ -16,24 +16,25 @@ import java.io.IOException;
  */
 @Component("OpenAIImagesEditor")
 public class OpenAIAdaptor implements ImagesEditorAdaptor<ImagesEditorProperty> {
-    
+
     @Override
     public String endpoint() {
         return "/v1/images/edits";
     }
-    
+
     @Override
     public String getDescription() {
         return "OpenAI图片编辑协议";
     }
-    
+
     @Override
     public Class<?> getPropertyClass() {
         return ImagesEditorProperty.class;
     }
-    
+
     @Override
-    public ImagesResponse doEditImages(ImagesEditRequest request, String url, ImagesEditorProperty property, ImageDataType dataType) throws IOException {
+    public ImagesResponse doEditImages(ImagesEditRequest request, String url, ImagesEditorProperty property, ImageDataType dataType)
+            throws IOException {
         Request httpRequest = buildRequest(request, url, property, dataType);
         clearLargeData(request);
         return HttpUtils.httpRequest(httpRequest, ImagesResponse.class);
@@ -45,74 +46,74 @@ public class OpenAIAdaptor implements ImagesEditorAdaptor<ImagesEditorProperty> 
     protected Request buildRequest(ImagesEditRequest request, String url, ImagesEditorProperty property, ImageDataType dataType) throws IOException {
         // 构建multipart请求
         MultipartBody.Builder multipartBuilder = new MultipartBody.Builder()
-            .setType(MultipartBody.FORM);
+                .setType(MultipartBody.FORM);
 
         // 根据数据类型添加图片数据
         switch (dataType) {
-            case FILE:
-                MultipartFile[] imageFiles = request.getImage();
-                if (imageFiles != null) {
-                    for (MultipartFile imageFile : imageFiles) {
-                        if (!imageFile.isEmpty()) {
-                            multipartBuilder.addFormDataPart("image", imageFile.getOriginalFilename(),
+        case FILE:
+            MultipartFile[] imageFiles = request.getImage();
+            if(imageFiles != null) {
+                for (MultipartFile imageFile : imageFiles) {
+                    if(!imageFile.isEmpty()) {
+                        multipartBuilder.addFormDataPart("image", imageFile.getOriginalFilename(),
                                 RequestBody.create(MediaType.parse("image/png"), imageFile.getBytes()));
-                        }
                     }
                 }
-                break;
-            case URL:
-                String[] imageUrls = request.getImage_url();
-                if (imageUrls != null) {
-                    // 添加所有图片URL
-                    for (String imageUrl : imageUrls) {
-                        multipartBuilder.addFormDataPart("image_url", imageUrl);
-                    }
+            }
+            break;
+        case URL:
+            String[] imageUrls = request.getImage_url();
+            if(imageUrls != null) {
+                // 添加所有图片URL
+                for (String imageUrl : imageUrls) {
+                    multipartBuilder.addFormDataPart("image_url", imageUrl);
                 }
-                break;
-            case BASE64:
-                String[] base64Images = request.getImage_b64_json();
-                if (base64Images != null) {
-                    // 添加所有base64图片
-                    for (String base64Image : base64Images) {
-                        multipartBuilder.addFormDataPart("image_b64_json", base64Image);
-                    }
+            }
+            break;
+        case BASE64:
+            String[] base64Images = request.getImage_b64_json();
+            if(base64Images != null) {
+                // 添加所有base64图片
+                for (String base64Image : base64Images) {
+                    multipartBuilder.addFormDataPart("image_b64_json", base64Image);
                 }
-                break;
+            }
+            break;
         }
 
         // 添加可选的遮罩文件
         MultipartFile maskFile = request.getMask();
-        if (maskFile != null && !maskFile.isEmpty()) {
+        if(maskFile != null && !maskFile.isEmpty()) {
             multipartBuilder.addFormDataPart("mask", maskFile.getOriginalFilename(),
-                RequestBody.create(MediaType.parse("image/png"), maskFile.getBytes()));
+                    RequestBody.create(MediaType.parse("image/png"), maskFile.getBytes()));
         }
 
         // 添加必需的提示词
-        if (request.getPrompt() != null) {
+        if(request.getPrompt() != null) {
             multipartBuilder.addFormDataPart("prompt", request.getPrompt());
         }
 
         // 设置模型（property.getDeployName() 优先，否则使用 request.getModel()）
         String model = property.getDeployName();
-        if (model == null || model.isEmpty()) {
+        if(model == null || model.isEmpty()) {
             model = request.getModel();
         }
         multipartBuilder.addFormDataPart("model", model);
 
         // 添加可选参数
-        if (request.getN() != null) {
+        if(request.getN() != null) {
             multipartBuilder.addFormDataPart("n", request.getN().toString());
         }
 
-        if (request.getSize() != null) {
+        if(request.getSize() != null) {
             multipartBuilder.addFormDataPart("size", request.getSize());
         }
 
-        if (request.getResponse_format() != null) {
+        if(request.getResponse_format() != null) {
             multipartBuilder.addFormDataPart("response_format", request.getResponse_format());
         }
 
-        if (request.getUser() != null) {
+        if(request.getUser() != null) {
             multipartBuilder.addFormDataPart("user", request.getUser());
         }
 

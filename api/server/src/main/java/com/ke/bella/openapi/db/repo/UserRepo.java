@@ -46,9 +46,9 @@ public class UserRepo implements IUserRepo {
                         .and(USER.SOURCE_ID.eq(operator.getSourceId())))
                 .fetchOne();
 
-        if (existingUser != null) {
+        if(existingUser != null) {
             // 用数据库中的值替换实体中的值
-            if (operator.getUserId() == null || operator.getUserId() <= 0) {
+            if(operator.getUserId() == null || operator.getUserId() <= 0) {
                 operator.setUserId(existingUser.getId());
             }
             if(StringUtils.isBlank(existingUser.getManagerAk())) {
@@ -69,13 +69,13 @@ public class UserRepo implements IUserRepo {
         newUser.setOptionalInfo(JacksonUtils.serialize(operator.getOptionalInfo()));
 
         newUser.store();
-        
+
         // 不存在userId时，设置自增生成的 ID 为userId
-        if (operator.getUserId() == null || operator.getUserId() <= 0) {
+        if(operator.getUserId() == null || operator.getUserId() <= 0) {
             operator.setUserId(newUser.getId());
         }
 
-        //生成playground ak
+        // 生成playground ak
         newUser.setManagerAk(generateAk(operator));
         newUser.store();
 
@@ -150,6 +150,7 @@ public class UserRepo implements IUserRepo {
      * 根据用户ID查询用户
      *
      * @param id 用户ID
+     * 
      * @return 用户信息
      */
     public UserDB queryById(Long id) {
@@ -159,8 +160,9 @@ public class UserRepo implements IUserRepo {
     /**
      * 根据来源和来源ID查询用户
      *
-     * @param source 用户来源
+     * @param source   用户来源
      * @param sourceId 来源ID
+     * 
      * @return 用户信息
      */
     public UserDB queryBySourceAndSourceId(String source, String sourceId) {
@@ -173,7 +175,8 @@ public class UserRepo implements IUserRepo {
      * 根据来源和邮箱查询用户
      *
      * @param source 用户来源
-     * @param email 邮箱
+     * @param email  邮箱
+     * 
      * @return 用户信息
      */
     public UserDB queryBySourceAndEmail(String source, String email) {
@@ -184,37 +187,41 @@ public class UserRepo implements IUserRepo {
 
     /**
      * 模糊搜索用户
+     * 
      * @param keyword 搜索关键词
-     * @param limit 返回数量限制
+     * @param limit   返回数量限制
+     * 
      * @return 用户搜索结果列表
      */
     public List<UserSearchResult> searchUsers(String keyword, int limit) {
         return searchUsers(keyword, limit, null, null);
     }
-    
+
     /**
      * 模糊搜索用户（支持排除指定用户）
-     * @param keyword 搜索关键词
-     * @param limit 返回数量限制
-     * @param excludeUserId 排除的用户ID，为null则不排除
+     * 
+     * @param keyword             搜索关键词
+     * @param limit               返回数量限制
+     * @param excludeUserId       排除的用户ID，为null则不排除
      * @param excludeSourceUserId 排除的用户ID，为null则不排除
+     * 
      * @return 用户搜索结果列表
      */
     public List<UserSearchResult> searchUsers(String keyword, int limit, Long excludeUserId, String excludeSourceUserId) {
         String likeKeyword = "%" + keyword + "%";
-        
+
         org.jooq.Condition condition = USER.USER_NAME.like(likeKeyword)
                 .or(USER.SOURCE_ID.like(likeKeyword))
                 .or(USER.EMAIL.like(likeKeyword));
-        
-        if (excludeUserId != null) {
+
+        if(excludeUserId != null) {
             condition = condition.and(USER.ID.ne(excludeUserId));
         }
 
-        if (excludeSourceUserId != null) {
+        if(excludeSourceUserId != null) {
             condition = condition.and(USER.SOURCE_ID.ne(excludeSourceUserId));
         }
-        
+
         return dsl.select(USER.ID, USER.USER_NAME, USER.EMAIL, USER.SOURCE, USER.SOURCE_ID)
                 .from(USER)
                 .where(condition)

@@ -24,6 +24,7 @@ public class ApikeyTransferLogRepo implements BaseRepo {
      * 根据API Key编码查询转移历史
      *
      * @param akCode API Key编码
+     * 
      * @return 转移历史列表
      */
     public List<ApikeyTransferLog> queryByAkCode(String akCode) {
@@ -38,6 +39,7 @@ public class ApikeyTransferLogRepo implements BaseRepo {
      * 插入转移日志
      *
      * @param log 转移日志信息
+     * 
      * @return 插入的记录ID
      */
     public Long insertTransferLog(ApikeyTransferLog log) {
@@ -53,7 +55,7 @@ public class ApikeyTransferLogRepo implements BaseRepo {
         record.setStatus(log.getStatus());
         record.setOperatorUid(log.getOperatorUid());
         record.setOperatorName(log.getOperatorName());
-        
+
         record.store();
         return record.getId();
     }

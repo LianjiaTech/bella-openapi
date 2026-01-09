@@ -12,6 +12,7 @@ public enum ScriptType {
     ;
 
     final String path;
+
     public String getScriptName(String fileName) {
         return this.path + fileName;
     }

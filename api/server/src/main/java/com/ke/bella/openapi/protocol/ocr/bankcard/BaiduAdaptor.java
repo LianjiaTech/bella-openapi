@@ -50,7 +50,7 @@ public class BaiduAdaptor implements BankcardAdaptor<BaiduOcrProperty> {
     private RequestBody buildFormBody(BaiduRequest request) {
         return baiduOcrHelper.buildCommonFormBody(request, builder -> {
             builder.add("detect_quality", request.getDetectQuality())
-                   .add("location", request.getLocation());
+                    .add("location", request.getLocation());
         });
     }
 

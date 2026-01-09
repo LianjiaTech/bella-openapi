@@ -54,10 +54,10 @@ public class LarkAdaptor implements DocParseAdaptor<LarkProperty> {
             Client client = LarkClientProvider.client(property.getClientId(), property.getClientSecret());
             String fileToken = uploadFile(client, sourceFile.getName(), property.getUploadDirToken(), tempFile);
             String ticket = importTask(client, fileToken, property.getCloudDirToken(), sourceFile.getName(), fileType);
-            
+
             // 注册文件清理任务
             cleanupService.addCleanupTask(fileToken, ticket, property);
-            
+
             return DocParseTaskInfo.builder()
                     .taskId(TaskIdUtils.buildTaskId(channelCode, ticket))
                     .build();
@@ -149,7 +149,7 @@ public class LarkAdaptor implements DocParseAdaptor<LarkProperty> {
                 .build();
         try {
             ListDocumentBlockResp resp = client.docx().v1().documentBlock().list(req);
-            if(resp.getCode() != 0){
+            if(resp.getCode() != 0) {
                 throw ChannelException.fromResponse(502, resp.getMsg());
             }
             ListDocumentBlockRespBody body = resp.getData();
@@ -165,12 +165,14 @@ public class LarkAdaptor implements DocParseAdaptor<LarkProperty> {
 
     /**
      * 将飞书Block列表转换为DocParseResult格式
+     * 
      * @param blocks 飞书返回的Block列表
      * @param client LarkClient
+     * 
      * @return 转换后的DocParseResult对象
      */
     private static DocParseResult convertTo(List<Block> blocks, Client client) {
-        if (blocks == null || blocks.isEmpty()) {
+        if(blocks == null || blocks.isEmpty()) {
             return null;
         }
 
@@ -200,9 +202,11 @@ public class LarkAdaptor implements DocParseAdaptor<LarkProperty> {
 
     /**
      * 按标题层级构建树形结构
-     * @param blocks 要处理的Block列表
+     * 
+     * @param blocks    要处理的Block列表
      * @param allBlocks 所有Block列表（用于查找子节点）
-     * @param client LarkClient
+     * @param client    LarkClient
+     * 
      * @return 构建好的DocParseResult列表
      */
     private static List<DocParseResult> buildHierarchicalStructure(List<Block> blocks, List<Block> allBlocks, Client client) {
@@ -219,7 +223,7 @@ public class LarkAdaptor implements DocParseAdaptor<LarkProperty> {
             current.setElement(createElement(currentBlock, allBlocks, client));
 
             // 如果是标题，查找属于该标题的内容
-            if (currentLevel > 0) {
+            if(currentLevel > 0) {
                 List<Block> childBlocks = new ArrayList<>();
 
                 // 找到下一个同级或更高级标题之前的所有内容
@@ -228,7 +232,7 @@ public class LarkAdaptor implements DocParseAdaptor<LarkProperty> {
                     int nextLevel = getHeadingLevel(nextBlock);
 
                     // 如果遇到同级或更高级标题，停止
-                    if (nextLevel > 0 && nextLevel <= currentLevel) {
+                    if(nextLevel > 0 && nextLevel <= currentLevel) {
                         break;
                     }
 
@@ -251,7 +255,7 @@ public class LarkAdaptor implements DocParseAdaptor<LarkProperty> {
                         .filter(block -> !isTableRelatedBlock(block)) // 排除表格相关block
                         .collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
 
-                if (!directChildren.isEmpty()) {
+                if(!directChildren.isEmpty()) {
                     current.setChildren(buildHierarchicalStructure(directChildren, allBlocks, client));
                     updateChildrenPaths(current.getChildren(), current.getPath());
                 }
@@ -265,22 +269,28 @@ public class LarkAdaptor implements DocParseAdaptor<LarkProperty> {
 
     /**
      * 判断是否为表格相关的block类型
+     * 
      * @param block Block对象
+     * 
      * @return 是否为表格相关block
      */
     private static boolean isTableRelatedBlock(Block block) {
-        if (block == null) return false;
+        if(block == null)
+            return false;
         return 32 == block.getBlockType();
     }
 
     /**
      * 判断Block是否包含复杂内容（非纯文本）
+     * 
      * @param block Block对象
+     * 
      * @return 是否为复杂内容
      */
     private static boolean isComplexBlock(Block block) {
-        if (block == null) return false;
-        
+        if(block == null)
+            return false;
+
         switch (block.getBlockType()) {
         case 2: // text - 纯文本，不是复杂内容
             return false;
@@ -291,7 +301,15 @@ public class LarkAdaptor implements DocParseAdaptor<LarkProperty> {
         case 12: // bullet - 列表项是复杂内容
         case 13: // ordered - 有序列表项是复杂内容
             return true;
-        case 3: case 4: case 5: case 6: case 7: case 8: case 9: case 10: case 11: // 各级标题
+        case 3:
+        case 4:
+        case 5:
+        case 6:
+        case 7:
+        case 8:
+        case 9:
+        case 10:
+        case 11: // 各级标题
             return true; // 标题在单元格中也算复杂内容
         default:
             return false;
@@ -300,38 +318,53 @@ public class LarkAdaptor implements DocParseAdaptor<LarkProperty> {
 
     /**
      * 获取标题级别
+     * 
      * @param block Block对象
+     * 
      * @return 标题级别（1-9），非标题返回0
      */
     private static int getHeadingLevel(Block block) {
-        if (block == null) return 0;
+        if(block == null)
+            return 0;
 
         switch (block.getBlockType()) {
-        case 3: return 1; // heading1
-        case 4: return 2; // heading2
-        case 5: return 3; // heading3
-        case 6: return 4; // heading4
-        case 7: return 5; // heading5
-        case 8: return 6; // heading6
-        case 9: return 7; // heading7
-        case 10: return 8; // heading8
-        case 11: return 9; // heading9
-        default: return 0; // 非标题
+        case 3:
+            return 1; // heading1
+        case 4:
+            return 2; // heading2
+        case 5:
+            return 3; // heading3
+        case 6:
+            return 4; // heading4
+        case 7:
+            return 5; // heading5
+        case 8:
+            return 6; // heading6
+        case 9:
+            return 7; // heading7
+        case 10:
+            return 8; // heading8
+        case 11:
+            return 9; // heading9
+        default:
+            return 0; // 非标题
         }
     }
 
     /**
      * 更新子节点的路径
-     * @param children 子节点列表
+     * 
+     * @param children   子节点列表
      * @param parentPath 父节点路径
      */
     private static void updateChildrenPaths(List<DocParseResult> children, List<Integer> parentPath) {
-        if (children == null || children.isEmpty()) return;
+        if(children == null || children.isEmpty())
+            return;
 
         for (int i = 0; i < children.size(); i++) {
             DocParseResult child = children.get(i);
             List<Integer> childPath = new ArrayList<>();
-            if (parentPath != null) {
+            if(parentPath != null) {
                 childPath.addAll(parentPath);
             }
             childPath.add(i + 1); // 路径从1开始
@@ -344,9 +377,11 @@ public class LarkAdaptor implements DocParseAdaptor<LarkProperty> {
 
     /**
      * 根据Block创建Element对象
-     * @param block 飞书Block对象
+     * 
+     * @param block     飞书Block对象
      * @param allBlocks 所有Block列表（用于查找表格子节点）
-     * @param client LarkClient
+     * @param client    LarkClient
+     * 
      * @return Element对象
      */
     private static DocParseResult.Element createElement(Block block, List<Block> allBlocks, Client client) {
@@ -356,103 +391,103 @@ public class LarkAdaptor implements DocParseAdaptor<LarkProperty> {
         switch (block.getBlockType()) {
         case 1: // page
             element.setType("Text");
-            if (block.getPage() != null) {
+            if(block.getPage() != null) {
                 element.setText(extractElementsText(block.getPage().getElements()));
             }
             break;
         case 2: // text
             element.setType("Text");
-            if (block.getText() != null) {
+            if(block.getText() != null) {
                 element.setText(extractElementsText(block.getText().getElements()));
             }
             break;
         case 3: // heading1
             element.setType("Title");
-            if (block.getHeading1() != null) {
+            if(block.getHeading1() != null) {
                 element.setText(extractElementsText(block.getHeading1().getElements()));
             }
             break;
         case 4: // heading2
             element.setType("Title");
-            if (block.getHeading2() != null) {
+            if(block.getHeading2() != null) {
                 element.setText(extractElementsText(block.getHeading2().getElements()));
             }
             break;
         case 5: // heading3
             element.setType("Title");
-            if (block.getHeading3() != null) {
+            if(block.getHeading3() != null) {
                 element.setText(extractElementsText(block.getHeading3().getElements()));
             }
             break;
         case 6: // heading4
             element.setType("Title");
-            if (block.getHeading4() != null) {
+            if(block.getHeading4() != null) {
                 element.setText(extractElementsText(block.getHeading4().getElements()));
             }
             break;
         case 7: // heading5
             element.setType("Title");
-            if (block.getHeading5() != null) {
+            if(block.getHeading5() != null) {
                 element.setText(extractElementsText(block.getHeading5().getElements()));
             }
             break;
         case 8: // heading6
             element.setType("Title");
-            if (block.getHeading6() != null) {
+            if(block.getHeading6() != null) {
                 element.setText(extractElementsText(block.getHeading6().getElements()));
             }
             break;
         case 9: // heading7
             element.setType("Title");
-            if (block.getHeading7() != null) {
+            if(block.getHeading7() != null) {
                 element.setText(extractElementsText(block.getHeading7().getElements()));
             }
             break;
         case 10: // heading8
             element.setType("Title");
-            if (block.getHeading8() != null) {
+            if(block.getHeading8() != null) {
                 element.setText(extractElementsText(block.getHeading8().getElements()));
             }
             break;
         case 11: // heading9
             element.setType("Title");
-            if (block.getHeading9() != null) {
+            if(block.getHeading9() != null) {
                 element.setText(extractElementsText(block.getHeading9().getElements()));
             }
             break;
         case 12: // bullet
             element.setType("ListItem");
-            if (block.getBullet() != null) {
+            if(block.getBullet() != null) {
                 element.setText(extractElementsText(block.getBullet().getElements()));
             }
             break;
         case 13: // ordered
             element.setType("ListItem");
-            if (block.getOrdered() != null) {
+            if(block.getOrdered() != null) {
                 element.setText(extractElementsText(block.getOrdered().getElements()));
             }
             break;
         case 15: // code
             element.setType("Code");
-            if (block.getCode() != null) {
+            if(block.getCode() != null) {
                 element.setText(extractElementsText(block.getCode().getElements()));
             }
             break;
         case 23: // equation
             element.setType("Formula");
-            if (block.getEquation() != null) {
+            if(block.getEquation() != null) {
                 element.setText(extractElementsText(block.getEquation().getElements()));
             }
             break;
         case 31: // table
             element.setType("Table");
-            if (block.getTable() != null) {
+            if(block.getTable() != null) {
                 element.setRows(convertTableRows(block, allBlocks, client));
             }
             break;
         case 27: // image
             element.setType("Figure");
-            if (block.getImage() != null) {
+            if(block.getImage() != null) {
                 DocParseResult.Image image = convertImage(block.getImage(), client);
                 element.setImage(image);
             }
@@ -471,20 +506,22 @@ public class LarkAdaptor implements DocParseAdaptor<LarkProperty> {
 
     /**
      * 从elements数组中提取文本内容
+     * 
      * @param elements 文本元素数组
+     * 
      * @return 提取的文本
      */
     private static String extractElementsText(TextElement[] elements) {
-        if (elements == null || elements.length == 0) {
+        if(elements == null || elements.length == 0) {
             return "";
         }
 
         StringBuilder text = new StringBuilder();
 
         for (TextElement element : elements) {
-            if (element != null) {
+            if(element != null) {
                 String content = extractTextFromElement(element);
-                if (!content.isEmpty()) {
+                if(!content.isEmpty()) {
                     text.append(content);
                 }
             }
@@ -495,31 +532,33 @@ public class LarkAdaptor implements DocParseAdaptor<LarkProperty> {
 
     /**
      * 从单个TextElement中提取文本内容
+     * 
      * @param element TextElement对象
+     * 
      * @return 提取的文本内容
      */
     private static String extractTextFromElement(TextElement element) {
-        if (element == null) {
+        if(element == null) {
             return "";
         }
 
         // 根据TextElement的不同类型提取文本
-        if (element.getTextRun() != null && element.getTextRun().getContent() != null) {
+        if(element.getTextRun() != null && element.getTextRun().getContent() != null) {
             // 普通文本
             return element.getTextRun().getContent();
-        } else if (element.getMentionUser() != null) {
+        } else if(element.getMentionUser() != null) {
             // @用户
             return "@" + (element.getMentionUser().getUserId() != null ? element.getMentionUser().getUserId() : "user");
-        } else if (element.getMentionDoc() != null) {
+        } else if(element.getMentionDoc() != null) {
             // @文档
             return "@doc:" + element.getMentionDoc().getTitle();
-        } else if (element.getReminder() != null) {
+        } else if(element.getReminder() != null) {
             // 日期提醒
             return "[提醒]" + element.getReminder().getNotifyTime();
-        } else if (element.getFile() != null) {
+        } else if(element.getFile() != null) {
             // 内联附件
             return "[文件] " + element.getMentionDoc().getTitle();
-        } else if (element.getEquation() != null) {
+        } else if(element.getEquation() != null) {
             // 公式
             return element.getEquation().getContent();
         }
@@ -528,15 +567,17 @@ public class LarkAdaptor implements DocParseAdaptor<LarkProperty> {
 
     /**
      * 转换表格行数据
-     * @param block 表格Block
+     * 
+     * @param block     表格Block
      * @param allBlocks 所有Block列表
-     * @param client LarkClient
+     * @param client    LarkClient
+     * 
      * @return 行数据列表
      */
     private static List<DocParseResult.Row> convertTableRows(Block block, List<Block> allBlocks, Client client) {
         List<DocParseResult.Row> rows = new ArrayList<>();
 
-        if (block.getTable() == null || block.getTable().getCells() == null ||
+        if(block.getTable() == null || block.getTable().getCells() == null ||
                 block.getTable().getProperty() == null) {
             return rows;
         }
@@ -547,7 +588,7 @@ public class LarkAdaptor implements DocParseAdaptor<LarkProperty> {
             Integer rowSize = block.getTable().getProperty().getRowSize();
             String[] cellIds = block.getTable().getCells();
 
-            if (columnSize == null || rowSize == null || cellIds == null) {
+            if(columnSize == null || rowSize == null || cellIds == null) {
                 return rows;
             }
 
@@ -559,8 +600,7 @@ public class LarkAdaptor implements DocParseAdaptor<LarkProperty> {
                     .collect(Collectors.toMap(
                             Block::getBlockId,
                             java.util.function.Function.identity(),
-                            (existing, replacement) -> existing
-                    ));
+                            (existing, replacement) -> existing));
 
             // 按行构建表格
             for (int row = 0; row < rowSize; row++) {
@@ -572,7 +612,7 @@ public class LarkAdaptor implements DocParseAdaptor<LarkProperty> {
                 for (int col = 0; col < columnSize; col++) {
 
                     int cellIndex = row * columnSize + col;
-                    if (cellIndex < cellIds.length) {
+                    if(cellIndex < cellIds.length) {
                         String cellId = cellIds[cellIndex];
                         Block cellBlock = cellBlockMap.get(cellId);
 
@@ -583,10 +623,10 @@ public class LarkAdaptor implements DocParseAdaptor<LarkProperty> {
                         int colSpan = 1;
 
                         // 从表格的merge_info中获取合并信息
-                        if (block.getTable().getProperty().getMergeInfo() != null &&
+                        if(block.getTable().getProperty().getMergeInfo() != null &&
                                 cellIndex < block.getTable().getProperty().getMergeInfo().length) {
                             TableMergeInfo mergeInfo = block.getTable().getProperty().getMergeInfo()[cellIndex];
-                            if (mergeInfo != null) {
+                            if(mergeInfo != null) {
                                 rowSpan = mergeInfo.getRowSpan();
                                 colSpan = mergeInfo.getColSpan();
                             }
@@ -599,32 +639,31 @@ public class LarkAdaptor implements DocParseAdaptor<LarkProperty> {
                         int startCol = col + 1;
                         int endCol = col + colSpan;
 
-
                         List<Integer> cellCoords = Arrays.asList(startRow, endRow, startCol, endCol);
                         cell.setPath(cellCoords);
 
                         // 处理复杂单元格：如果不是纯文本，解析为node
-                        if (cellBlock != null && cellBlock.getChildren() != null) {
+                        if(cellBlock != null && cellBlock.getChildren() != null) {
                             List<Block> childBlocks = new ArrayList<>();
                             boolean hasComplexContent = false;
-                            
+
                             // 收集所有子块并检查是否包含复杂内容
                             for (String childId : cellBlock.getChildren()) {
                                 Block childBlock = allBlocks.stream()
                                         .filter(b -> childId.equals(b.getBlockId()))
                                         .findFirst()
                                         .orElse(null);
-                                
-                                if (childBlock != null) {
+
+                                if(childBlock != null) {
                                     childBlocks.add(childBlock);
                                     // 检查是否为复杂内容（非纯文本）
-                                    if (isComplexBlock(childBlock)) {
+                                    if(isComplexBlock(childBlock)) {
                                         hasComplexContent = true;
                                     }
                                 }
                             }
-                            
-                            if (hasComplexContent) {
+
+                            if(hasComplexContent) {
                                 // 包含复杂内容，转换为节点结构
                                 List<DocParseResult> cellNodes = buildHierarchicalStructure(childBlocks, allBlocks, client);
                                 cell.setNodes(cellNodes);
@@ -633,10 +672,10 @@ public class LarkAdaptor implements DocParseAdaptor<LarkProperty> {
                                 // 纯文本内容，提取文本
                                 StringBuilder cellContent = new StringBuilder();
                                 for (Block childBlock : childBlocks) {
-                                    if (childBlock.getText() != null) {
+                                    if(childBlock.getText() != null) {
                                         String childText = extractElementsText(childBlock.getText().getElements());
-                                        if (!childText.isEmpty()) {
-                                            if (cellContent.length() > 0) {
+                                        if(!childText.isEmpty()) {
+                                            if(cellContent.length() > 0) {
                                                 cellContent.append("\n");
                                             }
                                             cellContent.append(childText);
@@ -650,9 +689,9 @@ public class LarkAdaptor implements DocParseAdaptor<LarkProperty> {
                         }
 
                         // 如果单元格有内容，标记该行有有效单元格
-                        if (StringUtils.isNotBlank(cell.getText()) || (cell.getNodes() != null && !cell.getNodes().isEmpty())) {
+                        if(StringUtils.isNotBlank(cell.getText()) || (cell.getNodes() != null && !cell.getNodes().isEmpty())) {
                             hasValidCells = true;
-                        } else if (position[row][col] == 1) {
+                        } else if(position[row][col] == 1) {
                             continue; // 如果当前单元格内容为空，且已经被占用则跳过
                         }
 
@@ -667,7 +706,7 @@ public class LarkAdaptor implements DocParseAdaptor<LarkProperty> {
                     }
                 }
 
-                if (hasValidCells) {
+                if(hasValidCells) {
                     rowData.setCells(cells);
                     rows.add(rowData);
                 }
@@ -682,8 +721,10 @@ public class LarkAdaptor implements DocParseAdaptor<LarkProperty> {
 
     /**
      * 转换图片信息
+     * 
      * @param imageBlock 图片Block对象
-     * @param client LarkClient
+     * @param client     LarkClient
+     * 
      * @return Image对象
      */
     private static DocParseResult.Image convertImage(Image imageBlock, Client client) {

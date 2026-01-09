@@ -28,10 +28,10 @@ public class KeAdaptor implements SpeakerDiarizationAdaptor<SpeakerDiarizationPr
         return HttpUtils.httpRequest(httpRequest, SpeakerDiarizationResponse.class, ((response, httpResponse) -> {
             if(httpResponse.code() != 200 && response.getError() == null) {
                 response.setError(OpenapiResponse.OpenapiError.builder()
-                    .httpCode(httpResponse.code())
-                    .message(httpResponse.message())
-                    .type("HTTP_ERROR")
-                    .build());
+                        .httpCode(httpResponse.code())
+                        .message(httpResponse.message())
+                        .type("HTTP_ERROR")
+                        .build());
             }
         }));
     }

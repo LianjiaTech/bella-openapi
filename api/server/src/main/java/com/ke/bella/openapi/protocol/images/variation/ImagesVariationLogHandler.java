@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class ImagesVariationLogHandler extends ImagesLogHandler {
-    
+
     @Override
     public String endpoint() {
         return "/v1/images/variations";

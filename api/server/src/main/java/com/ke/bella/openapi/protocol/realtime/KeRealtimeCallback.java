@@ -87,8 +87,7 @@ public class KeRealtimeCallback implements Callbacks.WebSocketCallback {
 
         case TASK_FAILED:
             log.warn("转录失败: {}",
-                    message.getHeader().getStatusMessage() != null ?
-                            message.getHeader().getStatusMessage() : "未知原因");
+                    message.getHeader().getStatusMessage() != null ? message.getHeader().getStatusMessage() : "未知原因");
             complete();
             break;
 
@@ -111,7 +110,7 @@ public class KeRealtimeCallback implements Callbacks.WebSocketCallback {
 
     @Override
     public void onFailure(WebSocket webSocket, Throwable t, Response response) {
-        if(t != null){
+        if(t != null) {
             onError(ChannelException.fromException(t));
         } else {
             onError(ChannelException.fromResponse(response.code(), response.message()));
@@ -139,7 +138,7 @@ public class KeRealtimeCallback implements Callbacks.WebSocketCallback {
     }
 
     private void complete() {
-        if (!end) {
+        if(!end) {
             processData.getMetrics().put("ttlt", DateTimeUtils.getCurrentMills() - startTime);
             sender.close();
             logger.log(processData);

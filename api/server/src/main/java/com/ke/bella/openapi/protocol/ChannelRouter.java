@@ -49,6 +49,7 @@ public class ChannelRouter {
 
     /**
      * Route to channel with optional direct mode
+     * 
      * @param isDirectMode if true, skips availability checks (no Redis queries)
      */
     public ChannelDB route(String endpoint, String model, ApikeyInfo apikeyInfo, boolean isMock, boolean isDirectMode) {
@@ -123,7 +124,7 @@ public class ChannelRouter {
         }
 
         // Direct mode: skip availability checks (no Redis queries)
-        if (!isDirectMode) {
+        if(!isDirectMode) {
             Set<String> unavailableSet = metricsManager.getAllUnavailableChannels(
                     filtered.stream().map(ChannelDB::getChannelCode).collect(Collectors.toList()));
             filtered = filtered.stream()

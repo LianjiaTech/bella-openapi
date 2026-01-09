@@ -65,7 +65,8 @@ public class HuoshanAdaptor implements FlashAsrAdaptor<HuoshanProperty> {
         private int endTime;
     }
 
-    protected Callbacks.WebSocketCallback createCallback(HuoshanRealTimeAsrRequest huoshanRequest, Callbacks.Sender sender, EndpointProcessData processData) {
+    protected Callbacks.WebSocketCallback createCallback(HuoshanRealTimeAsrRequest huoshanRequest, Callbacks.Sender sender,
+            EndpointProcessData processData) {
         return new HuoshanStreamAsrCallback(huoshanRequest, sender, processData, null, response -> {
             if(response.getResult() == null) {
                 return Lists.newArrayList();
@@ -95,6 +96,7 @@ public class HuoshanAdaptor implements FlashAsrAdaptor<HuoshanProperty> {
     protected Callbacks.Sender buildSender(CompletableFuture<List<String>> future) {
         return new Callbacks.Sender() {
             final List<String> texts = new ArrayList<>();
+
             @Override
             public void send(String text) {
                 texts.add(text);
@@ -129,7 +131,7 @@ public class HuoshanAdaptor implements FlashAsrAdaptor<HuoshanProperty> {
                             .build())
                     .user(processData.getUser())
                     .build();
-            for(String text : texts) {
+            for (String text : texts) {
                 Text obj = JacksonUtils.deserialize(text, Text.class);
                 response.getFlashResult().getSentences().add(FlashAsrResponse.Sentence.builder()
                         .beginTime(obj.getBeginTime())

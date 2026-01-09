@@ -15,70 +15,70 @@ import java.io.IOException;
  */
 @Component("OpenAIImagesVariation")
 public class OpenAIVariationAdaptor implements ImagesVariationAdaptor<ImagesProperty> {
-    
+
     @Override
     public String endpoint() {
         return "/v1/images/variations";
     }
-    
+
     @Override
     public String getDescription() {
         return "OpenAI图片变化协议";
     }
-    
+
     @Override
     public Class<?> getPropertyClass() {
         return ImagesProperty.class;
     }
-    
+
     @Override
     public ImagesResponse createVariations(ImagesVariationRequest request, String url, ImagesProperty property) {
         try {
             // 构建multipart请求
             MultipartBody.Builder multipartBuilder = new MultipartBody.Builder()
                     .setType(MultipartBody.FORM);
-            
+
             // 添加图片文件
             MultipartFile imageFile = request.getImage();
-            if (imageFile != null && !imageFile.isEmpty()) {
+            if(imageFile != null && !imageFile.isEmpty()) {
                 multipartBuilder.addFormDataPart("image", imageFile.getOriginalFilename(),
                         RequestBody.create(MediaType.parse("image/png"), imageFile.getBytes()));
             }
-            
+
             // 设置模型（property.getDeployName() 优先，否则使用 request.getModel()）
             String model = property.getDeployName();
-            if (model == null || model.isEmpty()) {
+            if(model == null || model.isEmpty()) {
                 model = request.getModel();
             }
             multipartBuilder.addFormDataPart("model", model);
-            
+
             // 添加可选参数
-            if (request.getN() != null) {
+            if(request.getN() != null) {
                 multipartBuilder.addFormDataPart("n", request.getN().toString());
             }
-            
-            if (request.getSize() != null) {
+
+            if(request.getSize() != null) {
                 multipartBuilder.addFormDataPart("size", request.getSize());
             }
-            
-            if (request.getResponse_format() != null) {
+
+            if(request.getResponse_format() != null) {
                 multipartBuilder.addFormDataPart("response_format", request.getResponse_format());
             }
-            
-            if (request.getUser() != null) {
+
+            if(request.getUser() != null) {
                 multipartBuilder.addFormDataPart("user", request.getUser());
             }
-            
+
             RequestBody requestBody = multipartBuilder.build();
-            
+
             // 构建HTTP请求
             Request.Builder requestBuilder = authorizationRequestBuilder(property.getAuth());
             requestBuilder.url(url).post(requestBody);
-            
+
             Request httpRequest = requestBuilder.build();
             clearLargeData(request);
             return HttpUtils.httpRequest(httpRequest, ImagesResponse.class);
-            
+
         } catch (IOException e) {
             throw new RuntimeException("图片变化请求处理失败: " + e.getMessage(), e);
         }

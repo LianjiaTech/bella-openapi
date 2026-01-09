@@ -11,11 +11,13 @@ import java.util.ArrayList;
 public class MergeReasoningCallback extends Callbacks.StreamCompletionCallbackNode {
     private final CompletionProperty property;
 
-    private Integer thinkStage = 0; // 0: 推理未开始; 1: 推理开始; 2: 推理进行中；3: 推理完成；-1:推理已结束
+    private Integer thinkStage = 0; // 0: 推理未开始; 1: 推理开始; 2: 推理进行中；3:
+                                    // 推理完成；-1:推理已结束
 
     public MergeReasoningCallback(CompletionProperty property) {
         this.property = property;
     }
+
     @Override
     public StreamCompletionResponse doCallback(StreamCompletionResponse msg) {
         thinkStage = getThinkStage(msg, thinkStage);

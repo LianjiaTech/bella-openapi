@@ -43,12 +43,12 @@ public class TransferApikeyListener {
     public void handleApiKeyTransfer(ApiKeyTransferEvent event) {
         try {
             log.info("开始处理API Key转移事件 - akCode: {}, from: {} -> to: {}, operator: {}({})",
-                    event.getAkCode(), 
-                    event.getFromOwnerName(), 
+                    event.getAkCode(),
+                    event.getFromOwnerName(),
                     event.getToOwnerName(),
                     event.getOperatorName(),
                     event.getOperatorUid());
-            
+
             clearTransferredApikeyCaches(event.getAkCode());
 
             log.info("API Key转移事件处理完成 - akCode: {}", event.getAkCode());
@@ -67,17 +67,17 @@ public class TransferApikeyListener {
     private void clearTransferredApikeyCaches(String akCode) {
         // 清除主API Key缓存
         ApikeyInfo mainApikey = apikeyRepo.queryByCode(akCode);
-        if (mainApikey != null) {
+        if(mainApikey != null) {
             apikeyService.clearApikeyCache(mainApikey.getAkSha());
             log.debug("已清除主API Key缓存: akCode={}, akSha={}", akCode, mainApikey.getAkSha());
         }
-        
+
         // 清除所有子API Key缓存
         ApikeyOps.ApikeyCondition condition = new ApikeyOps.ApikeyCondition();
         condition.setParentCode(akCode);
         List<ApikeyDB> subApikeys = apikeyRepo.listAccessKeys(condition);
-        
-        if (CollectionUtils.isNotEmpty(subApikeys)) {
+
+        if(CollectionUtils.isNotEmpty(subApikeys)) {
             for (ApikeyDB subApikey : subApikeys) {
                 apikeyService.clearApikeyCache(subApikey.getAkSha());
                 log.debug("已清除子API Key缓存: akCode={}, akSha={}", subApikey.getCode(), subApikey.getAkSha());

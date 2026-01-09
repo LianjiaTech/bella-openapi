@@ -39,6 +39,7 @@ import com.ke.bella.openapi.utils.DateTimeUtils;
 public class ApikeyConsoleController {
     @Autowired
     private ApikeyService apikeyService;
+
     @PostMapping("/apply")
     public String apply(@RequestBody ApikeyOps.ApplyOp op) {
         Assert.isTrue(op.getMonthQuota() == null || op.getMonthQuota().doubleValue() > 0, "配额应大于0");
@@ -71,7 +72,7 @@ public class ApikeyConsoleController {
     public Boolean updateRole(@RequestBody ApikeyOps.RoleOp op) {
         Assert.hasText(op.getCode(), "code不可为空");
         Assert.isTrue(StringUtils.isNotEmpty(op.getRoleCode())
-                        || CollectionUtils.isNotEmpty(op.getPaths()), "权限不可为空");
+                || CollectionUtils.isNotEmpty(op.getPaths()), "权限不可为空");
         apikeyService.updateRole(op);
         return true;
     }
@@ -107,7 +108,6 @@ public class ApikeyConsoleController {
         return true;
     }
 
-
     @GetMapping("/cost/{akCode}")
     public List<ApikeyMonthCostDB> listApiKeyBillings(@PathVariable String akCode) {
         return apikeyService.queryBillingsByAkCode(akCode);
@@ -141,7 +141,6 @@ public class ApikeyConsoleController {
     public Page<ApikeyDB> pageApikey(ApikeyOps.ApikeyCondition condition) {
         return apikeyService.pageApikey(condition);
     }
-
 
     @PostMapping("/owner/transfer")
     public Boolean transferApikeyOwner(@RequestBody @Validated TransferApikeyOwnerOp op) {

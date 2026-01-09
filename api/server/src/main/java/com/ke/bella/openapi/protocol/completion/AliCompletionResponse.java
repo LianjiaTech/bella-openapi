@@ -18,14 +18,15 @@ public class AliCompletionResponse {
     private AliUsage usage;
     private String code;
     private String message;
+
     @Data
     public static class AliCompletionOutput {
-        //入参result_format=text时候的返回值
+        // 入参result_format=text时候的返回值
         private String text;
-        //入参result_format=text时候的返回值
+        // 入参result_format=text时候的返回值
         @JsonProperty("finish_reason")
         private String finishReason;
-        //入参result_format=message时候的返回值
+        // 入参result_format=message时候的返回值
         private List<CompletionResponse.Choice> choices;
     }
 
@@ -44,5 +45,3 @@ public class AliCompletionResponse {
     }
 
 }
-
-

@@ -73,7 +73,6 @@ public class ModelService {
     private static final String modelTerminalCacheKey = "model:terminal:";
     private static final String modelMapCacheKey = "model:map:";
 
-
     @PostConstruct
     public void postConstruct() {
         QuickConfig modelTerminalConfig = QuickConfig.newBuilder(modelTerminalCacheKey)
@@ -118,13 +117,12 @@ public class ModelService {
             Set<String> inserts = Sets.newHashSet(op.getEndpoints());
             List<Long> deletes = new ArrayList<>();
             originEndpoints.forEach(origin -> {
-                        if(op.getEndpoints().contains(origin.getEndpoint())) {
-                            inserts.remove(origin.getEndpoint());
-                        } else {
-                            deletes.add(origin.getId());
-                        }
-                    }
-            );
+                if(op.getEndpoints().contains(origin.getEndpoint())) {
+                    inserts.remove(origin.getEndpoint());
+                } else {
+                    deletes.add(origin.getId());
+                }
+            });
             if(CollectionUtils.isNotEmpty(deletes)) {
                 modelRepo.batchDeleteModelEndpoints(deletes);
             }
@@ -141,7 +139,7 @@ public class ModelService {
     }
 
     private void checkPropertyAndFeatures(String properties, String features, Set<String> endpoints, String model) {
-        if(properties == null  && features == null) {
+        if(properties == null && features == null) {
             return;
         }
         List<String> basisEndpoints = getAllBasicEndpoints(endpoints, model);
@@ -171,10 +169,9 @@ public class ModelService {
         if(CollectionUtils.isNotEmpty(endpoints)) {
             set.addAll(endpoints);
         }
-        return set.stream().filter(path ->
-                Arrays.stream(EntityConstants.SystemBasicEndpoint.values())
-                        .map(EntityConstants.SystemBasicEndpoint::getEndpoint)
-                        .anyMatch(match -> matchPath(match, path))).collect(Collectors.toList());
+        return set.stream().filter(path -> Arrays.stream(EntityConstants.SystemBasicEndpoint.values())
+                .map(EntityConstants.SystemBasicEndpoint::getEndpoint)
+                .anyMatch(match -> matchPath(match, path))).collect(Collectors.toList());
     }
 
     public List<String> getAllEndpoints(String model) {
@@ -222,18 +219,17 @@ public class ModelService {
         Set<MetaDataOps.ModelAuthorizer> inserts = Sets.newHashSet(op.getAuthorizers());
         List<Long> deletes = new ArrayList<>();
         origins.forEach(origin -> {
-                    MetaDataOps.ModelAuthorizer authorizer = MetaDataOps.ModelAuthorizer
-                            .builder()
-                            .authorizerType(origin.getAuthorizerType())
-                            .authorizerCode(origin.getAuthorizerCode())
-                            .build();
-                    if(op.getAuthorizers().contains(authorizer)) {
-                        inserts.remove(authorizer);
-                    } else {
-                        deletes.add(origin.getId());
-                    }
-                }
-        );
+            MetaDataOps.ModelAuthorizer authorizer = MetaDataOps.ModelAuthorizer
+                    .builder()
+                    .authorizerType(origin.getAuthorizerType())
+                    .authorizerCode(origin.getAuthorizerCode())
+                    .build();
+            if(op.getAuthorizers().contains(authorizer)) {
+                inserts.remove(authorizer);
+            } else {
+                deletes.add(origin.getId());
+            }
+        });
         if(CollectionUtils.isNotEmpty(deletes)) {
             modelRepo.batchDeleteModelAuthorizers(deletes);
         }
@@ -244,7 +240,7 @@ public class ModelService {
 
     @Transactional
     public void modelLink(MetaDataOps.ModelLinkOp op) {
-        cacheManager.getCache(modelMapCacheKey).tryLockAndRun("lock", 10, TimeUnit.SECONDS, ()-> {
+        cacheManager.getCache(modelMapCacheKey).tryLockAndRun("lock", 10, TimeUnit.SECONDS, () -> {
             doModelLink(op);
         });
     }
@@ -272,7 +268,6 @@ public class ModelService {
         return CollectionUtils.isEmpty(path) ? modelName : path.get(path.size() - 1);
     }
 
-
     @Cached(name = modelMapCacheKey, key = "#key")
     public Map<String, ModelDB> queryWithCache(String key) {
         List<ModelDB> list = modelRepo.listAll();
@@ -293,19 +288,19 @@ public class ModelService {
     private List<String> getPath(String target, Map<String, ModelDB> map) {
         List<String> path = new ArrayList<>();
         String name = target;
-        while(StringUtils.isNotEmpty(name) && map.containsKey(name)) {
-            path.add( name);
+        while (StringUtils.isNotEmpty(name) && map.containsKey(name)) {
+            path.add(name);
             name = map.get(name).getLinkedTo();
         }
         return path;
     }
 
-    private String getTerminalName(String modelName, Map<String, ModelDB> map)  {
+    private String getTerminalName(String modelName, Map<String, ModelDB> map) {
         List<String> path = getPath(modelName, map);
         return CollectionUtils.isEmpty(path) ? modelName : path.get(path.size() - 1);
     }
 
-     public ModelDetails getModelDetails(String modelName) {
+    public ModelDetails getModelDetails(String modelName) {
         Model model = modelRepo.queryByUniqueKey(modelName, Model.class);
         Assert.notNull(model, "实体不存在");
         List<Channel> channels = channelService
@@ -319,7 +314,7 @@ public class ModelService {
     }
 
     private void updateModelCache(String modelName, String terminal) {
-        cacheManager.getCache(modelMapCacheKey).tryLockAndRun("lock", 10, TimeUnit.SECONDS, ()-> {
+        cacheManager.getCache(modelMapCacheKey).tryLockAndRun("lock", 10, TimeUnit.SECONDS, () -> {
             doUpdateModelCache(modelName, terminal);
         });
     }
@@ -337,7 +332,7 @@ public class ModelService {
     private void checkOwnerPermission(String model) {
         ModelDB db = modelRepo.queryByUniqueKey(model);
         Operator operator = BellaContext.getOperator();
-        //todo: 检查 operator 是否是 Owner
+        // todo: 检查 operator 是否是 Owner
     }
 
     public ModelDB getActiveByModelName(String modelName) {
@@ -376,7 +371,7 @@ public class ModelService {
         }
         Map<String, ModelDB> map = applicationContext.getBean(ModelService.class).queryWithCache("all");
         return listByCondition(condition).stream()
-                .map(db->{
+                .map(db -> {
                     Model model = new Model();
                     model.setModelName(db.getModelName());
                     model.setTerminalModel(getTerminalName(db.getModelName(), map));
@@ -399,7 +394,7 @@ public class ModelService {
                 })
                 .collect(Collectors.toList());
 
-        if (condition.isIncludePrice() && !models.isEmpty()) {
+        if(condition.isIncludePrice() && !models.isEmpty()) {
             convertToModelInfo(models);
         }
 
@@ -409,14 +404,13 @@ public class ModelService {
     private void convertToModelInfo(List<Model> models) {
         try {
             Map<String, String> priceJsonMap = fetchModelPriceInfos(
-                models.stream()
-                    .map(Model::getModelName)
-                    .collect(Collectors.toList())
-            );
+                    models.stream()
+                            .map(Model::getModelName)
+                            .collect(Collectors.toList()));
 
             models.forEach(model -> {
                 String priceJson = priceJsonMap.get(model.getModelName());
-                if (priceJson != null) {
+                if(priceJson != null) {
                     model.setPriceInfo(priceJson);
                 }
             });
@@ -426,7 +420,7 @@ public class ModelService {
     }
 
     private Map<String, String> fetchModelPriceInfos(List<String> modelNames) {
-        if (CollectionUtils.isEmpty(modelNames)) {
+        if(CollectionUtils.isEmpty(modelNames)) {
             return new HashMap<>();
         }
 
@@ -440,7 +434,7 @@ public class ModelService {
                 .distinct()
                 .collect(Collectors.toList());
 
-        if (terminalModelNames.isEmpty()) {
+        if(terminalModelNames.isEmpty()) {
             return new HashMap<>();
         }
 
@@ -450,7 +444,7 @@ public class ModelService {
         for (String modelName : modelNames) {
             String terminal = modelToTerminalMap.get(modelName);
             String priceJson = terminalPriceMap.get(terminal);
-            if (priceJson != null) {
+            if(priceJson != null) {
                 priceJsonMap.put(modelName, priceJson);
             }
         }

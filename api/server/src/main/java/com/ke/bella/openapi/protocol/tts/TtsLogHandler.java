@@ -45,29 +45,29 @@ public class TtsLogHandler implements EndpointLogHandler {
     private int getInputLength(EndpointProcessData processData) {
         // 1. 优先使用预计算的RequestMetrics
         RequestMetrics metrics = processData.getRequestMetrics();
-        if (metrics != null && metrics.getInputLength() != null) {
+        if(metrics != null && metrics.getInputLength() != null) {
             return metrics.getInputLength();
         }
 
         // 2. 尝试从原始request获取
         Object request = processData.getRequest();
-        if (request instanceof TtsRequest) {
+        if(request instanceof TtsRequest) {
             TtsRequest ttsRequest = (TtsRequest) request;
             return ttsRequest.getInput() != null ? ttsRequest.getInput().length() : 0;
         }
 
         // 3. Double check: 如果request是null，再检查一次metrics
         // 可能是异步处理刚完成，metrics刚被设置
-        if (request == null) {
+        if(request == null) {
             metrics = processData.getRequestMetrics(); // 再检查一次
-            if (metrics != null && metrics.getInputLength() != null) {
+            if(metrics != null && metrics.getInputLength() != null) {
                 log.debug("Got inputLength from metrics on double-check: {}", metrics.getInputLength());
                 return metrics.getInputLength();
             }
         }
 
         log.warn("Unable to get inputLength, both RequestMetrics and original request are unavailable. RequestId: {}",
-                 processData.getRequestId());
+                processData.getRequestId());
         return 0;
     }
 
