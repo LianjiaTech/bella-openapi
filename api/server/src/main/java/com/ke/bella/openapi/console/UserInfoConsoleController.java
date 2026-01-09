@@ -31,7 +31,9 @@ public class UserInfoConsoleController {
 
     @PostMapping("/manager")
     public UserDB addManager(@RequestBody Operator op) {
-        Assert.isTrue((op.getUserId() != null && op.getUserId() > 0) ||(StringUtils.hasText(op.getSource()) && (StringUtils.hasText(op.getEmail()) || StringUtils.hasText(op.getSourceId()))),
+        Assert.isTrue(
+                (op.getUserId() != null && op.getUserId() > 0)
+                        || (StringUtils.hasText(op.getSource()) && (StringUtils.hasText(op.getEmail()) || StringUtils.hasText(op.getSourceId()))),
                 "invalid params");
         UserDB user;
         if(op.getUserId() != null && op.getUserId() > 0) {

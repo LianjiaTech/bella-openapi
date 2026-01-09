@@ -34,9 +34,10 @@ public class ResponsesApiAdaptor implements CompletionAdaptor<ResponsesApiProper
     @Override
     public CompletionResponse completion(CompletionRequest request, String url, ResponsesApiProperty property) {
         log.debug("Converting Chat Completion request to Responses API format");
-        
+
         // 转换请求格式
-        ResponsesApiRequest responsesRequest = ResponsesApiConverter.convertChatCompletionToResponses(request, EndpointContext.getProcessData().getAkCode());
+        ResponsesApiRequest responsesRequest = ResponsesApiConverter.convertChatCompletionToResponses(request,
+                EndpointContext.getProcessData().getAkCode());
 
         // 构建HTTP请求
         Request httpRequest = buildResponsesApiRequest(responsesRequest, url, property);
@@ -44,7 +45,7 @@ public class ResponsesApiAdaptor implements CompletionAdaptor<ResponsesApiProper
         // 发送请求并获取Responses API响应
         ResponsesApiResponse responsesResponse = HttpUtils.httpRequest(httpRequest, ResponsesApiResponse.class,
                 (errorResponse, res) -> {
-                    if (errorResponse.getError() != null) {
+                    if(errorResponse.getError() != null) {
                         errorResponse.getError().setHttpCode(res.code());
                     }
                 });
@@ -57,12 +58,13 @@ public class ResponsesApiAdaptor implements CompletionAdaptor<ResponsesApiProper
     }
 
     @Override
-    public void streamCompletion(CompletionRequest request, String url, ResponsesApiProperty property, 
-                               Callbacks.StreamCompletionCallback callback) {
+    public void streamCompletion(CompletionRequest request, String url, ResponsesApiProperty property,
+            Callbacks.StreamCompletionCallback callback) {
         log.debug("Converting Chat Completion stream request to Responses API format");
-        
+
         // 转换请求格式
-        ResponsesApiRequest responsesRequest = ResponsesApiConverter.convertChatCompletionToResponses(request, EndpointContext.getProcessData().getAkCode());
+        ResponsesApiRequest responsesRequest = ResponsesApiConverter.convertChatCompletionToResponses(request,
+                EndpointContext.getProcessData().getAkCode());
         responsesRequest.setStream(true);  // 确保启用流式
 
         // 创建 SSE 转换器和监听器
@@ -83,23 +85,23 @@ public class ResponsesApiAdaptor implements CompletionAdaptor<ResponsesApiProper
     private Request buildResponsesApiRequest(ResponsesApiRequest request, String url, ResponsesApiProperty property) {
         // 设置部署模型名称
         request.setModel(property.getDeployName());
-        
+
         // 确保 store=false 和 previous_response_id=null (用于模拟 chat completion)
         request.setStore(false);
         request.setPrevious_response_id(null);
-        
+
         // 添加API版本
-        if (StringUtils.isNotEmpty(property.getApiVersion())) {
+        if(StringUtils.isNotEmpty(property.getApiVersion())) {
             url += property.getApiVersion();
         }
-        
+
         // 构建请求
         Request.Builder builder = authorizationRequestBuilder(property.getAuth())
                 .url(url)
                 .post(RequestBody.create(MediaType.parse("application/json"), JacksonUtils.toByte(request)));
-        
+
         // 添加额外的请求头
-        if (MapUtils.isNotEmpty(property.getExtraHeaders())) {
+        if(MapUtils.isNotEmpty(property.getExtraHeaders())) {
             property.getExtraHeaders().forEach(builder::addHeader);
         }
 

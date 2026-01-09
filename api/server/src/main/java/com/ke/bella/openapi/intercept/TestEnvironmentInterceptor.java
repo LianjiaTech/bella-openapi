@@ -17,6 +17,7 @@ import javax.servlet.http.HttpServletResponse;
 public class TestEnvironmentInterceptor extends HandlerInterceptorAdapter {
     @Value("${spring.profiles.active}")
     private String profile;
+
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         if("test".equals(profile)) {

@@ -14,7 +14,7 @@ import java.lang.reflect.Type;
 
 @RestControllerAdvice
 @Slf4j
-public class RequestUserAdvice extends RequestBodyAdviceAdapter  {
+public class RequestUserAdvice extends RequestBodyAdviceAdapter {
     @Override
     public boolean supports(MethodParameter methodParameter, Type targetType, Class<? extends HttpMessageConverter<?>> converterType) {
         Class<?> clazz = methodParameter.getContainingClass();

@@ -11,7 +11,7 @@ import static com.ke.bella.openapi.common.EntityConstants.HIGHEST_SAFETY_LEVEL;
 
 @Configuration
 public class SafetyConfig {
-    
+
     @Bean
     @ConditionalOnMissingBean(ISafetyCheckService.IChatSafetyCheckService.class)
     public ISafetyCheckService.IChatSafetyCheckService defaultChatSafetyCheckService() {
@@ -20,7 +20,7 @@ public class SafetyConfig {
 
     @Bean
     @ConditionalOnMissingBean(ISafetyAuditService.class)
-    public ISafetyAuditService defaultSafetyAuditService()  {
+    public ISafetyAuditService defaultSafetyAuditService() {
         return certifyCode -> HIGHEST_SAFETY_LEVEL;
     }
 

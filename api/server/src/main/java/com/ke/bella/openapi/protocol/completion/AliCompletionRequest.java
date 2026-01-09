@@ -11,7 +11,6 @@ import lombok.experimental.SuperBuilder;
 
 import java.util.List;
 
-
 @Data
 @SuperBuilder
 public class AliCompletionRequest implements IMemoryClearable, ITransfer {
@@ -38,26 +37,35 @@ public class AliCompletionRequest implements IMemoryClearable, ITransfer {
         /* @deprecated use maxTokens instead */
         @Deprecated
         private Integer maxLength;
-        /* A sampling strategy, called nucleus
-        sampling, where the model considers the results of the
-        tokens with top_p probability mass. So 0.1 means only
-        the tokens comprising the top 10% probability mass are
-        considered */
+        /*
+         * A sampling strategy, called nucleus
+         * sampling, where the model considers the results of the
+         * tokens with top_p probability mass. So 0.1 means only
+         * the tokens comprising the top 10% probability mass are
+         * considered
+         */
         private Float topP;
 
-        /* A sampling strategy, the k largest elements of the
-        given mass are  considered */
+        /*
+         * A sampling strategy, the k largest elements of the
+         * given mass are considered
+         */
         private Integer topK;
-        /* Whether to enable web search(quark).
-        Currently works best only on the first round of conversation.
-        Default to False */
+        /*
+         * Whether to enable web search(quark).
+         * Currently works best only on the first round of conversation.
+         * Default to False
+         */
         @Builder.Default
         private Boolean enableSearch = false;
         /*
-         * When generating, the seed of the random number is used to control the randomness of the model generation.
+         * When generating, the seed of the random number is used to control the
+         * randomness of the model generation.
          * If you use the same seed, each run will generate the same results;
-         * you can use the same seed when you need to reproduce the model's generated results.
-         * The seed parameter supports unsigned 64-bit integer types. Default value 1234
+         * you can use the same seed when you need to reproduce the model's
+         * generated results.
+         * The seed parameter supports unsigned 64-bit integer types. Default
+         * value 1234
          */
         private Integer seed;
 
@@ -66,19 +74,27 @@ public class AliCompletionRequest implements IMemoryClearable, ITransfer {
         private String result_format = ResultFormat.MESSAGE;
 
         /**
-         * Used to control the degree of randomness and diversity. Specifically, the temperature value
-         * controls the degree to which the probability distribution of each candidate word is smoothed
-         * when generating text. A higher temperature value will reduce the peak value of the probability
-         * distribution, allowing more low-probability words to be selected, and the generated results
-         * will be more diverse; while a lower temperature value will enhance the peak value of the
-         * probability distribution, making it easier for high-probability words to be selected, the
+         * Used to control the degree of randomness and diversity. Specifically,
+         * the temperature value
+         * controls the degree to which the probability distribution of each
+         * candidate word is smoothed
+         * when generating text. A higher temperature value will reduce the peak
+         * value of the probability
+         * distribution, allowing more low-probability words to be selected, and
+         * the generated results
+         * will be more diverse; while a lower temperature value will enhance
+         * the peak value of the
+         * probability distribution, making it easier for high-probability words
+         * to be selected, the
          * generated results are more deterministic, range(0, 2).
          */
         private Float temperature;
 
         /**
-         * Used to control the streaming output mode. If true, the subsequent output will include the
-         * previously input content by default. Otherwise, the subsequent output will not include the
+         * Used to control the streaming output mode. If true, the subsequent
+         * output will include the
+         * previously input content by default. Otherwise, the subsequent output
+         * will not include the
          * previously output content. Default: false eg(false):
          *
          * <pre>
@@ -123,13 +139,13 @@ public class AliCompletionRequest implements IMemoryClearable, ITransfer {
 
     @Override
     public void clearLargeData() {
-        if (!cleared && input != null) {
+        if(!cleared && input != null) {
             // 清理输入中的大型数据
             input.setMessages(null);
             input.setPrompt(null);
 
             // 清理参数中的工具定义
-            if (parameters != null) {
+            if(parameters != null) {
                 parameters.setTools(null);
             }
 

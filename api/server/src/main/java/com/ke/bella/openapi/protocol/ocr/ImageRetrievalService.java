@@ -26,7 +26,9 @@ public class ImageRetrievalService {
      * 从文件ID获取图片数据
      *
      * @param fileId 文件ID
+     * 
      * @return 图片字节数据
+     * 
      * @throws IllegalStateException 当获取图片失败时抛出
      */
     public byte[] getImageFromFileId(String fileId) {

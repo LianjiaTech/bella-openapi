@@ -171,8 +171,9 @@ public class ApikeyService {
         db.setRemark(op.getRemark());
         db = apikeyRepo.insert(db);
         if(CollectionUtils.isNotEmpty(op.getPaths())) {
-           boolean match = op.getPaths().stream().allMatch(url -> apikey.getRolePath().getIncluded().stream().anyMatch(pattern -> MatchUtils.matchUrl(pattern, url))
-                    && apikey.getRolePath().getExcluded().stream().noneMatch(pattern -> MatchUtils.matchUrl(pattern, url)));
+            boolean match = op.getPaths().stream()
+                    .allMatch(url -> apikey.getRolePath().getIncluded().stream().anyMatch(pattern -> MatchUtils.matchUrl(pattern, url))
+                            && apikey.getRolePath().getExcluded().stream().noneMatch(pattern -> MatchUtils.matchUrl(pattern, url)));
             Assert.isTrue(match, "超出ak的权限范围");
             updateRole(ApikeyOps.RoleOp.builder().code(db.getCode()).paths(op.getPaths()).build());
         }
@@ -195,8 +196,9 @@ public class ApikeyService {
         Assert.isTrue(op.getSafetyLevel() <= apikey.getSafetyLevel(), "安全等级超出ak的最高等级");
         apikeyRepo.update(op, op.getCode());
         if(CollectionUtils.isNotEmpty(op.getPaths())) {
-            boolean match = op.getPaths().stream().allMatch(url -> apikey.getRolePath().getIncluded().stream().anyMatch(pattern -> MatchUtils.matchUrl(pattern, url))
-                    && apikey.getRolePath().getExcluded().stream().noneMatch(pattern -> MatchUtils.matchUrl(pattern, url)));
+            boolean match = op.getPaths().stream()
+                    .allMatch(url -> apikey.getRolePath().getIncluded().stream().anyMatch(pattern -> MatchUtils.matchUrl(pattern, url))
+                            && apikey.getRolePath().getExcluded().stream().noneMatch(pattern -> MatchUtils.matchUrl(pattern, url)));
             Assert.isTrue(match, "超出ak的权限范围");
             updateRole(ApikeyOps.RoleOp.builder().code(op.getCode()).paths(op.getPaths()).build());
         }
@@ -316,7 +318,7 @@ public class ApikeyService {
 
     public ApikeyInfo queryByCode(String code, boolean onlyActive) {
         ApikeyInfo apikeyInfo = apikeyRepo.queryByCode(code);
-        if(apikeyInfo == null ||(onlyActive && apikeyInfo.getStatus().equals(INACTIVE))) {
+        if(apikeyInfo == null || (onlyActive && apikeyInfo.getStatus().equals(INACTIVE))) {
             return null;
         }
         return apikeyInfo;
@@ -333,8 +335,8 @@ public class ApikeyService {
         return apikeyCostRepo.queryCost(akCode, month);
     }
 
-    @Cached(name = "apikey:cost:month:", key = "#akCode + ':' + #month", expire = 31 * 24 * 3600,
-            condition = "T(com.ke.bella.openapi.utils.DateTimeUtils).isCurrentMonth(#month)")
+    @Cached(name = "apikey:cost:month:", key = "#akCode + ':' + #month", expire = 31 * 24
+            * 3600, condition = "T(com.ke.bella.openapi.utils.DateTimeUtils).isCurrentMonth(#month)")
     @CachePenetrationProtect(timeout = 5)
     public BigDecimal loadCost(String akCode, String month) {
         BigDecimal amount = apikeyCostRepo.queryCost(akCode, month);
@@ -350,14 +352,15 @@ public class ApikeyService {
         ApikeyInfo apikeyInfo = EndpointContext.getApikeyIgnoreNull();
         if(apikeyInfo == null) {
             Operator op = BellaContext.getOperator();
-            Assert.isTrue((db.getOwnerType().equals(PERSON) || db.getOwnerType().equals(CONSOLE)) && db.getOwnerCode().equals(op.getUserId().toString()),
+            Assert.isTrue(
+                    (db.getOwnerType().equals(PERSON) || db.getOwnerType().equals(CONSOLE)) && db.getOwnerCode().equals(op.getUserId().toString()),
                     "没有操作权限");
             return;
         }
         if(apikeyInfo.getOwnerType().equals(SYSTEM)) {
             return;
         }
-        //todo: 获取所有 org
+        // todo: 获取所有 org
         Set<String> orgCodes = new HashSet<>();
         if(db.getOwnerType().equals(SYSTEM)) {
             throw new ChannelException.AuthorizationException("没有操作权限");
@@ -378,10 +381,10 @@ public class ApikeyService {
         ApikeyInfo apikeyInfo = EndpointContext.getApikeyIgnoreNull();
         Operator op = BellaContext.getOperatorIgnoreNull();
         if(apikeyInfo == null || (!apikeyFirst && op != null)) {
-            if (op == null || CollectionUtils.isNotEmpty(condition.getOrgCodes())) {
+            if(op == null || CollectionUtils.isNotEmpty(condition.getOrgCodes())) {
                 throw new ChannelException.AuthorizationException("没有操作权限");
             }
-            if (StringUtils.isNotEmpty(condition.getPersonalCode())) {
+            if(StringUtils.isNotEmpty(condition.getPersonalCode())) {
                 Assert.isTrue(op.getUserId().toString().equals(condition.getPersonalCode()), "没有操作权限");
             } else {
                 condition.setPersonalCode(op.getUserId().toString());
@@ -391,7 +394,7 @@ public class ApikeyService {
         // TODO: 获取所有组织代码并填充到 orgCodes
         Set<String> orgCodes = new HashSet<>();
 
-        if (StringUtils.isEmpty(condition.getPersonalCode())) {
+        if(StringUtils.isEmpty(condition.getPersonalCode())) {
             if(apikeyInfo.getOwnerType().equals(PERSON)) {
                 condition.setPersonalCode(apikeyInfo.getOwnerCode());
             }
@@ -399,7 +402,7 @@ public class ApikeyService {
             validateUserPermission(apikeyInfo, condition.getPersonalCode());
         }
 
-        if (CollectionUtils.isEmpty(condition.getOrgCodes())) {
+        if(CollectionUtils.isEmpty(condition.getOrgCodes())) {
             condition.setOrgCodes(orgCodes);
         } else {
             validateOrgPermission(apikeyInfo, condition.getOrgCodes(), orgCodes);
@@ -407,7 +410,8 @@ public class ApikeyService {
     }
 
     private void validateUserPermission(ApikeyInfo apikeyInfo, String personalCode) {
-        if(apikeyInfo.getOwnerType().equals(SYSTEM) || ((apikeyInfo.getOwnerType().equals(PERSON) || apikeyInfo.getOwnerType().equals(CONSOLE)) && personalCode.equals(apikeyInfo.getOwnerCode()))) {
+        if(apikeyInfo.getOwnerType().equals(SYSTEM) || ((apikeyInfo.getOwnerType().equals(PERSON) || apikeyInfo.getOwnerType().equals(CONSOLE))
+                && personalCode.equals(apikeyInfo.getOwnerCode()))) {
             return;
         }
         throw new ChannelException.AuthorizationException("没有操作权限");
@@ -433,33 +437,34 @@ public class ApikeyService {
      * 转移API Key所有者
      * 注意：缓存清理操作在事务外执行，避免影响事务
      * 
-     * @param op 转移操作参数
+     * @param op              转移操作参数
      * @param currentOperator 当前操作者
+     * 
      * @return 是否成功
      */
     @Transactional
     public boolean transferApikeyOwner(TransferApikeyOwnerOp op, Operator currentOperator) {
         // 1. 验证API Key是否存在且为主API Key
         ApikeyInfo apikeyInfo = apikeyRepo.queryByCode(op.getAkCode());
-        if (apikeyInfo == null) {
+        if(apikeyInfo == null) {
             throw new ChannelException.AuthorizationException("API Key不存在");
         }
-        
-        if (StringUtils.isNotEmpty(apikeyInfo.getParentCode())) {
+
+        if(StringUtils.isNotEmpty(apikeyInfo.getParentCode())) {
             throw new ChannelException.AuthorizationException("子API Key不允许转移，只能转移主API Key");
         }
-        
-        if (!ACTIVE.equals(apikeyInfo.getStatus())) {
+
+        if(!ACTIVE.equals(apikeyInfo.getStatus())) {
             throw new ChannelException.AuthorizationException("API Key状态不允许转移");
         }
 
         // 只有个人类型的API Key才能转移
-        if (!PERSON.equals(apikeyInfo.getOwnerType())) {
+        if(!PERSON.equals(apikeyInfo.getOwnerType())) {
             throw new ChannelException.AuthorizationException("只有个人类型的API Key才能转移");
         }
 
         // 2. 验证当前用户权限 (只有当前所有者可以转移)
-        if (!apikeyInfo.getOwnerCode().equals(currentOperator.getUserId().toString())) {
+        if(!apikeyInfo.getOwnerCode().equals(currentOperator.getUserId().toString())) {
             throw new ChannelException.AuthorizationException("只有API Key所有者才能执行转移操作");
         }
 
@@ -468,7 +473,7 @@ public class ApikeyService {
 
         // 4. 新的owner_code保持与当前操作者相同的规则
         String newOwnerCode;
-        if (StringUtils.equals(currentOperator.getSourceId(), String.valueOf(currentOperator.getUserId()))) {
+        if(StringUtils.equals(currentOperator.getSourceId(), String.valueOf(currentOperator.getUserId()))) {
             // 如果操作者使用sourceId规则，目标用户也使用sourceId
             newOwnerCode = targetUser.getSourceId();
         } else {
@@ -490,10 +495,10 @@ public class ApikeyService {
         updateDB.setOwnerName(StringUtils.defaultIfEmpty(targetUser.getUserName(), "用户" + targetUser.getId()));
         updateDB.setMuid(currentOperator.getUserId());
         updateDB.setMuName(currentOperator.getUserName());
-        
+
         // 更新主API Key
         apikeyRepo.update(updateDB, op.getAkCode());
-        
+
         // 批量更新所有子API Key
         apikeyRepo.batchUpdateByParentCode(updateDB, op.getAkCode());
 
@@ -511,36 +516,36 @@ public class ApikeyService {
                 .operatorUid(currentOperator.getUserId())
                 .operatorName(currentOperator.getUserName())
                 .build();
-                
+
         apikeyTransferLogRepo.insertTransferLog(transferLog);
-        
+
         // 8. 发布API Key转移事件（事务提交后自动处理）
         ApiKeyTransferEvent event = ApiKeyTransferEvent.of(op.getAkCode(), fromOwnerCode, fromOwnerName,
-                                                          newOwnerCode, updateDB.getOwnerName(), 
-                                                          StringUtils.defaultString(op.getTransferReason(), ""),
-                                                          currentOperator.getUserId(), currentOperator.getUserName());
+                newOwnerCode, updateDB.getOwnerName(),
+                StringUtils.defaultString(op.getTransferReason(), ""),
+                currentOperator.getUserId(), currentOperator.getUserName());
         eventPublisher.publishEvent(event);
-        
+
         return true;
     }
-    
 
     /**
      * 获取API Key转移历史
      *
      * @param akCode API Key编码
+     * 
      * @return 转移历史列表
      */
     public List<ApikeyTransferLog> getTransferHistory(String akCode) {
         // 验证权限：只有API Key所有者或系统管理员可以查看转移历史
         ApikeyInfo apikeyInfo = apikeyRepo.queryByCode(akCode);
-        if (apikeyInfo == null) {
+        if(apikeyInfo == null) {
             throw new ChannelException.AuthorizationException("API Key不存在");
         }
 
         ApikeyInfo currentApikey = EndpointContext.getApikey();
-        if (!apikeyInfo.getOwnerCode().equals(currentApikey.getOwnerCode())
-            && !SYSTEM.equals(currentApikey.getOwnerType())) {
+        if(!apikeyInfo.getOwnerCode().equals(currentApikey.getOwnerCode())
+                && !SYSTEM.equals(currentApikey.getOwnerType())) {
             throw new ChannelException.AuthorizationException("没有权限查看转移历史");
         }
 
@@ -559,28 +564,28 @@ public class ApikeyService {
      * 查找并验证目标用户
      *
      * @param op 转移操作请求
+     * 
      * @return 目标用户信息
      */
     private UserDB findAndValidateTargetUser(TransferApikeyOwnerOp op) {
         UserDB targetUser;
-        
+
         // 方式1: 通过用户ID查找
-        if (op.getTargetUserId() != null && op.getTargetUserId() > 0) {
+        if(op.getTargetUserId() != null && op.getTargetUserId() > 0) {
             targetUser = userRepo.queryById(op.getTargetUserId());
         }
-        // 方式2: 通过source + sourceId查找 
-        else if (StringUtils.isNotEmpty(op.getTargetUserSource()) && StringUtils.isNotEmpty(op.getTargetUserSourceId())) {
+        // 方式2: 通过source + sourceId查找
+        else if(StringUtils.isNotEmpty(op.getTargetUserSource()) && StringUtils.isNotEmpty(op.getTargetUserSourceId())) {
             targetUser = userRepo.queryBySourceAndSourceId(op.getTargetUserSource(), op.getTargetUserSourceId());
         }
         // 方式3: 通过source + email查找
-        else if (StringUtils.isNotEmpty(op.getTargetUserSource()) && StringUtils.isNotEmpty(op.getTargetUserEmail())) {
+        else if(StringUtils.isNotEmpty(op.getTargetUserSource()) && StringUtils.isNotEmpty(op.getTargetUserEmail())) {
             targetUser = userRepo.queryBySourceAndEmail(op.getTargetUserSource(), op.getTargetUserEmail());
-        }
-        else {
+        } else {
             throw new ChannelException.AuthorizationException("必须指定目标用户：可使用用户ID、source+sourceId或source+email");
         }
 
-        if (targetUser == null) {
+        if(targetUser == null) {
             throw new ChannelException.AuthorizationException("目标用户不存在");
         }
 

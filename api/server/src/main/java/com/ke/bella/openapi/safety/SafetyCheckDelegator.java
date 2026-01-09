@@ -57,7 +57,7 @@ public class SafetyCheckDelegator<T extends SafetyCheckRequest> implements ISafe
         } catch (ChannelException.SafetyCheckException e) {
             log.warn("异步安全检测发现敏感数据: requestId={}, sensitiveData={}",
                     request.getRequestId(), e.getSensitive());
-            if (e.getSensitive() != null) {
+            if(e.getSensitive() != null) {
                 addRiskData(e.getSensitive(), request.isRequest());
             }
             return e.getSensitive();

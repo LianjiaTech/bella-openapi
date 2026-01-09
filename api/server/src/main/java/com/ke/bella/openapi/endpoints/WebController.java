@@ -31,7 +31,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Web Search Controller Provides endpoints for web search and crawl functionality using Tavily API
+ * Web Search Controller Provides endpoints for web search and crawl
+ * functionality using Tavily API
  */
 @EndpointAPI
 @RestController
@@ -106,7 +107,8 @@ public class WebController {
 
     /**
      * Web Extract endpoint
-     * Extract web page content from one or more specified URLs using Tavily Extract API
+     * Extract web page content from one or more specified URLs using Tavily
+     * Extract API
      */
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @PostMapping("/extract")

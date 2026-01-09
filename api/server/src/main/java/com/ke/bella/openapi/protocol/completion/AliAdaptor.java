@@ -26,7 +26,8 @@ public class AliAdaptor implements CompletionAdaptor<AliProperty> {
         return AliProperty.class;
     }
 
-    Callbacks.ChannelErrorCallback<AliCompletionResponse> errorCallback = (aliCompletionResponse, okhttpResponse) -> aliCompletionResponse.setHttpCode(okhttpResponse.code());
+    Callbacks.ChannelErrorCallback<AliCompletionResponse> errorCallback = (aliCompletionResponse, okhttpResponse) -> aliCompletionResponse
+            .setHttpCode(okhttpResponse.code());
 
     @Override
     public CompletionResponse completion(CompletionRequest request, String url, AliProperty property) {
@@ -57,7 +58,6 @@ public class AliAdaptor implements CompletionAdaptor<AliProperty> {
         aliRequest.setModel(property.getDeployName());
         return aliRequest;
     }
-
 
     private Request buildRequest(AliCompletionRequest request, String url, AliProperty property) {
         Request.Builder builder = authorizationRequestBuilder(property.getAuth())

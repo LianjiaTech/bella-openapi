@@ -32,13 +32,13 @@ public class RequestOptimizationAspect {
     public void afterSetEndpointData(JoinPoint joinPoint) {
         try {
             EndpointProcessData processData = EndpointContext.getProcessData();
-            if (processData == null) {
+            if(processData == null) {
                 log.debug("ProcessData is null, skipping optimization");
                 return;
             }
 
             Object request = processData.getRequest();
-            if (request == null) {
+            if(request == null) {
                 log.debug("Request is null, skipping optimization");
                 return;
             }
@@ -47,16 +47,16 @@ public class RequestOptimizationAspect {
             String requestId = processData.getRequestId();
 
             // 检查是否为大请求
-            if (requestSizeChecker.isLargeRequest(request)) {
+            if(requestSizeChecker.isLargeRequest(request)) {
                 log.info("Large request detected, starting async optimization. " +
-                    "Endpoint: {}, RequestId: {}", endpoint, requestId);
+                        "Endpoint: {}, RequestId: {}", endpoint, requestId);
 
                 // 异步处理大请求
                 stageLoggingProcessor.preprocessRequestAsync(processData, request);
 
             } else {
                 log.debug("Small request, no optimization needed. " +
-                    "Endpoint: {}, RequestId: {}", endpoint, requestId);
+                        "Endpoint: {}, RequestId: {}", endpoint, requestId);
             }
 
         } catch (Exception e) {

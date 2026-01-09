@@ -43,7 +43,8 @@ public class StreamCompletionCallback implements Callbacks.StreamCompletionCallb
     protected Long firstPackageTime;
     protected Object requestRiskData;
     protected Integer safetyCheckIndex;
-    protected Integer thinkStage = 0; // 0: 推理未开始; 1: 推理开始; 2: 推理进行中；3:推理完成；-1:推理已结束
+    protected Integer thinkStage = 0; // 0: 推理未开始; 1: 推理开始; 2:
+                                      // 推理进行中；3:推理完成；-1:推理已结束
 
     public StreamCompletionCallback(SseEmitter sse, EndpointProcessData processData, ApikeyInfo apikeyInfo,
             EndpointLogger logger, ISafetyCheckService<SafetyCheckRequest.Chat> safetyService) {
@@ -99,7 +100,7 @@ public class StreamCompletionCallback implements Callbacks.StreamCompletionCallb
     }
 
     private void sendSafetyResults(boolean done) {
-        if (safetyResultStorage != null) {
+        if(safetyResultStorage != null) {
             for (int index = done ? 10 : Integer.MAX_VALUE; index > 0; index--) {
                 Object riskData = safetyResultStorage.getResponseRiskData();
                 if(riskData == null) {

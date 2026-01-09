@@ -19,7 +19,7 @@ public class AudioTranscriptionRequest {
         @JsonProperty("callback_url")
         private String callbackUrl;
 
-        //******************************公共******************************
+        // ******************************公共******************************
         @JsonProperty("channel_number")
         private int channelNumber = 1;
 
@@ -36,7 +36,7 @@ public class AudioTranscriptionRequest {
         @JsonProperty("hot_word")
         private String hotWord;
 
-        //******************************讯飞******************************
+        // ******************************讯飞******************************
         @JsonProperty("language")
         private String language = "cn";
 
@@ -106,12 +106,12 @@ public class AudioTranscriptionRequest {
         @JsonProperty("eng_rlang")
         private int engRlang = 1;
 
-        //******************************腾讯******************************
+        // ******************************腾讯******************************
         // 热词表参数
         @JsonProperty("vocab_id")
         private String vocabId;
 
-        //******************************自研******************************
+        // ******************************自研******************************
         // 采样率
         @JsonProperty("sample_rate")
         private int sampleRate;
@@ -140,7 +140,7 @@ public class AudioTranscriptionRequest {
         @JsonProperty("max_end_silence")
         private int maxEndSilence;
 
-        //******************************火山******************************
+        // ******************************火山******************************
         @JsonProperty("enable_itn")
         private boolean enableItn = true;
 

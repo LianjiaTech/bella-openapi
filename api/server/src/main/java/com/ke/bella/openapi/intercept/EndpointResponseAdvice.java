@@ -68,10 +68,10 @@ public class EndpointResponseAdvice implements ResponseBodyAdvice<Object> {
 
     private void logError(Integer httpCode, String requestId, String msg, Throwable e) {
         String str = "req_id :" + requestId + ",msg:" + msg;
-        //输出req_id方便根据req_id查询能力点日志
+        // 输出req_id方便根据req_id查询能力点日志
         if(httpCode == 500) {
             log.error(str, e);
-        } else if(httpCode == 400 || httpCode == 401){
+        } else if(httpCode == 400 || httpCode == 401) {
             log.info(str, e);
         } else {
             log.warn(str, e);
