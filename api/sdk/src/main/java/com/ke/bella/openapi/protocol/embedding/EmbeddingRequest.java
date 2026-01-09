@@ -41,7 +41,7 @@ public class EmbeddingRequest implements UserRequest, Serializable, IMemoryClear
 
     @Override
     public void clearLargeData() {
-        if (!cleared) {
+        if(!cleared) {
             // 清理最大的内存占用 - 输入内容可能包含大量文本数据
             this.input = null;
 

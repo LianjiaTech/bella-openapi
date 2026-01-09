@@ -38,10 +38,7 @@ public class MessageResponse extends OpenapiResponse {
     private String thoughtSignature; // Gemini 3 思维签名
 
     // Base ContentBlock for response
-    @JsonTypeInfo(
-            use = JsonTypeInfo.Id.NAME,
-            include = JsonTypeInfo.As.PROPERTY,
-            property = "type")
+    @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
     @JsonSubTypes({
             @JsonSubTypes.Type(value = ResponseTextBlock.class, name = "text"),
             @JsonSubTypes.Type(value = ResponseToolUseBlock.class, name = "tool_use"),
@@ -53,8 +50,10 @@ public class MessageResponse extends OpenapiResponse {
             @JsonSubTypes.Type(value = ResponseContainerUploadBlock.class, name = "container_upload"),
             @JsonSubTypes.Type(value = ResponseThinkingBlock.class, name = "thinking"),
             @JsonSubTypes.Type(value = ResponseRedactedThinkingBlock.class, name = "redacted_thinking")
-            // Note: The spec also implies a generic "tool_result" which might be an abstract type
-            // or handled by specific tool result types. For now, specific ones are listed.
+    // Note: The spec also implies a generic "tool_result" which might be an
+    // abstract type
+    // or handled by specific tool result types. For now, specific ones are
+    // listed.
     })
     @JsonInclude(JsonInclude.Include.NON_NULL)
     @Data
@@ -99,14 +98,16 @@ public class MessageResponse extends OpenapiResponse {
         private String toolUseId;
         private String name;
         private Map<String, Object> input;
-         public ResponseServerToolUseBlock(String toolUseId, String name, Map<String, Object> input) {
+
+        public ResponseServerToolUseBlock(String toolUseId, String name, Map<String, Object> input) {
             this.toolUseId = toolUseId;
             this.name = name;
             this.input = input;
         }
     }
 
-    // Abstract base for tool results if common fields exist, or directly implement specifics
+    // Abstract base for tool results if common fields exist, or directly
+    // implement specifics
     // For now, let's assume specific tool result blocks
 
     @Data
@@ -116,10 +117,11 @@ public class MessageResponse extends OpenapiResponse {
     public static class ResponseWebSearchToolResultBlock extends ContentBlock {
         @JsonProperty("tool_use_id")
         private String toolUseId;
-        private List<Map<String, Object>> documents; // Define Document class if structure is complex/known
+        private List<Map<String, Object>> documents; // Define Document class if
+                                                     // structure is
+                                                     // complex/known
         @JsonProperty("is_error")
         private Boolean isError;
-
 
         public ResponseWebSearchToolResultBlock(String toolUseId, List<Map<String, Object>> documents, Boolean isError) {
             this.toolUseId = toolUseId;
@@ -201,7 +203,8 @@ public class MessageResponse extends OpenapiResponse {
         private String status; // e.g., "success", "failure"
         private String message; // Optional message
 
-        public ResponseContainerUploadBlock(String toolUseId, String containerName, String fileName, String fullPath, String objectName, String status, String message) {
+        public ResponseContainerUploadBlock(String toolUseId, String containerName, String fileName, String fullPath, String objectName,
+                String status, String message) {
             this.toolUseId = toolUseId;
             this.containerName = containerName;
             this.fileName = fileName;
@@ -219,6 +222,7 @@ public class MessageResponse extends OpenapiResponse {
     public static class ResponseThinkingBlock extends ContentBlock {
         private String thinking;
         private String signature;
+
         public ResponseThinkingBlock(String thinking, String signature) {
             this.thinking = thinking;
             this.signature = signature;
@@ -229,12 +233,12 @@ public class MessageResponse extends OpenapiResponse {
     @EqualsAndHashCode(callSuper = true)
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class ResponseRedactedThinkingBlock extends ContentBlock {
-         private String data;
-         public ResponseRedactedThinkingBlock(String data) {
-             this.data = data;
-         }
-    }
+        private String data;
 
+        public ResponseRedactedThinkingBlock(String data) {
+            this.data = data;
+        }
+    }
 
     @Data
     @NoArgsConstructor
@@ -274,9 +278,11 @@ public class MessageResponse extends OpenapiResponse {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class CacheCreation {
         @JsonProperty("ephemeral_1h_input_tokens")
-        private int ephemeral1hInputTokens; // Using Integer for potential nullability
+        private int ephemeral1hInputTokens; // Using Integer for potential
+                                            // nullability
         @JsonProperty("ephemeral_5m_input_tokens")
-        private int ephemeral5mInputTokens; // Using Integer for potential nullability
+        private int ephemeral5mInputTokens; // Using Integer for potential
+                                            // nullability
     }
 
     @Data
@@ -286,7 +292,9 @@ public class MessageResponse extends OpenapiResponse {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class ServerToolUsage {
         @JsonProperty("web_search_requests")
-        private Integer webSearchRequests; // Using Integer for potential nullability
-        // Add other tool usage counts if specified, e.g. code_execution_requests
+        private Integer webSearchRequests; // Using Integer for potential
+                                           // nullability
+        // Add other tool usage counts if specified, e.g.
+        // code_execution_requests
     }
 }

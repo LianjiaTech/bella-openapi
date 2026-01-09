@@ -13,7 +13,8 @@ import java.util.List;
 
 /**
  * OpenAI-compatible transcriptions response
- * Based on OpenAI API specification: https://platform.openai.com/docs/api-reference/audio/createTranscription
+ * Based on OpenAI API specification:
+ * https://platform.openai.com/docs/api-reference/audio/createTranscription
  */
 @Data
 @NoArgsConstructor

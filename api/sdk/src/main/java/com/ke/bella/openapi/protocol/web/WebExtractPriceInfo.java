@@ -47,6 +47,6 @@ public class WebExtractPriceInfo implements IPriceInfo, Serializable {
     @Override
     public String toString() {
         return "基础提取：" + basicExtractionPrice + " 分/5次提取\n" +
-               "高级提取：" + advancedExtractionPrice + " 分/5次提取";
+                "高级提取：" + advancedExtractionPrice + " 分/5次提取";
     }
 }

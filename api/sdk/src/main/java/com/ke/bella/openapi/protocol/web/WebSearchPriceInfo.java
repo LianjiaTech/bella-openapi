@@ -9,24 +9,26 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Web Search Price Information Pricing details for Tavily web search services Basic Search: 1 API credit per request Advanced Search: 2 API credits
+ * Web Search Price Information Pricing details for Tavily web search services
+ * Basic Search: 1 API credit per request Advanced Search: 2 API credits
  * per request
  */
 @Data
 public class WebSearchPriceInfo implements IPriceInfo, Serializable {
 
     /**
-     * Price per basic search request (分/请求) Basic Search: Each request costs 1 API credit
+     * Price per basic search request (分/请求) Basic Search: Each request costs 1
+     * API credit
      */
     private BigDecimal basicSearchPrice;
 
     /**
-     * Price per advanced search request (分/请求) Advanced Search: Each request costs 2 API credits
+     * Price per advanced search request (分/请求) Advanced Search: Each request
+     * costs 2 API credits
      */
     private BigDecimal advancedSearchPrice;
 
     private double batchDiscount = 1.0;
-
 
     @Override
     public String getUnit() {

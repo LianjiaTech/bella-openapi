@@ -27,7 +27,8 @@ public class Operator implements Serializable {
     protected Map<String, Object> optionalInfo = new HashMap<>();
 
     public String getSpaceCode() {
-        return StringUtils.isEmpty(spaceCode) ? (userId != null && userId > 0 ? String.valueOf(userId) :
-                StringUtils.isNotBlank(sourceId) ? source + "_" + sourceId : "0") : spaceCode;
+        return StringUtils.isEmpty(spaceCode)
+                ? (userId != null && userId > 0 ? String.valueOf(userId) : StringUtils.isNotBlank(sourceId) ? source + "_" + sourceId : "0")
+                : spaceCode;
     }
 }

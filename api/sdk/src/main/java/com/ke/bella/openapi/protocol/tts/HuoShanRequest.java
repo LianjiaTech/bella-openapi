@@ -19,12 +19,11 @@ public class HuoShanRequest implements IMemoryClearable, ITransfer {
     private Audio audio;
     private TextRequest request;
 
-
     @Data
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class App{
+    public static class App {
         @JsonProperty("appid")
         private String appId;
         private String token;
@@ -35,7 +34,7 @@ public class HuoShanRequest implements IMemoryClearable, ITransfer {
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class User{
+    public static class User {
         private String uid;
     }
 
@@ -43,7 +42,7 @@ public class HuoShanRequest implements IMemoryClearable, ITransfer {
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class Audio{
+    public static class Audio {
         @JsonProperty("voice_type")
         private String voiceType = "BV001_streaming";
         private String encoding = "wav";
@@ -55,14 +54,14 @@ public class HuoShanRequest implements IMemoryClearable, ITransfer {
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class TextRequest{
+    public static class TextRequest {
         @JsonProperty("reqid")
         private String reqId;
         private String text;
         @JsonProperty("text_type")
-        private String textType="";
-        private String operation="query";
-     }
+        private String textType = "";
+        private String operation = "query";
+    }
 
     // 内存清理相关字段和方法
     @JsonIgnore
@@ -70,9 +69,9 @@ public class HuoShanRequest implements IMemoryClearable, ITransfer {
 
     @Override
     public void clearLargeData() {
-        if (!cleared) {
+        if(!cleared) {
             // 清理最大的内存占用 - 文本请求中的文本数据
-            if (this.request != null) {
+            if(this.request != null) {
                 this.request.text = null;
             }
 

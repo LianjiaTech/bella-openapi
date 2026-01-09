@@ -10,7 +10,8 @@ import java.util.Map;
 
 /**
  * OpenAI Responses API property configuration
- * 支持使用 store=false 和 previous_response_id 为空的 responses api 模拟 chat completion 功能
+ * 支持使用 store=false 和 previous_response_id 为空的 responses api 模拟 chat completion
+ * 功能
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -18,7 +19,6 @@ import java.util.Map;
 public class ResponsesApiProperty extends CompletionProperty {
 
     String apiVersion;
-
 
     @Override
     public Map<String, String> description() {

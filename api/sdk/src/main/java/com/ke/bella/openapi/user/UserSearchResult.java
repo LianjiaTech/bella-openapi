@@ -17,29 +17,29 @@ import java.io.Serializable;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserSearchResult implements Serializable {
-    
+
     private static final long serialVersionUID = 1L;
-    
+
     /**
      * 用户ID
      */
     private Long id;
-    
+
     /**
      * 用户名
      */
     private String userName;
-    
+
     /**
      * 邮箱
      */
     private String email;
-    
+
     /**
      * 用户来源
      */
     private String source;
-    
+
     /**
      * 来源ID
      */

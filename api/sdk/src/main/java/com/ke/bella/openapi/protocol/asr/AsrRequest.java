@@ -8,7 +8,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -26,7 +25,7 @@ public class AsrRequest implements ISummary, IMemoryClearable {
 
     @Override
     public String[] ignoreFields() {
-        return new String[]{ "content" };
+        return new String[] { "content" };
     }
 
     // 内存清理相关字段和方法
@@ -35,7 +34,7 @@ public class AsrRequest implements ISummary, IMemoryClearable {
 
     @Override
     public void clearLargeData() {
-        if (!cleared) {
+        if(!cleared) {
             // 清理最大的内存占用 - 音频内容字节数组
             this.content = null;
 
