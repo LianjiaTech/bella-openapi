@@ -8,18 +8,18 @@ import {
     CategoryTree,
     Endpoint, VoiceProperties
 } from '@/lib/types/openapi';
-import { openapi } from '@/lib/api/openapi';
+import {openapi} from '@/lib/api/openapi';
 
 export async function getTopCategories(): Promise<Category[]> {
     const response = await openapi.get<Category[]>('/v1/meta/category/list', {
-        params: { topCategory: true },
+        params: {topCategory: true},
     });
     return response.data;
 }
 
 export async function getCategoryTree(categoryCode: string): Promise<CategoryTree> {
     const response = await openapi.get<CategoryTree>('/v1/meta/category/tree', {
-        params: { includeEndpoint: true, status: 'active', categoryCode },
+        params: {includeEndpoint: true, status: 'active', categoryCode},
     });
     return response.data;
 }
@@ -32,7 +32,7 @@ export async function getAllCategoryTrees(): Promise<CategoryTree[]> {
 
 export async function getEndpointDetails(endpoint: string, modelName: string, features: string[]): Promise<EndpointDetails> {
     const response = await openapi.get<EndpointDetails>('/v1/meta/endpoint/details', {
-        params: { endpoint, modelName, features: features.join(',') },
+        params: {endpoint, modelName, features: features.join(',')},
     });
     return response.data;
 }
@@ -46,14 +46,14 @@ export async function getVoiceProperties(entityType: string, entityCode: string)
 
 export async function listEndpoints(status: string): Promise<Endpoint[]> {
     const response = await openapi.get<Endpoint[]>('/v1/meta/endpoint/list', {
-        params: { status },
+        params: {status},
     });
     return response.data;
 }
 
 export async function listConsoleModels(endpoint: string, modelName: string, supplier: string, status: string, visibility: string): Promise<Model[]> {
     const response = await openapi.get<Model[]>('/console/model/list', {
-        params: { endpoint, modelName, supplier, status, visibility, includeLinkedTo : true},
+        params: {endpoint, modelName, supplier, status, visibility, includeLinkedTo: true},
     });
     return response.data;
 }
@@ -65,7 +65,7 @@ export async function listSuppliers(): Promise<string[]> {
 
 export async function getModelDetails(modelName: string): Promise<ModelDetails> {
     const response = await openapi.get<ModelDetails>('/console/model/details', {
-        params: { modelName },
+        params: {modelName},
     });
     return response.data;
 }
@@ -87,13 +87,13 @@ export async function linkModel(modelName: string, linkedTo: string) {
 
 export async function updateModelStatus(modelName: string, activate: boolean) {
     const url = activate ? '/console/model/activate' : '/console/model/inactivate';
-    const response = await openapi.post<Boolean>(url, { modelName });
+    const response = await openapi.post<Boolean>(url, {modelName});
     return response.data;
 }
 
 export async function updateModelVisibility(modelName: string, publish: boolean) {
     const url = publish ? '/console/model/publish' : '/console/model/publish/cancel';
-    const response = await openapi.post<Boolean>(url, { modelName });
+    const response = await openapi.post<Boolean>(url, {modelName});
     return response.data;
 }
 
@@ -109,22 +109,22 @@ export async function updateChannel(channelCode: string, update: Partial<Channel
 
 export async function updateChannelStatus(channelCode: string, active: boolean) {
     const url = active ? '/console/channel/activate' : '/console/channel/inactivate';
-    const response = await openapi.post<Boolean>(url, { channelCode });
+    const response = await openapi.post<Boolean>(url, {channelCode});
     return response.data;
 }
 
 export async function updatePrivateChannelStatus(channelCode: string, active: boolean) {
     const url = active ? '/v1/meta/channel/private/activate' : '/v1/meta/channel/private/inactivate';
-    const response = await openapi.post<Boolean>(url, { channelCode });
+    const response = await openapi.post<Boolean>(url, {channelCode});
     return response.data;
 }
 
-export async function createModel(model: Model) : Promise<Boolean> {
+export async function createModel(model: Model): Promise<Boolean> {
     const response = await openapi.post<Boolean>('/console/model', model);
     return response.data;
 }
 
-export async function createChannel(channel: Channel) : Promise<Boolean> {
+export async function createChannel(channel: Channel): Promise<Boolean> {
     const response = await openapi.post<Boolean>('/console/channel', channel);
     return response.data;
 }
@@ -143,47 +143,47 @@ export async function updatePrivateChannel(channelCode: string, update: Partial<
     return response.data;
 }
 
-export async function getModelPropertySchema(endpoints: string[]) : Promise<JsonSchema> {
+export async function getModelPropertySchema(endpoints: string[]): Promise<JsonSchema> {
     const response = await openapi.get<JsonSchema>('/v1/meta/schema/modelProperty', {
-        params: { endpoints : endpoints.join(',') },
+        params: {endpoints: endpoints.join(',')},
     });
     return response.data;
 }
 
 
-export async function getModelFeatureSchema(endpoints: string[]) : Promise<JsonSchema> {
+export async function getModelFeatureSchema(endpoints: string[]): Promise<JsonSchema> {
     const response = await openapi.get<JsonSchema>('/v1/meta/schema/modelFeature', {
-        params: { endpoints : endpoints.join(',') },
+        params: {endpoints: endpoints.join(',')},
     });
     return response.data;
 }
 
 
-export async function listProtocols(entityType: string, entityCode: string) : Promise<Record<string, string>> {
+export async function listProtocols(entityType: string, entityCode: string): Promise<Record<string, string>> {
     const response = await openapi.get<Record<string, string>>('/v1/meta/protocol/list', {
-        params: { entityType, entityCode},
+        params: {entityType, entityCode},
     });
     return response.data;
 }
 
 
-export async function getPriceInfoSchema(entityType: string, entityCode: string) : Promise<JsonSchema> {
+export async function getPriceInfoSchema(entityType: string, entityCode: string): Promise<JsonSchema> {
     const response = await openapi.get<JsonSchema>('/v1/meta/schema/priceInfo', {
-        params: { entityType, entityCode},
+        params: {entityType, entityCode},
     });
     return response.data;
 }
 
-export async function getChannelInfoSchema(entityType: string, entityCode: string, protocol: string) : Promise<JsonSchema> {
+export async function getChannelInfoSchema(entityType: string, entityCode: string, protocol: string): Promise<JsonSchema> {
     const response = await openapi.get<JsonSchema>('/v1/meta/schema/channelInfo', {
-        params: { entityType, entityCode, protocol},
+        params: {entityType, entityCode, protocol},
     });
     return response.data;
 }
 
 export async function listModels(endpoint?: string): Promise<Model[]> {
     const response = await openapi.get<Model[]>('/v1/meta/model/list/for-selection', {
-        params: { endpoint, status: 'active'},
+        params: {endpoint, status: 'active'},
     });
     return response.data;
 }

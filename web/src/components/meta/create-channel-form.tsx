@@ -30,7 +30,7 @@ export function CreateChannelForm({
                                       entityCode,
                                       isPrivate = false
                                   }: Props) {
-    const { toast } = useToast();
+    const {toast} = useToast();
     const searchParams = useSearchParams();
     const [channel, setChannel] = useState<Channel>({
         entityType: entityType,
@@ -57,15 +57,15 @@ export function CreateChannelForm({
     const [loading, setLoading] = useState(false);
 
     const handleChange = (field: keyof Channel, value: string | number) => {
-        if(field == 'protocol') {
+        if (field == 'protocol') {
             setSelectedProtocol(value as string)
         }
-        setChannel(prev => ({ ...prev, [field]: value }));
+        setChannel(prev => ({...prev, [field]: value}));
     };
 
     const handlePriceInfoChange = (path: string, value: any) => {
         setPriceInfoValue(prev => {
-            const newValue = { ...prev };
+            const newValue = {...prev};
             let current = newValue;
             const keys = path.split('.');
             for (let i = 0; i < keys.length - 1; i++) {
@@ -79,10 +79,10 @@ export function CreateChannelForm({
 
     const handleChannelInfoChange = (path: string, value: any) => {
         setChannelInfoValue(prev => {
-            const newValue = { ...prev };
+            const newValue = {...prev};
             let current = newValue;
             const keys = path.split('.');
-            for (let i = 0; i <keys.length - 1; i++) {
+            for (let i = 0; i < keys.length - 1; i++) {
                 if (!current[keys[i]]) current[keys[i]] = {};
                 current = current[keys[i]];
             }
@@ -100,6 +100,7 @@ export function CreateChannelForm({
             setPriceInfoSchema(priceSchema);
             setPriceInfoValue({});
         }
+
         fetchData();
     }, []);
 
@@ -108,7 +109,7 @@ export function CreateChannelForm({
             try {
                 const newChannelInfoSchema = await getChannelInfoSchema(entityType, entityCode, selectedProtocol);
                 setChannelInfoSchema(newChannelInfoSchema);
-                setChannelInfoValue({ safetyCheckMode: 'async' });
+                setChannelInfoValue({safetyCheckMode: 'async'});
             } catch (error) {
                 console.error("Error fetching schemas:", error);
                 toast({
@@ -119,7 +120,8 @@ export function CreateChannelForm({
                 });
             }
         }
-        if(selectedProtocol && selectedProtocol != '') {
+
+        if (selectedProtocol && selectedProtocol != '') {
             fetchChannelInfoSchema();
         } else {
             setChannelInfoSchema(null);
@@ -143,7 +145,7 @@ export function CreateChannelForm({
                 title: "成功",
                 description: `渠道创建成功`,
             });
-            if(isPrivate) {
+            if (isPrivate) {
                 window.location.href = `/meta/private-channel?entityType=${entityType}&entityCode=${entityCode}`;
             } else {
                 if (entityType == 'model') {

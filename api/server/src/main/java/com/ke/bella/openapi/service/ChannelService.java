@@ -95,7 +95,7 @@ public class ChannelService {
         endpoints.forEach(endpoint -> Assert.isTrue(CostCalculator.validate(endpoint, op.getPriceInfo()), "priceInfo invalid"));
         endpoints.forEach(endpoint -> Assert.isTrue(adaptorManager.support(endpoint, op.getProtocol()), "不支持的协议"));
 
-        if (StringUtils.isEmpty(op.getVisibility())) {
+        if(StringUtils.isEmpty(op.getVisibility())) {
             op.setVisibility(PUBLIC);
         }
 

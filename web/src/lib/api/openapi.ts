@@ -1,5 +1,5 @@
-import axios, { AxiosInstance } from 'axios';
-import { api_host } from '@/config';
+import axios, {AxiosInstance} from 'axios';
+import {api_host} from '@/config';
 
 const baseURL = !api_host
     ? '/'
@@ -21,7 +21,7 @@ openapi.interceptors.response.use(
             return response.data || null;
         } else {
             console.error('Failed to fetch api:', response.data.message);
-            return Promise.reject({ error: response.data.message });
+            return Promise.reject({error: response.data.message});
         }
     },
     (error) => {
@@ -30,7 +30,8 @@ openapi.interceptors.response.use(
             if (loginUrl) {
                 loginUrl += encodeURIComponent(window.location.href);
                 window.location.href = loginUrl;
-                return new Promise(() => {});
+                return new Promise(() => {
+                });
             }
         }
         return Promise.reject(error);
