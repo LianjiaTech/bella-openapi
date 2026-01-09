@@ -142,10 +142,8 @@ public class EndpointService {
         return db == null || db.getStatus().equals(INACTIVE) ? null : db;
     }
 
-    @Cached(name = "endpoint:details:", key = "#condition.endpoint + ':' + #identity",
-            cacheType = CacheType.BOTH,
-            condition = "(#condition.modelName == null || #condition.modelName == '') "
-                    + "&& (#condition.features == null || #condition.features.isEmpty())")
+    @Cached(name = "endpoint:details:", key = "#condition.endpoint + ':' + #identity", cacheType = CacheType.BOTH, condition = "(#condition.modelName == null || #condition.modelName == '') "
+            + "&& (#condition.features == null || #condition.features.isEmpty())")
     public EndpointDetails getEndpointDetails(Condition.EndpointDetailsCondition condition, String identity) {
         List<EnumDto> features = MetadataFeatures.listFeatures(condition.getEndpoint());
         EndpointDetails endpoint = EndpointDetails.builder()
@@ -178,7 +176,6 @@ public class EndpointService {
         EndpointDB db = getActive(UniqueKeyQuery.builder().endpoint(endpoint).build());
         return db == null ? null : db.getCostScript();
     }
-
 
     private void checkCostScript(MetaDataOps.EndpointOp op) {
         if(op.getCostScript() == null) {
@@ -216,8 +213,7 @@ public class EndpointService {
                     modelCondition.setDataDestination(INNER);
                 } else if(f.equals(MetadataFeatures.PROTECTED.getCode())) {
                     modelCondition.setDataDestination(PROTECTED);
-                }
-                else if(f.equals(MetadataFeatures.LARGE_INPUT_CONTEXT.getCode())) {
+                } else if(f.equals(MetadataFeatures.LARGE_INPUT_CONTEXT.getCode())) {
                     modelCondition.setMaxInputTokensLimit(100000);
                 } else if(f.equals(MetadataFeatures.LARGE_OUTPUT_CONTEXT.getCode())) {
                     modelCondition.setMaxOutputTokensLimit(8000);
@@ -278,7 +274,6 @@ public class EndpointService {
         protocolAdaptors.forEach((k, v) -> result.put(k, v.getDescription()));
         return result;
     }
-
 
     public JsonSchema getPriceInfoSchema(String entityType, String entityCode) {
         String endpoint = fetchEndpoint(entityType, entityCode);

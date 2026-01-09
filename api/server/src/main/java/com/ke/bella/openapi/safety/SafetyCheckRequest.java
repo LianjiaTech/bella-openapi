@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 @SuperBuilder
 public class SafetyCheckRequest {
     private String requestId;
-    //input output
+    // input output
     private String type;
     private String akCode;
     private String sceneCode;
@@ -50,7 +50,7 @@ public class SafetyCheckRequest {
 
         public static Chat convertFrom(CompletionRequest completionRequest, EndpointProcessData processData, ApikeyInfo apikeyInfo) {
             com.ke.bella.openapi.protocol.completion.Message message = completionRequest.getMessages()
-                    .get(completionRequest.getMessages().size() -1);
+                    .get(completionRequest.getMessages().size() - 1);
             return Chat.builder()
                     .requestId(processData.getRequestId())
                     .type("input")
@@ -90,7 +90,7 @@ public class SafetyCheckRequest {
 
         public static List<Message> convertFrom(List<com.ke.bella.openapi.protocol.completion.Message> messages) {
             List<Message> checks = new ArrayList<>();
-            for(com.ke.bella.openapi.protocol.completion.Message message : messages) {
+            for (com.ke.bella.openapi.protocol.completion.Message message : messages) {
                 checks.addAll(convertFrom(message));
             }
             return checks;
@@ -109,7 +109,7 @@ public class SafetyCheckRequest {
                     List<String> textMessages = new LinkedList<>();
                     for (Object contentObj : (Collection) content) {
                         Map contentMap;
-                        if(contentObj instanceof  Map) {
+                        if(contentObj instanceof Map) {
                             contentMap = (Map) contentObj;
                         } else {
                             contentMap = JacksonUtils.toMap(contentObj);

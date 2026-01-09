@@ -55,7 +55,7 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
     // Message Compression
     private static final byte NO_COMPRESSION = 0b0000;
     private static final byte GZIP = 0b0001;
-    
+
     private static final int ERROR_CODE_RATE_LIMIT = 45000292;
 
     private final HuoshanRealTimeAsrRequest request;
@@ -132,7 +132,6 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
         private String context;
     }
 
-
     @Override
     public void onOpen(WebSocket webSocket, Response response) {
         try {
@@ -194,7 +193,7 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
      * 完成处理并关闭连接
      */
     private void complete() {
-        if (!end) {
+        if(!end) {
             processData.getMetrics().put("ttlt", DateTimeUtils.getCurrentMills() - startTime);
             sender.close();
             if(request.isAsync() && logger != null) {
@@ -208,7 +207,7 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
      * 处理错误
      */
     private void onError(ChannelException exception) {
-        if (!end) {
+        if(!end) {
             end = true;
             sender.onError(exception);
         }
@@ -218,7 +217,7 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
      * 处理处理过程中的错误
      */
     private void onProcessError(ChannelException exception) {
-        if (!end) {
+        if(!end) {
             sender.onError(exception);
         }
     }
@@ -269,10 +268,10 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
 
         // 设置corpus和热词
         Corpus corpus = new Corpus();
-        if (StringUtils.isNotBlank(request.getHotWords())) {
+        if(StringUtils.isNotBlank(request.getHotWords())) {
             corpus.setContext(buildHotWords(request.getHotWords()));
         }
-        if (StringUtils.isNotBlank(request.getHotWordsTableId())) {
+        if(StringUtils.isNotBlank(request.getHotWordsTableId())) {
             corpus.setBoosting_table_id(request.getHotWordsTableId());
         }
         modelRequest.setCorpus(corpus);
@@ -283,8 +282,8 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
         Audio audio = new Audio();
         audio.setFormat(request.getFormat());
         audio.setRate(request.getSampleRate());
-        audio.setBits(16); //默认为16
-        audio.setChannel(1); //默认单声道
+        audio.setBits(16); // 默认为16
+        audio.setChannel(1); // 默认单声道
         audio.setCodec("raw"); // 默认为raw(pcm)
         clientRequest.setAudio(audio);
 
@@ -326,7 +325,7 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
 
             // 如果是最后一块，将序列号设为负值
             int seq = audioSequence;
-            if (isLast) {
+            if(isLast) {
                 seq = -seq;
             }
 
@@ -380,7 +379,7 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
 
                     offset += length;
 
-                    if (!isLast && intervalMs > 0) {
+                    if(!isLast && intervalMs > 0) {
                         Thread.sleep(intervalMs);
                     }
                 }
@@ -396,7 +395,7 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
      * 按照官方样例的逻辑：先解析结构，最后才解压缩
      */
     private void parseResponse(byte[] message, WebSocket webSocket) {
-        if (message == null || message.length == 0) {
+        if(message == null || message.length == 0) {
             log.warn("收到空消息");
             return;
         }
@@ -410,7 +409,7 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
         int messageCompress = message[2] & 0x0f;
 
         // 从headerLen位置开始提取剩余数据（payload区域）
-        if (message.length < headerLen) {
+        if(message.length < headerLen) {
             log.error("消息长度不足，无法解析header: messageLength={}, headerLen={}", message.length, headerLen);
             return;
         }
@@ -420,32 +419,32 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
         // 根据messageTypeSpecificFlags动态解析序列号等字段（按照官方样例）
         boolean isLastPackage = false;
 
-        if ((messageTypeFlag & 0x01) != 0) {
+        if((messageTypeFlag & 0x01) != 0) {
             // 有序列号
-            if (payload.length < 4) {
+            if(payload.length < 4) {
                 log.error("消息长度不足，无法解析序列号: payloadLength={}", payload.length);
                 return;
             }
             payload = Arrays.copyOfRange(payload, 4, payload.length);
         }
 
-        if ((messageTypeFlag & 0x02) != 0) {
+        if((messageTypeFlag & 0x02) != 0) {
             // 是最后包
             isLastPackage = true;
         }
 
-        if ((messageTypeFlag & 0x04) != 0) {
+        if((messageTypeFlag & 0x04) != 0) {
             // 有event字段
-            if (payload.length < 4) {
+            if(payload.length < 4) {
                 log.error("消息长度不足，无法解析event: payloadLength={}", payload.length);
                 return;
             }
             payload = Arrays.copyOfRange(payload, 4, payload.length);
         }
 
-        if (messageType == SERVER_ERROR_RESPONSE) {
+        if(messageType == SERVER_ERROR_RESPONSE) {
             // SERVER_ERROR_RESPONSE: errorCode(4) + payloadSize(4)
-            if (payload.length < 8) {
+            if(payload.length < 8) {
                 log.error("错误消息长度不足: payloadLength={}", payload.length);
                 return;
             }
@@ -454,11 +453,11 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
             payload = Arrays.copyOfRange(payload, 8, payload.length);
 
             // 提取实际的payload数据
-            if (actualPayloadSize > 0 && payload.length >= actualPayloadSize) {
+            if(actualPayloadSize > 0 && payload.length >= actualPayloadSize) {
                 payload = Arrays.copyOfRange(payload, 0, actualPayloadSize);
 
                 // 解压缩并处理错误
-                if (messageCompress == GZIP) {
+                if(messageCompress == GZIP) {
                     payload = gzipDecompress(payload);
                 }
 
@@ -466,9 +465,9 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
                 log.error("服务器错误: code={}, message={}", errorCode, errorMsg);
                 handleTranscriptionFailed(mapErrorCodeToHttpStatus(errorCode), errorMsg);
             }
-        } else if (messageType == FULL_SERVER_RESPONSE) {
+        } else if(messageType == FULL_SERVER_RESPONSE) {
             // FULL_SERVER_RESPONSE: payloadSize在payload的开头（已跳过序列号）
-            if (payload.length < 4) {
+            if(payload.length < 4) {
                 log.error("消息长度不足，无法解析payloadSize: payloadLength={}", payload.length);
                 return;
             }
@@ -476,8 +475,8 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
             payload = Arrays.copyOfRange(payload, 4, payload.length);
 
             // 提取实际的payload数据
-            if (actualPayloadSize > 0) {
-                if (payload.length < actualPayloadSize) {
+            if(actualPayloadSize > 0) {
+                if(payload.length < actualPayloadSize) {
                     log.error("payload长度不足: payloadLength={}, expectedSize={}", payload.length, actualPayloadSize);
                     return;
                 }
@@ -485,29 +484,29 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
             }
 
             // 最后才解压缩（按照官方样例的顺序）
-            if (messageCompress == GZIP && payload.length > 0) {
+            if(messageCompress == GZIP && payload.length > 0) {
                 payload = gzipDecompress(payload);
             }
 
             // 处理FULL_SERVER_RESPONSE消息
-            if (payload.length > 0) {
+            if(payload.length > 0) {
                 // 解析JSON响应
                 HuoshanLMRealTimeAsrResponse response = JacksonUtils.deserialize(payload, HuoshanLMRealTimeAsrResponse.class);
 
                 // 检查响应状态
-                if (response == null) {
+                if(response == null) {
                     log.error("大模型ASR响应错误: {}", new String(payload));
                     handleTranscriptionFailed(503, new String(payload));
                     return;
                 }
 
                 // 处理响应
-                if (!isRunning) {
+                if(!isRunning) {
                     // 首次响应，设置运行标志
                     isRunning = true;
 
                     // 非流式请求直接发送文件，流式请求由客户端发送文件
-                    if (!request.isAsync()) {
+                    if(!request.isAsync()) {
                         sendAudioDataInChunks(webSocket, request.getAudioData(), request.getChunkSize(), request.getIntervalMs());
                     } else {
                         startFlag.complete(null);
@@ -515,14 +514,14 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
                 }
 
                 // 检查响应码
-                if (response.getCode() != 0) {
+                if(response.getCode() != 0) {
                     log.error("大模型ASR响应错误: code={}, message={}", response.getCode(), response.getMessage());
                     handleTranscriptionFailed(getHttpCode(response.getCode()), response.getMessage());
                     return;
                 }
 
                 // 判断是中间响应还是最终响应
-                if (isLastPackage) {
+                if(isLastPackage) {
                     response.setCompletion(true);
                     handleFinalResponse(response);
                 } else {
@@ -539,9 +538,9 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
      */
     private void handleIntermediateResponse(HuoshanLMRealTimeAsrResponse response) {
         try {
-            if (converter != null) {
+            if(converter != null) {
                 List<String> results = converter.apply(response);
-                if (results != null && !results.isEmpty()) {
+                if(results != null && !results.isEmpty()) {
                     for (String result : results) {
                         sender.send(result);
                     }
@@ -557,9 +556,9 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
      */
     private void handleFinalResponse(HuoshanLMRealTimeAsrResponse response) {
         try {
-            if (converter != null) {
+            if(converter != null) {
                 List<String> results = converter.apply(response);
-                if (results != null && !results.isEmpty()) {
+                if(results != null && !results.isEmpty()) {
                     for (String result : results) {
                         sender.send(result);
                     }
@@ -590,16 +589,16 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
      * 将火山引擎错误码映射为HTTP状态码
      */
     private int mapErrorCodeToHttpStatus(int errorCode) {
-        if (errorCode == ERROR_CODE_RATE_LIMIT) {
+        if(errorCode == ERROR_CODE_RATE_LIMIT) {
             return 429;
         }
-        
-        if (errorCode >= 40000000 && errorCode < 50000000) {
+
+        if(errorCode >= 40000000 && errorCode < 50000000) {
             return 400;
-        } else if (errorCode >= 50000000 && errorCode < 60000000) {
+        } else if(errorCode >= 50000000 && errorCode < 60000000) {
             return 500;
         }
-        
+
         return 500;
     }
 
@@ -607,10 +606,15 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
      * 获取消息头部
      */
     private byte[] getHeader(byte messageType, byte messageTypeSpecificFlags, byte serialMethod, byte compressionType,
-                           byte reservedData) {
+            byte reservedData) {
         final byte[] header = new byte[4];
-        header[0] = (PROTOCOL_VERSION << 4) | DEFAULT_HEADER_SIZE; // Protocol version|header size
-        header[1] = (byte) ((messageType << 4) | messageTypeSpecificFlags); // message type | messageTypeSpecificFlags
+        header[0] = (PROTOCOL_VERSION << 4) | DEFAULT_HEADER_SIZE; // Protocol
+                                                                   // version|header
+                                                                   // size
+        header[1] = (byte) ((messageType << 4) | messageTypeSpecificFlags); // message
+                                                                            // type
+                                                                            // |
+                                                                            // messageTypeSpecificFlags
         header[2] = (byte) ((serialMethod << 4) | compressionType);
         header[3] = reservedData;
         return header;
@@ -620,7 +624,7 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
      * 整数转字节数组
      */
     private byte[] intToBytes(int a) {
-        return new byte[]{
+        return new byte[] {
                 (byte) ((a >> 24) & 0xFF),
                 (byte) ((a >> 16) & 0xFF),
                 (byte) ((a >> 8) & 0xFF),
@@ -632,7 +636,7 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
      * 字节数组转整数
      */
     private int bytesToInt(byte[] src) {
-        if (src == null || (src.length != 4)) {
+        if(src == null || (src.length != 4)) {
             throw new IllegalArgumentException("Invalid byte array for int conversion");
         }
         return ((src[0] & 0xFF) << 24)
@@ -645,7 +649,7 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
      * GZIP压缩
      */
     private byte[] gzipCompress(byte[] src) {
-        if (src == null || src.length == 0) {
+        if(src == null || src.length == 0) {
             src = new byte[0];
         }
         ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -656,7 +660,7 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
         } catch (IOException e) {
             log.error("GZIP压缩失败", e);
         } finally {
-            if (gzip != null) {
+            if(gzip != null) {
                 try {
                     gzip.close();
                 } catch (IOException e) {
@@ -671,7 +675,7 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
      * GZIP解压缩
      */
     private byte[] gzipDecompress(byte[] src) {
-        if (src == null || src.length == 0) {
+        if(src == null || src.length == 0) {
             return new byte[0];
         }
         ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -687,7 +691,7 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
         } catch (IOException e) {
             log.error("GZIP解压缩失败", e);
         } finally {
-            if (gzip != null) {
+            if(gzip != null) {
                 try {
                     gzip.close();
                 } catch (IOException e) {
@@ -704,7 +708,7 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
      * 输出: {"hotwords":[{"word":"热词1号"}, {"word":"热词2号"}]}
      */
     private String buildHotWords(String hotWords) {
-        if (StringUtils.isBlank(hotWords)) {
+        if(StringUtils.isBlank(hotWords)) {
             return null;
         }
 
@@ -715,7 +719,7 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
                 .map(HotWord::new)
                 .collect(Collectors.toList());
 
-        if (hotWordList.isEmpty()) {
+        if(hotWordList.isEmpty()) {
             return null;
         }
 

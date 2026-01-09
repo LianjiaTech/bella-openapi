@@ -30,9 +30,9 @@ import okio.Okio;
 /**
  * Direct passthrough adaptor - wraps delegator for transparent passthrough
  * Similar to QueueAdaptor pattern
- *
  * Direct passthrough: InputStream → Channel → OutputStream
- * - Write directly to HttpServletResponse (supports both streaming and non-streaming)
+ * - Write directly to HttpServletResponse (supports both streaming and
+ * non-streaming)
  * - Async processing for logging, metrics
  */
 @Slf4j
@@ -44,9 +44,9 @@ public class DirectPassthroughAdaptor implements CompletionAdaptor<CompletionPro
     private final EndpointLogger logger;
 
     public DirectPassthroughAdaptor(CompletionAdaptorDelegator<?> delegator,
-                                    InputStream requestBody,
-                                    CompletionProperty property,
-                                    HttpServletResponse httpResponse, EndpointLogger logger) {
+            InputStream requestBody,
+            CompletionProperty property,
+            HttpServletResponse httpResponse, EndpointLogger logger) {
         this.delegator = delegator;
         this.requestBody = requestBody;
         this.property = property;
@@ -72,12 +72,13 @@ public class DirectPassthroughAdaptor implements CompletionAdaptor<CompletionPro
             boolean isSSE = contentType != null && contentType.contains("text/event-stream");
 
             // Write response directly to HttpServletResponse.OutputStream
-            // Automatically handles both streaming (text/event-stream) and non-streaming (application/json)
+            // Automatically handles both streaming (text/event-stream) and
+            // non-streaming (application/json)
             try (InputStream responseBody = response.body().byteStream();
-                 OutputStream outputStream = httpResponse.getOutputStream()) {
+                    OutputStream outputStream = httpResponse.getOutputStream()) {
 
                 // Set content type from upstream response
-                if (contentType != null) {
+                if(contentType != null) {
                     httpResponse.setContentType(contentType);
                 }
                 httpResponse.setStatus(response.code());
@@ -99,22 +100,23 @@ public class DirectPassthroughAdaptor implements CompletionAdaptor<CompletionPro
                 byte[] responseBytes = responseBuffer.toByteArray();
                 CompletionResponse completionResponse = null;
 
-                if (responseBytes.length > 0) {
+                if(responseBytes.length > 0) {
                     String responseStr = new String(responseBytes);
 
-                    if (isSSE) {
+                    if(isSSE) {
                         StreamCompletionCallback callback = new StreamCompletionCallback(null, processData, apikeyInfo, logger, null);
                         // Extract data from SSE format
                         // SSE format: "data: {...}\n\ndata: {...}\n\n[DONE]"
                         // Extract all "data: " lines and parse JSON
                         String[] lines = responseStr.split("\n");
                         for (String line : lines) {
-                            if (line.startsWith("data: ") || line.startsWith("data:")) {
+                            if(line.startsWith("data: ") || line.startsWith("data:")) {
                                 int index = line.startsWith("data: ") ? 6 : 5;
                                 String jsonData = line.substring(index).trim();
-                                if (!jsonData.equals("[DONE]") && !jsonData.isEmpty()) {
-                                    StreamCompletionResponse streamCompletionResponse = JacksonUtils.deserialize(jsonData, StreamCompletionResponse.class);
-                                    if (streamCompletionResponse != null) {
+                                if(!jsonData.equals("[DONE]") && !jsonData.isEmpty()) {
+                                    StreamCompletionResponse streamCompletionResponse = JacksonUtils.deserialize(jsonData,
+                                            StreamCompletionResponse.class);
+                                    if(streamCompletionResponse != null) {
                                         callback.callback(streamCompletionResponse);
                                     }
                                 } else if(jsonData.equals("[DONE]")) {
@@ -148,8 +150,9 @@ public class DirectPassthroughAdaptor implements CompletionAdaptor<CompletionPro
 
     @Override
     public void streamCompletion(CompletionRequest request, String url, CompletionProperty property,
-                                 Callbacks.StreamCompletionCallback callback) {
-        // Direct mode doesn't use streamCompletion - everything goes through completion()
+            Callbacks.StreamCompletionCallback callback) {
+        // Direct mode doesn't use streamCompletion - everything goes through
+        // completion()
         throw new UnsupportedOperationException("DirectPassthroughAdaptor uses completion() for both streaming and non-streaming");
     }
 
@@ -178,7 +181,7 @@ public class DirectPassthroughAdaptor implements CompletionAdaptor<CompletionPro
                 .post(body);
 
         // Add extra headers
-        if (property.getExtraHeaders() != null) {
+        if(property.getExtraHeaders() != null) {
             property.getExtraHeaders().forEach(builder::addHeader);
         }
 

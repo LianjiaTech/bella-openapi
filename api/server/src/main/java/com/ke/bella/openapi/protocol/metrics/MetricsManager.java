@@ -53,7 +53,7 @@ public class MetricsManager {
         List<Object> metrics = new ArrayList<>();
         OpenapiResponse response = processData.getResponse();
         int minCompletedThreshold = 10;
-        int errorRateThreshold = 30;//百分比
+        int errorRateThreshold = 30;// 百分比
         int httpCode = (response == null || response.getError() == null) ? 200 : response.getError().getHttpCode();
         metrics.add(minCompletedThreshold);
         metrics.add(errorRateThreshold);
@@ -91,12 +91,12 @@ public class MetricsManager {
                 .orElse(null);
 
         List<String> metricsName = new ArrayList<>();
-        if (resolver != null) {
+        if(resolver != null) {
             metricsName = resolver.metricsName();
         }
 
         List<Object> keys = Lists.newArrayList(channelCodes);
-        List<Object> params  = new ArrayList<>();
+        List<Object> params = new ArrayList<>();
         params.add("completed");
         params.add("errors");
         params.add("request_too_many");
@@ -111,7 +111,8 @@ public class MetricsManager {
             return Maps.newHashMap();
         }
         if(result instanceof String) {
-            return JacksonUtils.deserialize((String)result, new TypeReference<Map<String, Map<String, Object>>>(){});
+            return JacksonUtils.deserialize((String) result, new TypeReference<Map<String, Map<String, Object>>>() {
+            });
         }
         return Maps.newHashMap();
     }

@@ -26,7 +26,6 @@ import java.util.stream.Collectors;
 @Component("HuoshanLMRealtimeAsr")
 public class HuoshanLMAdaptor extends HuoshanAdaptor {
 
-
     @Override
     protected Request createRequest(String url, HuoshanProperty property) {
         return new Request.Builder()
@@ -37,7 +36,6 @@ public class HuoshanLMAdaptor extends HuoshanAdaptor {
                 .header("X-Api-Connect-Id", UUID.randomUUID().toString())
                 .build();
     }
-
 
     @Override
     public Callbacks.WebSocketCallback createCallback(Callbacks.Sender sender, EndpointProcessData processData, EndpointLogger logger,
@@ -82,13 +80,13 @@ public class HuoshanLMAdaptor extends HuoshanAdaptor {
             List<String> result = new ArrayList<>();
 
             // 处理结果
-            if (response.getResult() != null) {
+            if(response.getResult() != null) {
                 // 检查是否有分句信息
                 boolean hasUtterances = response.getResult().getUtterances() != null && !response.getResult().getUtterances().isEmpty();
 
                 // 如果有分句信息，处理每个分句
-                if (hasUtterances) {
-                    if (sentenceStart) {
+                if(hasUtterances) {
+                    if(sentenceStart) {
                         index++;
                         RealTimeMessage.Payload payload = new RealTimeMessage.Payload();
                         payload.setIndex(index);
@@ -106,13 +104,13 @@ public class HuoshanLMAdaptor extends HuoshanAdaptor {
                         payload.setResult(utterance.getText());
                         payload.setConfidence(utterance.getConfidence());
 
-                        if (utterance.getWords() != null) {
+                        if(utterance.getWords() != null) {
                             payload.setWords(utterance.getWords().stream()
                                     .map(HuoshanLMRealTimeAsrResponse.Word::convert)
                                     .collect(Collectors.toList()));
                         }
 
-                        if (utterance.isDefinite()) {
+                        if(utterance.isDefinite()) {
                             payload.setBeginTime(utterance.getStart_time());
                             RealTimeMessage end = RealTimeMessage.sentenceEnd(taskId, payload);
                             result.add(JacksonUtils.serialize(end));
@@ -124,8 +122,8 @@ public class HuoshanLMAdaptor extends HuoshanAdaptor {
                     }
                 }
                 // 如果没有分句信息但有完整文本，也生成一个结果
-                else if (response.getResult().getText() != null && !response.getResult().getText().isEmpty()) {
-                    if (sentenceStart) {
+                else if(response.getResult().getText() != null && !response.getResult().getText().isEmpty()) {
+                    if(sentenceStart) {
                         index++;
                         RealTimeMessage.Payload payload = new RealTimeMessage.Payload();
                         payload.setIndex(index);
@@ -146,7 +144,7 @@ public class HuoshanLMAdaptor extends HuoshanAdaptor {
             }
 
             // 处理最终结束信号
-            if (response.isCompletion()) {
+            if(response.isCompletion()) {
                 RealTimeMessage completion = RealTimeMessage.completion(taskId);
                 result.add(JacksonUtils.serialize(completion));
             }

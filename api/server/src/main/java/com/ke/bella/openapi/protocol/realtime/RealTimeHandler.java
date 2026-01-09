@@ -39,7 +39,8 @@ public class RealTimeHandler extends TextWebSocketHandler {
     private WebSocket ws;
     private WebSocketCallback callback;
 
-    public RealTimeHandler(String url, AsrProperty property, EndpointProcessData processData, EndpointLogger logger, RealTimeAdaptor<AsrProperty> adaptor) {
+    public RealTimeHandler(String url, AsrProperty property, EndpointProcessData processData, EndpointLogger logger,
+            RealTimeAdaptor<AsrProperty> adaptor) {
         this.url = url;
         this.property = property;
         this.processData = processData;
@@ -62,7 +63,7 @@ public class RealTimeHandler extends TextWebSocketHandler {
             }
             // 先解析基本消息结构，获取消息类型
             RealTimeMessage realTimeMessage = JacksonUtils.deserialize(payload, RealTimeMessage.class);
-            if (realTimeMessage == null || realTimeMessage.getHeader() == null || realTimeMessage.getHeader().getName() == null) {
+            if(realTimeMessage == null || realTimeMessage.getHeader() == null || realTimeMessage.getHeader().getName() == null) {
                 return;
             }
 
@@ -83,37 +84,37 @@ public class RealTimeHandler extends TextWebSocketHandler {
         } catch (Exception e) {
             LOGGER.warn("处理文本消息时出错: {}", e.getMessage());
             LOGGER.warn(e.getMessage(), e);
-            sendErrorResponse(session, 50000000,"处理请求时出错: " + e.getMessage());
+            sendErrorResponse(session, 50000000, "处理请求时出错: " + e.getMessage());
         }
     }
-    
+
     @Override
     protected void handleBinaryMessage(WebSocketSession session, BinaryMessage message) {
         try {
             byte[] audioData = message.getPayload().array();
-            
-            if (taskId == null) {
-                sendErrorResponse(session, 40000000,"未开始转录任务，请先发送StartTranscription指令");
+
+            if(taskId == null) {
+                sendErrorResponse(session, 40000000, "未开始转录任务，请先发送StartTranscription指令");
                 return;
             }
-            
-            if (ws == null) {
-                sendErrorResponse(session, 50000000,"未连接到ASR服务");
+
+            if(ws == null) {
+                sendErrorResponse(session, 50000000, "未连接到ASR服务");
                 return;
             }
-            
+
             // 发送音频数据到第三方服务
             boolean success = adaptor.sendAudioData(ws, audioData, callback);
-            if (!success) {
+            if(!success) {
                 // 发送失败，尝试发送空字节心跳检测连接状态
                 LOGGER.info("音频数据发送失败，尝试心跳检测连接状态");
                 boolean heartbeatSuccess = adaptor.sendAudioData(ws, new byte[0], callback);
-                if (!heartbeatSuccess) {
+                if(!heartbeatSuccess) {
                     // 心跳也失败，确认连接断开，清理状态并关闭客户端连接
                     LOGGER.warn("心跳检测失败，ASR服务连接已断开，关闭客户端连接");
                     ws = null;
                     taskId = null;
-                    sendErrorResponse(session, 50000000,"ASR服务连接已断开");
+                    sendErrorResponse(session, 50000000, "ASR服务连接已断开");
                     try {
                         session.close();
                     } catch (Exception e) {
@@ -121,87 +122,87 @@ public class RealTimeHandler extends TextWebSocketHandler {
                     }
                 } else {
                     // 心跳成功但音频数据发送失败，可能是临时问题
-                    sendErrorResponse(session, 50000000,"发送音频数据失败");
+                    sendErrorResponse(session, 50000000, "发送音频数据失败");
                 }
             }
-            
+
         } catch (Exception e) {
             LOGGER.warn("处理二进制消息时出错: {}", e.getMessage());
-            sendErrorResponse(session, 50000000,"处理音频数据时出错: " + e.getMessage());
+            sendErrorResponse(session, 50000000, "处理音频数据时出错: " + e.getMessage());
         }
     }
-    
+
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
         LOGGER.info("客户端WebSocket连接已关闭, status: {}", status);
-        
+
         // 关闭与第三方ws服务的连接
-        if (ws != null) {
+        if(ws != null) {
             adaptor.closeConnection(ws);
             ws = null;
         }
-        
+
         taskId = null;
     }
-    
+
     @Override
     public void handleTransportError(WebSocketSession session, Throwable exception) {
         LOGGER.warn("WebSocket传输错误: {}", exception.getMessage());
-        
+
         // 关闭与第三方服务的连接
-        if (ws != null) {
+        if(ws != null) {
             adaptor.closeConnection(ws);
             ws = null;
         }
-        
+
         taskId = null;
     }
 
     private void handleStartTranscription(WebSocketSession session, RealTimeMessage request) throws IOException {
-        if (taskId != null) {
-            sendErrorResponse(session, 40000000,"已有转录任务正在进行");
+        if(taskId != null) {
+            sendErrorResponse(session, 40000000, "已有转录任务正在进行");
             return;
         }
-        
+
         // 获取或生成任务ID
         taskId = request.getHeader().getTaskId();
-        if (taskId == null) {
+        if(taskId == null) {
             taskId = UUID.randomUUID().toString();
         }
-        
+
         // 创建回调处理器
         callback = adaptor.createCallback(webSocketSender(session, processData), processData, logger, taskId, request, property);
-        
+
         // 创建与第三方服务的连接并开始转录
         ws = adaptor.startTranscription(url, property, request, callback);
-        
-        if (ws == null) {
+
+        if(ws == null) {
             taskId = null;
-            sendErrorResponse(session, 50000000,"无法连接到ASR服务");
+            sendErrorResponse(session, 50000000, "无法连接到ASR服务");
             return;
         }
 
         // 发送TranscriptionStarted响应
         sendTranscriptionStartedResponse(session, taskId);
     }
-    
+
     private void handleStopTranscription(WebSocketSession session, RealTimeMessage request) {
-        if (taskId == null || ws == null) {
+        if(taskId == null || ws == null) {
             sendErrorResponse(session, 40000000, "没有正在进行的转录任务");
             return;
         }
-        
+
         String msgTaskId = request.getHeader().getTaskId();
-        if (msgTaskId != null && !msgTaskId.equals(taskId)) {
+        if(msgTaskId != null && !msgTaskId.equals(taskId)) {
             sendErrorResponse(session, 40000000, "无效的任务ID");
             return;
         }
-        
+
         // 发送结束转录指令
         boolean success = adaptor.stopTranscription(ws, request, callback);
-        
-        if (!success) {
-            sendErrorResponse(session, 50000000,"无法停止转录任务");
+
+        if(!success) {
+            sendErrorResponse(session, 50000000, "无法停止转录任务");
         }
     }
 
@@ -214,7 +215,7 @@ public class RealTimeHandler extends TextWebSocketHandler {
         if(!session.isOpen()) {
             return null;
         }
-        int httpCode =  status >= 50000000 ? 500 : 400;
+        int httpCode = status >= 50000000 ? 500 : 400;
         RealTimeMessage response = RealTimeMessage.errorResponse(httpCode, status, errorMessage, taskId);
         try {
             session.sendMessage(new TextMessage(JacksonUtils.serialize(response)));

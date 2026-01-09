@@ -35,7 +35,7 @@ public class UserInfoController {
             @RequestParam String keyword,
             @RequestParam(defaultValue = "20") int limit,
             @RequestParam(defaultValue = "false") boolean excludeSelf) {
-        
+
         Assert.isTrue(StringUtils.isNotBlank(keyword), "搜索关键词不能为空");
         Assert.isTrue(limit > 0 && limit <= 100, "返回数量必须在1-100之间");
 

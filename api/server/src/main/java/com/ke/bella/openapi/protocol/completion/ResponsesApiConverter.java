@@ -17,6 +17,7 @@ public class ResponsesApiConverter {
 
     /**
      * 将 Chat Completion 请求转换为 Responses API 请求
+     * 
      * @return Responses API 请求
      */
     public static ResponsesApiRequest convertChatCompletionToResponses(CompletionRequest chatRequest, String akCode) {
@@ -37,18 +38,18 @@ public class ResponsesApiConverter {
         builder.input(inputItems);
 
         // 转换工具定义
-        if (CollectionUtils.isNotEmpty(chatRequest.getTools())) {
+        if(CollectionUtils.isNotEmpty(chatRequest.getTools())) {
             List<ResponsesApiRequest.ResponsesApiTool> responsesTools = convertToolsToResponsesApi(chatRequest.getTools());
             builder.tools(responsesTools);
         }
 
         // 工具选择配置
-        if (chatRequest.getTool_choice() != null) {
+        if(chatRequest.getTool_choice() != null) {
             builder.tool_choice(chatRequest.getTool_choice());
         }
 
         // 推理内容配置
-        if (chatRequest.getReasoning_effort() != null) {
+        if(chatRequest.getReasoning_effort() != null) {
             ResponsesApiRequest.ReasoningConfig reasoning = ResponsesApiRequest.ReasoningConfig.builder()
                     .effort(chatRequest.getReasoning_effort().toString())
                     .summary("auto")
@@ -63,14 +64,14 @@ public class ResponsesApiConverter {
      * 将消息列表转换为 Responses API 的 input 格式
      */
     private static List<ResponsesApiRequest.InputItem> convertMessagesToInput(List<Message> messages) {
-        if (CollectionUtils.isEmpty(messages)) {
+        if(CollectionUtils.isEmpty(messages)) {
             return Collections.emptyList();
         }
 
         List<ResponsesApiRequest.InputItem> inputItems = new ArrayList<>();
 
         for (Message message : messages) {
-            if ("tool".equals(message.getRole())) {
+            if("tool".equals(message.getRole())) {
                 // 工具调用结果转换为 function_call_output
                 ResponsesApiRequest.InputItem outputItem = ResponsesApiRequest.InputItem.builder()
                         .type("function_call_output")
@@ -79,7 +80,7 @@ public class ResponsesApiConverter {
                         .status("completed")
                         .build();
                 inputItems.add(outputItem);
-            } else if (message.getTool_calls() != null && !message.getTool_calls().isEmpty()) {
+            } else if(message.getTool_calls() != null && !message.getTool_calls().isEmpty()) {
                 // 助手的工具调用转换
                 for (Message.ToolCall toolCall : message.getTool_calls()) {
                     ResponsesApiRequest.InputItem callItem = ResponsesApiRequest.InputItem.builder()
@@ -111,50 +112,50 @@ public class ResponsesApiConverter {
      * 转换消息内容（支持多模态）
      */
     private static Object convertMessageContent(Message message) {
-        if (message.getContent() == null) {
+        if(message.getContent() == null) {
             return null;
         }
 
         // 如果是字符串内容，直接返回
-        if (message.getContent() instanceof String) {
+        if(message.getContent() instanceof String) {
             return message.getContent();
         }
 
         // 如果是复杂内容（多模态），转换为 Responses API 格式
-        if (message.getContent() instanceof List) {
+        if(message.getContent() instanceof List) {
             @SuppressWarnings("unchecked")
             List<Map<String, Object>> contentList = (List<Map<String, Object>>) message.getContent();
-            
+
             List<ResponsesApiRequest.ContentItem> responsesContent = new ArrayList<>();
             for (Map<String, Object> item : contentList) {
                 String type = (String) item.get("type");
                 ResponsesApiRequest.ContentItem.ContentItemBuilder builder = ResponsesApiRequest.ContentItem.builder();
 
                 switch (type) {
-                    case "text":
-                        if(message.getRole().equals("assistant")) {
-                            builder.type("output_text").text((String) item.get("text"));
-                        } else {
-                            builder.type("input_text").text((String) item.get("text"));
-                        }
-                        break;
-                    case "image_url":
-                        @SuppressWarnings("unchecked")
-                        Map<String, Object> imageUrl = (Map<String, Object>) item.get("image_url");
-                        builder.type("input_image")
-                                .image_url((String) imageUrl.get("url"))
-                                .detail((String) imageUrl.get("detail"));
-                        break;
-                    case "image_file":
-                        builder.type("input_image").file_id((String) item.get("file_id"));
-                        break;
-                    case "audio":
-                        builder.type("input_audio").audio_url((String) item.get("url"));
-                        break;
-                    default:
-                        // 其他类型保持原样
-                        builder.type(type);
-                        break;
+                case "text":
+                    if(message.getRole().equals("assistant")) {
+                        builder.type("output_text").text((String) item.get("text"));
+                    } else {
+                        builder.type("input_text").text((String) item.get("text"));
+                    }
+                    break;
+                case "image_url":
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> imageUrl = (Map<String, Object>) item.get("image_url");
+                    builder.type("input_image")
+                            .image_url((String) imageUrl.get("url"))
+                            .detail((String) imageUrl.get("detail"));
+                    break;
+                case "image_file":
+                    builder.type("input_image").file_id((String) item.get("file_id"));
+                    break;
+                case "audio":
+                    builder.type("input_audio").audio_url((String) item.get("url"));
+                    break;
+                default:
+                    // 其他类型保持原样
+                    builder.type(type);
+                    break;
                 }
                 responsesContent.add(builder.build());
             }
@@ -181,6 +182,7 @@ public class ResponsesApiConverter {
      * 将 Responses API 响应转换为 Chat Completion 响应
      * 
      * @param responsesResponse Responses API 响应
+     * 
      * @return Chat Completion 响应
      */
     public static CompletionResponse convertResponsesToChatCompletion(ResponsesApiResponse responsesResponse) {
@@ -192,7 +194,7 @@ public class ResponsesApiConverter {
                 .error(responsesResponse.getError()); // Responses API 不提供此字段
 
         // 转换 usage 信息
-        if (responsesResponse.getUsage() != null) {
+        if(responsesResponse.getUsage() != null) {
             builder.usage(convertToken(responsesResponse.getUsage()));
         }
 
@@ -202,7 +204,7 @@ public class ResponsesApiConverter {
 
         // 设置完成原因
         String finishReason = determineFinishReason(responsesResponse);
-        if (CollectionUtils.isNotEmpty(choices)) {
+        if(CollectionUtils.isNotEmpty(choices)) {
             choices.get(0).setFinish_reason(finishReason);
         }
 
@@ -240,69 +242,69 @@ public class ResponsesApiConverter {
         List<Message.ToolCall> toolCalls = new ArrayList<>();
 
         // 如果有简单的输出文本，直接使用
-        if (StringUtils.isNotBlank(responsesResponse.getOutput_text())) {
+        if(StringUtils.isNotBlank(responsesResponse.getOutput_text())) {
             assistantContent = responsesResponse.getOutput_text();
         }
 
         // 处理复杂输出项
-        if (CollectionUtils.isNotEmpty(responsesResponse.getOutput())) {
+        if(CollectionUtils.isNotEmpty(responsesResponse.getOutput())) {
             for (ResponsesApiResponse.OutputItem item : responsesResponse.getOutput()) {
                 switch (item.getType()) {
-                    case "message_output":
-                    case "message":
-                        // 提取消息内容
-                        if (CollectionUtils.isNotEmpty(item.getContent())) {
-                            StringBuilder content = new StringBuilder();
-                            for (ResponsesApiResponse.ContentItem contentItem : item.getContent()) {
-                                if ("text".equals(contentItem.getType()) || "output_text".equals(contentItem.getType())) {
-                                    content.append(contentItem.getText());
-                                }
+                case "message_output":
+                case "message":
+                    // 提取消息内容
+                    if(CollectionUtils.isNotEmpty(item.getContent())) {
+                        StringBuilder content = new StringBuilder();
+                        for (ResponsesApiResponse.ContentItem contentItem : item.getContent()) {
+                            if("text".equals(contentItem.getType()) || "output_text".equals(contentItem.getType())) {
+                                content.append(contentItem.getText());
                             }
-                            assistantContent = content.toString();
                         }
-                        break;
-                    case "function_call":
-                        // 转换工具调用
-                        Message.ToolCall toolCall = Message.ToolCall.builder()
-                                .id(item.getCall_id())
-                                .type("function")
-                                .function(Message.FunctionCall.builder()
-                                        .name(item.getName())
-                                        .arguments(item.getArguments())
-                                        .build())
-                                .build();
-                        toolCalls.add(toolCall);
-                        break;
-                    case "reasoning":
-                        // 提取推理内容
-                        if (CollectionUtils.isNotEmpty(item.getSummary())) {
-                            StringBuilder reasoning = new StringBuilder();
-                            for (ResponsesApiResponse.SummaryItem summaryItem : item.getSummary()) {
-                                if ("summary_text".equals(summaryItem.getType())) {
-                                    reasoning.append(summaryItem.getText());
-                                }
+                        assistantContent = content.toString();
+                    }
+                    break;
+                case "function_call":
+                    // 转换工具调用
+                    Message.ToolCall toolCall = Message.ToolCall.builder()
+                            .id(item.getCall_id())
+                            .type("function")
+                            .function(Message.FunctionCall.builder()
+                                    .name(item.getName())
+                                    .arguments(item.getArguments())
+                                    .build())
+                            .build();
+                    toolCalls.add(toolCall);
+                    break;
+                case "reasoning":
+                    // 提取推理内容
+                    if(CollectionUtils.isNotEmpty(item.getSummary())) {
+                        StringBuilder reasoning = new StringBuilder();
+                        for (ResponsesApiResponse.SummaryItem summaryItem : item.getSummary()) {
+                            if("summary_text".equals(summaryItem.getType())) {
+                                reasoning.append(summaryItem.getText());
                             }
-                            reasoningContent = reasoning.toString();
                         }
-                        break;
-                    default:
-                        log.debug("Unknown output item type: {}", item.getType());
-                        break;
+                        reasoningContent = reasoning.toString();
+                    }
+                    break;
+                default:
+                    log.debug("Unknown output item type: {}", item.getType());
+                    break;
                 }
             }
         }
 
         // 构建消息
         Message.MessageBuilder messageBuilder = Message.builder().role("assistant");
-        
-        if (CollectionUtils.isNotEmpty(toolCalls)) {
+
+        if(CollectionUtils.isNotEmpty(toolCalls)) {
             messageBuilder.tool_calls(toolCalls).content(null);
         } else {
             messageBuilder.content(assistantContent);
         }
 
         // 添加推理内容（扩展字段）
-        if (StringUtils.isNotBlank(reasoningContent)) {
+        if(StringUtils.isNotBlank(reasoningContent)) {
             messageBuilder.reasoning_content(reasoningContent);
         }
 
@@ -315,25 +317,25 @@ public class ResponsesApiConverter {
      * 确定完成原因
      */
     private static String determineFinishReason(ResponsesApiResponse responsesResponse) {
-        if (!"completed".equals(responsesResponse.getStatus()) && responsesResponse.getStatus() != null) {
+        if(!"completed".equals(responsesResponse.getStatus()) && responsesResponse.getStatus() != null) {
             switch (responsesResponse.getStatus()) {
-                case "failed":
-                    return "error";
-                case "cancelled":
-                    return "cancelled";
-                case "in_progress":
-                case "pending":
-                    return null;
-                default:
-                    return "stop";
+            case "failed":
+                return "error";
+            case "cancelled":
+                return "cancelled";
+            case "in_progress":
+            case "pending":
+                return null;
+            default:
+                return "stop";
             }
         }
 
         // 检查是否有工具调用
-        if (CollectionUtils.isNotEmpty(responsesResponse.getOutput())) {
+        if(CollectionUtils.isNotEmpty(responsesResponse.getOutput())) {
             boolean hasToolCalls = responsesResponse.getOutput().stream()
                     .anyMatch(item -> "function_call".equals(item.getType()));
-            if (hasToolCalls) {
+            if(hasToolCalls) {
                 return "tool_calls";
             }
         }

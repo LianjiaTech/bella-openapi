@@ -27,6 +27,7 @@ public class CostLogHandler implements EventHandler<LogEvent> {
 
     private final CostCounter costCounter;
     private final CostScripFetcher costScripFetcher;
+
     @Override
     public void onEvent(LogEvent event, long sequence, boolean endOfBatch) throws Exception {
         EndpointProcessData log = event.getData();
