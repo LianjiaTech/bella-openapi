@@ -82,7 +82,11 @@
     "streaming": "Streaming",
     "privateChannel": "Private Channel",
     "inputOutputLength": "Input/Output Length",
-    "pricing": "Pricing"
+    "pricing": "Pricing",
+    "loadingModels": "Loading models...",
+    "loading": "Loading...",
+    "noFilterTags": "No filter tags available",
+    "retry": "Retry"
   },
   "metadata": {
     "metadataManagement": "Metadata Management",
