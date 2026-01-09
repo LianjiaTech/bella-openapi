@@ -36,7 +36,7 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({ child
             if (saved) return saved;
         }
 
-        return '/v1/chat/completions';
+        return "/v1/chat/completions";
     });
 
     // 初始化折叠状态：从 sessionStorage 恢复
