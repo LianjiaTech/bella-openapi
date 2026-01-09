@@ -67,7 +67,7 @@ public class BellaStreamCallback implements Callback {
             try (BufferedSource source = body.source()) {
                 int bytesRead;
                 while ((bytesRead = source.read(buffer)) != -1) {
-                    if (bytesRead > 0) {
+                    if(bytesRead > 0) {
                         byte[] data = new byte[bytesRead];
                         System.arraycopy(buffer, 0, data, 0, bytesRead);
                         callback.callback(data);
@@ -80,7 +80,7 @@ public class BellaStreamCallback implements Callback {
             ChannelException exception = ChannelException.fromException(e);
             callback.finish(exception);
         } finally {
-            if (body != null) {
+            if(body != null) {
                 body.close();
             }
         }

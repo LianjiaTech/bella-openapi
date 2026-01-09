@@ -47,7 +47,7 @@ public interface IPriceInfo extends IDescription {
 
         public static Class<? extends IPriceInfo> fetchType(String endpoint) {
             for (EndpointPriceInfoType t : EndpointPriceInfoType.values()) {
-                if (MatchUtils.matchUrl(t.endpoint, endpoint)) {
+                if(MatchUtils.matchUrl(t.endpoint, endpoint)) {
                     return t.type;
                 }
             }

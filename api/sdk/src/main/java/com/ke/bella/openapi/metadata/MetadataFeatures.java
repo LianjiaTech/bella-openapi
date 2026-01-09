@@ -31,9 +31,11 @@ public enum MetadataFeatures {
     MULTIPLE_STYLES("multipleStyles", "多种风格", ImmutableSet.of("/v1/images/generations")),
     CUSTOM_SIZE("customSize", "自定义尺寸", ImmutableSet.of("/v1/images/generations")),
     ;
+
     private final String code;
     private final String name;
     private final Set<String> endpoint;
+
     public static List<EnumDto> listFeatures(String endpoint) {
         return Arrays.stream(MetadataFeatures.values()).filter(t -> t.endpoint.contains(endpoint) || t.endpoint.contains("*"))
                 .map(t -> new EnumDto(t.getCode(), t.getName())).collect(Collectors.toList());
@@ -42,7 +44,7 @@ public enum MetadataFeatures {
     public static boolean validate(List<String> features) {
         Set<String> set = Sets.newHashSet(OVERSEAS.code, MAINLAND.code, INNER.code, PROTECTED.code);
         int i = 0;
-        for(String feature : features) {
+        for (String feature : features) {
             if(set.contains(feature)) {
                 i++;
             }

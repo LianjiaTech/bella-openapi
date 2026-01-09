@@ -20,12 +20,12 @@ public class ContentGenerator {
     }
 
     public static String generateContent(int length) {
-        if (length <= 0) {
+        if(length <= 0) {
             return "";
         }
 
         // 如果请求长度超过文本总长度,返回全部内容
-        if (length >= CONTENT.length()) {
+        if(length >= CONTENT.length()) {
             return CONTENT;
         }
 

@@ -28,7 +28,8 @@ public class CompletionRequest implements UserRequest, Serializable, IMemoryClea
     private String model;
 
     /**
-     * A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse. Learn more.
+     * A unique identifier representing your end-user, which can help OpenAI to
+     * monitor and detect abuse. Learn more.
      */
     private String user;
 
@@ -44,15 +45,20 @@ public class CompletionRequest implements UserRequest, Serializable, IMemoryClea
     private List<Message.Function> functions;
 
     /**
-     * A list of tools the model may call. Currently, only functions are supported as a tool. <br/> Use this to provide a list of functions the model
+     * A list of tools the model may call. Currently, only functions are
+     * supported as a tool. <br/>
+     * Use this to provide a list of functions the model
      * may generate JSON inputs for.
      */
     private List<Message.Tool> tools;
 
     /**
-     * Deprecated in favor of tool_choice. Controls how the model responds to function calls. "none" means the model does not call a function, and
-     * responds to the end-user. "auto" means the model can pick between an end-user or calling a function. Specifying a particular function via
-     * {"name":"my_function"} forces the model to call that function. "none" is the default when no functions are present. "auto" is the default if
+     * Deprecated in favor of tool_choice. Controls how the model responds to
+     * function calls. "none" means the model does not call a function, and
+     * responds to the end-user. "auto" means the model can pick between an
+     * end-user or calling a function. Specifying a particular function via
+     * {"name":"my_function"} forces the model to call that function. "none" is
+     * the default when no functions are present. "auto" is the default if
      * functions are present.
      */
     @Nullable
@@ -60,9 +66,14 @@ public class CompletionRequest implements UserRequest, Serializable, IMemoryClea
     private Object function_call;
 
     /**
-     * Controls which (if any) function is called by the model. none means the model will not call a function and instead generates a message. auto
-     * means the model can pick between generating a message or calling a function. <br/><br/> Specifying a particular function via {"type:
-     * "function", "function": { "name": "my_function"}} forces the model to call that function.
+     * Controls which (if any) function is called by the model. none means the
+     * model will not call a function and instead generates a message. auto
+     * means the model can pick between generating a message or calling a
+     * function. <br/>
+     * <br/>
+     * Specifying a particular function via {"type:
+     * "function", "function": { "name": "my_function"}} forces the model to
+     * call that function.
      */
     @Nullable
     private Object tool_choice;
@@ -74,8 +85,10 @@ public class CompletionRequest implements UserRequest, Serializable, IMemoryClea
     private Float temperature;
 
     /**
-     * An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with top_p
-     * probability mass. So 0.1 means only the tokens comprising the top 10% probability mass are considered. We generally recommend altering this or
+     * An alternative to sampling with temperature, called nucleus sampling,
+     * where the model considers the results of the tokens with top_p
+     * probability mass. So 0.1 means only the tokens comprising the top 10%
+     * probability mass are considered. We generally recommend altering this or
      * temperature but not both.
      */
     @Nullable
@@ -98,7 +111,8 @@ public class CompletionRequest implements UserRequest, Serializable, IMemoryClea
     private StreamOptions stream_options;
 
     /**
-     * String or array Up to 4 sequences where the API will stop generating further tokens.
+     * String or array Up to 4 sequences where the API will stop generating
+     * further tokens.
      */
     @Nullable
     private Object stop;
@@ -110,14 +124,16 @@ public class CompletionRequest implements UserRequest, Serializable, IMemoryClea
     private Integer max_tokens;
 
     /**
-     * defaults to 0 Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the
+     * defaults to 0 Number between -2.0 and 2.0. Positive values penalize new
+     * tokens based on whether they appear in the text so far, increasing the
      * model's likelihood to talk about new topics.
      */
     @Nullable
     private Float presence_penalty;
 
     /**
-     * defaults to 0 Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing
+     * defaults to 0 Number between -2.0 and 2.0. Positive values penalize new
+     * tokens based on their existing frequency in the text so far, decreasing
      * the model's likelihood to repeat the same line verbatim.
      */
     @Nullable
@@ -130,36 +146,56 @@ public class CompletionRequest implements UserRequest, Serializable, IMemoryClea
     private Boolean logprobs;
 
     /**
-     * The number of most likely tokens to return at each token position, for each token generated.
+     * The number of most likely tokens to return at each token position, for
+     * each token generated.
      */
     @Nullable
     private Integer top_logprobs;
 
     /**
-     * defaults to null Modify the likelihood of specified tokens appearing in the completion.
+     * defaults to null Modify the likelihood of specified tokens appearing in
+     * the completion.
      * <p>
-     * Accepts a json object that maps tokens (specified by their token ID in the tokenizer) to an associated bias value from -100 to 100.
-     * Mathematically, the bias is added to the logits generated by the model prior to sampling. The exact effect will vary per model, but values
-     * between -1 and 1 should decrease or increase likelihood of selection; values like -100 or 100 should result in a ban or exclusive selection of
+     * Accepts a json object that maps tokens (specified by their token ID in
+     * the tokenizer) to an associated bias value from -100 to 100.
+     * Mathematically, the bias is added to the logits generated by the model
+     * prior to sampling. The exact effect will vary per model, but values
+     * between -1 and 1 should decrease or increase likelihood of selection;
+     * values like -100 or 100 should result in a ban or exclusive selection of
      * the relevant token.
      */
     @Nullable
     private Map<String, Integer> logit_bias;
 
     /**
-     * An object specifying the format that the model must output.<br/><br/> Setting to { "type": "json_object" } enables JSON mode,</br> which
-     * guarantees the message the model generates is valid JSON.<br/><br/> Important: when using JSON mode, you must also instruct the model to
-     * produce JSON yourself via a system or user message. <br/> Without this, the model may generate an unending stream of whitespace until the
-     * generation reaches the token limit, <br> resulting in a long-running and seemingly "stuck" request. Also note that the message content may be
-     * partially cut off if finish_reason="length", which indicates the generation exceeded max_tokens or the conversation exceeded the max context
-     * length.<br/><br/> type  properties Defaults to text Must be one of text or json_object.
+     * An object specifying the format that the model must output.<br/>
+     * <br/>
+     * Setting to { "type": "json_object" } enables JSON mode,</br>
+     * which
+     * guarantees the message the model generates is valid JSON.<br/>
+     * <br/>
+     * Important: when using JSON mode, you must also instruct the model to
+     * produce JSON yourself via a system or user message. <br/>
+     * Without this, the model may generate an unending stream of whitespace
+     * until the
+     * generation reaches the token limit, <br>
+     * resulting in a long-running and seemingly "stuck" request. Also note that
+     * the message content may be
+     * partially cut off if finish_reason="length", which indicates the
+     * generation exceeded max_tokens or the conversation exceeded the max
+     * context
+     * length.<br/>
+     * <br/>
+     * type properties Defaults to text Must be one of text or json_object.
      */
     @javax.annotation.Nullable
     private Object response_format;
 
     /**
-     * This feature is in Beta. If specified, our system will make a best effort to sample deterministically, such that repeated requests with the
-     * same seed and parameters should return the same result. Determinism is not guaranteed, and you should refer to the system_fingerprint response
+     * This feature is in Beta. If specified, our system will make a best effort
+     * to sample deterministically, such that repeated requests with the
+     * same seed and parameters should return the same result. Determinism is
+     * not guaranteed, and you should refer to the system_fingerprint response
      * parameter to monitor changes in the backend.
      */
     private Integer seed;
@@ -167,8 +203,10 @@ public class CompletionRequest implements UserRequest, Serializable, IMemoryClea
     private Boolean parallel_tool_calls;
 
     /**
-     * Constrains effort on reasoning for reasoning models. Currently supported values are low, medium, and high.
-     * Reducing reasoning effort can result in faster responses and fewer tokens used on reasoning in a response.
+     * Constrains effort on reasoning for reasoning models. Currently supported
+     * values are low, medium, and high.
+     * Reducing reasoning effort can result in faster responses and fewer tokens
+     * used on reasoning in a response.
      */
     private Object reasoning_effort;
 
@@ -193,26 +231,27 @@ public class CompletionRequest implements UserRequest, Serializable, IMemoryClea
     @JsonAnyGetter
     public Map<String, Object> getExtraBodyFields() {
         Map<String, Object> result = new java.util.HashMap<>();
-        
+
         // Add regular extra_body fields
-        if (extra_body != null) {
+        if(extra_body != null) {
             result.putAll(extra_body);
         }
-        
+
         // Add realExtraBody as extra_body field
-        if (realExtraBody != null) {
+        if(realExtraBody != null) {
             result.put("extra_body", realExtraBody);
         }
-        
+
         return result.isEmpty() ? null : result;
     }
 
     /**
-     * Handle unknown properties during deserialization and store them in extra_body
+     * Handle unknown properties during deserialization and store them in
+     * extra_body
      */
     @JsonAnySetter
     public void setExtraBodyField(String key, Object value) {
-        if (extra_body == null) {
+        if(extra_body == null) {
             extra_body = new HashMap<>();
         }
         extra_body.put(key, value);
@@ -221,10 +260,13 @@ public class CompletionRequest implements UserRequest, Serializable, IMemoryClea
     @Data
     public static class StreamOptions {
         /**
-         * If set, an additional chunk will be streamed before the data: [DONE] message.
-         * The usage field on this chunk shows the token usage statistics for the entire request,
+         * If set, an additional chunk will be streamed before the data: [DONE]
+         * message.
+         * The usage field on this chunk shows the token usage statistics for
+         * the entire request,
          * and the choices field will always be an empty array.
-         * All other chunks will also include a usage field, but with a null value.
+         * All other chunks will also include a usage field, but with a null
+         * value.
          */
         private boolean include_usage = true;
     }
@@ -235,7 +277,7 @@ public class CompletionRequest implements UserRequest, Serializable, IMemoryClea
 
     @Override
     public void clearLargeData() {
-        if (!cleared) {
+        if(!cleared) {
             // 清理占用最多内存的字段
             this.messages = null;
             this.extra_body = null;

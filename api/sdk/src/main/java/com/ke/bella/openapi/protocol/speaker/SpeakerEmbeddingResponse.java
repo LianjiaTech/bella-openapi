@@ -31,15 +31,15 @@ public class SpeakerEmbeddingResponse extends OpenapiResponse {
         private double end = 0;
         private double confidence = 0.0;
         private List<Double> embedding;
-        
+
         public void setStart(double start) {
             this.start = roundToThreeDecimals(start);
         }
-        
+
         public void setEnd(double end) {
             this.end = roundToThreeDecimals(end);
         }
-        
+
         private double roundToThreeDecimals(double value) {
             return BigDecimal.valueOf(value)
                     .setScale(3, RoundingMode.HALF_UP)

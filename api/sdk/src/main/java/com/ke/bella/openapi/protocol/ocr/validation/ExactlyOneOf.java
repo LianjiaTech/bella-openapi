@@ -10,8 +10,10 @@ import javax.validation.Constraint;
 import javax.validation.Payload;
 
 /**
- * Custom validation annotation that ensures exactly one of three image input fields is provided.
- * Used for OCR requests where image_base64, image_url, or file_id must be specified (but only one).
+ * Custom validation annotation that ensures exactly one of three image input
+ * fields is provided.
+ * Used for OCR requests where image_base64, image_url, or file_id must be
+ * specified (but only one).
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
