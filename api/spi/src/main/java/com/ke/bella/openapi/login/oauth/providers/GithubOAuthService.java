@@ -25,7 +25,7 @@ public class GithubOAuthService extends AbstractOAuthService {
     @Override
     protected String parseAccessToken(String response) throws IOException {
         JsonNode node = JacksonUtils.deserialize(response);
-        if (node == null || !node.has("access_token")) {
+        if(node == null || !node.has("access_token")) {
             throw new IOException("Invalid token response");
         }
         return node.get("access_token").asText();
@@ -40,18 +40,20 @@ public class GithubOAuthService extends AbstractOAuthService {
                 .build();
 
         try (Response response = client.newCall(request).execute()) {
-            if (!response.isSuccessful() || response.body() == null) {
+            if(!response.isSuccessful() || response.body() == null) {
                 throw new IOException("Failed to get user info");
             }
             JsonNode userInfo = JacksonUtils.deserialize(response.body().string());
-            if (userInfo == null) {
+            if(userInfo == null) {
                 throw new IOException("Invalid userInfo response");
             }
-            
+
             return Operator.builder()
                     .userId(-1L)
-                    .userName(userInfo.get("login").asText())  // GitHub 用 login 作为用户名
-                    .email(userInfo.has("email") ? userInfo.get("email").asText() : null)  // email 可能不公开
+                    .userName(userInfo.get("login").asText())  // GitHub 用 login
+                                                               // 作为用户名
+                    .email(userInfo.has("email") ? userInfo.get("email").asText() : null)  // email
+                                                                                           // 可能不公开
                     .source("github")
                     .sourceId(String.valueOf(userInfo.get("id").asLong()))
                     .optionalInfo(new HashMap<>())
