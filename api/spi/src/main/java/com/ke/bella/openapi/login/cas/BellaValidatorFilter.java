@@ -23,7 +23,6 @@ public class BellaValidatorFilter extends Cas30ProxyReceivingTicketValidationFil
     private final List<String> optionalAttributes;
     private final SessionManager sessionManager;
 
-
     public BellaValidatorFilter(boolean useCasUserId, String idAttribute, String nameAttribute, String emailAttribute,
             String source, List<String> optionalAttributes, SessionManager sessionManager) {
         this.useCasUserId = useCasUserId;
@@ -47,7 +46,7 @@ public class BellaValidatorFilter extends Cas30ProxyReceivingTicketValidationFil
         operator.setSource(source);
         operator.setSourceId(assertion.getPrincipal().getAttributes().get(idAttribute).toString());
         if(CollectionUtils.isNotEmpty(optionalAttributes)) {
-            for(String attributeName : optionalAttributes) {
+            for (String attributeName : optionalAttributes) {
                 if(assertion.getPrincipal().getAttributes().containsKey(attributeName)) {
                     operator.getOptionalInfo().put(attributeName, assertion.getPrincipal().getAttributes().get(attributeName));
                 }

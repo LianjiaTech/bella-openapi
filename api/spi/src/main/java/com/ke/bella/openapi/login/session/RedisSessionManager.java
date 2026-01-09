@@ -18,7 +18,13 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
-public class RedisSessionManager implements SessionManager, TicketManager { // Changed class name and added 'implements SessionManager'
+public class RedisSessionManager implements SessionManager, TicketManager { // Changed
+                                                                            // class
+                                                                            // name
+                                                                            // and
+                                                                            // added
+                                                                            // 'implements
+                                                                            // SessionManager'
 
     private final SessionProperty sessionProperty;
     private final RedisTemplate<String, Operator> redisTemplate;
@@ -28,7 +34,9 @@ public class RedisSessionManager implements SessionManager, TicketManager { // C
     private String sessionPrefix = "bella-openapi-session-user:";
     private String ticketPrefix = "bella-openapi-oauth-ticket:";
 
-    public RedisSessionManager(SessionProperty sessionProperty, RedisTemplate<String, Operator> redisTemplate, StringRedisTemplate stringRedisTemplate) { // Constructor name changed
+    public RedisSessionManager(SessionProperty sessionProperty, RedisTemplate<String, Operator> redisTemplate,
+            StringRedisTemplate stringRedisTemplate) { // Constructor name
+                                                       // changed
         this.sessionProperty = sessionProperty;
         this.redisTemplate = redisTemplate;
         this.stringRedisTemplate = stringRedisTemplate;
@@ -45,7 +53,7 @@ public class RedisSessionManager implements SessionManager, TicketManager { // C
     @Override
     public String create(Operator sessionInfo, HttpServletRequest request, HttpServletResponse response) {
         // 如果配置了用户持久化，则进行持久化
-        if (userRepo != null) {
+        if(userRepo != null) {
             sessionInfo = userRepo.persist(sessionInfo);
         }
         return createSession(sessionInfo, request, response);
@@ -53,7 +61,7 @@ public class RedisSessionManager implements SessionManager, TicketManager { // C
 
     @Override
     public String create(String secret, HttpServletRequest request, HttpServletResponse response) {
-        if (userRepo == null) {
+        if(userRepo == null) {
             throw new NotImplementedException();
         }
         Operator operator = userRepo.checkSecret(secret);
@@ -87,7 +95,8 @@ public class RedisSessionManager implements SessionManager, TicketManager { // C
             deleteById(sessionId);
             Cookie cookie = new Cookie(sessionProperty.getCookieName(), null);
             cookie.setMaxAge(0);
-            cookie.setPath("/"); // Consider making path configurable or same as addCookie
+            cookie.setPath("/"); // Consider making path configurable or same as
+                                 // addCookie
             response.addCookie(cookie);
         }
     }
@@ -111,7 +120,8 @@ public class RedisSessionManager implements SessionManager, TicketManager { // C
 
     @Override
     public boolean isValidTicket(String ticket) {
-        // Ensure stringRedisTemplate is not null if this method can be called before full initialization
+        // Ensure stringRedisTemplate is not null if this method can be called
+        // before full initialization
         Boolean hasKey = stringRedisTemplate.hasKey(getTicketKey(ticket));
         return Boolean.TRUE.equals(hasKey); // Handle null from hasKey
     }

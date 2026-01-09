@@ -70,7 +70,6 @@ public class BellaServiceConfiguration implements WebMvcConfigurer {
         return new AuthorizationInterceptor();
     }
 
-
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(authorizationInterceptor)
