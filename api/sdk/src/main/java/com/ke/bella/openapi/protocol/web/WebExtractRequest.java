@@ -146,11 +146,12 @@ public class WebExtractRequest implements UserRequest, Serializable, IMemoryClea
     }
 
     /**
-     * Handle unknown properties during deserialization and store them in extra_body
+     * Handle unknown properties during deserialization and store them in
+     * extra_body
      */
     @JsonAnySetter
     public void setExtraBodyField(String key, Object value) {
-        if (extra_body == null) {
+        if(extra_body == null) {
             extra_body = new HashMap<>();
         }
         extra_body.put(key, value);
@@ -158,7 +159,7 @@ public class WebExtractRequest implements UserRequest, Serializable, IMemoryClea
 
     @Override
     public void clearLargeData() {
-        if (!cleared) {
+        if(!cleared) {
             // Clear fields that consume the most memory
             this.urls = null;
             this.extra_body = null;

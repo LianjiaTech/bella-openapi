@@ -23,7 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class TransferFromCompletionsUtils {
 
-    //Static inner classes for Content Parts, as per OpenAI structure
+    // Static inner classes for Content Parts, as per OpenAI structure
     @JsonInclude(JsonInclude.Include.NON_NULL)
     @Data
     static class ContentPart {
@@ -61,25 +61,25 @@ public class TransferFromCompletionsUtils {
     }
 
     public static CompletionRequest convertRequest(MessageRequest messageRequest, boolean nativeSupport) {
-        if (messageRequest == null) {
+        if(messageRequest == null) {
             return null;
         }
 
         CompletionRequest.CompletionRequestBuilder<?, ?> builder = CompletionRequest.builder();
-        
+
         // 设置基本参数
         setBasicParameters(builder, messageRequest);
-        
+
         // 处理消息转换
         List<Message> chatMessages = new ArrayList<>();
         processSystemMessage(messageRequest, chatMessages, nativeSupport);
         processInputMessages(messageRequest, chatMessages, nativeSupport);
         builder.messages(chatMessages);
-        
+
         // 处理工具和工具选择
         setTools(builder, messageRequest);
         setToolChoice(builder, messageRequest);
-        
+
         // 处理推理配置
         setThinkingConfig(builder, messageRequest, nativeSupport);
 
@@ -89,37 +89,38 @@ public class TransferFromCompletionsUtils {
     // 提取的辅助方法
     private static void setBasicParameters(CompletionRequest.CompletionRequestBuilder<?, ?> builder, MessageRequest request) {
         builder.model(request.getModel());
-        
-        if (request.getMaxTokens() != null) {
+
+        if(request.getMaxTokens() != null) {
             builder.max_tokens(request.getMaxTokens());
         }
-        if (request.getTemperature() != null) {
+        if(request.getTemperature() != null) {
             builder.temperature(request.getTemperature().floatValue());
         }
-        if (request.getTopP() != null) {
+        if(request.getTopP() != null) {
             builder.top_p(request.getTopP().floatValue());
         }
-        
+
         // 处理停止序列
-        if (request.getStopSequences() != null && !request.getStopSequences().isEmpty()) {
-            if (request.getStopSequences().size() == 1) {
+        if(request.getStopSequences() != null && !request.getStopSequences().isEmpty()) {
+            if(request.getStopSequences().size() == 1) {
                 builder.stop(request.getStopSequences().get(0));
             } else {
                 builder.stop(request.getStopSequences());
             }
         }
-        
+
         builder.stream(Boolean.TRUE.equals(request.getStream()));
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     private static void processSystemMessage(MessageRequest messageRequest, List<Message> chatMessages, boolean nativeSupport) {
-        if (messageRequest.getSystem() == null) return;
-        
+        if(messageRequest.getSystem() == null)
+            return;
+
         List<Map> contentParts = new ArrayList<>();
-        if (messageRequest.getSystem() instanceof String) {
+        if(messageRequest.getSystem() instanceof String) {
             contentParts.add(JacksonUtils.toMap(ContentPart.ofText((String) messageRequest.getSystem())));
-        } else if (messageRequest.getSystem() instanceof List) {
+        } else if(messageRequest.getSystem() instanceof List) {
             List<MessageRequest.RequestTextBlock> systemBlocks = (List<MessageRequest.RequestTextBlock>) messageRequest.getSystem();
             contentParts = systemBlocks.stream()
                     .map(systemBlock -> {
@@ -132,64 +133,65 @@ public class TransferFromCompletionsUtils {
                     .map(JacksonUtils::toMap)
                     .collect(Collectors.toList());
         }
-        
-        if (!contentParts.isEmpty()) {
+
+        if(!contentParts.isEmpty()) {
             chatMessages.add(Message.builder().role("system").content(contentParts).build());
         }
     }
 
     private static void processInputMessages(MessageRequest messageRequest, List<Message> chatMessages, boolean nativeSupport) {
-        if (messageRequest.getMessages() == null) return;
-        
+        if(messageRequest.getMessages() == null)
+            return;
+
         for (MessageRequest.InputMessage inputMessage : messageRequest.getMessages()) {
             List<Message> convertedMessages = convertSingleInputMessage(inputMessage, nativeSupport);
             chatMessages.addAll(convertedMessages);
         }
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     private static List<Message> convertSingleInputMessage(MessageRequest.InputMessage inputMessage, boolean nativeSupport) {
         Message.MessageBuilder chatMessageBuilder = Message.builder().role(inputMessage.getRole());
         Object contentObj = inputMessage.getContent();
-        
+
         List<Map> contentParts = new ArrayList<>();
         List<Message.ToolCall> toolCalls = new ArrayList<>();
         List<Message.MessageBuilder> messageBuilders = new ArrayList<>();
         messageBuilders.add(chatMessageBuilder);
         MessageProcessingContext context = new MessageProcessingContext(contentParts, toolCalls, messageBuilders, inputMessage.getRole());
-        if (contentObj instanceof String) {
+        if(contentObj instanceof String) {
             contentParts.add(JacksonUtils.toMap(ContentPart.ofText((String) contentObj)));
-        } else if (contentObj instanceof List) {
+        } else if(contentObj instanceof List) {
             processContentBlocks((List<MessageRequest.ContentBlock>) contentObj, context, nativeSupport);
         }
-        
+
         // 完成最后一个消息的构建
         finalizePendingMessage(messageBuilders, contentParts, toolCalls);
-        
+
         return messageBuilders.stream()
                 .map(Message.MessageBuilder::build)
                 .collect(Collectors.toList());
     }
 
-    private static void processContentBlocks(List<MessageRequest.ContentBlock> contentBlocks, 
-                                           MessageProcessingContext context, boolean nativeSupport) {
+    private static void processContentBlocks(List<MessageRequest.ContentBlock> contentBlocks,
+            MessageProcessingContext context, boolean nativeSupport) {
         boolean lastToolResult = false;
-        
+
         for (MessageRequest.ContentBlock block : contentBlocks) {
-            if (lastToolResult) {
+            if(lastToolResult) {
                 context.getMessageBuilders().add(Message.builder().role(context.getOriginalRole()));
             }
-            
-            if (block instanceof MessageRequest.TextContentBlock) {
+
+            if(block instanceof MessageRequest.TextContentBlock) {
                 lastToolResult = false;
                 processTextContentBlock((MessageRequest.TextContentBlock) block, context, nativeSupport);
-            } else if (block instanceof MessageRequest.ImageContentBlock) {
+            } else if(block instanceof MessageRequest.ImageContentBlock) {
                 lastToolResult = false;
                 processImageContentBlock((MessageRequest.ImageContentBlock) block, context, nativeSupport);
-            } else if (block instanceof MessageRequest.ToolUseContentBlock) {
+            } else if(block instanceof MessageRequest.ToolUseContentBlock) {
                 lastToolResult = false;
                 processToolUseContentBlock((MessageRequest.ToolUseContentBlock) block, context, nativeSupport);
-            } else if (block instanceof MessageRequest.ToolResultContentBlock) {
+            } else if(block instanceof MessageRequest.ToolResultContentBlock) {
                 lastToolResult = true;
                 processToolResultContentBlock((MessageRequest.ToolResultContentBlock) block, context, nativeSupport);
             } else {
@@ -199,67 +201,67 @@ public class TransferFromCompletionsUtils {
         }
     }
 
-    private static void processTextContentBlock(MessageRequest.TextContentBlock block, 
-                                              MessageProcessingContext context, boolean nativeSupport) {
+    private static void processTextContentBlock(MessageRequest.TextContentBlock block,
+            MessageProcessingContext context, boolean nativeSupport) {
         ContentPart contentPart = ContentPart.ofText(block.getText());
-        if (nativeSupport) {
+        if(nativeSupport) {
             contentPart.setCache_control(block.getCache_control());
         }
         context.getContentParts().add(JacksonUtils.toMap(contentPart));
     }
 
     private static void processImageContentBlock(MessageRequest.ImageContentBlock block,
-                                               MessageProcessingContext context, boolean nativeSupport) {
-        if (block.getSource() instanceof MessageRequest.Base64ImageSource) {
+            MessageProcessingContext context, boolean nativeSupport) {
+        if(block.getSource() instanceof MessageRequest.Base64ImageSource) {
             MessageRequest.Base64ImageSource imageSource = (MessageRequest.Base64ImageSource) block.getSource();
             String dataUri = "data:" + imageSource.getMediaType() + ";base64," + imageSource.getData();
             ContentPart contentPart = ContentPart.ofImageUrl(new ImageUrl(dataUri, "auto"));
-            if (nativeSupport) {
+            if(nativeSupport) {
                 contentPart.setCache_control(block.getCache_control());
             }
             context.getContentParts().add(JacksonUtils.toMap(contentPart));
-        } else if (block.getSource() instanceof MessageRequest.URLImageSource) {
+        } else if(block.getSource() instanceof MessageRequest.URLImageSource) {
             MessageRequest.URLImageSource imageSource = (MessageRequest.URLImageSource) block.getSource();
             ContentPart contentPart = ContentPart.ofImageUrl(new ImageUrl(imageSource.getUrl(), "auto"));
-            if (nativeSupport) {
+            if(nativeSupport) {
                 contentPart.setCache_control(block.getCache_control());
             }
             context.getContentParts().add(JacksonUtils.toMap(contentPart));
         }
     }
 
-    private static void processToolUseContentBlock(MessageRequest.ToolUseContentBlock block, 
-                                                 MessageProcessingContext context, boolean nativeSupport) {
+    private static void processToolUseContentBlock(MessageRequest.ToolUseContentBlock block,
+            MessageProcessingContext context, boolean nativeSupport) {
         Message.ToolCall toolCall = Message.ToolCall.fromFunctionIdAndName(block.getId(), block.getName());
         toolCall.setFunction(Message.FunctionCall.builder()
                 .name(block.getName())
                 .arguments(JacksonUtils.serialize(block.getInput()))
                 .build());
-        if (nativeSupport) {
+        if(nativeSupport) {
             toolCall.setCache_control(block.getCache_control());
         }
         context.getToolCalls().add(toolCall);
     }
 
-    private static void processToolResultContentBlock(MessageRequest.ToolResultContentBlock block, 
-                                                    MessageProcessingContext context, boolean nativeSupport) {
+    private static void processToolResultContentBlock(MessageRequest.ToolResultContentBlock block,
+            MessageProcessingContext context, boolean nativeSupport) {
         // Split tool result to different messages
-        if (!context.getContentParts().isEmpty() || !context.getToolCalls().isEmpty()) {
+        if(!context.getContentParts().isEmpty() || !context.getToolCalls().isEmpty()) {
             finalizePendingMessage(context.getMessageBuilders(), context.getContentParts(), context.getToolCalls());
             context.setContentParts(new ArrayList<>());
             context.setToolCalls(new ArrayList<>());
             context.getMessageBuilders().add(Message.builder());
         }
-        
+
         Message.MessageBuilder current = context.getMessageBuilders().get(context.getMessageBuilders().size() - 1);
         current.tool_call_id(block.getToolUseId()).role("tool");
-        
+
         String toolResultStringContent = extractToolResultStringContent(block);
         ContentPart contentPart = ContentPart.ofText(toolResultStringContent);
-        if (block.getCache_control() != null && nativeSupport) {
+        if(block.getCache_control() != null && nativeSupport) {
             contentPart.setCache_control(block.getCache_control());
         }
-        
+
         List<Map> toolResultContentParts = new ArrayList<>();
         toolResultContentParts.add(JacksonUtils.toMap(contentPart));
         current.content(toolResultContentParts);
@@ -293,27 +295,28 @@ public class TransferFromCompletionsUtils {
     }
 
     private static String extractToolResultStringContent(MessageRequest.ToolResultContentBlock block) {
-        if (block.getContent() instanceof String) {
+        if(block.getContent() instanceof String) {
             return (String) block.getContent();
         } else {
             return JacksonUtils.serialize(block.getContent());
         }
     }
 
-    private static void finalizePendingMessage(List<Message.MessageBuilder> messageBuilders, 
-                                             List<Map> contentParts, List<Message.ToolCall> toolCalls) {
+    private static void finalizePendingMessage(List<Message.MessageBuilder> messageBuilders,
+            List<Map> contentParts, List<Message.ToolCall> toolCalls) {
         Message.MessageBuilder messageBuilder = messageBuilders.get(messageBuilders.size() - 1);
-        if (!contentParts.isEmpty()) {
+        if(!contentParts.isEmpty()) {
             messageBuilder.content(contentParts);
         }
-        if (!toolCalls.isEmpty()) {
+        if(!toolCalls.isEmpty()) {
             messageBuilder.tool_calls(toolCalls);
         }
     }
 
     private static void setTools(CompletionRequest.CompletionRequestBuilder<?, ?> builder, MessageRequest request) {
-        if (request.getTools() == null || request.getTools().isEmpty()) return;
-        
+        if(request.getTools() == null || request.getTools().isEmpty())
+            return;
+
         List<Message.Tool> chatTools = new ArrayList<>();
         try {
             for (MessageRequest.Tool apiTool : request.getTools()) {
@@ -330,8 +333,8 @@ public class TransferFromCompletionsUtils {
         Message.Function.FunctionBuilder functionBuilder = Message.Function.builder()
                 .name(apiTool.getName())
                 .description(apiTool.getDescription());
-        
-        if (apiTool.getInputSchema() != null) {
+
+        if(apiTool.getInputSchema() != null) {
             MessageRequest.InputSchema schema = apiTool.getInputSchema();
             Message.Function.FunctionParameter.FunctionParameterBuilder paramBuilder = Message.Function.FunctionParameter.builder()
                     .type(schema.getType())
@@ -340,45 +343,46 @@ public class TransferFromCompletionsUtils {
                     .additionalProperties(schema.getAdditionalProperties());
             functionBuilder.parameters(paramBuilder.build());
         }
-        
+
         return Message.Tool.builder().type("function").function(functionBuilder.build()).build();
     }
 
     private static void setToolChoice(CompletionRequest.CompletionRequestBuilder<?, ?> builder, MessageRequest request) {
-        if (request.getToolChoice() == null) return;
-        
+        if(request.getToolChoice() == null)
+            return;
+
         MessageRequest.ToolChoice choice = request.getToolChoice();
         String choiceType = choice.getType();
-        
+
         switch (choiceType) {
-            case "auto":
-            case "none":
-                builder.tool_choice(choiceType);
-                break;
-            case "any":
-                builder.tool_choice("auto");
-                break;
-            case "tool":
-                if (choice instanceof MessageRequest.ToolChoiceTool) {
-                    MessageRequest.ToolChoiceTool toolChoiceTool = (MessageRequest.ToolChoiceTool) choice;
-                    Map<String, Object> toolChoiceMap = new HashMap<>();
-                    toolChoiceMap.put("type", "function");
-                    Map<String, String> functionDescMap = new HashMap<>();
-                    functionDescMap.put("name", toolChoiceTool.getName());
-                    toolChoiceMap.put("function", functionDescMap);
-                    builder.tool_choice(toolChoiceMap);
-                }
-                break;
-            default:
-                builder.tool_choice(choiceType);
-                break;
+        case "auto":
+        case "none":
+            builder.tool_choice(choiceType);
+            break;
+        case "any":
+            builder.tool_choice("auto");
+            break;
+        case "tool":
+            if(choice instanceof MessageRequest.ToolChoiceTool) {
+                MessageRequest.ToolChoiceTool toolChoiceTool = (MessageRequest.ToolChoiceTool) choice;
+                Map<String, Object> toolChoiceMap = new HashMap<>();
+                toolChoiceMap.put("type", "function");
+                Map<String, String> functionDescMap = new HashMap<>();
+                functionDescMap.put("name", toolChoiceTool.getName());
+                toolChoiceMap.put("function", functionDescMap);
+                builder.tool_choice(toolChoiceMap);
+            }
+            break;
+        default:
+            builder.tool_choice(choiceType);
+            break;
         }
     }
 
-    private static void setThinkingConfig(CompletionRequest.CompletionRequestBuilder<?, ?> builder, 
-                                        MessageRequest request, boolean nativeSupport) {
-        if (request.getThinking() != null && request.getThinking() instanceof MessageRequest.ThinkingConfigEnabled) {
-            if (nativeSupport) {
+    private static void setThinkingConfig(CompletionRequest.CompletionRequestBuilder<?, ?> builder,
+            MessageRequest request, boolean nativeSupport) {
+        if(request.getThinking() != null && request.getThinking() instanceof MessageRequest.ThinkingConfigEnabled) {
+            if(nativeSupport) {
                 builder.reasoning_effort(request.getThinking());
             } else {
                 builder.reasoning_effort("medium");
@@ -393,9 +397,9 @@ public class TransferFromCompletionsUtils {
         private List<Message.ToolCall> toolCalls;
         private List<Message.MessageBuilder> messageBuilders;
         private String originalRole;
-        
-        public MessageProcessingContext(List<Map> contentParts, List<Message.ToolCall> toolCalls, 
-                                      List<Message.MessageBuilder> messageBuilders, String originalRole) {
+
+        public MessageProcessingContext(List<Map> contentParts, List<Message.ToolCall> toolCalls,
+                List<Message.MessageBuilder> messageBuilders, String originalRole) {
             this.contentParts = contentParts;
             this.toolCalls = toolCalls;
             this.messageBuilders = messageBuilders;
@@ -404,7 +408,7 @@ public class TransferFromCompletionsUtils {
     }
 
     public static MessageResponse convertResponse(CompletionResponse chatResponse, String model) {
-        if (chatResponse == null || chatResponse.getChoices() == null || chatResponse.getChoices().isEmpty()) {
+        if(chatResponse == null || chatResponse.getChoices() == null || chatResponse.getChoices().isEmpty()) {
             return null;
         }
 
@@ -419,26 +423,28 @@ public class TransferFromCompletionsUtils {
         List<MessageResponse.ContentBlock> contentBlocks = new ArrayList<>();
 
         if(assistantMessage.getReasoning_content() != null || assistantMessage.getReasoning_content_signature() != null) {
-            contentBlocks.add(new MessageResponse.ResponseThinkingBlock(assistantMessage.getReasoning_content(), assistantMessage.getReasoning_content_signature()));
+            contentBlocks.add(new MessageResponse.ResponseThinkingBlock(assistantMessage.getReasoning_content(),
+                    assistantMessage.getReasoning_content_signature()));
         }
 
         if(assistantMessage.getRedacted_reasoning_content() != null) {
             contentBlocks.add(new MessageResponse.ResponseRedactedThinkingBlock(assistantMessage.getRedacted_reasoning_content()));
         }
 
-        if (assistantMessage.getContent() != null) {
+        if(assistantMessage.getContent() != null) {
             String textContent = (String) assistantMessage.getContent();
-            if (!textContent.isEmpty()) {
-                 contentBlocks.add(new MessageResponse.ResponseTextBlock(textContent));
+            if(!textContent.isEmpty()) {
+                contentBlocks.add(new MessageResponse.ResponseTextBlock(textContent));
             }
         }
 
-        if (assistantMessage.getTool_calls() != null && !assistantMessage.getTool_calls().isEmpty()) {
+        if(assistantMessage.getTool_calls() != null && !assistantMessage.getTool_calls().isEmpty()) {
             for (Message.ToolCall toolCall : assistantMessage.getTool_calls()) {
-                if ("function".equals(toolCall.getType())) {
+                if("function".equals(toolCall.getType())) {
                     Map<String, Object> parsedArgs = new HashMap<>();
-                    if (toolCall.getFunction().getArguments() != null && !toolCall.getFunction().getArguments().isEmpty()) {
-                        parsedArgs = JacksonUtils.deserialize(toolCall.getFunction().getArguments(), new TypeReference<Map<String, Object>>() {});
+                    if(toolCall.getFunction().getArguments() != null && !toolCall.getFunction().getArguments().isEmpty()) {
+                        parsedArgs = JacksonUtils.deserialize(toolCall.getFunction().getArguments(), new TypeReference<Map<String, Object>>() {
+                        });
                     }
                     contentBlocks.add(new MessageResponse.ResponseToolUseBlock(toolCall.getId(), toolCall.getFunction().getName(), parsedArgs));
                 }
@@ -452,7 +458,7 @@ public class TransferFromCompletionsUtils {
         responseBuilder.stopReason(stopReason);
         responseBuilder.stopSequence(null);
 
-        if (chatResponse.getUsage() != null) {
+        if(chatResponse.getUsage() != null) {
             CompletionResponse.TokenUsage sourceUsage = chatResponse.getUsage();
             MessageResponse.Usage usage = MessageResponse.Usage.builder()
                     .inputTokens(sourceUsage.getPrompt_tokens())
@@ -464,10 +470,12 @@ public class TransferFromCompletionsUtils {
         return responseBuilder.build();
     }
 
-    public static List<StreamMessageResponse> convertStreamResponse(StreamCompletionResponse streamChatResponse, boolean isToolCall, int contentIndex) {
-        if (streamChatResponse == null) return null;
+    public static List<StreamMessageResponse> convertStreamResponse(StreamCompletionResponse streamChatResponse, boolean isToolCall,
+            int contentIndex) {
+        if(streamChatResponse == null)
+            return null;
         List<StreamMessageResponse> responseList = new ArrayList<>();
-        if (streamChatResponse.getError() != null) {
+        if(streamChatResponse.getError() != null) {
             responseList.add(StreamMessageResponse.error(streamChatResponse.getError().getType(), streamChatResponse.getError().getMessage()));
         }
         if(CollectionUtils.isNotEmpty(streamChatResponse.getChoices())) {
@@ -475,11 +483,12 @@ public class TransferFromCompletionsUtils {
             Message delta = streamChoice.getDelta();
             String finishReasonStr = streamChoice.getFinish_reason();
 
-            //Thinking content delta
+            // Thinking content delta
             if(delta != null && (delta.getReasoning_content() != null)) {
                 String reasoningContent = delta.getReasoning_content();
                 if(!reasoningContent.isEmpty()) {
-                    responseList.add(StreamMessageResponse.contentBlockDelta(contentIndex, new StreamMessageResponse.ThinkingDelta(reasoningContent)));
+                    responseList
+                            .add(StreamMessageResponse.contentBlockDelta(contentIndex, new StreamMessageResponse.ThinkingDelta(reasoningContent)));
                 }
             }
 
@@ -493,7 +502,8 @@ public class TransferFromCompletionsUtils {
             if(delta != null && (delta.getRedacted_reasoning_content() != null)) {
                 String redactedReasoningContent = delta.getRedacted_reasoning_content();
                 if(!redactedReasoningContent.isEmpty()) {
-                    responseList.add(StreamMessageResponse.contentBlockDelta(contentIndex, new StreamMessageResponse.RedactedThinkingDelta(redactedReasoningContent)));
+                    responseList.add(StreamMessageResponse.contentBlockDelta(contentIndex,
+                            new StreamMessageResponse.RedactedThinkingDelta(redactedReasoningContent)));
                 }
             }
 
@@ -509,12 +519,19 @@ public class TransferFromCompletionsUtils {
             if(delta != null && CollectionUtils.isNotEmpty(delta.getTool_calls())) {
                 Message.ToolCall toolCallChunk = delta.getTool_calls().get(0);
 
-                if(toolCallChunk.getFunction() != null && StringUtils.isNotEmpty(toolCallChunk.getFunction().getName())) { // Start of a new tool call
+                if(toolCallChunk.getFunction() != null && StringUtils.isNotEmpty(toolCallChunk.getFunction().getName())) { // Start
+                                                                                                                           // of
+                                                                                                                           // a
+                                                                                                                           // new
+                                                                                                                           // tool
+                                                                                                                           // call
                     contentIndex = contentIndex + 1;
                     responseList.add(StreamMessageResponse.contentBlockStart(contentIndex,
                             new MessageResponse.ResponseToolUseBlock(toolCallChunk.getId(), toolCallChunk.getFunction().getName(), new HashMap<>())));
                 }
-                if(toolCallChunk.getFunction() != null && toolCallChunk.getFunction().getArguments() != null) { // Delta for arguments
+                if(toolCallChunk.getFunction() != null && toolCallChunk.getFunction().getArguments() != null) { // Delta
+                                                                                                                // for
+                                                                                                                // arguments
                     responseList.add(StreamMessageResponse.contentBlockDelta(contentIndex,
                             new StreamMessageResponse.InputJsonDelta(toolCallChunk.getFunction().getArguments())));
                 }
@@ -522,9 +539,13 @@ public class TransferFromCompletionsUtils {
             // Finish reason
             if(finishReasonStr != null) {
                 StreamMessageResponse.StreamUsage streamUsage = null;
-                if(streamChatResponse.getUsage() != null) { // Full usage might be on the LAST chunk with finish_reason
+                if(streamChatResponse.getUsage() != null) { // Full usage might
+                                                            // be on the LAST
+                                                            // chunk with
+                                                            // finish_reason
                     streamUsage = convertToStreamUsage(streamChatResponse.getUsage());
-                } else { // More typical for intermediate deltas, no usage reported per token
+                } else { // More typical for intermediate deltas, no usage
+                         // reported per token
                     streamUsage = StreamMessageResponse.StreamUsage.builder().outputTokens(0).build();
                 }
 
@@ -536,7 +557,7 @@ public class TransferFromCompletionsUtils {
 
                 responseList.add(StreamMessageResponse.messageDelta(messageInfo, streamUsage));
             }
-        } else if (streamChatResponse.getUsage() != null) {
+        } else if(streamChatResponse.getUsage() != null) {
             StreamMessageResponse.StreamUsage streamUsage = convertToStreamUsage(streamChatResponse.getUsage());
             StreamMessageResponse.MessageDeltaInfo messageInfo = StreamMessageResponse.MessageDeltaInfo.builder()
                     .stopReason(isToolCall ? "tool_use" : "end_turn")
@@ -561,15 +582,20 @@ public class TransferFromCompletionsUtils {
     }
 
     private static String mapFinishReason(String finishReason) {
-        if (finishReason == null) return null;
+        if(finishReason == null)
+            return null;
         switch (finishReason.toLowerCase()) {
-            case "stop": return "end_turn";
-            case "length": return "max_tokens";
-            case "tool_calls":
-            case "function_call":
-                return "tool_use";
-            case "content_filter": return "refusal";
-            default: return finishReason;
+        case "stop":
+            return "end_turn";
+        case "length":
+            return "max_tokens";
+        case "tool_calls":
+        case "function_call":
+            return "tool_use";
+        case "content_filter":
+            return "refusal";
+        default:
+            return finishReason;
         }
     }
 }

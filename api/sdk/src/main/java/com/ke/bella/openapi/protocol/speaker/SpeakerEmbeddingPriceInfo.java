@@ -15,18 +15,18 @@ import java.util.Map;
 @Data
 public class SpeakerEmbeddingPriceInfo implements IPriceInfo, Serializable {
     private static final long serialVersionUID = 1L;
-    
+
     /**
      * 音频处理单价（元/小时）
      */
     private BigDecimal price;
     private double batchDiscount = 1.0;
-    
+
     @Override
     public String getUnit() {
         return "元/小时";
     }
-    
+
     @Override
     public Map<String, String> description() {
         return ImmutableMap.of("price", "每小时价格（元）");

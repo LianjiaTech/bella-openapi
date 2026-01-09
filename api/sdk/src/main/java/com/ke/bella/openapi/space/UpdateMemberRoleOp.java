@@ -19,22 +19,22 @@ import javax.validation.constraints.NotEmpty;
 @NoArgsConstructor
 public class UpdateMemberRoleOp extends Operator {
 
-	/**
-	 * 成员id
-	 */
-	@NotEmpty(message = "memberUid不能为空")
-	private String memberUid;
+    /**
+     * 成员id
+     */
+    @NotEmpty(message = "memberUid不能为空")
+    private String memberUid;
 
-	/**
-	 * 空间编码
-	 */
-	@NotEmpty(message = "spaceCode不能为空")
-	private String spaceCode;
+    /**
+     * 空间编码
+     */
+    @NotEmpty(message = "spaceCode不能为空")
+    private String spaceCode;
 
-	/**
-	 * 角色编码
-	 */
+    /**
+     * 角色编码
+     */
     @NotEmpty(message = "roleCode不能为空")
-	private String roleCode;
+    private String roleCode;
 
 }

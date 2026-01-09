@@ -18,7 +18,7 @@ public class Condition {
     @NoArgsConstructor
     @Builder
     @Data
-    public static class EndpointDetailsCondition  {
+    public static class EndpointDetailsCondition {
         private String endpoint;
         private String modelName;
         private List<String> features;

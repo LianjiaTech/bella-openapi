@@ -20,7 +20,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Web Search Request based on Tavily Search API Provides unified access to web search functionality with comprehensive configuration options
+ * Web Search Request based on Tavily Search API Provides unified access to web
+ * search functionality with comprehensive configuration options
  */
 @Data
 @SuperBuilder
@@ -29,7 +30,8 @@ public class WebSearchRequest implements UserRequest, Serializable, IMemoryClear
     private static final long serialVersionUID = 1L;
 
     /**
-     * The search query to execute with Tavily (required) Example: "who is Leo Messi?"
+     * The search query to execute with Tavily (required) Example: "who is Leo
+     * Messi?"
      */
     @NotBlank(message = "Query cannot be blank")
     private String query;
@@ -45,26 +47,30 @@ public class WebSearchRequest implements UserRequest, Serializable, IMemoryClear
     private String user;
 
     /**
-     * When auto_parameters is enabled, Tavily automatically configures search parameters based on your query's content and intent. Default: false
+     * When auto_parameters is enabled, Tavily automatically configures search
+     * parameters based on your query's content and intent. Default: false
      */
     @Nullable
     private Boolean auto_parameters = false;
 
     /**
-     * The category of the search. Default: general - news: useful for retrieving real-time updates - general: for broader, more general-purpose
+     * The category of the search. Default: general - news: useful for
+     * retrieving real-time updates - general: for broader, more general-purpose
      * searches - finance: for financial information
      */
     @Nullable
     private Topic topic = Topic.GENERAL;
 
     /**
-     * The depth of the search. Default: basic - basic: provides generic content snippets (1 API Credit) - advanced: retrieves most relevant sources
+     * The depth of the search. Default: basic - basic: provides generic content
+     * snippets (1 API Credit) - advanced: retrieves most relevant sources
      * and content snippets (2 API Credits)
      */
     private SearchDepth search_depth = SearchDepth.BASIC;
 
     /**
-     * Chunks are short content snippets (maximum 500 characters each) pulled directly from the source. Maximum number of relevant chunks returned per
+     * Chunks are short content snippets (maximum 500 characters each) pulled
+     * directly from the source. Maximum number of relevant chunks returned per
      * source. Default: 3 Available only when search_depth is advanced.
      */
     @Nullable
@@ -77,44 +83,53 @@ public class WebSearchRequest implements UserRequest, Serializable, IMemoryClear
     private Integer max_results;
 
     /**
-     * The time range back from the current date to filter results (publish date) Useful when looking for sources that have published data
+     * The time range back from the current date to filter results (publish
+     * date) Useful when looking for sources that have published data
      */
     @Nullable
     private TimeRange time_range;
 
     /**
-     * Number of days back from the current date to include (publish date) Available only if topic is news. Default: 7
+     * Number of days back from the current date to include (publish date)
+     * Available only if topic is news. Default: 7
      */
     @Nullable
     private Integer days;
 
     /**
-     * Will return all results after the specified start date (publish date) Required to be written in the format YYYY-MM-DD Example: "2025-02-09"
+     * Will return all results after the specified start date (publish date)
+     * Required to be written in the format YYYY-MM-DD Example: "2025-02-09"
      */
     @Nullable
     private String start_date;
 
     /**
-     * Will return all results before the specified end date (publish date) Required to be written in the format YYYY-MM-DD Example: "2000-01-28"
+     * Will return all results before the specified end date (publish date)
+     * Required to be written in the format YYYY-MM-DD Example: "2000-01-28"
      */
     @Nullable
     private String end_date;
 
     /**
-     * Include the cleaned and parsed HTML content of each search result. Default: false - markdown or true: returns search result content in markdown
-     * format - text: returns the plain text from the results and may increase latency
+     * Include the cleaned and parsed HTML content of each search result.
+     * Default: false - markdown or true: returns search result content in
+     * markdown
+     * format - text: returns the plain text from the results and may increase
+     * latency
      */
     @Nullable
     private Boolean include_raw_content = false;
 
     /**
-     * Also perform an image search and include the results in the response. Default: false
+     * Also perform an image search and include the results in the response.
+     * Default: false
      */
     @Nullable
     private Boolean include_images = false;
 
     /**
-     * When include_images is true, also add a descriptive text for each image. Default: false
+     * When include_images is true, also add a descriptive text for each image.
+     * Default: false
      */
     @Nullable
     private Boolean include_image_descriptions = false;
@@ -126,19 +141,23 @@ public class WebSearchRequest implements UserRequest, Serializable, IMemoryClear
     private Boolean include_favicon = false;
 
     /**
-     * A list of domains to specifically include in the search results Maximum 300 domains
+     * A list of domains to specifically include in the search results Maximum
+     * 300 domains
      */
     @Nullable
     private List<String> include_domains;
 
     /**
-     * A list of domains to specifically exclude from the search results Maximum 150 domains
+     * A list of domains to specifically exclude from the search results Maximum
+     * 150 domains
      */
     @Nullable
     private List<String> exclude_domains;
 
     /**
-     * Boost search results from a specific country. This will prioritize content from the selected country in the search results. Available only if
+     * Boost search results from a specific country. This will prioritize
+     * content from the selected country in the search results. Available only
+     * if
      * topic is general.
      */
     @Nullable
@@ -162,7 +181,8 @@ public class WebSearchRequest implements UserRequest, Serializable, IMemoryClear
     }
 
     /**
-     * Handle unknown properties during deserialization and store them in extra_body
+     * Handle unknown properties during deserialization and store them in
+     * extra_body
      */
     @JsonAnySetter
     public void setExtraBodyField(String key, Object value) {

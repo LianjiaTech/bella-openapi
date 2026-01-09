@@ -17,7 +17,8 @@ import java.util.UUID;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder(toBuilder = true) // toBuilder=true allows easy modification for factory methods
+@Builder(toBuilder = true) // toBuilder=true allows easy modification for
+                           // factory methods
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class StreamMessageResponse {
 
@@ -30,11 +31,15 @@ public class StreamMessageResponse {
     private StreamErrorInfo error;
     private StreamUsage usage;
 
-
-    @JsonTypeInfo(
-            use = JsonTypeInfo.Id.NAME,
-            include = JsonTypeInfo.As.PROPERTY,
-            property = "type" // This 'type' is specific to the delta object itself
+    @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type" // This
+                                                                                                    // 'type'
+                                                                                                    // is
+                                                                                                    // specific
+                                                                                                    // to
+                                                                                                    // the
+                                                                                                    // delta
+                                                                                                    // object
+                                                                                                    // itself
     )
     @JsonSubTypes({
             @JsonSubTypes.Type(value = TextDelta.class, name = "text_delta"),
@@ -47,8 +52,13 @@ public class StreamMessageResponse {
     public static abstract class Delta {
         private String type;
 
-        public String getType() { return type; }
-        public void setType(String type) { this.type = type; }
+        public String getType() {
+            return type;
+        }
+
+        public void setType(String type) {
+            this.type = type;
+        }
     }
 
     @Data
@@ -83,10 +93,12 @@ public class StreamMessageResponse {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class ThinkingDelta extends Delta {
         private String thinking;
+
         public ThinkingDelta(String thinking) {
             this.setType("thinking_delta");
             this.thinking = thinking;
         }
+
         public ThinkingDelta() {
             this.setType("thinking_delta");
         }
@@ -193,13 +205,13 @@ public class StreamMessageResponse {
                 .build();
     }
 
-    // This is a simpler message_stop if no final message state is needed, just the type
+    // This is a simpler message_stop if no final message state is needed, just
+    // the type
     public static StreamMessageResponse messageStop() {
         return StreamMessageResponse.builder()
                 .type("message_stop")
                 .build();
     }
-
 
     public static StreamMessageResponse ping() {
         return StreamMessageResponse.builder()
@@ -214,10 +226,9 @@ public class StreamMessageResponse {
                 .build();
     }
 
-
     public static MessageResponse initial(StreamCompletionResponse streamCompletionResponse, String model) {
         String messageId = streamCompletionResponse.getId();
-        if (messageId == null || messageId.isEmpty()) {
+        if(messageId == null || messageId.isEmpty()) {
             messageId = UUID.randomUUID().toString();
         }
         MessageResponse.Usage initialUsage = MessageResponse.Usage.builder()

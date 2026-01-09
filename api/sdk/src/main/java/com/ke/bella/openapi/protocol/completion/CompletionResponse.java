@@ -37,8 +37,12 @@ public class CompletionResponse extends OpenapiResponse {
     private String model;
 
     /**
-     * This fingerprint represents the backend configuration that the model runs with.<br/><br/> Can be used in conjunction with the seed request
-     * parameter to understand when backend changes have been made that might impact determinism.
+     * This fingerprint represents the backend configuration that the model runs
+     * with.<br/>
+     * <br/>
+     * Can be used in conjunction with the seed request
+     * parameter to understand when backend changes have been made that might
+     * impact determinism.
      */
     private String system_fingerprint;
 
@@ -90,11 +94,15 @@ public class CompletionResponse extends OpenapiResponse {
     public static class Choice implements Serializable {
 
         /**
-         * Every response will include a finish_reason. The possible values for finish_reason are:
+         * Every response will include a finish_reason. The possible values for
+         * finish_reason are:
          * <p>
-         * stop: API returned complete message, or a message terminated by one of the stop sequences provided via the stop parameter length:
-         * Incomplete model output due to max_tokens parameter or token limit function_call: The model decided to call a function content_filter:
-         * Omitted content due to a flag from our content filters null: API response still in progress or incomplete
+         * stop: API returned complete message, or a message terminated by one
+         * of the stop sequences provided via the stop parameter length:
+         * Incomplete model output due to max_tokens parameter or token limit
+         * function_call: The model decided to call a function content_filter:
+         * Omitted content due to a flag from our content filters null: API
+         * response still in progress or incomplete
          */
         private String finish_reason;
         private int index;
@@ -173,7 +181,7 @@ public class CompletionResponse extends OpenapiResponse {
 
         @Deprecated
         public TokenUsage validate() {
-            if (this.completion_tokens_details != null && this.completion_tokens < this.completion_tokens_details.reasoning_tokens){
+            if(this.completion_tokens_details != null && this.completion_tokens < this.completion_tokens_details.reasoning_tokens) {
                 this.completion_tokens += this.completion_tokens_details.reasoning_tokens;
             }
             return this;
@@ -188,7 +196,6 @@ public class CompletionResponse extends OpenapiResponse {
         private int audio_tokens;
         private int image_tokens;
     }
-
 
     @Data
     @AllArgsConstructor
@@ -229,4 +236,3 @@ public class CompletionResponse extends OpenapiResponse {
     }
 
 }
-

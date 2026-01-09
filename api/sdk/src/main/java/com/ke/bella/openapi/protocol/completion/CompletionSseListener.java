@@ -67,7 +67,6 @@ public class CompletionSseListener extends BellaEventSourceListener {
         }
     }
 
-
     public ChannelException convertToException(Response response) throws IOException {
         String msg;
         try {

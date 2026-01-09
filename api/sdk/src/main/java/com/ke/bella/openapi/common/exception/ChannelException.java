@@ -88,7 +88,8 @@ public abstract class ChannelException extends RuntimeException {
         if(this instanceof ChannelException.OpenAIException) {
             return ((ChannelException.OpenAIException) this).getResponse();
         } else if(this instanceof ChannelException.SafetyCheckException) {
-            return new OpenapiResponse.OpenapiError(this.getType(), this.getMessage(), this.getHttpCode(), ((SafetyCheckException) this).getSensitive());
+            return new OpenapiResponse.OpenapiError(this.getType(), this.getMessage(), this.getHttpCode(),
+                    ((SafetyCheckException) this).getSensitive());
         } else {
             return new OpenapiResponse.OpenapiError(this.getType(), this.getMessage(), this.getHttpCode());
         }
@@ -155,7 +156,7 @@ public abstract class ChannelException extends RuntimeException {
             super(message);
             this.httpCode = httpCode >= 500 ? HttpStatus.SERVICE_UNAVAILABLE.value() : httpCode;
             if(httpCode > 500) {
-                message = "供应商返回：code: " +  httpCode + " message: " + message;
+                message = "供应商返回：code: " + httpCode + " message: " + message;
             }
             this.type = type;
             if(error == null) {

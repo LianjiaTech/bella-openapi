@@ -13,6 +13,7 @@ import lombok.Data;
 public class RealTimePriceInfo implements IPriceInfo, Serializable {
     private BigDecimal price;
     private double batchDiscount = 1.0;
+
     @Override
     public String getUnit() {
         return "时/元";

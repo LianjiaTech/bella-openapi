@@ -47,21 +47,21 @@ public class VideoCreateRequest implements Serializable {
     @JsonAnyGetter
     public Map<String, Object> getExtraBodyFields() {
         Map<String, Object> result = new HashMap<>();
-        
-        if (extra_body != null) {
+
+        if(extra_body != null) {
             result.putAll(extra_body);
         }
-        
-        if (realExtraBody != null) {
+
+        if(realExtraBody != null) {
             result.put("extra_body", realExtraBody);
         }
-        
+
         return result.isEmpty() ? null : result;
     }
 
     @JsonAnySetter
     public void setExtraBodyField(String key, Object value) {
-        if (extra_body == null) {
+        if(extra_body == null) {
             extra_body = new HashMap<>();
         }
         extra_body.put(key, value);

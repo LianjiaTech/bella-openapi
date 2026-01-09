@@ -17,7 +17,7 @@ import java.io.Serializable;
 @Data
 public class SpeakerEmbeddingRequest implements UserRequest, Serializable, IMemoryClearable, ISummary {
     private static final long serialVersionUID = 1L;
-    
+
     private String url;
     private String base64;
     private String model;
@@ -27,7 +27,7 @@ public class SpeakerEmbeddingRequest implements UserRequest, Serializable, IMemo
     private int sampleRate = 16000;
     @JsonProperty("task_id")
     private String taskId = "";
-    
+
     // Voice Activity Detection parameters
     @JsonProperty("enable_vad")
     private boolean enableVad = false;
@@ -44,7 +44,7 @@ public class SpeakerEmbeddingRequest implements UserRequest, Serializable, IMemo
 
     @Override
     public void clearLargeData() {
-        if (!cleared) {
+        if(!cleared) {
             // 清理最大的内存占用 - base64音频数据
             this.base64 = null;
 
@@ -60,6 +60,6 @@ public class SpeakerEmbeddingRequest implements UserRequest, Serializable, IMemo
 
     @Override
     public String[] ignoreFields() {
-        return new String[] {"base64"};
+        return new String[] { "base64" };
     }
 }

@@ -128,7 +128,9 @@ public class ResponsesApiRequest implements IMemoryClearable, ITransfer {
         private String effort;
 
         /**
-         * A summary of the reasoning performed by the model. This can be useful for debugging and understanding the model's reasoning process. One of auto, concise, or detailed.
+         * A summary of the reasoning performed by the model. This can be useful
+         * for debugging and understanding the model's reasoning process. One of
+         * auto, concise, or detailed.
          */
         private String summary;
     }
@@ -255,14 +257,14 @@ public class ResponsesApiRequest implements IMemoryClearable, ITransfer {
 
     @Override
     public void clearLargeData() {
-        if (!cleared) {
+        if(!cleared) {
             // 清理最大的内存占用 - 输入数据、工具列表、元数据等
             this.input = null;
             this.instructions = null;
-            if (this.tools != null) {
+            if(this.tools != null) {
                 this.tools.clear();
             }
-            if (this.metadata != null) {
+            if(this.metadata != null) {
                 this.metadata.clear();
             }
             this.reasoning = null;

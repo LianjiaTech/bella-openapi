@@ -20,6 +20,7 @@ public class BellaContext {
     private static final ThreadLocal<Operator> operatorLocal = new ThreadLocal<>();
     private static final ThreadLocal<Map<String, String>> headersThreadLocal = new ThreadLocal<>();
     private static final ThreadLocal<ApikeyInfo> akThreadLocal = new ThreadLocal<>();
+
     public static String generateTraceId(String serviceId) {
         return serviceId + "-" + UUID.randomUUID();
     }
@@ -90,21 +91,21 @@ public class BellaContext {
         // 使用Spring BeanUtils进行属性拷贝，自动复制所有字段，降低维护成本
         Operator copy = new Operator();
         BeanUtils.copyProperties(oper, copy);
-        
+
         // 确保optionalInfo不为null并进行浅拷贝
-        if (copy.getOptionalInfo() == null) {
+        if(copy.getOptionalInfo() == null) {
             copy.setOptionalInfo(new HashMap<>());
         } else {
             copy.setOptionalInfo(new HashMap<>(copy.getOptionalInfo()));
         }
-        
+
         return copy;
     }
 
     public static String getOwnerCode() {
         Operator op = getOperatorIgnoreNull();
         if(op != null) {
-            return op.getUserId() == null || op.getUserId() <= 0? op.getSourceId() : op.getUserId().toString();
+            return op.getUserId() == null || op.getUserId() <= 0 ? op.getSourceId() : op.getUserId().toString();
         }
         ApikeyInfo apikeyInfo = getApikeyIgnoreNull();
         return apikeyInfo == null ? null : apikeyInfo.getOwnerCode();
@@ -118,14 +119,14 @@ public class BellaContext {
         return map;
     }
 
-    @SuppressWarnings({"unchecked"})
+    @SuppressWarnings({ "unchecked" })
     public static void replace(Map<String, Object> map) {
         operatorLocal.set((Operator) map.getOrDefault("oper", new Operator()));
         akThreadLocal.set((ApikeyInfo) map.getOrDefault("ak", new ApikeyInfo()));
         headersThreadLocal.set((Map<String, String>) map.getOrDefault("headers", new HashMap<>()));
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     public static void replace(String json) {
         Map<String, Object> map = JacksonUtils.deserialize(json, Map.class);
         if(map != null) {

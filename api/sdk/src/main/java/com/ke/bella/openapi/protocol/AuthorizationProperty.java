@@ -22,8 +22,7 @@ public class AuthorizationProperty implements IProtocolProperty {
 
     private static Map<String, GoogleCredentials> credentialsMap = new ConcurrentHashMap<>();
 
-    private static final String GOOGLE_CLOUD_PLATFORM_SCOPE =
-            "https://www.googleapis.com/auth/cloud-platform";
+    private static final String GOOGLE_CLOUD_PLATFORM_SCOPE = "https://www.googleapis.com/auth/cloud-platform";
 
     @Override
     public Map<String, String> description() {

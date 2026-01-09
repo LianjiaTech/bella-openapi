@@ -56,8 +56,8 @@ public class WebCrawlPriceInfo implements IPriceInfo, Serializable {
     @Override
     public String toString() {
         return "基础映射：" + basicMappingPrice + " 分/10页\n" +
-               "指令映射：" + instructionMappingPrice + " 分/10页\n" +
-               "基础提取：" + basicExtractionPrice + " 分/5次\n" +
-               "高级提取：" + advancedExtractionPrice + " 分/5次";
+                "指令映射：" + instructionMappingPrice + " 分/10页\n" +
+                "基础提取：" + basicExtractionPrice + " 分/5次\n" +
+                "高级提取：" + advancedExtractionPrice + " 分/5次";
     }
 }

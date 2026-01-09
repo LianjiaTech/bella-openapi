@@ -18,7 +18,6 @@ import java.nio.ByteBuffer;
 /**
  * 基于 Netty 池化 DirectBuffer 的 RequestBody 实现
  * 使用 Netty PooledByteBufAllocator 管理堆外内存，减少 GC 压力
- *
  * 优势：
  * 1. 使用 Netty 池化堆外内存（PooledDirectBuffer），大幅减少内存分配开销
  * 2. 自动扩展缓冲区，无需预估大小
@@ -33,19 +32,19 @@ public class ByteBufferRequestBody extends RequestBody {
     private final MediaType mediaType;
     private ByteBuffer buffer;           // NIO ByteBuffer view for OkHttp
     private ByteBuf pooledByteBuf;       // Netty pooled buffer for release
-	/**
-	 * -- GETTER --
-	 *  判断是否已释放
-	 */
-	@Getter
-	private volatile boolean released = false;
+    /**
+     * -- GETTER --
+     * 判断是否已释放
+     */
+    @Getter
+    private volatile boolean released = false;
 
     /**
      * 私有构造函数：持有 ByteBuffer 和 ByteBuf 引用
      *
      * @param mediaType 媒体类型
-     * @param buffer NIO ByteBuffer view (for OkHttp)
-     * @param byteBuf Netty pooled ByteBuf (for release)
+     * @param buffer    NIO ByteBuffer view (for OkHttp)
+     * @param byteBuf   Netty pooled ByteBuf (for release)
      */
     private ByteBufferRequestBody(MediaType mediaType, ByteBuffer buffer, ByteBuf byteBuf) {
         this.mediaType = mediaType;
@@ -58,7 +57,8 @@ public class ByteBufferRequestBody extends RequestBody {
      * 自动扩展缓冲区，无需预估大小
      *
      * @param mediaType 媒体类型
-     * @param obj 要序列化的对象
+     * @param obj       要序列化的对象
+     * 
      * @return ByteBufferRequestBody
      */
     public static ByteBufferRequestBody fromObject(MediaType mediaType, Object obj) {
@@ -93,7 +93,7 @@ public class ByteBufferRequestBody extends RequestBody {
 
     @Override
     public long contentLength() {
-        if (released) {
+        if(released) {
             return 0;
         }
         return buffer.remaining();
@@ -101,7 +101,7 @@ public class ByteBufferRequestBody extends RequestBody {
 
     @Override
     public void writeTo(BufferedSink sink) throws IOException {
-        if (released) {
+        if(released) {
             throw new IllegalStateException("ByteBuffer has been released");
         }
 
@@ -126,14 +126,13 @@ public class ByteBufferRequestBody extends RequestBody {
     /**
      * 手动释放 ByteBuffer 和 Netty ByteBuf
      * 将池化 ByteBuf 归还到 Netty 池中，供后续请求复用
-     *
      * 优势：
      * 1. 池化复用，避免频繁分配堆外内存
      * 2. 减少 GC 压力，因为 ByteBuf 不需要 GC 回收
      * 3. 降低系统调用开销（申请堆外内存需要 syscall）
      */
     public void release() {
-        if (!released && pooledByteBuf != null) {
+        if(!released && pooledByteBuf != null) {
             released = true;
             buffer = null;
             pooledByteBuf.release();  // 归还到 Netty 池中

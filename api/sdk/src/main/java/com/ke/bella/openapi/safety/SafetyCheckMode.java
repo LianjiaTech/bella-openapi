@@ -10,7 +10,8 @@ public enum SafetyCheckMode {
     skip,
 
     /**
-     * Async safety check - send request but don't wait for result, don't block main flow
+     * Async safety check - send request but don't wait for result, don't block
+     * main flow
      * This is the default mode for backward compatibility
      */
     async,
@@ -32,7 +33,7 @@ public enum SafetyCheckMode {
      * Parse mode from string, returns default (async) if null or invalid
      */
     public static SafetyCheckMode fromString(String mode) {
-        if (mode == null) {
+        if(mode == null) {
             return getDefault();
         }
         try {

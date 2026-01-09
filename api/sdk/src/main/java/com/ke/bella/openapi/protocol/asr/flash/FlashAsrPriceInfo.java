@@ -9,7 +9,7 @@ import com.ke.bella.openapi.protocol.IPriceInfo;
 import lombok.Data;
 
 @Data
-public class FlashAsrPriceInfo implements IPriceInfo, Serializable  {
+public class FlashAsrPriceInfo implements IPriceInfo, Serializable {
 
     private BigDecimal price;
     private double batchDiscount = 1.0;

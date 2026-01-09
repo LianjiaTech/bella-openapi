@@ -55,7 +55,7 @@ public class ApikeyInfo implements Serializable {
     }
 
     public boolean hasPermission(String url) {
-       return getRolePath().getIncluded().stream().anyMatch(pattern -> MatchUtils.matchUrl(pattern, url))
+        return getRolePath().getIncluded().stream().anyMatch(pattern -> MatchUtils.matchUrl(pattern, url))
                 && getRolePath().getExcluded().stream().noneMatch(pattern -> MatchUtils.matchUrl(pattern, url));
     }
 

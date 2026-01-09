@@ -11,7 +11,7 @@ import java.util.UUID;
 @Data
 public class RealTimeHeader implements Serializable {
     private static final long serialVersionUID = 1L;
-    
+
     private String name;
     @JsonProperty("message_id")
     private String messageId;
