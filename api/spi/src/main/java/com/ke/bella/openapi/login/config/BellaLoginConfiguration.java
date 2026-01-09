@@ -91,13 +91,13 @@ public class BellaLoginConfiguration {
     public SessionManager sessionManager(
             LoginProperties loginProperties,
             SessionProperty sessionProperty,
-            @Autowired(required = false) IUserRepo userRepo
-    ) {
-        if ("client".equalsIgnoreCase(loginProperties.getType())) {
-            if (StringUtils.isBlank(loginProperties.getOpenapiBase())) {
+            @Autowired(required = false) IUserRepo userRepo) {
+        if("client".equalsIgnoreCase(loginProperties.getType())) {
+            if(StringUtils.isBlank(loginProperties.getOpenapiBase())) {
                 throw new IllegalStateException("login type is 'client', but 'bella.login.openapi-base' is not configured or is empty.");
             }
-            // Pass sessionProperty to HttpSessionManager as it's needed for cookie name
+            // Pass sessionProperty to HttpSessionManager as it's needed for
+            // cookie name
             return new HttpSessionManager(loginProperties.getOpenapiBase(), sessionProperty);
         } else {
             if(redisConnectionFactory == null) {
@@ -106,9 +106,8 @@ public class BellaLoginConfiguration {
             RedisSessionManager redisManager = new RedisSessionManager(
                     sessionProperty,
                     operatorRedisTemplate(redisConnectionFactory),
-                    new StringRedisTemplate(redisConnectionFactory)
-            );
-            if (userRepo != null) {
+                    new StringRedisTemplate(redisConnectionFactory));
+            if(userRepo != null) {
                 redisManager.setUserRepo(userRepo);
             }
             return redisManager;
