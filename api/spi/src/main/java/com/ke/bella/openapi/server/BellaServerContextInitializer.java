@@ -21,13 +21,13 @@ public class BellaServerContextInitializer implements ApplicationContextInitiali
     @Override
     public void initialize(@NotNull ConfigurableApplicationContext configurableApplicationContext) {
         Environment environment = configurableApplicationContext.getEnvironment();
-        
+
         // 检查是否启用初始化器
         String enabled = environment.getProperty("bella.server.initializer.enabled");
-        if (!Boolean.parseBoolean(enabled)) {
+        if(!Boolean.parseBoolean(enabled)) {
             return;
         }
-        
+
         try {
             String ip = inetUtils.findFirstNonLoopbackHostInfo().getIpAddress();
             Integer port = Optional.ofNullable(environment.getProperty("server.port")).map(Integer::valueOf).orElse(8080);
