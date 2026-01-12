@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
+    <define name="INSTANCE_IDENTIFIER" class="com.ke.bella.openapi.server.InstanceIdentifierPropertyDefiner"/>
     <property name="LOG_FILE_MAX_HISTORY" value="7"/>
     <property name="FILE_MAX_SIZE" value="300MB"/>
     <property name="LOG_TOTAL_FILE_SIZE" value="2GB"/>
     <property name="LOG_PATH" value="${LOG_PATH:-${LOG_TEMP:-${java.io.tmpdir:-/tmp}}/}"/>
+    <property name="FULL_LOG_PATH" value="${FULL_LOG_PATH:-${LOG_TEMP:-${java.io.tmpdir:-/tmp}}/}"/>
     <property name="FILE_LOG_PATTERN"
               value="%d{yyyy/MM/dd-HH:mm:ss:SSS} [%X{SW_TRACE_ID}] [%X{SW_TRACE_SEGMENT_ID}][%X{SW_TRACE_SPAN_ID}] %X{sessionTokenId} [%thread] %-5level %logger- %msg%n"/>
     
@@ -115,7 +117,6 @@
             <appender-ref ref="FILE"/>
         </appender>
 
-
         <logger name="druid" level="DEBUG" additivity="false">
             <appender-ref ref="SQL_FILE"/>
         </logger>
@@ -131,6 +132,10 @@
         <logger name="dubboProviderLogger" level="INFO" additivity="false">
             <appender-ref ref="DUBBO_PROVIDER_FILE"/>
         </logger>
+
+        <!-- 引入私有 Logger 配置（可选，不存在不会报错） -->
+        <include optional="true" resource="private-loggers.xml"/>
+
         <root level="INFO">
             <appender-ref ref="ASYNC_FILE"/>
         </root>
