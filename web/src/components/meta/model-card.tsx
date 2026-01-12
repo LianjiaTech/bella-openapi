@@ -6,6 +6,7 @@ import { Model } from "@/lib/types/openapi";
 import { Badge } from "@/components/ui/badge";
 import {useUser} from "@/lib/context/user-context";
 import {hasPermission} from "@/lib/api/userInfo";
+import {PriceDisplay} from "@/components/meta/price-display";
 
 interface ModelCardProps {
     model: Model;
@@ -90,19 +91,9 @@ export function ModelCard({ model, update }: ModelCardProps) {
                 {model.priceDetails && (
                     <div className="mt-4">
                         <h3 className="text-sm font-medium text-gray-600 mb-2">费用</h3>
-                        <div className="bg-gray-50 rounded-lg p-3">
-                            {Object.entries(model.priceDetails.displayPrice).map(([key, value]) => (
-                                <div key={key} className="flex justify-between items-start mb-1">
-                                    <span className="text-xs text-gray-600">{key}</span>
-                                    <span className="text-sm font-semibold text-gray-800 text-right whitespace-pre-line">
-                                        {value}
-                                    </span>
-                                </div>
-                            ))}
-                            <div className="text-xs text-gray-500 mt-2 text-right">
-                                单位: {model.priceDetails.unit}
-                            </div>
-                        </div>
+                        <PriceDisplay
+                            priceDetails={model.priceDetails}
+                        />
                     </div>
                 )}
             </CardContent>

@@ -102,6 +102,7 @@ export interface Model {
     status: string;
     linkedTo: string;
     endpoints: string[];
+    priceInfo?: string;  // JSON 字符串，包含定价信息
     priceDetails: PriceDetails;
     terminalModel: string;
 }
@@ -139,14 +140,39 @@ export interface EndpointDetails {
     priceDetails: PriceDetails;
 }
 
+export enum PricingMode {
+    FIXED = 'fixed',
+    TIERED = 'tiered'
+}
+
+export interface PriceTier {
+    minInputTokens?: number | null;
+    maxInputTokens?: number | null;
+    minOutputTokens?: number | null;
+    maxOutputTokens?: number | null;
+    inputPrice: number;
+    outputPrice: number;
+    imageInputPrice?: number | null;
+    imageOutputPrice?: number | null;
+    cachedReadPrice?: number | null;
+    cachedCreationPrice?: number | null;
+}
+
+export interface CompletionPriceInfo {
+    mode: PricingMode;
+    input?: number;
+    output?: number;
+    imageInput?: number;
+    imageOutput?: number;
+    cachedRead?: number;
+    cachedCreation?: number;
+    unit?: string;
+    batchDiscount?: number;
+    tiers?: PriceTier[];  // 区间定价的区间列表
+}
+
 export interface PriceDetails {
-    priceInfo?: {
-        input: number;
-        output: number;
-        cachedRead?: number;
-        cachedCreation?: number;
-        unit: string;
-    };
+    priceInfo?: CompletionPriceInfo;
     displayPrice: Record<string, string>;
     unit: string;
 }
