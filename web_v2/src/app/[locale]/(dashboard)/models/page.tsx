@@ -13,18 +13,6 @@ import { Loader, AlertCircle } from "lucide-react"
 import { ModelCard } from "@/components/ui/modelCard"
 import { Button } from "@/components/common/button"
 
-// 标签颜色配置
-const tagColors = [
-  "bg-green-500/10 text-green-500 border-green-500/20",
-  "bg-blue-500/10 text-blue-500 border-blue-500/20",
-  "bg-purple-500/10 text-purple-500 border-purple-500/20",
-  "bg-orange-500/10 text-orange-500 border-orange-500/20",
-  "bg-pink-500/10 text-pink-500 border-pink-500/20",
-  "bg-indigo-500/10 text-indigo-500 border-indigo-500/20",
-  "bg-cyan-500/10 text-cyan-500 border-cyan-500/20",
-  "bg-red-500/10 text-red-500 border-red-500/20",
-]
-
 /**
  * 模型目录页面组件
  */
@@ -100,7 +88,7 @@ const ModelsPage = () => {
    * 处理添加渠道操作
    */
   const handleAddChannel = (model: Model) => {
-    console.log("添加私有渠道:", model.modelName)
+    
   }
 
   return (
@@ -159,7 +147,6 @@ const ModelsPage = () => {
                   <ModelCard
                     key={model.modelName}
                     model={model}
-                    tagColors={tagColors}
                     onAddChannel={handleAddChannel}
                   />
                 ))}
