@@ -82,7 +82,11 @@
     "streaming": "流式",
     "privateChannel": "私有渠道",
     "inputOutputLength": "输入/输出长度",
-    "pricing": "定价"
+    "pricing": "定价",
+    "loadingModels": "正在加载模型...",
+    "loading": "加载中...",
+    "noFilterTags": "暂无可用筛选标签",
+    "retry": "重试"
   },
   "metadata": {
     "metadataManagement": "元数据管理",
