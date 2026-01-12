@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  私有 Logback 配置示例
+
+  使用方式：
+  1. 复制此文件为 private-loggers.xml
+     cp private-loggers.xml.example private-loggers.xml
+  2. 根据需要修改配置
+  3. private-loggers.xml 不会被提交到 git（已在 .gitignore 中配置）
+
+  本次新增的配置说明：
+  - PropertyDefiner 定义的 INSTANCE_IDENTIFIER 用于区分不同实例的日志
+  - FULL_FILE appender 用于记录完整日志（按小时滚动，文件名包含实例标识符）
+  - ConsoleFullLogger 用于输出完整日志（默认关闭）
+-->
+<included>
+    <!-- 定义实例标识符属性 -->
+    <property name="LOG_INSTANCE_IDENTIFIER" value="${INSTANCE_IDENTIFIER:-000}"/>
+
+    <!-- 完整日志 Appender（按小时滚动，包含实例标识符） -->
+    <appender name="FULL_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${FULL_LOG_PATH}/%d{yyyy-MM-dd-HH}/app-${LOG_INSTANCE_IDENTIFIER}.log</fileNamePattern>
+            <maxHistory>${LOG_FILE_MAX_HISTORY}</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${FILE_LOG_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- 异步完整日志 Appender -->
+    <appender name="ASYNC_FULL_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <neverBlock>true</neverBlock>
+        <discardingThreshold>0</discardingThreshold>
+        <queueSize>1024</queueSize>
+        <appender-ref ref="FULL_FILE"/>
+    </appender>
+
+    <!-- 完整日志 Logger（根据需要调整 level） -->
+    <logger name="ConsoleFullLogger" level="OFF" additivity="false">
+        <appender-ref ref="ASYNC_FULL_FILE" />
+    </logger>
+
+    <!-- 其他私有 Logger 示例 -->
+    <!--
+    <logger name="com.ke.bella.openapi.private.CustomLogger" level="DEBUG" additivity="false">
+        <appender-ref ref="FILE"/>
+    </logger>
+    -->
+</included>

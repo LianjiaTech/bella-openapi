@@ -83,3 +83,5 @@ nginx/conf.d/dynamic-services.conf
 web/.env
 
 *.tsbuildinfo
+
+private-loggers.xml
