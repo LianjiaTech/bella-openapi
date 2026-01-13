@@ -34,7 +34,7 @@ import java.io.IOException;
  */
 @EndpointAPI
 @RestController
-@RequestMapping({"/v1beta/models", "/v1beta1/publishers/google/models"})
+@RequestMapping("/v1beta/models")
 @Tag(name = "gemini", description = "Google Gemini API Compatible Endpoints")
 @Slf4j
 public class GeminiController {
@@ -78,8 +78,9 @@ public class GeminiController {
 
         // ==================== 3. 上下文设置 ====================
         // 设置 endpoint 数据,触发 AOP 拦截器和路由逻辑
-        // 注意: endpoint 固定为 "/v1beta/models",用于 AdaptorManager 查找
-        String endpoint = "/v1beta/models";
+        // 从请求 URI 中动态提取基础路径 (去掉 /{model}:{method} 后缀)
+        String requestUri = EndpointContext.getRequest().getRequestURI();
+        String endpoint = requestUri.substring(0, requestUri.indexOf("/" + model));
         endpointDataService.setEndpointData(endpoint, model, geminiRequest);
         boolean isMock = EndpointContext.getProcessData().isMock();
 
