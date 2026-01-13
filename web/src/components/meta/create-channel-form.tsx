@@ -8,7 +8,7 @@ import {
     createChannel,
     createPrivateChannel,
     getChannelInfoSchema,
-    getPriceInfoSchema,
+    getModelEndpoints,
     listProtocols
 } from '@/lib/api/meta';
 import {Channel, JsonSchema} from '@/lib/types/openapi';
@@ -17,7 +17,8 @@ import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/c
 import {NestedObject} from "@/lib/types/common";
 import {renderField} from "@/components/ui/render-field";
 import {Switch} from "@/components/ui/switch";
-import {useRouter, useSearchParams} from 'next/navigation';
+import {useSearchParams} from 'next/navigation';
+import {PriceInfoEditor} from './price-info-editor';
 
 interface Props {
     entityType: string,
@@ -30,7 +31,7 @@ export function CreateChannelForm({
                                       entityCode,
                                       isPrivate = false
                                   }: Props) {
-    const { toast } = useToast();
+    const {toast} = useToast();
     const searchParams = useSearchParams();
     const [channel, setChannel] = useState<Channel>({
         entityType: entityType,
@@ -50,39 +51,24 @@ export function CreateChannelForm({
     });
     const [protocols, setProtocols] = useState<Record<string, string>>({})
     const [selectedProtocol, setSelectedProtocol] = useState<string>('')
-    const [priceInfoSchema, setPriceInfoSchema] = useState<JsonSchema | null>(null)
     const [channelInfoSchema, setChannelInfoSchema] = useState<JsonSchema | null>(null);
-    const [priceInfoValue, setPriceInfoValue] = useState<NestedObject>({});
     const [channelInfoValue, setChannelInfoValue] = useState<NestedObject>({});
     const [loading, setLoading] = useState(false);
+    const [endpoint, setEndpoint] = useState<string>('');  // 存储实际的 endpoint
 
     const handleChange = (field: keyof Channel, value: string | number) => {
-        if(field == 'protocol') {
+        if (field == 'protocol') {
             setSelectedProtocol(value as string)
         }
-        setChannel(prev => ({ ...prev, [field]: value }));
-    };
-
-    const handlePriceInfoChange = (path: string, value: any) => {
-        setPriceInfoValue(prev => {
-            const newValue = { ...prev };
-            let current = newValue;
-            const keys = path.split('.');
-            for (let i = 0; i < keys.length - 1; i++) {
-                if (!current[keys[i]]) current[keys[i]] = {};
-                current = current[keys[i]];
-            }
-            current[keys[keys.length - 1]] = value;
-            return newValue;
-        });
+        setChannel(prev => ({...prev, [field]: value}));
     };
 
     const handleChannelInfoChange = (path: string, value: any) => {
         setChannelInfoValue(prev => {
-            const newValue = { ...prev };
+            const newValue = {...prev};
             let current = newValue;
             const keys = path.split('.');
-            for (let i = 0; i <keys.length - 1; i++) {
+            for (let i = 0; i < keys.length - 1; i++) {
                 if (!current[keys[i]]) current[keys[i]] = {};
                 current = current[keys[i]];
             }
@@ -95,20 +81,32 @@ export function CreateChannelForm({
         async function fetchData() {
             const protocols = await listProtocols(entityType, entityCode);
             setProtocols(protocols);
-            setSelectedProtocol('')
-            const priceSchema = await getPriceInfoSchema(entityType, entityCode);
-            setPriceInfoSchema(priceSchema);
-            setPriceInfoValue({});
+            setSelectedProtocol('');
+            if (entityType === 'endpoint') {
+                setEndpoint(entityCode);
+            } else if (entityType === 'model') {
+                try {
+                    const endpoints = await getModelEndpoints(entityCode);
+                    if (endpoints && endpoints.length > 0) {
+                        const completionEndpoint = endpoints.find(ep =>
+                            ep === '/v1/chat/completions');
+                        setEndpoint(completionEndpoint || endpoints[0]);
+                    }
+                } catch (error) {
+                    console.error('Failed to fetch model details:', error);
+                }
+            }
         }
+
         fetchData();
-    }, []);
+    }, [entityType, entityCode]);
 
     useEffect(() => {
         async function fetchChannelInfoSchema() {
             try {
                 const newChannelInfoSchema = await getChannelInfoSchema(entityType, entityCode, selectedProtocol);
                 setChannelInfoSchema(newChannelInfoSchema);
-                setChannelInfoValue({ safetyCheckMode: 'async' });
+                setChannelInfoValue({safetyCheckMode: 'async'});
             } catch (error) {
                 console.error("Error fetching schemas:", error);
                 toast({
@@ -119,7 +117,8 @@ export function CreateChannelForm({
                 });
             }
         }
-        if(selectedProtocol && selectedProtocol != '') {
+
+        if (selectedProtocol && selectedProtocol != '') {
             fetchChannelInfoSchema();
         } else {
             setChannelInfoSchema(null);
@@ -129,13 +128,25 @@ export function CreateChannelForm({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if ((window as any).__validatePriceInfo) {
+            const validationError = (window as any).__validatePriceInfo();
+            if (validationError) {
+                toast({
+                    title: "价格信息校验失败",
+                    description: validationError,
+                    variant: "destructive",
+                });
+                return;
+            }
+        }
+
         setLoading(true);
         try {
             const isPrivate = searchParams.get('private') === 'true';
             const createFunction = isPrivate ? createPrivateChannel : createChannel;
             const finalChannel = {
                 ...channel,
-                priceInfo: JSON.stringify(priceInfoValue),
                 channelInfo: JSON.stringify(channelInfoValue)
             };
             await createFunction(finalChannel);
@@ -143,7 +154,7 @@ export function CreateChannelForm({
                 title: "成功",
                 description: `渠道创建成功`,
             });
-            if(isPrivate) {
+            if (isPrivate) {
                 window.location.href = `/meta/private-channel?entityType=${entityType}&entityCode=${entityCode}`;
             } else {
                 if (entityType == 'model') {
@@ -326,17 +337,14 @@ export function CreateChannelForm({
                                 ))}
                             </div>
                         )}
-                        {priceInfoSchema && (
-                            <div className="space-y-2">
-                                <Label htmlFor="channelInfo">单价信息</Label>
-                                {priceInfoSchema.params.map((schema) => (
-                                    <div key={schema.code}>
-                                        <Label>{schema.name}</Label>
-                                        {renderField(schema, priceInfoValue[schema.code], (_, value) => handlePriceInfoChange(schema.code, value))}
-                                    </div>
-                                ))}
-                            </div>
-                        )}
+                        <PriceInfoEditor
+                            value={channel.priceInfo}
+                            onUpdate={(value) => {
+                                handleChange('priceInfo', value);
+                            }}
+                            onValidate={() => null}
+                            {...(endpoint && {endpoint})}
+                        />
                         <Button type="submit" className="w-full">
                             创建渠道
                         </Button>

@@ -100,6 +100,11 @@ public class MetadataController {
         return modelService.getInfo(name);
     }
 
+    @GetMapping("/model/endpoints")
+    public List<String> getModelEndpoints(@RequestParam String modelName) {
+        return modelService.getAllEndpoints(modelName);
+    }
+
     @GetMapping("/channel/list")
     public List<ChannelDB> listChannel(Condition.ChannelCondition condition) {
         fillChannelCondition(condition);

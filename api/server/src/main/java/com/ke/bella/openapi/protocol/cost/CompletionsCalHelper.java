@@ -20,25 +20,30 @@ public class CompletionsCalHelper {
     @Getter
     @AllArgsConstructor
     public enum CompletionsCalElement {
-        CACHE_READ(CompletionPriceInfo::getCachedRead, CompletionResponse.TokensDetail::getCached_tokens),
-        CACHE_CREATION(CompletionPriceInfo::getCachedCreation, CompletionResponse.TokensDetail::getCache_creation_tokens),
-        IMAGE_INPUT(CompletionPriceInfo::getImageInput, CompletionResponse.TokensDetail::getImage_tokens),
-        IMAGE_OUTPUT(CompletionPriceInfo::getImageOutput, CompletionResponse.TokensDetail::getImage_tokens),
-        ;
+        CACHE_READ(CompletionPriceInfo::getCachedRead, CompletionPriceInfo.Tier::getCachedReadPrice,
+                CompletionResponse.TokensDetail::getCached_tokens),
+        CACHE_CREATION(CompletionPriceInfo::getCachedCreation, CompletionPriceInfo.Tier::getCachedCreationPrice,
+                CompletionResponse.TokensDetail::getCache_creation_tokens),
+        IMAGE_INPUT(CompletionPriceInfo::getImageInput, CompletionPriceInfo.Tier::getImageInputPrice,
+                CompletionResponse.TokensDetail::getImage_tokens),
+        IMAGE_OUTPUT(CompletionPriceInfo::getImageOutput, CompletionPriceInfo.Tier::getImageOutputPrice,
+                CompletionResponse.TokensDetail::getImage_tokens),
+                ;
 
         final Function<CompletionPriceInfo, BigDecimal> priceGetter;
+        final Function<CompletionPriceInfo.Tier, BigDecimal> tierPriceGetter;
         final Function<CompletionResponse.TokensDetail, Integer> tokensGetter;
     }
 
-    public static Pair<BigDecimal, Integer> calculateAllElements(List<CompletionsCalElement> elements, CompletionPriceInfo priceInfo,
-            CompletionResponse.TokensDetail tokensDetail) {
+    public static Pair<BigDecimal, Integer> calculateAllElements(List<CompletionsCalElement> elements, CompletionResponse.TokensDetail tokensDetail,
+            Function<CompletionsCalElement, BigDecimal> priceExtractor) {
         if(tokensDetail == null) {
             return Pair.of(BigDecimal.ZERO, 0);
         }
         int totalTokens = 0;
         BigDecimal amount = BigDecimal.ZERO;
         for (CompletionsCalElement element : elements) {
-            BigDecimal price = element.getPriceGetter().apply(priceInfo);
+            BigDecimal price = priceExtractor.apply(element);
             Integer tokens = element.getTokensGetter().apply(tokensDetail);
             if(price != null && tokens != null) {
                 totalTokens += tokens;

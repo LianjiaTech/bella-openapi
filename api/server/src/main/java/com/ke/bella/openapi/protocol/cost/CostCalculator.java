@@ -3,6 +3,7 @@ package com.ke.bella.openapi.protocol.cost;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.function.Function;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -103,25 +104,65 @@ public class CostCalculator {
             }
             int promptTokens = tokenUsage.getPrompt_tokens();
             int completionsTokens = tokenUsage.getCompletion_tokens();
-            Pair<BigDecimal, Integer> inputParts = CompletionsCalHelper.calculateAllElements(CompletionsCalHelper.INPUT, price,
-                    tokenUsage.getPrompt_tokens_details());
-            Pair<BigDecimal, Integer> outputParts = CompletionsCalHelper.calculateAllElements(CompletionsCalHelper.OUTPUT, price,
-                    tokenUsage.getCompletion_tokens_details());
+            CompletionResponse.TokensDetail inputDetails = tokenUsage.getPrompt_tokens_details();
+            CompletionResponse.TokensDetail outputDetails = tokenUsage.getCompletion_tokens_details();
+
+            BigDecimal inputPrice;
+            BigDecimal outputPrice;
+            Function<CompletionsCalHelper.CompletionsCalElement, BigDecimal> inputPriceGetter;
+            Function<CompletionsCalHelper.CompletionsCalElement, BigDecimal> outputPriceGetter;
+
+            if("tiered".equals(price.getMode().getCode())) {
+                // 查找匹配的区间
+                CompletionPriceInfo.Tier tier = price.findTier(promptTokens, completionsTokens);
+                if(tier == null) {
+                    throw new RuntimeException("No matching price tier found for input=" + promptTokens + ", output=" + completionsTokens);
+                }
+                inputPrice = tier.getInputPrice();
+                outputPrice = tier.getOutputPrice();
+                inputPriceGetter = element -> element.getTierPriceGetter().apply(tier);
+                outputPriceGetter = element -> element.getTierPriceGetter().apply(tier);
+            } else {
+                inputPrice = price.getInput();
+                outputPrice = price.getOutput();
+                inputPriceGetter = element -> element.getPriceGetter().apply(price);
+                outputPriceGetter = element -> element.getPriceGetter().apply(price);
+            }
+
+            // 统一计算
+            Pair<BigDecimal, Integer> inputParts = CompletionsCalHelper.calculateAllElements(CompletionsCalHelper.INPUT, inputDetails,
+                    inputPriceGetter);
+            Pair<BigDecimal, Integer> outputParts = CompletionsCalHelper.calculateAllElements(CompletionsCalHelper.OUTPUT, outputDetails,
+                    outputPriceGetter);
+
+            return calculateTotalCost(promptTokens, completionsTokens, inputParts, outputParts, inputPrice, outputPrice);
+        }
+
+        private BigDecimal calculateTotalCost(int promptTokens, int completionsTokens, Pair<BigDecimal, Integer> inputParts,
+                Pair<BigDecimal, Integer> outputParts, BigDecimal inputPrice, BigDecimal outputPrice) {
             if(inputParts.getLeft().doubleValue() > 0) {
                 promptTokens -= inputParts.getRight();
             }
             if(outputParts.getLeft().doubleValue() > 0) {
                 completionsTokens -= outputParts.getRight();
             }
-            return price.getInput().multiply(BigDecimal.valueOf(promptTokens / 1000.0))
-                    .add(price.getOutput().multiply(BigDecimal.valueOf(completionsTokens / 1000.0)))
-                    .add(inputParts.getLeft()).add(outputParts.getLeft());
+
+            BigDecimal normalInputCost = inputPrice.multiply(BigDecimal.valueOf(promptTokens / 1000.0));
+            BigDecimal normalOutputCost = outputPrice.multiply(BigDecimal.valueOf(completionsTokens / 1000.0));
+
+            // 返回总费用 = 普通token费用 + 特殊token费用
+            return normalInputCost.add(normalOutputCost)
+                    .add(inputParts.getLeft())
+                    .add(outputParts.getLeft());
         }
 
         @Override
         public boolean checkPriceInfo(String priceInfo) {
             CompletionPriceInfo price = JacksonUtils.deserialize(priceInfo, CompletionPriceInfo.class);
-            return price != null && price.getInput() != null && price.getOutput() != null;
+            if(price == null) {
+                return false;
+            }
+            return price.validate();
         }
     };
 
