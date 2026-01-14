@@ -12,25 +12,29 @@ import org.springframework.stereotype.Component;
 @Component
 public class ConsoleLogRepo implements LogRepo {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConsoleLogRepo.class);
-    
+
+    private static final Logger FULL_LOGGER = LoggerFactory.getLogger("ConsoleFullLogger");
+
     @Value("${bella.log.max-size-bytes:#{null}}")
     private Integer maxLogSizeBytes;
 
     @Override
     public void record(EndpointProcessData log) {
         String serialized = JacksonUtils.serialize(log);
-        
+
+        FULL_LOGGER.info(serialized);
+
         // Check if log size limit is configured and serialized size exceeds it
-        if (maxLogSizeBytes != null && serialized.getBytes().length > maxLogSizeBytes) {
+        if(maxLogSizeBytes != null && serialized.getBytes().length > maxLogSizeBytes) {
             // Create a copy with request and response removed to reduce size
             EndpointProcessData reducedLog = new EndpointProcessData();
             BeanUtils.copyProperties(log, reducedLog);
             reducedLog.setRequest("[REMOVED: Log size exceeded " + maxLogSizeBytes + " bytes]");
             reducedLog.setResponse(null);
-            
+
             serialized = JacksonUtils.serialize(reducedLog);
         }
-        
+
         LOGGER.info(serialized);
     }
 }

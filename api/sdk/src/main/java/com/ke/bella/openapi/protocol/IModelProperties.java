@@ -21,7 +21,7 @@ public interface IModelProperties extends IDescription {
 
         public static Class<? extends IModelProperties> fetchType(String endpoint) {
             for (EndpointModelPropertyType t : EndpointModelPropertyType.values()) {
-                if (t.endpoint.equals(endpoint)) {
+                if(t.endpoint.equals(endpoint)) {
                     return t.type;
                 }
             }

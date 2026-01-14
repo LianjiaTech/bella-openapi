@@ -16,7 +16,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Web Crawl Response based on Tavily Crawl API Contains crawled content, metadata, and timing information from web crawling
+ * Web Crawl Response based on Tavily Crawl API Contains crawled content,
+ * metadata, and timing information from web crawling
  */
 @Data
 @SuperBuilder
@@ -42,7 +43,8 @@ public class WebCrawlResponse extends OpenapiResponse {
     private Double responseTime;
 
     /**
-     * A unique request identifier you can share with customer support to help resolve issues with specific requests Example:
+     * A unique request identifier you can share with customer support to help
+     * resolve issues with specific requests Example:
      * "123e4567-e89b-12d3-a456-426614174111"
      */
     @Nullable
@@ -64,7 +66,8 @@ public class WebCrawlResponse extends OpenapiResponse {
     }
 
     /**
-     * Handle unknown properties during deserialization and store them in extraFields
+     * Handle unknown properties during deserialization and store them in
+     * extraFields
      */
     @JsonAnySetter
     public void setExtraField(String key, Object value) {
@@ -89,13 +92,15 @@ public class WebCrawlResponse extends OpenapiResponse {
         private String url;
 
         /**
-         * The full content extracted from the page This contains the complete extracted content in the specified format (markdown or text)
+         * The full content extracted from the page This contains the complete
+         * extracted content in the specified format (markdown or text)
          */
         @JsonProperty("raw_content")
         private String rawContent;
 
         /**
-         * The favicon URL for the result Only present if include_favicon was set to true in the request Example:
+         * The favicon URL for the result Only present if include_favicon was
+         * set to true in the request Example:
          * "https://mintlify.s3-us-west-1.amazonaws.com/tavilyai/_generated/favicon/apple-touch-icon.png?v=3"
          */
         @Nullable

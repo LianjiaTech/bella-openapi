@@ -7,24 +7,21 @@ import com.theokanning.openai.service.OpenAiService;
 public interface VideoAdaptor<T extends VideoProperty> extends IProtocolAdaptor {
 
     String submitVideoTask(
-        VideoCreateRequest request,
-        String baseUrl,
-        T property,
-        String videoId
-    );
+            VideoCreateRequest request,
+            String baseUrl,
+            T property,
+            String videoId);
 
     ChannelVideoResult queryVideoTask(
-        String channelVideoId,
-        String baseUrl,
-        T property
-    );
+            String channelVideoId,
+            String baseUrl,
+            T property);
 
     File transferVideoToFile(
-        String channelVideoId,
-        String baseUrl,
-        T property,
-        OpenAiService openAiService
-    );
+            String channelVideoId,
+            String baseUrl,
+            T property,
+            OpenAiService openAiService);
 
     @Override
     default String endpoint() {

@@ -35,7 +35,8 @@ public class PythonFuncCallListener {
     public void onFunctionCallEnter() {
         currentToolCall.getFunction().setArguments("{");
         if(callback != null) {
-            currentToolCall.getFunction().setName(null); //流式：只有function call的首包发送functionName
+            currentToolCall.getFunction().setName(null); // 流式：只有function
+                                                         // call的首包发送functionName
             callback.onMessage(StreamCompletionResponse.builder()
                     .choices(StreamCompletionResponse.toolcallChoice(currentToolCall))
                     .build());
@@ -44,7 +45,8 @@ public class PythonFuncCallListener {
 
     public void onArgumentName(String name) {
         if(callback != null) {
-            currentToolCall.getFunction().setName(null); //流式：只有function call的首包发送functionName
+            currentToolCall.getFunction().setName(null); // 流式：只有function
+                                                         // call的首包发送functionName
             currentToolCall.getFunction().setArguments(JacksonUtils.serialize(name));
             callback.onMessage(StreamCompletionResponse.builder()
                     .choices(StreamCompletionResponse.toolcallChoice(currentToolCall))
@@ -57,7 +59,8 @@ public class PythonFuncCallListener {
     public void onArgumentValue(Object value) {
         String tmp = ":" + JacksonUtils.serialize(value);
         if(callback != null) {
-            currentToolCall.getFunction().setName(null); //流式：只有function call的首包发送functionName
+            currentToolCall.getFunction().setName(null); // 流式：只有function
+                                                         // call的首包发送functionName
             currentToolCall.getFunction().setArguments(tmp);
             callback.onMessage(StreamCompletionResponse.builder()
                     .choices(StreamCompletionResponse.toolcallChoice(currentToolCall))
@@ -70,7 +73,8 @@ public class PythonFuncCallListener {
 
     public void onNextArgumentEnter() {
         if(callback != null) {
-            currentToolCall.getFunction().setName(null); //流式：只有function call的首包发送functionName
+            currentToolCall.getFunction().setName(null); // 流式：只有function
+                                                         // call的首包发送functionName
             currentToolCall.getFunction().setArguments(",");
             callback.onMessage(StreamCompletionResponse.builder()
                     .choices(StreamCompletionResponse.toolcallChoice(currentToolCall))
@@ -82,7 +86,8 @@ public class PythonFuncCallListener {
 
     public void onFunctionCallExit() {
         if(callback != null) {
-            currentToolCall.getFunction().setName(null); //流式：只有function call的首包发送functionName
+            currentToolCall.getFunction().setName(null); // 流式：只有function
+                                                         // call的首包发送functionName
             currentToolCall.getFunction().setArguments("}");
             callback.onMessage(StreamCompletionResponse.builder()
                     .choices(StreamCompletionResponse.toolcallChoice(currentToolCall))

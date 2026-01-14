@@ -20,12 +20,13 @@ import java.util.stream.Collectors;
 public class JsonSchema implements Serializable {
     private static final long serialVersionUID = 1L;
     private Set<TypeSchema> params;
+
     @SuppressWarnings("unchecked")
     public static JsonSchema toSchema(Class<?> type) {
         try {
             Map<String, String> desc;
             if(IDescription.class.isAssignableFrom(type)) {
-                desc = ((Class<? extends IDescription>)type).newInstance().description();
+                desc = ((Class<? extends IDescription>) type).newInstance().description();
             } else {
                 desc = new HashMap<>();
             }

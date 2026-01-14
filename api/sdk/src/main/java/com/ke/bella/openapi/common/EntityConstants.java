@@ -51,8 +51,8 @@ public class EntityConstants {
         SPEECH_ENDPOINT("/v*/audio/speech", "语音合成", TEXT2SPEECH),
         ASR_ENDPOINT("/v*/audio/transcriptions", "语音识别", AUDIO2TEXT),
         TEXT2IMAGE_ENDPOINT("/v*/images/generations", "文生图", IMAGES),
-        IMAGE2IMAGE_ENDPOINT("/v*/images/edits", "图生图", IMAGES)
-        ;
+        IMAGE2IMAGE_ENDPOINT("/v*/images/edits", "图生图", IMAGES);
+
         private final String endpoint;
         private final String name;
         private final SystemBasicCategory category;
@@ -67,6 +67,7 @@ public class EntityConstants {
         TEXT2SPEECH("0002-0001", "语音合成", AUDIO),
         AUDIO2TEXT("0002-0002", "语音识别", AUDIO),
         ;
+
         private final String code;
         private final String name;
         private final SystemBasicCategory parent;
@@ -84,6 +85,7 @@ public class EntityConstants {
         VISION(COMPLETION_ENDPOINT.endpoint, "features", "vision", Boolean.class, "是否支持图片输入"),
         JSON_FORMAT(COMPLETION_ENDPOINT.endpoint, "features", "json_format", Boolean.class, "是否支持json模式"),
         ;
+
         private final String endpoint;
         private final String fied;
         private final String code;
@@ -99,6 +101,7 @@ public class EntityConstants {
         AWS("AwsAdaptor"),
         HUOSHAN("HuoShanAdaptor"),
         ;
+
         private final String code;
     }
 
@@ -109,8 +112,8 @@ public class EntityConstants {
         ALI("阿里百炼", "阿里百炼"),
         HUO_SHAN("火山方舟", "火山方舟"),
         AWS("Bedrock", "Bedrock"),
-        AZURE("Azure", "Azure")
-        ;
+        AZURE("Azure", "Azure");
+
         private final String code;
         private final String name;
     }

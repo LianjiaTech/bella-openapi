@@ -39,7 +39,6 @@ public class AwsMessageAdaptor implements MessageAdaptor<AwsMessageProperty> {
         return AwsMessageProperty.class;
     }
 
-
     @Override
     public MessageResponse createMessages(MessageRequest request, String url, AwsMessageProperty property) {
         String model = request.getModel();
@@ -54,7 +53,8 @@ public class AwsMessageAdaptor implements MessageAdaptor<AwsMessageProperty> {
         byte[] requestBytes = JacksonUtils.toByte(request);
         clearLargeData(request);
 
-        BedrockRuntimeClient client = AwsClientManager.client(property.getRegion(), url, property.getAuth().getApiKey(), property.getAuth().getSecret());
+        BedrockRuntimeClient client = AwsClientManager.client(property.getRegion(), url, property.getAuth().getApiKey(),
+                property.getAuth().getSecret());
         try {
             InvokeModelResponse response = client.invokeModel(InvokeModelRequest.builder()
                     .body(SdkBytes.fromByteArray(requestBytes))
@@ -83,7 +83,8 @@ public class AwsMessageAdaptor implements MessageAdaptor<AwsMessageProperty> {
         byte[] requestBytes = JacksonUtils.toByte(request);
         clearLargeData(request);
 
-        BedrockRuntimeAsyncClient client = AwsClientManager.asyncClient(property.getRegion(), url, property.getAuth().getApiKey(), property.getAuth().getSecret());
+        BedrockRuntimeAsyncClient client = AwsClientManager.asyncClient(property.getRegion(), url, property.getAuth().getApiKey(),
+                property.getAuth().getSecret());
         InvokeModelWithResponseStreamRequest streamRequest = InvokeModelWithResponseStreamRequest.builder()
                 .body(SdkBytes.fromByteArray(requestBytes))
                 .modelId(property.getDeployName())
@@ -144,7 +145,7 @@ public class AwsMessageAdaptor implements MessageAdaptor<AwsMessageProperty> {
                     callback.send(response);
                 }
             }
-            if ("message_start".equals(response.getType()) && response.getMessage() != null) {
+            if("message_start".equals(response.getType()) && response.getMessage() != null) {
                 model = response.getMessage().getModel();
                 id = response.getMessage().getId();
                 usage = response.getMessage().getUsage();
@@ -169,7 +170,7 @@ public class AwsMessageAdaptor implements MessageAdaptor<AwsMessageProperty> {
         @Override
         public void accept(Throwable throwable) {
             log.warn(throwable.getMessage(), throwable);
-            if (throwable instanceof BedrockRuntimeException) {
+            if(throwable instanceof BedrockRuntimeException) {
                 BedrockRuntimeException bedrockException = (BedrockRuntimeException) throwable;
                 callback.finish(ChannelException.fromResponse(bedrockException.statusCode(), bedrockException.getMessage()));
                 return;

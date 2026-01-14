@@ -68,9 +68,9 @@ public class MetaDataOps {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class ModelAuthorizer extends Operator {
-        private String  authorizerType;
-        private String  authorizerCode;
-        private String  authorizerName;
+        private String authorizerType;
+        private String authorizerCode;
+        private String authorizerName;
 
         @Override
         public boolean equals(Object object) {

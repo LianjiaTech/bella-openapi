@@ -70,7 +70,8 @@ public class StreamMessagesCallback extends StreamCompletionCallback {
                     }
                     if(!messages.get(0).getType().equals("content_block_start")) {
                         MessageResponse.ContentBlock contentBlock;
-                        if(streamChoice.getDelta().getReasoning_content() != null || streamChoice.getDelta().getReasoning_content_signature() != null) {
+                        if(streamChoice.getDelta().getReasoning_content() != null
+                                || streamChoice.getDelta().getReasoning_content_signature() != null) {
                             contentBlock = new MessageResponse.ResponseThinkingBlock("", null);
                         } else {
                             contentBlock = new MessageResponse.ResponseTextBlock("");
@@ -92,7 +93,8 @@ public class StreamMessagesCallback extends StreamCompletionCallback {
                         int index = getTargetIndex(messages, stage);
                         contentIndex += 1;
                         if(currentStage != 3) {
-                            MessageResponse.ContentBlock contentBlock = currentStage == 2 ?  new MessageResponse.ResponseTextBlock("") : new MessageResponse.ResponseThinkingBlock("", null);;
+                            MessageResponse.ContentBlock contentBlock = currentStage == 2 ? new MessageResponse.ResponseTextBlock("")
+                                    : new MessageResponse.ResponseThinkingBlock("", null);;
                             messages.add(index, StreamMessageResponse.contentBlockStart(contentIndex, contentBlock));
                             messages.forEach(streamMessageResponse -> streamMessageResponse.setIndex(contentIndex));
                         }
@@ -111,17 +113,18 @@ public class StreamMessagesCallback extends StreamCompletionCallback {
     }
 
     private int getCurrentStage(StreamCompletionResponse.Choice streamChoice) {
-        return streamChoice.getDelta() == null ? 0 :
-                streamChoice.getDelta().getTool_calls() != null ? 3 :
-                streamChoice.getDelta().getContent() != null ? 2 :
-                streamChoice.getDelta().getReasoning_content() != null
-                        || streamChoice.getDelta().getReasoning_content_signature() != null
-                        || streamChoice.getDelta().getRedacted_reasoning_content() != null
-                        ? 1 : 0;
+        return streamChoice.getDelta() == null ? 0
+                : streamChoice.getDelta().getTool_calls() != null ? 3
+                        : streamChoice.getDelta().getContent() != null ? 2
+                                : streamChoice.getDelta().getReasoning_content() != null
+                                        || streamChoice.getDelta().getReasoning_content_signature() != null
+                                        || streamChoice.getDelta().getRedacted_reasoning_content() != null
+                                                ? 1
+                                                : 0;
     }
 
     private int getTargetIndex(List<StreamMessageResponse> messages, int stage) {
-        for(int i = 0; i < messages.size(); i++) {
+        for (int i = 0; i < messages.size(); i++) {
             StreamMessageResponse message = messages.get(i);
             if(message.getType().equals("content_block_start")) {
                 return i;
@@ -133,7 +136,8 @@ public class StreamMessagesCallback extends StreamCompletionCallback {
                 }
             }
             if(stage == 1) {
-                if(!(delta instanceof StreamMessageResponse.ThinkingDelta || delta instanceof StreamMessageResponse.SignatureDelta || delta instanceof StreamMessageResponse.RedactedThinkingDelta)) {
+                if(!(delta instanceof StreamMessageResponse.ThinkingDelta || delta instanceof StreamMessageResponse.SignatureDelta
+                        || delta instanceof StreamMessageResponse.RedactedThinkingDelta)) {
                     return i;
                 }
             }
@@ -166,7 +170,7 @@ public class StreamMessagesCallback extends StreamCompletionCallback {
             return;
         }
         if(data instanceof StreamMessageResponse) {
-            SseHelper.sendEvent(sse, ((StreamMessageResponse)data).getType(), data);
+            SseHelper.sendEvent(sse, ((StreamMessageResponse) data).getType(), data);
         } else {
             throw new IllegalStateException("Only Support StreamMessageResponse");
         }

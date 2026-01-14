@@ -4,7 +4,7 @@ import lombok.Getter;
 
 @Getter
 public enum RealTimeEventType {
-    //转录
+    // 转录
     // 会话开始事件
     TRANSCRIPTION_STARTED("TranscriptionStarted", true, true),
     // 句子开始事件
@@ -17,12 +17,12 @@ public enum RealTimeEventType {
     TRANSCRIPTION_COMPLETED("TranscriptionCompleted", true, true),
     // 转录失败事件
     TRANSCRIPTION_FAILED("TranscriptionFailed", true, false),
-    //开始转录请求
+    // 开始转录请求
     START_TRANSCRIPTION("StartTranscription", false, true),
-    //结束转录请求
+    // 结束转录请求
     STOP_TRANSCRIPTION("StopTranscription", false, true),
 
-    //VAD
+    // VAD
     // 静音事件
     VOICE_QUIET("VOICE_QUIET", true, true),
     // 开始说话事件
@@ -33,7 +33,7 @@ public enum RealTimeEventType {
     VOICE_STOPPING("VOICE_STOPPING", true, true),
     // 说话暂停事件
     VOICE_PAUSING("VOICE_PAUSING", true, true),
-    
+
     // LLM相关事件
     LLM_CHAT_BEGIN("LLM_CHAT_BEGIN", true, true),
     LLM_CHAT_DELTA("LLM_CHAT_DELTA", true, true),
@@ -44,14 +44,14 @@ public enum RealTimeEventType {
     LLM_WORKER_END("LLM_WORKER_END", true, false),
     LLM_WORKER_CANCELLED("LLM_WORKER_CANCELLED", true, false),
     LLM_WORKER_ERROR("LLM_WORKER_ERROR", true, false),
-    
+
     // TTS相关事件
     TTS_BEGIN("TTS_BEGIN", true, true),
     TTS_TTFT("TTS_TTFT", true, true),
     TTS_DELTA("TTS_DELTA", true, true),
     TTS_END("TTS_END", true, true),
 
-    //本轮会话信息
+    // 本轮会话信息
     THREAD_MESSSATE_CREATED("THREAD_MESSSATE_CREATED", true, true),
 
     // 未知事件
@@ -60,9 +60,8 @@ public enum RealTimeEventType {
     // 任务失败事件
     TASK_FAILED("TaskFailed", true, false),
 
-    //关闭会话
-    SESSION_CLOSE("SESSION_CLOSE", true, true)
-    ;
+    // 关闭会话
+    SESSION_CLOSE("SESSION_CLOSE", true, true);
 
     private final String value;
     private final boolean server;
@@ -76,7 +75,7 @@ public enum RealTimeEventType {
 
     public static RealTimeEventType fromString(String text) {
         for (RealTimeEventType type : RealTimeEventType.values()) {
-            if (type.value.equalsIgnoreCase(text)) {
+            if(type.value.equalsIgnoreCase(text)) {
                 return type;
             }
         }

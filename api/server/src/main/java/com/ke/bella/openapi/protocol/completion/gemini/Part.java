@@ -19,7 +19,7 @@ public class Part {
     private FileData fileData;
     private FunctionCall functionCall;
     private FunctionResponse functionResponse;
-    
+
     @Data
     @Builder
     @NoArgsConstructor
@@ -29,7 +29,7 @@ public class Part {
         private String mimeType;
         private String data;
     }
-    
+
     @Data
     @Builder
     @NoArgsConstructor

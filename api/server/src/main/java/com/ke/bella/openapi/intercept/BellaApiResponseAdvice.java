@@ -66,11 +66,11 @@ public class BellaApiResponseAdvice implements ResponseBodyAdvice<Object> {
         if(e instanceof IllegalArgumentException
                 || e instanceof ServletException
                 || e instanceof MethodArgumentNotValidException
-		        || e instanceof BizParamCheckException) {
+                || e instanceof BizParamCheckException) {
             code = 400;
         }
         if(e instanceof ChannelException) {
-            code = ((ChannelException)e).getHttpCode();
+            code = ((ChannelException) e).getHttpCode();
         }
 
         if(code == 500) {
@@ -83,12 +83,12 @@ public class BellaApiResponseAdvice implements ResponseBodyAdvice<Object> {
         er.setCode(code);
         er.setTimestamp(System.currentTimeMillis());
 
-		//一些特殊异常类型返回给调用方的错误信息提示需要按照指定的规则给值
-		if (e instanceof MethodArgumentNotValidException) {
-			er.setMessage(((MethodArgumentNotValidException) e).getBindingResult().getFieldError().getDefaultMessage());
-		}else {
-			er.setMessage(msg);
-		}
+        // 一些特殊异常类型返回给调用方的错误信息提示需要按照指定的规则给值
+        if(e instanceof MethodArgumentNotValidException) {
+            er.setMessage(((MethodArgumentNotValidException) e).getBindingResult().getFieldError().getDefaultMessage());
+        } else {
+            er.setMessage(msg);
+        }
 
         if(code == 500) {
             er.setStacktrace(stacktrace(e));

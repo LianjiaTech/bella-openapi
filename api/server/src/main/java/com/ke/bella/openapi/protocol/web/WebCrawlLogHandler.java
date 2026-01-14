@@ -16,7 +16,7 @@ public class WebCrawlLogHandler implements EndpointLogHandler {
     @Override
     public void process(EndpointProcessData endpointProcessData) {
         OpenapiResponse openapiResponse = endpointProcessData.getResponse();
-        if (openapiResponse instanceof WebCrawlResponse) {
+        if(openapiResponse instanceof WebCrawlResponse) {
             WebCrawlResponse response = (WebCrawlResponse) openapiResponse;
 
             // Create usage object from request and response data
@@ -57,7 +57,7 @@ public class WebCrawlLogHandler implements EndpointLogHandler {
      */
     private boolean hasInstructionsInRequest(EndpointProcessData processData) {
         Object request = processData.getRequest();
-        if (request instanceof WebCrawlRequest) {
+        if(request instanceof WebCrawlRequest) {
             WebCrawlRequest crawlRequest = (WebCrawlRequest) request;
             return StringUtils.isNotBlank(crawlRequest.getInstructions());
         }
@@ -69,9 +69,9 @@ public class WebCrawlLogHandler implements EndpointLogHandler {
      */
     private String getExtractDepthFromRequest(EndpointProcessData processData) {
         Object request = processData.getRequest();
-        if (request instanceof WebCrawlRequest) {
+        if(request instanceof WebCrawlRequest) {
             WebCrawlRequest crawlRequest = (WebCrawlRequest) request;
-            if (crawlRequest.getExtractDepth() != null) {
+            if(crawlRequest.getExtractDepth() != null) {
                 return crawlRequest.getExtractDepth().getValue();
             }
         }

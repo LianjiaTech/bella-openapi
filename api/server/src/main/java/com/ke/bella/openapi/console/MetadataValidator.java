@@ -151,22 +151,22 @@ public class MetadataValidator {
         Assert.isTrue(op.getTrialEnabled() == 1 || op.getTrialEnabled() == 0, "试用开关只能是0或1");
         Assert.hasText(op.getProtocol(), "请求协议不可为空字符串");
         Assert.hasText(op.getSupplier(), "供应商不可为空字符串");
-        
+
         // Validate visibility if provided
-        if (StringUtils.isNotEmpty(op.getVisibility())) {
-            Assert.isTrue(PRIVATE.equals(op.getVisibility()) || 
-                          PUBLIC.equals(op.getVisibility()),
+        if(StringUtils.isNotEmpty(op.getVisibility())) {
+            Assert.isTrue(PRIVATE.equals(op.getVisibility()) ||
+                    PUBLIC.equals(op.getVisibility()),
                     "通道的可见性只能是：" + PRIVATE + "或" + PUBLIC);
-                    
+
             // If it's a private channel, validate owner information
-            if (PRIVATE.equals(op.getVisibility())) {
+            if(PRIVATE.equals(op.getVisibility())) {
                 Assert.hasText(op.getOwnerType(), "私有通道的所有者类型不可为空");
                 Assert.hasText(op.getOwnerCode(), "私有通道的所有者编码不可为空");
                 Assert.isTrue(OWNER_TYPES.contains(op.getOwnerType()),
                         "所有者类型只能是：" + String.join("或", OWNER_TYPES));
             }
         }
-        
+
         checkJsonInfo(op.getChannelInfo());
         checkJsonInfo(op.getPriceInfo());
     }
@@ -188,7 +188,7 @@ public class MetadataValidator {
     }
 
     private static void checkJsonInfo(String info) {
-        //只检查是否是json，其他信息在service中根据类型判断
+        // 只检查是否是json，其他信息在service中根据类型判断
         if(info != null) {
             Map<String, Object> map = json2Map(info);
             Assert.isTrue(map == null || !map.isEmpty(), "信息非json格式");
@@ -204,11 +204,11 @@ public class MetadataValidator {
             Assert.hasText(op.getParentCode(), "父类目编码不可为空字符串");
         }
         Assert.isTrue(Arrays.stream(SystemBasicCategory.values())
-                        .noneMatch(x -> {
-                            String systemParentCode = x.getParent() == null ? "" : x.getParent().getCode();
-                            String parentCode = op.getParentCode() == null ? "" : op.getParentCode();
-                            return parentCode.equals(systemParentCode) && op.getCategoryName().equals(x.getName());
-                        }),
+                .noneMatch(x -> {
+                    String systemParentCode = x.getParent() == null ? "" : x.getParent().getCode();
+                    String parentCode = op.getParentCode() == null ? "" : op.getParentCode();
+                    return parentCode.equals(systemParentCode) && op.getCategoryName().equals(x.getName());
+                }),
                 "不可创建系统类目");
         Assert.hasText(op.getCategoryName(), "类目名称不可为空");
         Assert.isTrue(op.getCategoryName().length() <= 10, "类目名称长度不可超过10");
@@ -223,8 +223,8 @@ public class MetadataValidator {
         Assert.hasText(op.getEndpoint(), "能力点path不可为空");
         Assert.notEmpty(op.getCategoryCodes(), "类目编码不可为空");
         Assert.isTrue(Arrays.stream(SystemBasicEndpoint.values())
-                        .noneMatch(endpoint -> matchPath(endpoint.getEndpoint(), op.getEndpoint())
-                                && op.getCategoryCodes().contains(endpoint.getCategory().getCode())),
+                .noneMatch(endpoint -> matchPath(endpoint.getEndpoint(), op.getEndpoint())
+                        && op.getCategoryCodes().contains(endpoint.getCategory().getCode())),
                 "不可修改系统默认的能力点类目");
     }
 
@@ -275,7 +275,8 @@ public class MetadataValidator {
         if(CollectionUtils.isEmpty(keys)) {
             return null;
         }
-        List<ModelJsonKey> invalidKeys = keys.stream().filter(key -> map.containsKey(key.getCode()) && !map.get(key.getCode()).getClass().equals(key.getType()))
+        List<ModelJsonKey> invalidKeys = keys.stream()
+                .filter(key -> map.containsKey(key.getCode()) && !map.get(key.getCode()).getClass().equals(key.getType()))
                 .collect(Collectors.toList());
         if(CollectionUtils.isNotEmpty(invalidKeys)) {
             StringBuilder sb = new StringBuilder(field).append("中以下内容不符合规范：\r\n");

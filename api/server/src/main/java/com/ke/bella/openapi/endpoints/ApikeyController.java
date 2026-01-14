@@ -33,7 +33,7 @@ public class ApikeyController {
         Assert.notNull(op.getSafetyLevel(), "安全等级不可为空");
         Assert.isTrue(StringUtils.isNotEmpty(op.getRoleCode()) || CollectionUtils.isNotEmpty(op.getPaths()), "权限不可为空");
         // 如果请求中没有parentCode，则使用当前AK作为父AK
-        if (StringUtils.isEmpty(op.getParentCode())) {
+        if(StringUtils.isEmpty(op.getParentCode())) {
             ApikeyInfo cur = EndpointContext.getApikey();
             op.setParentCode(cur.getCode());
         }

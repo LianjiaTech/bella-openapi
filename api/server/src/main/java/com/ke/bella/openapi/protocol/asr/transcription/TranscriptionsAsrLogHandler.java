@@ -8,7 +8,6 @@ import com.ke.bella.openapi.tables.pojos.ChannelDB;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-
 @Component
 public class TranscriptionsAsrLogHandler implements EndpointLogHandler {
     @Autowired
@@ -18,7 +17,7 @@ public class TranscriptionsAsrLogHandler implements EndpointLogHandler {
     public void process(EndpointProcessData processData) {
         String model = processData.getModel();
         String endpoint = processData.getEndpoint();
-        if (!model.isEmpty()) {
+        if(!model.isEmpty()) {
             ChannelDB channel = router.route(endpoint, model, EndpointContext.getApikey(), processData.isMock());
             processData.setPriceInfo(channel.getPriceInfo());
         }

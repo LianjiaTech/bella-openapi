@@ -26,7 +26,6 @@ public class UsageMetadata {
     private List<TokensDetails> toolUsePromptTokensDetails;
     private String trafficType;
 
-
     @Data
     @Builder
     @NoArgsConstructor

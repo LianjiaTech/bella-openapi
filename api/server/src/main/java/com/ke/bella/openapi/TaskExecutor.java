@@ -12,8 +12,6 @@ public class TaskExecutor {
     static ThreadFactory tf = new NamedThreadFactory("bella-worker-", true);
     static ScheduledExecutorService executor = Executors.newScheduledThreadPool(1000, tf);
 
-
-
     public static CompletableFuture<Void> submit(Runnable r) {
         return CompletableFuture.runAsync(r, executor);
     }

@@ -280,7 +280,8 @@ public class AwsCompletionConverter {
         return toolCall;
     }
 
-    private static Pair<List<SystemContentBlock>, List<Message>> generateMsg(List<com.ke.bella.openapi.protocol.completion.Message> openAIMsgList, AwsProperty property) {
+    private static Pair<List<SystemContentBlock>, List<Message>> generateMsg(List<com.ke.bella.openapi.protocol.completion.Message> openAIMsgList,
+            AwsProperty property) {
         List<SystemContentBlock> systemContentBlocks = new ArrayList<>();
         List<software.amazon.awssdk.services.bedrockruntime.model.Message> messages = new ArrayList<>();
         String currentRole = "";
@@ -289,7 +290,8 @@ public class AwsCompletionConverter {
             String role = message.getRole().equals("tool") ? "user" : message.getRole();
             if(role.equals("system") || role.equals("developer")) {
                 if(message.getContent() != null && !"".equals(message.getContent())) {
-                    // Get list of SystemContentBlocks (might be multiple if both text and cachePoint needed)
+                    // Get list of SystemContentBlocks (might be multiple if
+                    // both text and cachePoint needed)
                     systemContentBlocks.addAll(convert2AwsSystemContent(message, property));
                 }
             } else {
@@ -316,18 +318,19 @@ public class AwsCompletionConverter {
         return Pair.of(systemContentBlocks, messages);
     }
 
-    private static List<SystemContentBlock> convert2AwsSystemContent(com.ke.bella.openapi.protocol.completion.Message openAiMsg, AwsProperty property) {
+    private static List<SystemContentBlock> convert2AwsSystemContent(com.ke.bella.openapi.protocol.completion.Message openAiMsg,
+            AwsProperty property) {
         List<SystemContentBlock> blocks = new ArrayList<>();
         Object content = openAiMsg.getContent();
         boolean hasCacheControl = false;
-        if (content instanceof List) {
+        if(content instanceof List) {
             List<?> contentList = (List<?>) content;
             for (Object item : contentList) {
-                if (item instanceof Map) {
+                if(item instanceof Map) {
                     Map<?, ?> contentMap = (Map<?, ?>) item;
-                    if (contentMap.containsKey("text")) {
+                    if(contentMap.containsKey("text")) {
                         String textContent = contentMap.get("text").toString();
-                        if (textContent != null && !textContent.isEmpty()) {
+                        if(textContent != null && !textContent.isEmpty()) {
                             blocks.add(SystemContentBlock.builder().text(textContent).build());
                         }
                         if(contentMap.containsKey("cache_control")) {
@@ -337,22 +340,23 @@ public class AwsCompletionConverter {
                 }
             }
 
-            // If no blocks were added from list processing, fall back to using content as string
-            if (blocks.isEmpty() && content != null) {
+            // If no blocks were added from list processing, fall back to using
+            // content as string
+            if(blocks.isEmpty() && content != null) {
                 String textContent = content.toString();
-                if (textContent != null && !textContent.isEmpty()) {
+                if(textContent != null && !textContent.isEmpty()) {
                     blocks.add(SystemContentBlock.builder().text(textContent).build());
                 }
             }
-        } else if (content != null) {
+        } else if(content != null) {
             String textContent = content.toString();
-            if (textContent != null && !textContent.isEmpty()) {
+            if(textContent != null && !textContent.isEmpty()) {
                 blocks.add(SystemContentBlock.builder().text(textContent).build());
             }
         }
 
         // Add cache point at the end if needed
-        if (hasCacheControl && property.supportCache) {
+        if(hasCacheControl && property.supportCache) {
             blocks.add(SystemContentBlock.builder()
                     .cachePoint(CachePointBlock.builder()
                             .type("default")
@@ -373,9 +377,9 @@ public class AwsCompletionConverter {
                                 .toolUseId(message.getTool_call_id())
                                 .content(ToolResultContentBlock.fromText(message.getContent().toString()))
                                 .build()));
-            } else if(message.getContent() instanceof List){
+            } else if(message.getContent() instanceof List) {
                 List<Object> contentList = (List<Object>) message.getContent();
-                for(Object content : contentList) {
+                for (Object content : contentList) {
                     Map contentMap = (Map) content;
                     contentBlocks.add(ContentBlock.fromToolResult(
                             ToolResultBlock.builder()
@@ -408,17 +412,17 @@ public class AwsCompletionConverter {
                             Object signature = contentMap.get("signature");
                             contentBlocks.add(ContentBlock.fromReasoningContent(ReasoningContentBlock.builder()
                                     .reasoningText(ReasoningTextBlock.builder()
-                                            .text(thinking == null ? null : (String)thinking)
+                                            .text(thinking == null ? null : (String) thinking)
                                             .signature(signature == null ? null : (String) signature)
-                                            .build()
-                                    ).build()));
+                                            .build())
+                                    .build()));
                         } else if(type.equals("redacted_thinking")) {
                             Object data = contentMap.get("data");
                             if(data == null) {
                                 continue;
                             }
                             contentBlocks.add(ContentBlock.fromReasoningContent(ReasoningContentBlock.builder()
-                                            .redactedContent(SdkBytes.fromUtf8String((String) data)).build()));
+                                    .redactedContent(SdkBytes.fromUtf8String((String) data)).build()));
                         } else if(type.equals("image_url")) {
                             String url = ((Map) contentMap.get("image_url")).get("url").toString();
                             Map<String, Object> cacheControl = (Map<String, Object>) contentMap.get("cache_control");
@@ -475,12 +479,12 @@ public class AwsCompletionConverter {
     }
 
     private static List<ContentBlock> convert2TextBlock(Map<String, Object> contentMap, AwsProperty property) {
-		List<ContentBlock> contentBlocks = new ArrayList<>();
+        List<ContentBlock> contentBlocks = new ArrayList<>();
 
         ContentBlock.Builder textBlock = ContentBlock.builder().text(contentMap.get("text").toString());
-		contentBlocks.add(textBlock.build());
+        contentBlocks.add(textBlock.build());
 
-        if (contentMap.containsKey("cache_control") && property.supportCache) {
+        if(contentMap.containsKey("cache_control") && property.supportCache) {
             contentBlocks.add(ContentBlock.builder()
                     .cachePoint(CachePointBlock.builder()
                             .type("default")
@@ -496,9 +500,9 @@ public class AwsCompletionConverter {
             throw new IllegalArgumentException("aws的图片仅支持data base64String");
         }
 
-		List<ContentBlock> contentBlocks = new ArrayList<>();
+        List<ContentBlock> contentBlocks = new ArrayList<>();
 
-		String format = ImageUtils.extractImageFormat(image);
+        String format = ImageUtils.extractImageFormat(image);
         String base64String = ImageUtils.extractBase64ImageData(image);
         byte[] decodedBytes = Base64.getDecoder().decode(base64String);
 
@@ -509,9 +513,9 @@ public class AwsCompletionConverter {
                                 .bytes(SdkBytes.fromByteArray(decodedBytes))
                                 .build())
                         .build());
-		contentBlocks.add(imageBlock.build());
+        contentBlocks.add(imageBlock.build());
 
-        if (cacheControl != null && property.supportCache) {
+        if(cacheControl != null && property.supportCache) {
             contentBlocks.add(ContentBlock.builder()
                     .cachePoint(CachePointBlock.builder()
                             .type("default")
