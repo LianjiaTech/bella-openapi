@@ -170,7 +170,7 @@ public class QpsLimiterManager {
     }
 
     /**
-     * 获取当前 QPS（加权近似值）
+     * 获取当前 QPS（近似值）
      *
      * @param akCode API Key 编码
      * @return 当前 QPS 值
@@ -178,8 +178,6 @@ public class QpsLimiterManager {
     public Long getCurrentQps(String akCode) {
         String key = String.format(QPS_KEY_FORMAT, akCode);
         long currentTimeMs = System.currentTimeMillis();
-        long windowSizeMs = SEGMENT_SIZE_MS * NUM_SEGMENTS;
-        long windowStartMs = currentTimeMs - windowSizeMs;
 
         try {
             RMap<String, String> hashMap = redisson.getMap(key);
@@ -190,26 +188,20 @@ public class QpsLimiterManager {
             }
 
             long currentSegment = currentTimeMs / SEGMENT_SIZE_MS;
-            double total = 0;
+            long windowStartSegment = currentSegment - NUM_SEGMENTS + 1;
+            long total = 0;
 
             for (int i = 0; i < NUM_SEGMENTS; i++) {
                 long segmentId = currentSegment - i;
-                String countStr = allFields.get(String.valueOf(segmentId));
-                if (countStr != null) {
-                    long count = Long.parseLong(countStr);
-                    // 计算该段在窗口内的有效比例（权重）
-                    long segmentStartMs = segmentId * SEGMENT_SIZE_MS;
-                    long segmentEndMs = segmentStartMs + SEGMENT_SIZE_MS;
-                    long effectiveStart = Math.max(segmentStartMs, windowStartMs);
-                    long effectiveEnd = Math.min(segmentEndMs, currentTimeMs);
-                    double weight = (double) (effectiveEnd - effectiveStart) / SEGMENT_SIZE_MS;
-                    if (weight > 0) {
-                        total += count * weight;
+                if (segmentId >= windowStartSegment) {
+                    String countStr = allFields.get(String.valueOf(segmentId));
+                    if (countStr != null) {
+                        total += Long.parseLong(countStr);
                     }
                 }
             }
 
-            return (long) total;
+            return total;
         } catch (Exception e) {
             log.error("Failed to get current QPS for akCode: {}, error: {}",
                     akCode, e.getMessage(), e);
