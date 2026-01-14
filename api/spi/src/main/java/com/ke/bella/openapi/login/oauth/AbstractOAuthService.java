@@ -57,7 +57,7 @@ public abstract class AbstractOAuthService implements OAuthService {
                 .build();
 
         try (Response response = client.newCall(request).execute()) {
-            if (!response.isSuccessful() || response.body() == null) {
+            if(!response.isSuccessful() || response.body() == null) {
                 throw new IOException("Failed to get access token");
             }
             return parseAccessToken(response.body().string());
@@ -69,5 +69,6 @@ public abstract class AbstractOAuthService implements OAuthService {
     }
 
     protected abstract String parseAccessToken(String response) throws IOException;
+
     protected abstract Operator getUserInfo(String accessToken) throws IOException;
 }

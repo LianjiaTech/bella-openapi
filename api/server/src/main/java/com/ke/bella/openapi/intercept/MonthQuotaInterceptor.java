@@ -19,9 +19,10 @@ import static com.ke.bella.openapi.server.intercept.ConcurrentStartInterceptor.A
 public class MonthQuotaInterceptor extends HandlerInterceptorAdapter {
     @Autowired
     private ApikeyService apikeyService;
+
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
-        if (Boolean.TRUE.equals(request.getAttribute(ASYNC_REQUEST_MARKER))) {
+        if(Boolean.TRUE.equals(request.getAttribute(ASYNC_REQUEST_MARKER))) {
             return true;
         }
         ApikeyInfo apikey = EndpointContext.getApikey();

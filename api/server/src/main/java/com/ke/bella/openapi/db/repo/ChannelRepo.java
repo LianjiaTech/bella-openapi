@@ -38,6 +38,7 @@ public class ChannelRepo extends StatusRepo<ChannelDB, ChannelRecord, String> im
     public List<String> listSuppliers() {
         return db.selectDistinct(CHANNEL.SUPPLIER).from(CHANNEL).fetchInto(String.class);
     }
+
     public List<ChannelDB> list(Condition.ChannelCondition op) {
         return constructSql(op).fetchInto(ChannelDB.class);
     }

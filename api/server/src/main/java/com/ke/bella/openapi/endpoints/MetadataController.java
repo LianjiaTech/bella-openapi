@@ -57,12 +57,11 @@ public class MetadataController {
     @Autowired
     private CategoryService categoryService;
 
-
     @GetMapping("/endpoint/details")
     public EndpointDetails listEndpointDetails(Condition.EndpointDetailsCondition condition) {
         Assert.notNull(condition.getEndpoint(), "能力点不可为空");
-        String identity = BellaContext.getOperatorIgnoreNull() != null ?
-                BellaContext.getOperator().getUserId().toString() : EndpointContext.getApikey().getCode();
+        String identity = BellaContext.getOperatorIgnoreNull() != null ? BellaContext.getOperator().getUserId().toString()
+                : EndpointContext.getApikey().getCode();
         return endpointService.getEndpointDetails(condition, identity);
     }
 
@@ -171,7 +170,7 @@ public class MetadataController {
     public Map<String, String> listProtocols(@RequestParam String entityType, @RequestParam String entityCode) {
         return endpointService.listProtocols(entityType, entityCode);
     }
-    
+
     @PostMapping("/channel/private")
     public ChannelDB createPrivateChannel(@RequestBody MetaDataOps.ChannelCreateOp op) {
         op.setVisibility(EntityConstants.PRIVATE);
@@ -196,14 +195,14 @@ public class MetadataController {
         channelService.updateChannel(op);
         return true;
     }
-    
+
     @PostMapping("/channel/private/activate")
     public Boolean activatePrivateChannel(@RequestBody MetaDataOps.ChannelStatusOp op) {
         checkChannel(op.getChannelCode());
         channelService.changeStatus(op.getChannelCode(), true);
         return true;
     }
-    
+
     @PostMapping("/channel/private/inactivate")
     public Boolean inactivatePrivateChannel(@RequestBody MetaDataOps.ChannelStatusOp op) {
         checkChannel(op.getChannelCode());
@@ -222,7 +221,7 @@ public class MetadataController {
             }
             Map<String, Object> channelInfos = JacksonUtils.toMap(channels.get(0).getChannelInfo());
             if(MapUtils.isNotEmpty(channelInfos) && channelInfos.containsKey("modelName")) {
-               model = channelInfos.get("modelName").toString();
+                model = channelInfos.get("modelName").toString();
             }
         }
         if(model == null) {
@@ -237,10 +236,10 @@ public class MetadataController {
 
     private void checkChannel(String channelCode) {
         ChannelDB channel = channelService.getOne(channelCode);
-        if (channel == null) {
-            throw new BizParamCheckException("渠道不存在" );
+        if(channel == null) {
+            throw new BizParamCheckException("渠道不存在");
         }
-        if (EntityConstants.PUBLIC.equals(channel.getVisibility())) {
+        if(EntityConstants.PUBLIC.equals(channel.getVisibility())) {
             throw new BizParamCheckException("只能修改私有渠道");
         }
 
@@ -249,7 +248,7 @@ public class MetadataController {
         String accountType = operator != null ? EntityConstants.PERSON : BellaContext.getApikey().getOwnerType();
         String accountCode = operator != null ? operator.getUserId().toString() : BellaContext.getApikey().getOwnerCode();
 
-        if (!channel.getOwnerType().equals(accountType) || !channel.getOwnerCode().equals(accountCode)) {
+        if(!channel.getOwnerType().equals(accountType) || !channel.getOwnerCode().equals(accountCode)) {
             throw new BizParamCheckException("只能修改自己的私有渠道");
         }
     }

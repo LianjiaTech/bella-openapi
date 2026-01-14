@@ -26,9 +26,9 @@ public class TokenCalculationUtils {
      * 计算Completion请求的输入token数量
      * 使用与CompletionLogHandler相同的计算逻辑
      */
-    @SuppressWarnings({"unchecked", "rawtypes"})
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     public static int calculateCompletionInputTokens(CompletionRequest request, EncodingType encoding) {
-        if (request == null || request.getMessages() == null) {
+        if(request == null || request.getMessages() == null) {
             return 0;
         }
 
@@ -37,21 +37,21 @@ public class TokenCalculationUtils {
         List<Pair<String, Boolean>> imgMessage = new LinkedList<>();
 
         for (Message message : request.getMessages()) {
-            if (CollectionUtils.isNotEmpty(message.getTool_calls())) {
+            if(CollectionUtils.isNotEmpty(message.getTool_calls())) {
                 textMessage.addAll(getToolCallStr(message.getTool_calls()));
             } else {
                 // 如果message.getContent()是String类型
-                if (message.getContent() instanceof String) {
+                if(message.getContent() instanceof String) {
                     textMessage.add((String) message.getContent());
-                } else if (message.getContent() instanceof java.util.List) {
+                } else if(message.getContent() instanceof java.util.List) {
                     for (Map content : (java.util.List<Map>) message.getContent()) {
-                        if (content.containsKey("text")) {
+                        if(content.containsKey("text")) {
                             textMessage.add((String) content.get("text"));
-                        } else if (content.containsKey("image_url")) {
+                        } else if(content.containsKey("image_url")) {
                             // 如果包含类型为string的image_url
-                            if (content.get("image_url") instanceof String) {
+                            if(content.get("image_url") instanceof String) {
                                 imgMessage.add(Pair.of((String) content.get("image_url"), false));
-                            } else if (content.get("image_url") instanceof Map) {
+                            } else if(content.get("image_url") instanceof Map) {
                                 String url = (String) ((Map) content.get("image_url")).get("url");
                                 boolean lowResolution = "low".equals(((Map) content.get("image_url")).get("detail"));
                                 imgMessage.add(Pair.of(url, lowResolution));
@@ -63,11 +63,11 @@ public class TokenCalculationUtils {
         }
 
         Optional<Integer> userTextMessageToken = textMessage.stream()
-            .map(x -> TokenCounter.tokenCount(x, encoding))
-            .reduce(Integer::sum);
+                .map(x -> TokenCounter.tokenCount(x, encoding))
+                .reduce(Integer::sum);
         Optional<Integer> userImgMessageToken = imgMessage.stream()
-            .map(x -> TokenCounter.imageToken(x.getLeft(), x.getRight()))
-            .reduce(Integer::sum);
+                .map(x -> TokenCounter.imageToken(x.getLeft(), x.getRight()))
+                .reduce(Integer::sum);
         requestToken += userTextMessageToken.orElse(0) + userImgMessageToken.orElse(0);
 
         return requestToken;
@@ -77,13 +77,13 @@ public class TokenCalculationUtils {
      * 计算Completion响应的输出token数量
      */
     public static int calculateCompletionOutputTokens(CompletionResponse response, EncodingType encoding) {
-        if (response == null || response.getChoices() == null) {
+        if(response == null || response.getChoices() == null) {
             return 0;
         }
 
         return response.getChoices().stream()
                 .map(x -> {
-                    if (CollectionUtils.isNotEmpty(x.getMessage().getTool_calls())) {
+                    if(CollectionUtils.isNotEmpty(x.getMessage().getTool_calls())) {
                         return getToolCallStr(x.getMessage().getTool_calls());
                     } else {
                         return Lists.newArrayList(x.getMessage().getContent());
@@ -99,18 +99,18 @@ public class TokenCalculationUtils {
      */
     @SuppressWarnings("unchecked")
     public static int calculateEmbeddingTokens(EmbeddingRequest request, EncodingType encoding) {
-        if (request == null || request.getInput() == null) {
+        if(request == null || request.getInput() == null) {
             return 0;
         }
 
         try {
-            if (request.getInput() instanceof String) {
+            if(request.getInput() instanceof String) {
                 return TokenCounter.tokenCount((String) request.getInput(), encoding);
-            } else if (request.getInput() instanceof List) {
+            } else if(request.getInput() instanceof List) {
                 List<String> inputList = (List<String>) request.getInput();
                 return inputList.stream()
-                    .mapToInt(input -> TokenCounter.tokenCount(input, encoding))
-                    .sum();
+                        .mapToInt(input -> TokenCounter.tokenCount(input, encoding))
+                        .sum();
             }
         } catch (Exception e) {
             log.warn("Failed to calculate embedding tokens", e);
@@ -132,7 +132,6 @@ public class TokenCalculationUtils {
      * 获取Function字符串
      */
     private static String getFunctionStr(Message.FunctionCall functionCall) {
-        return functionCall.getName() == null ? functionCall.getArguments() :
-                functionCall.getName() + functionCall.getArguments();
+        return functionCall.getName() == null ? functionCall.getArguments() : functionCall.getName() + functionCall.getArguments();
     }
 }

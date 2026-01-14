@@ -17,22 +17,22 @@ import java.util.Map;
  */
 @Component("OpenAIImagesGenerator")
 public class OpenAIAdaptor implements ImagesGeneratorAdaptor<ImagesProperty> {
-    
+
     @Override
     public String endpoint() {
         return "/v1/images/generations";
     }
-    
+
     @Override
     public String getDescription() {
         return "OpenAI文生图协议";
     }
-    
+
     @Override
     public Class<?> getPropertyClass() {
         return ImagesProperty.class;
     }
-    
+
     @Override
     public ImagesResponse generateImages(ImagesRequest request, String url, ImagesProperty property) {
         request.setModel(property.getDeployName());
@@ -55,23 +55,23 @@ public class OpenAIAdaptor implements ImagesGeneratorAdaptor<ImagesProperty> {
         Map<String, Object> extraBody = request.getExtra_body();
         Object realExtraBody = request.getRealExtraBody();
 
-        if ((extraBody == null || extraBody.isEmpty()) && realExtraBody == null) {
+        if((extraBody == null || extraBody.isEmpty()) && realExtraBody == null) {
             return request;
         }
 
         @SuppressWarnings("unchecked")
         Map<String, Object> requestMap = JacksonUtils.toMap(request);
 
-        if (requestMap != null) {
-            if (extraBody != null && !extraBody.isEmpty()) {
+        if(requestMap != null) {
+            if(extraBody != null && !extraBody.isEmpty()) {
                 requestMap.putAll(extraBody);
             }
 
-            if (realExtraBody != null) {
+            if(realExtraBody != null) {
                 requestMap.put("extra_body", realExtraBody);
             }
         }
-        
+
         return requestMap;
     }
 

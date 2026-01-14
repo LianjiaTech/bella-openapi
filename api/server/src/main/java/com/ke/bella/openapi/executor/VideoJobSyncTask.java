@@ -61,7 +61,7 @@ public class VideoJobSyncTask implements Runnable {
 
         } catch (VideoJobException e) {
             log.error("[VideoJob {}] Business error during sync: errorCode={}, errorMessage={}",
-                videoId, e.getCode(), e.getMessage());
+                    videoId, e.getCode(), e.getMessage());
             markAsFailed(e.getCode(), e.getMessage());
         } catch (Exception e) {
             log.error("[VideoJob {}] Unexpected error during sync", videoId, e);
@@ -130,7 +130,7 @@ public class VideoJobSyncTask implements Runnable {
 
         if(adaptor == null) {
             throw new VideoJobException(Code.ADAPTOR_NOT_FOUND,
-                "No video adaptor found for protocol: " + channel.getProtocol());
+                    "No video adaptor found for protocol: " + channel.getProtocol());
         }
 
         Class<?> propertyClass = adaptor.getPropertyClass();
@@ -154,7 +154,7 @@ public class VideoJobSyncTask implements Runnable {
 
         if(adaptor == null) {
             throw new VideoJobException(Code.ADAPTOR_NOT_FOUND,
-                "No video adaptor registered for protocol: " + channel.getProtocol());
+                    "No video adaptor registered for protocol: " + channel.getProtocol());
         }
 
         Class<?> propertyClass = adaptor.getPropertyClass();
@@ -172,7 +172,7 @@ public class VideoJobSyncTask implements Runnable {
 
         if(file == null || file.getId() == null) {
             throw new VideoJobException(Code.TRANSFER_FAILED,
-                "Transfer returned null or empty fileId");
+                    "Transfer returned null or empty fileId");
         }
 
         result.setFileId(file.getId());

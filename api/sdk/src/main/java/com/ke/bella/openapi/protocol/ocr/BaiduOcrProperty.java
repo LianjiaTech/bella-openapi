@@ -17,7 +17,8 @@ import lombok.EqualsAndHashCode;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class BaiduOcrProperty extends OcrProperty {
-	AuthorizationProperty auth;
+    AuthorizationProperty auth;
+
     @Override
     public Map<String, String> description() {
         Map<String, String> map = super.description();

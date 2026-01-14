@@ -35,14 +35,13 @@ public class VertexConverter {
 
     public static GeminiRequest convertToVertexRequest(CompletionRequest openaiRequest, VertexProperty property) {
         GeminiRequest.GeminiRequestBuilder builder = GeminiRequest.builder();
-        
+
         // Convert messages to contents
         List<Content> contents = convertMessages(openaiRequest.getMessages());
 
-        
         // Convert system message to systemInstruction
         SystemInstruction systemInstruction = extractSystemInstruction(openaiRequest.getMessages());
-        if (systemInstruction != null) {
+        if(systemInstruction != null) {
             if(property.isSupportSystemInstruction()) {
                 builder.systemInstruction(systemInstruction);
             } else {
@@ -56,33 +55,33 @@ public class VertexConverter {
         builder.contents(contents);
 
         // Convert tools
-        if (CollectionUtils.isNotEmpty(openaiRequest.getTools())) {
+        if(CollectionUtils.isNotEmpty(openaiRequest.getTools())) {
             List<Tool> tools = convertTools(openaiRequest.getTools());
             builder.tools(tools);
         }
-        
+
         // Convert generation config
         GenerationConfig generationConfig = convertGenerationConfig(openaiRequest, property);
         builder.generationConfig(generationConfig);
-        
+
         return builder.build().offSafetySettings();
     }
-    
+
     public static CompletionResponse convertToOpenAIResponse(GeminiResponse vertexResponse) {
-        if (vertexResponse == null || CollectionUtils.isEmpty(vertexResponse.getCandidates())) {
+        if(vertexResponse == null || CollectionUtils.isEmpty(vertexResponse.getCandidates())) {
             return CompletionResponse.builder().build();
         }
-        
+
         List<CompletionResponse.Choice> choices = new ArrayList<>();
         for (int i = 0; i < vertexResponse.getCandidates().size(); i++) {
             Candidate candidate = vertexResponse.getCandidates().get(i);
             CompletionResponse.Choice choice = convertCandidate(candidate, i);
             choices.add(choice);
         }
-        
+
         // Convert usage
         CompletionResponse.TokenUsage usage = convertUsage(vertexResponse.getUsageMetadata());
-        
+
         return CompletionResponse.builder()
                 .id(vertexResponse.getResponseId())
                 .object("chat.completion")
@@ -103,7 +102,7 @@ public class VertexConverter {
 
         boolean isFinal = false;
         // 处理第一个候选项（通常 Gemini 只返回一个候选）
-        if (CollectionUtils.isNotEmpty(geminiResponse.getCandidates())) {
+        if(CollectionUtils.isNotEmpty(geminiResponse.getCandidates())) {
             isFinal = geminiResponse.getCandidates().get(0).getFinishReason() != null;
 
             StreamCompletionResponse.Choice choice = VertexConverter.convertStreamCandidate(
@@ -113,19 +112,19 @@ public class VertexConverter {
         }
 
         // 处理 usage metadata
-        if (geminiResponse.getUsageMetadata() != null && isFinal) {
+        if(geminiResponse.getUsageMetadata() != null && isFinal) {
             builder.usage(VertexConverter.convertUsage(geminiResponse.getUsageMetadata()));
         }
 
         return builder.build();
     }
-    
+
     private static List<Content> convertMessages(List<Message> messages) {
         Map<String, String> toolCallCache = new HashMap<>();
         List<String> toolCallSorts = new ArrayList<>();
         List<Content> contents = new ArrayList<>();
         Map<String, Part> toolParts = new HashMap<>();
-        for(Message msg : messages) {
+        for (Message msg : messages) {
             if("system".equals(msg.getRole()) || "developer".equals(msg.getRole())) {
                 continue;
             }
@@ -167,12 +166,12 @@ public class VertexConverter {
         toolParts.clear();
         toolCallSorts.clear();
     }
-    
+
     /**
      * 辅助方法：为 Part.PartBuilder 设置 thoughtSignature（如果存在）
      */
     private static Part.PartBuilder applyThoughtSignature(Part.PartBuilder builder, String thoughtSignature) {
-        if (StringUtils.hasText(thoughtSignature)) {
+        if(StringUtils.hasText(thoughtSignature)) {
             builder.thoughtSignature(thoughtSignature);
         }
         return builder;
@@ -180,13 +179,13 @@ public class VertexConverter {
 
     private static Content convertMessage(Message message, Map<String, String> toolCallCache, List<String> toolCallSorts) {
         List<Part> parts = new ArrayList<>();
-        
+
         // 使用 Message.thoughtSignature 字段
         String thoughtSignature = message.getReasoning_content_signature();
         addContentToParts(parts, message.getContent(), thoughtSignature);
-        
+
         // Handle tool calls
-        if (CollectionUtils.isNotEmpty(message.getTool_calls())) {
+        if(CollectionUtils.isNotEmpty(message.getTool_calls())) {
             for (Message.ToolCall toolCall : message.getTool_calls()) {
                 FunctionCall functionCall = FunctionCall.builder()
                         .name(toolCall.getFunction().getName())
@@ -194,18 +193,17 @@ public class VertexConverter {
                         .build();
                 // 创建 function call part 并附加 thoughtSignature
                 Part part = applyThoughtSignature(
-                    Part.builder().functionCall(functionCall),
-                    thoughtSignature
-                ).build();
+                        Part.builder().functionCall(functionCall),
+                        thoughtSignature).build();
 
                 parts.add(part);
                 toolCallCache.put(toolCall.getId(), toolCall.getFunction().getName());
                 toolCallSorts.add(toolCall.getId());
             }
         }
-        
+
         String role = "assistant".equals(message.getRole()) ? "model" : "user";
-        
+
         return Content.builder()
                 .role(role)
                 .parts(parts)
@@ -214,83 +212,79 @@ public class VertexConverter {
 
     private static void addContentToParts(List<Part> parts, Object content, String thoughtSignature) {
         // Handle content (can be String, Map, or List for multimodal)
-        if (content instanceof String) {
+        if(content instanceof String) {
             String textContent = (String) content;
             Part part = applyThoughtSignature(
-                Part.builder().text(textContent),
-                thoughtSignature
-            ).build();
+                    Part.builder().text(textContent),
+                    thoughtSignature).build();
             parts.add(part);
-        } else if (content instanceof Map) {
+        } else if(content instanceof Map) {
             // Handle content as a map with text field
             @SuppressWarnings("unchecked")
             Map<String, Object> contentMap = (Map<String, Object>) content;
             String text = (String) contentMap.get("text");
-            if (text != null) {
+            if(text != null) {
                 Part part = applyThoughtSignature(
-                    Part.builder().text(text),
-                    thoughtSignature
-                ).build();
+                        Part.builder().text(text),
+                        thoughtSignature).build();
                 parts.add(part);
             }
-        } else if (content instanceof List) {
+        } else if(content instanceof List) {
             // Handle multimodal content
             @SuppressWarnings("unchecked")
             List<Map<String, Object>> contentList = (List<Map<String, Object>>) content;
             for (Map<String, Object> contentItem : contentList) {
                 Part part = convertContentItem(contentItem, thoughtSignature);
-                if (part != null) {
+                if(part != null) {
                     parts.add(part);
                 }
             }
         }
     }
-    
+
     private static Part convertContentItem(Map<String, Object> contentItem, String thoughtSignature) {
         String type = (String) contentItem.get("type");
-        if (type == null) return null;
-        
+        if(type == null)
+            return null;
+
         switch (type) {
-            case "text":
-                String text = (String) contentItem.get("text");
-                if (text != null) {
-                    return applyThoughtSignature(
+        case "text":
+            String text = (String) contentItem.get("text");
+            if(text != null) {
+                return applyThoughtSignature(
                         Part.builder().text(text),
-                        thoughtSignature
-                    ).build();
+                        thoughtSignature).build();
+            }
+            return null;
+        case "image_url":
+            @SuppressWarnings("unchecked")
+            Map<String, Object> imageUrl = (Map<String, Object>) contentItem.get("image_url");
+            if(imageUrl != null && imageUrl.get("url") != null) {
+                String url = (String) imageUrl.get("url");
+                if(!ImageUtils.isDateBase64(url)) {
+                    throw new IllegalArgumentException("gemini的图片仅支持data base64String");
                 }
-                return null;
-            case "image_url":
-                @SuppressWarnings("unchecked")
-                Map<String, Object> imageUrl = (Map<String, Object>) contentItem.get("image_url");
-                if (imageUrl != null && imageUrl.get("url") != null) {
-                    String url = (String) imageUrl.get("url");
-                    if(!ImageUtils.isDateBase64(url)) {
-                        throw new IllegalArgumentException("gemini的图片仅支持data base64String");
-                    }
-                    // Base64 inline data
-                    String[] parts = url.split(",", 2);
-                    if (parts.length == 2) {
-                        String mimeType = parts[0].split(":")[1].split(";")[0];
-                        return applyThoughtSignature(
+                // Base64 inline data
+                String[] parts = url.split(",", 2);
+                if(parts.length == 2) {
+                    String mimeType = parts[0].split(":")[1].split(";")[0];
+                    return applyThoughtSignature(
                             Part.builder().inlineData(
-                                Part.InlineData.builder()
-                                    .mimeType(mimeType)
-                                    .data(parts[1])
-                                    .build()
-                            ),
-                            thoughtSignature
-                        ).build();
-                    }
+                                    Part.InlineData.builder()
+                                            .mimeType(mimeType)
+                                            .data(parts[1])
+                                            .build()),
+                            thoughtSignature).build();
                 }
-                break;
-            default:
-                log.warn("Unsupported content type: {}", type);
-                break;
+            }
+            break;
+        default:
+            log.warn("Unsupported content type: {}", type);
+            break;
         }
         return null;
     }
-    
+
     private static SystemInstruction extractSystemInstruction(List<Message> messages) {
         return messages.stream()
                 .filter(msg -> "system".equals(msg.getRole()) || "developer".equals(msg.getRole()))
@@ -305,7 +299,7 @@ public class VertexConverter {
                 })
                 .orElse(null);
     }
-    
+
     private static List<Tool> convertTools(List<Message.Tool> openaiTools) {
         List<Tool.FunctionDeclaration> functionDeclarations = openaiTools.stream()
                 .map(tool -> {
@@ -317,46 +311,46 @@ public class VertexConverter {
                             .build();
                 })
                 .collect(Collectors.toList());
-        
+
         return Collections.singletonList(
                 Tool.builder().functionDeclarations(functionDeclarations).build());
     }
-    
+
     private static GenerationConfig convertGenerationConfig(CompletionRequest request, VertexProperty property) {
         GenerationConfig.GenerationConfigBuilder builder = GenerationConfig.builder();
 
         if(request.getN() != null) {
             builder.candidateCount(request.getN());
         }
-        
-        if (request.getTemperature() != null) {
+
+        if(request.getTemperature() != null) {
             builder.temperature(request.getTemperature());
         }
-        if (request.getTop_p() != null) {
+        if(request.getTop_p() != null) {
             builder.topP(request.getTop_p());
         }
-        if (request.getMax_tokens() != null) {
+        if(request.getMax_tokens() != null) {
             builder.maxOutputTokens(request.getMax_tokens());
         }
-        if (request.getStop() instanceof List) {
+        if(request.getStop() instanceof List) {
             @SuppressWarnings("unchecked")
             List<String> stopList = (List<String>) request.getStop();
-            if (CollectionUtils.isNotEmpty(stopList)) {
+            if(CollectionUtils.isNotEmpty(stopList)) {
                 builder.stopSequences(stopList);
             }
-        } else if(request.getStop() instanceof String){
+        } else if(request.getStop() instanceof String) {
             builder.stopSequences(Lists.newArrayList(request.getStop().toString()));
         }
-        if (request.getPresence_penalty() != null) {
+        if(request.getPresence_penalty() != null) {
             builder.presencePenalty(request.getPresence_penalty());
         }
-        if (request.getFrequency_penalty() != null) {
+        if(request.getFrequency_penalty() != null) {
             builder.frequencyPenalty(request.getFrequency_penalty());
         }
-        if (request.getSeed() != null) {
+        if(request.getSeed() != null) {
             builder.seed(request.getSeed());
         }
-        //todo: 开启Logprobs存在问题，暂不支持
+        // todo: 开启Logprobs存在问题，暂不支持
 //        if (request.getLogprobs() != null) {
 //            builder.responseLogprobs(request.getLogprobs());
 //        }
@@ -394,7 +388,7 @@ public class VertexConverter {
     }
 
     private static CompletionResponse.Logprobs convertLogprobs(LogprobsResult logprobsResult) {
-        if (logprobsResult == null || CollectionUtils.isEmpty(logprobsResult.getChosenCandidates())) {
+        if(logprobsResult == null || CollectionUtils.isEmpty(logprobsResult.getChosenCandidates())) {
             return null;
         }
 
@@ -409,7 +403,7 @@ public class VertexConverter {
                     .token(chosenCandidate.getToken())
                     .logprob(chosenCandidate.getLogProbability());
 
-            if (CollectionUtils.isNotEmpty(topCandidates) && topCandidates.size() > i
+            if(CollectionUtils.isNotEmpty(topCandidates) && topCandidates.size() > i
                     && CollectionUtils.isNotEmpty(topCandidates.get(i).getCandidates())) {
                 List<CompletionResponse.Logprobs.TopLogprob> topLogprobs = topCandidates.get(i).getCandidates().stream()
                         .map(candidate -> CompletionResponse.Logprobs.TopLogprob.builder()
@@ -423,18 +417,18 @@ public class VertexConverter {
             contents.add(contentBuilder.build());
         }
 
-        if (contents.isEmpty()) {
+        if(contents.isEmpty()) {
             return null;
         }
 
         return CompletionResponse.Logprobs.builder().content(contents).build();
     }
-    
+
     private static Message convertContentToMessage(Content content) {
-        if (content == null || CollectionUtils.isEmpty(content.getParts())) {
+        if(content == null || CollectionUtils.isEmpty(content.getParts())) {
             return Message.builder().role("assistant").content("").build();
         }
-        
+
         Message.MessageBuilder builder = Message.builder().role("assistant");
         StringBuilder textContent = new StringBuilder();
         StringBuilder reasoning = new StringBuilder();
@@ -448,27 +442,27 @@ public class VertexConverter {
         int index = 0;
         for (Part part : content.getParts()) {
             // 收集不同类型的 thoughtSignature
-            if (StringUtils.hasText(part.getThoughtSignature())) {
-                if (firstThoughtSignature == null) {
+            if(StringUtils.hasText(part.getThoughtSignature())) {
+                if(firstThoughtSignature == null) {
                     firstThoughtSignature = part.getThoughtSignature();
                 }
-                if (part.getFunctionCall() != null && functionCallThoughtSignature == null) {
+                if(part.getFunctionCall() != null && functionCallThoughtSignature == null) {
                     functionCallThoughtSignature = part.getThoughtSignature();
                 }
-                if (part.getInlineData() != null && inlineDataThoughtSignature == null) {
+                if(part.getInlineData() != null && inlineDataThoughtSignature == null) {
                     inlineDataThoughtSignature = part.getThoughtSignature();
                 }
             }
 
-            if (StringUtils.hasText(part.getText())) {
+            if(StringUtils.hasText(part.getText())) {
                 if(Boolean.TRUE == part.getThought()) {
                     reasoning.append(part.getText());
                 } else {
                     textContent.append(part.getText());
                 }
             }
-            
-            if (part.getFunctionCall() != null) {
+
+            if(part.getFunctionCall() != null) {
                 FunctionCall functionCall = part.getFunctionCall();
                 Message.ToolCall toolCall = Message.ToolCall.builder()
                         .id("call_" + UUID.randomUUID().toString().replace("-", ""))
@@ -482,7 +476,7 @@ public class VertexConverter {
                 toolCalls.add(toolCall);
             }
 
-            if (part.getInlineData() != null) {
+            if(part.getInlineData() != null) {
                 textContent.append("\n");
                 textContent.append("<inline>");
                 textContent.append("<data>");
@@ -504,7 +498,7 @@ public class VertexConverter {
             builder.reasoning_content(reasoning.toString());
         }
 
-        if (!toolCalls.isEmpty()) {
+        if(!toolCalls.isEmpty()) {
             builder.tool_calls(toolCalls);
         }
 
@@ -512,32 +506,32 @@ public class VertexConverter {
         String thoughtSignature = functionCallThoughtSignature != null ? functionCallThoughtSignature
                 : (inlineDataThoughtSignature != null ? inlineDataThoughtSignature : firstThoughtSignature);
 
-        if (StringUtils.hasText(thoughtSignature)) {
+        if(StringUtils.hasText(thoughtSignature)) {
             builder.reasoning_content_signature(thoughtSignature);
         }
-        
+
         return builder.build();
     }
-    
+
     public static CompletionResponse.TokenUsage convertUsage(UsageMetadata usageMetadata) {
-        if (usageMetadata == null) {
+        if(usageMetadata == null) {
             return null;
         }
-        
+
         CompletionResponse.TokenUsage.TokenUsageBuilder builder = CompletionResponse.TokenUsage.builder()
                 .prompt_tokens(usageMetadata.getPromptTokenCount() != null ? usageMetadata.getPromptTokenCount() : 0)
                 .completion_tokens(calculateCompletionTokens(usageMetadata))
                 .total_tokens(usageMetadata.getTotalTokenCount() != null ? usageMetadata.getTotalTokenCount() : 0);
-        
+
         CompletionResponse.TokensDetail promptTokensDetail = null;
-        
+
         if(usageMetadata.getCachedContentTokenCount() != null && usageMetadata.getCachedContentTokenCount() > 0) {
             int cachedCount = usageMetadata.getCachedContentTokenCount();
             builder.cache_read_tokens(cachedCount);
             promptTokensDetail = new CompletionResponse.TokensDetail();
             promptTokensDetail.setCached_tokens(cachedCount);
         }
-        
+
         if(usageMetadata.getPromptTokensDetails() != null) {
             if(promptTokensDetail == null) {
                 promptTokensDetail = new CompletionResponse.TokensDetail();
@@ -551,7 +545,7 @@ public class VertexConverter {
                 }
             });
         }
-        
+
         if(promptTokensDetail != null) {
             builder.prompt_tokens_details(promptTokensDetail);
         }
@@ -572,7 +566,7 @@ public class VertexConverter {
                 builder.completion_tokens_details(tokensDetail);
             }
         }
-        
+
         if(usageMetadata.getCacheTokensDetails() != null) {
             usageMetadata.getCacheTokensDetails().forEach(detail -> {
                 if(Modality.IMAGE.name().equals(detail.getModality()) || Modality.AUDIO.name().equals(detail.getModality())) {
@@ -589,48 +583,48 @@ public class VertexConverter {
                 }
             });
         }
-        
+
         return builder.build();
     }
-    
+
     private static int calculateCompletionTokens(UsageMetadata usageMetadata) {
         int candidateTokens = usageMetadata.getCandidatesTokenCount() != null ? usageMetadata.getCandidatesTokenCount() : 0;
         int thoughtTokens = usageMetadata.getThoughtsTokenCount() != null ? usageMetadata.getThoughtsTokenCount() : 0;
         return candidateTokens + thoughtTokens;
     }
-    
+
     private static String convertFinishReason(String vertexFinishReason) {
-        if (vertexFinishReason == null) {
+        if(vertexFinishReason == null) {
             return null;
         }
 
         // tool_calls 在 gemini中也是stop，此处未进行区分
         switch (vertexFinishReason) {
-            case "MAX_TOKENS":
-                return "length";
-            case "SAFETY":
-            case "RECITATION":
-                return "content_filter";
-            default:
-                return "stop";
+        case "MAX_TOKENS":
+            return "length";
+        case "SAFETY":
+        case "RECITATION":
+            return "content_filter";
+        default:
+            return "stop";
         }
     }
-    
+
     private static Map<String, Object> parseArguments(String arguments) {
-        if (!StringUtils.hasText(arguments)) {
+        if(!StringUtils.hasText(arguments)) {
             return new HashMap<>();
         }
-        
+
         @SuppressWarnings("unchecked")
         Map<String, Object> result = JacksonUtils.toMap(arguments);
         return result != null ? result : new HashMap<>();
     }
-    
+
     private static String serializeArguments(Map<String, Object> args) {
-        if (args == null || args.isEmpty()) {
+        if(args == null || args.isEmpty()) {
             return "{}";
         }
-        
+
         String result = JacksonUtils.serialize(args);
         return StringUtils.hasText(result) ? result : "{}";
     }

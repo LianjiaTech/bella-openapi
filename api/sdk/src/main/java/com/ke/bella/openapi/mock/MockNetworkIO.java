@@ -10,7 +10,6 @@ public class MockNetworkIO {
 
     private ExecutorService executorService;
 
-
     public <T> T httpRequest(T response, int ttlt) {
         try {
             Thread.sleep(ttlt);
@@ -41,8 +40,7 @@ public class MockNetworkIO {
                 }
             } catch (Exception e) {
                 writer.onError(e);
-            }
-            finally {
+            } finally {
                 writer.onCompletion();
             }
         };

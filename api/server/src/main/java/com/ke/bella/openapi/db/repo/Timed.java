@@ -12,5 +12,6 @@ public interface Timed {
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     LocalDateTime getMtime();
+
     void setMtime(LocalDateTime mtime);
 }

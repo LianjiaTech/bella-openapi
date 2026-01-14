@@ -38,12 +38,10 @@ public class HuoshanStreamTtsCallback implements Callbacks.WebSocketCallback {
 
     // event
 
-
     // 默认事件,对于使用事件的方案，可以通过非0值来校验事件的合法性
     private static final int EVENT_NONE = 0;
 
     private static final int EVENT_Start_Connection = 1;
-
 
     // 上行Connection事件
     private static final int EVENT_FinishConnection = 2;
@@ -52,8 +50,6 @@ public class HuoshanStreamTtsCallback implements Callbacks.WebSocketCallback {
     private static final int EVENT_ConnectionStarted = 50; // 成功建连
 
     private static final int EVENT_ConnectionFailed = 51; // 建连失败（可能是无法通过权限认证）
-
-
 
     // 上行Session事件
     private static final int EVENT_StartSession = 100;
@@ -110,7 +106,7 @@ public class HuoshanStreamTtsCallback implements Callbacks.WebSocketCallback {
         case EVENT_SessionFailed: {
             String errorStr = response.optional.response_meta_json;
             Map<String, Object> map = JacksonUtils.toMap(errorStr);
-            ChannelException exception = ChannelException.fromResponse(convertCode((Integer)map.get("status_code")), (String)map.get("message"));
+            ChannelException exception = ChannelException.fromResponse(convertCode((Integer) map.get("status_code")), (String) map.get("message"));
             onError(exception);
             break;
         }
@@ -124,11 +120,11 @@ public class HuoshanStreamTtsCallback implements Callbacks.WebSocketCallback {
             finishSession(webSocket, sessionId);
             break;
         case EVENT_TTSResponse: {
-            if (response.payload == null) {
+            if(response.payload == null) {
                 break;
             }
             // 输出结果
-            if (response.header.message_type == AUDIO_ONLY_RESPONSE) {
+            if(response.header.message_type == AUDIO_ONLY_RESPONSE) {
                 if(first) {
                     processData.getMetrics().put("ttft", DateTimeUtils.getCurrentMills() - startTime);
                     first = false;
@@ -206,7 +202,7 @@ public class HuoshanStreamTtsCallback implements Callbacks.WebSocketCallback {
     }
 
     int bytesToInt(byte[] src) {
-        if (src == null || (src.length != 4)) {
+        if(src == null || (src.length != 4)) {
             throw new IllegalArgumentException("");
         }
         return ((src[0] & 0xFF) << 24)
@@ -216,7 +212,7 @@ public class HuoshanStreamTtsCallback implements Callbacks.WebSocketCallback {
     }
 
     static byte[] intToBytes(int a) {
-        return new byte[]{
+        return new byte[] {
                 (byte) ((a >> 24) & 0xFF),
                 (byte) ((a >> 16) & 0xFF),
                 (byte) ((a >> 8) & 0xFF),
@@ -255,7 +251,7 @@ public class HuoshanStreamTtsCallback implements Callbacks.WebSocketCallback {
          * @return
          */
         public byte[] getBytes() {
-            return new byte[]{
+            return new byte[] {
                     // Protocol version | Header size (4x)
                     (byte) ((protocol_version << 4) | header_size),
                     // Message type | Message type specific flags
@@ -331,10 +327,10 @@ public class HuoshanStreamTtsCallback implements Callbacks.WebSocketCallback {
 
         public byte[] getBytes() {
             byte[] bytes = new byte[0];
-            if (event != EVENT_NONE) {
+            if(event != EVENT_NONE) {
                 bytes = intToBytes(event);
             }
-            if (sessionId != null) {
+            if(sessionId != null) {
                 byte[] sessionIdSize = intToBytes(sessionId.getBytes().length);
                 final byte[] temp = bytes;
                 int desPos = 0;
@@ -358,15 +354,15 @@ public class HuoshanStreamTtsCallback implements Callbacks.WebSocketCallback {
         transient public byte[] payload;
     }
 
-
     /**
      * 解析响应包
      *
      * @param res
+     * 
      * @return
      */
     TTSResponse parserResponse(byte[] res) {
-        if (res == null || res.length == 0) {
+        if(res == null || res.length == 0) {
             return null;
         }
         final TTSResponse response = new TTSResponse();
@@ -387,7 +383,7 @@ public class HuoshanStreamTtsCallback implements Callbacks.WebSocketCallback {
         int offset = 4;
         response.optional = new Optional();
         // 正常Response
-        if (header.message_type == FULL_SERVER_RESPONSE || header.message_type == AUDIO_ONLY_RESPONSE) {
+        if(header.message_type == FULL_SERVER_RESPONSE || header.message_type == AUDIO_ONLY_RESPONSE) {
             // 如果有event
             offset += readEvent(res, header.message_type_specific_flags, response);
             final int event = response.optional.event;
@@ -414,7 +410,7 @@ public class HuoshanStreamTtsCallback implements Callbacks.WebSocketCallback {
             }
         }
         // 错误
-        else if (header.message_type == ERROR_INFORMATION) {
+        else if(header.message_type == ERROR_INFORMATION) {
             offset += readErrorCode(res, response, offset);
             readPayload(res, response, offset);
         }
@@ -446,7 +442,6 @@ public class HuoshanStreamTtsCallback implements Callbacks.WebSocketCallback {
         response.optional.connectionSize = bytesToInt(b);
         readMetaJson(res, response, start);
     }
-
 
     void readMetaJson(byte[] res, TTSResponse response, int start) {
         byte[] b = new byte[4];
@@ -480,9 +475,8 @@ public class HuoshanStreamTtsCallback implements Callbacks.WebSocketCallback {
         return b.length;
     }
 
-
     int readEvent(byte[] res, int masTypeFlag, TTSResponse response) {
-        if (masTypeFlag == MsgTypeFlagWithEvent) {
+        if(masTypeFlag == MsgTypeFlagWithEvent) {
             byte[] temp = new byte[4];
             System.arraycopy(res, 4, temp, 0, temp.length);
             int event = bytesToInt(temp);
@@ -492,7 +486,6 @@ public class HuoshanStreamTtsCallback implements Callbacks.WebSocketCallback {
         }
         return 0;
     }
-
 
     int readSessionId(byte[] res, TTSResponse response, int start) {
         byte[] b = new byte[4];
@@ -504,7 +497,6 @@ public class HuoshanStreamTtsCallback implements Callbacks.WebSocketCallback {
         response.optional.sessionId = new String(sessionIdBytes);
         return b.length + size;
     }
-
 
     boolean startConnection(WebSocket webSocket) {
         byte[] header = getHeader();
@@ -542,7 +534,7 @@ public class HuoshanStreamTtsCallback implements Callbacks.WebSocketCallback {
      * @param webSocket
      * @param request
      * @param sessionId
-
+     * 
      * @return
      */
     boolean sendMessage(WebSocket webSocket, TtsRequest request, String sessionId) {
@@ -554,7 +546,7 @@ public class HuoshanStreamTtsCallback implements Callbacks.WebSocketCallback {
     }
 
     byte[] getHeader() {
-       return new Header(
+        return new Header(
                 PROTOCOL_VERSION,
                 FULL_CLIENT_REQUEST,
                 DEFAULT_HEADER_SIZE,
@@ -569,14 +561,13 @@ public class HuoshanStreamTtsCallback implements Callbacks.WebSocketCallback {
         assert header != null;
         assert payload != null;
         final byte[] payloadSizeBytes = intToBytes(payload.length);
-        byte[] requestBytes = new byte[
-                header.length
-                        + (optional == null ? 0 : optional.length)
-                        + payloadSizeBytes.length + payload.length];
+        byte[] requestBytes = new byte[header.length
+                + (optional == null ? 0 : optional.length)
+                + payloadSizeBytes.length + payload.length];
         int desPos = 0;
         System.arraycopy(header, 0, requestBytes, desPos, header.length);
         desPos += header.length;
-        if (optional != null) {
+        if(optional != null) {
             System.arraycopy(optional, 0, requestBytes, desPos, optional.length);
             desPos += optional.length;
         }

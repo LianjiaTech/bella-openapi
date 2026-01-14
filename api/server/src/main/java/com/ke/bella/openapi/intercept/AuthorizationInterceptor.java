@@ -41,9 +41,19 @@ public class AuthorizationInterceptor extends com.ke.bella.openapi.server.interc
             EndpointContext.setApikey(apikeyInfo);
             hasPermission = apikeyInfo.hasPermission(url);
         } else {
-            String auth = request.getHeader(getHeader(request.getRequestURI()));
+            // 优先检查标准 Authorization header
+            String auth = request.getHeader(HttpHeaders.AUTHORIZATION);
+
+            // 如果为空，检查协议特定的备选 header
             if(StringUtils.isEmpty(auth)) {
-                throw new ChannelException.AuthorizationException("Authorization is empty");
+                String alternativeHeader = getAlternativeHeader(request.getRequestURI());
+                if(alternativeHeader != null) {
+                    auth = request.getHeader(alternativeHeader);
+                }
+                // 备选 header 也为空，抛出异常
+                if (StringUtils.isEmpty(auth)) {
+                    throw new ChannelException.AuthorizationException("Authorization is empty");
+                }
             }
             ApikeyInfo apikeyInfo = apikeyService.verifyAuth(auth);
             hasPermission = apikeyInfo.hasPermission(url);
@@ -63,7 +73,19 @@ public class AuthorizationInterceptor extends com.ke.bella.openapi.server.interc
         return true;
     }
 
-    private String getHeader(String uri) {
-        return HttpHeaders.AUTHORIZATION;
+    /**
+     * 根据请求 URI 获取协议特定的备选认证 header 名称。
+     *
+     * @param uri 请求的 URI
+     * @return 备选 header 名称，若无备选则返回 null
+     */
+    private String getAlternativeHeader(String uri) {
+        // Gemini API 使用 x-goog-api-key 作为认证 header
+        if (uri.startsWith("/v1beta/models") || uri.startsWith("/v1beta1/publishers/google/models")) {
+            return "x-goog-api-key";
+        }
+
+        // 其他协议无备选 header
+        return null;
     }
 }

@@ -31,7 +31,6 @@ public class EndpointContext {
         return endpointRequestInfo.get();
     }
 
-
     public static HttpServletRequest getRequest() {
         Assert.notNull(requestCache.get(), "requestCache is empty");
         return requestCache.get();
@@ -46,7 +45,7 @@ public class EndpointContext {
 
         // 从原始请求获取大小
         int contentLength = request.getContentLength();
-        if (contentLength > 0) {
+        if(contentLength > 0) {
             requestSize.set(contentLength);
         }
     }
@@ -113,7 +112,7 @@ public class EndpointContext {
         return Boolean.TRUE.equals(isLastRequest.get());
     }
 
-	public static Integer getRequestSize() {
+    public static Integer getRequestSize() {
         return requestSize.get();
     }
 

@@ -45,7 +45,7 @@ public class BellaCasLoginFilter implements Filter {
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
         HttpServletRequest httpRequest = (HttpServletRequest) request;
         if(httpRequest.getRequestURI().equals(serviceUri)) {
-            //不处理cas服务的登出请求
+            // 不处理cas服务的登出请求
             return;
         }
         if(StringUtils.isNotBlank(authorizationHeader)) {
@@ -81,6 +81,5 @@ public class BellaCasLoginFilter implements Filter {
         }
         chain.doFilter(request, response);
     }
-
 
 }

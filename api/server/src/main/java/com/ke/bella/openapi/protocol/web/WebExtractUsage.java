@@ -27,7 +27,8 @@ public class WebExtractUsage {
 
     /**
      * The extraction depth used (basic or advanced)
-     * Affects extraction cost: basic (1 credit/5 extractions) vs advanced (2 credits/5 extractions)
+     * Affects extraction cost: basic (1 credit/5 extractions) vs advanced (2
+     * credits/5 extractions)
      */
     private String extractDepth;
 

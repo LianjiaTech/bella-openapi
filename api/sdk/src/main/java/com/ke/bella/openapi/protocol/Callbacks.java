@@ -26,7 +26,6 @@ public interface Callbacks {
         void request(Object req, BellaEventSourceListener listener);
     }
 
-
     class DefaultSseConverter implements SseEventConverter<StreamCompletionResponse> {
 
         @Override
@@ -61,12 +60,13 @@ public interface Callbacks {
     interface StreamCallback extends Callbacks {
     }
 
-
-
     interface Sender extends Callbacks {
         void send(String text);
+
         void send(byte[] bytes);
+
         void onError(Throwable e);
+
         void close();
     }
 
@@ -81,15 +81,20 @@ public interface Callbacks {
     }
 
     interface WebSocketCallback extends StreamCallback {
-       void onOpen(WebSocket webSocket, Response response);
-       void onMessage(WebSocket webSocket, ByteString bytes);
-       void onMessage(WebSocket webSocket, String text);
-       void onClosing(WebSocket webSocket, int code, String reason);
-       void onClosed(WebSocket webSocket, int code, String reason);
-       void onFailure(WebSocket webSocket, Throwable t, Response response);
-       boolean started();
-    }
+        void onOpen(WebSocket webSocket, Response response);
 
+        void onMessage(WebSocket webSocket, ByteString bytes);
+
+        void onMessage(WebSocket webSocket, String text);
+
+        void onClosing(WebSocket webSocket, int code, String reason);
+
+        void onClosed(WebSocket webSocket, int code, String reason);
+
+        void onFailure(WebSocket webSocket, Throwable t, Response response);
+
+        boolean started();
+    }
 
     interface ChannelErrorCallback<T> {
         void callback(T channelResponse, Response httpResponse);

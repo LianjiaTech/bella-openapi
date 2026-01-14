@@ -35,7 +35,7 @@ public class LimiterManager {
         String entityCode = processData.getModel() != null ? processData.getModel() : processData.getEndpoint();
         String akCode = processData.getAkCode();
         String requestId = processData.getRequestId();
-        if (entityCode == null) {
+        if(entityCode == null) {
             return;
         }
         long currentTimestamp = DateTimeUtils.getCurrentSeconds();

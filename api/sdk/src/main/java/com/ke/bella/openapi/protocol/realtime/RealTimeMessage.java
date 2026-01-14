@@ -26,7 +26,7 @@ public class RealTimeMessage extends OpenapiResponse {
      * name字段决定消息类型
      */
     private RealTimeHeader header;
-    
+
     /**
      * 消息负载
      * 根据消息类型不同而有不同的内容
@@ -39,7 +39,7 @@ public class RealTimeMessage extends OpenapiResponse {
         return response;
     }
 
-    public static RealTimeMessage errorResponse(int httpCode, int status,  String errorMessage, String taskId) {
+    public static RealTimeMessage errorResponse(int httpCode, int status, String errorMessage, String taskId) {
         RealTimeMessage response = new RealTimeMessage();
         OpenapiError error = OpenapiError.builder().httpCode(httpCode).code(String.valueOf(status)).message(errorMessage).build();
         response.setError(error);
@@ -73,7 +73,7 @@ public class RealTimeMessage extends OpenapiResponse {
         response.setHeader(RealTimeHeader.header(RealTimeEventType.TRANSCRIPTION_COMPLETED, taskId));
         return response;
     }
-    
+
     /**
      * 消息负载
      * 包含识别结果或音频格式参数
@@ -81,21 +81,21 @@ public class RealTimeMessage extends OpenapiResponse {
     @Data
     public static class Payload implements Serializable {
         private static final long serialVersionUID = 1L;
-        
+
         // === 响应消息中使用的字段 ===
-        
+
         /**
          * 句子编号，从0或1开始递增
          * 在SentenceBegin, TranscriptionResultChanged, SentenceEnd消息中使用
          */
         private Integer index;
-        
+
         /**
          * 当前已处理的音频时长，单位是毫秒
          * 在SentenceBegin, TranscriptionResultChanged, SentenceEnd消息中使用
          */
         private Integer time;
-        
+
         /**
          * 当前句子对应的SentenceBegin事件的时间，单位是毫秒
          * 在SentenceEnd消息中使用
@@ -114,7 +114,7 @@ public class RealTimeMessage extends OpenapiResponse {
          */
         @JsonProperty("end_frame")
         private Integer endFrame;
-        
+
         /**
          * 当前的识别结果
          * 在TranscriptionResultChanged, SentenceEnd消息中使用
@@ -146,13 +146,13 @@ public class RealTimeMessage extends OpenapiResponse {
          * 在TranscriptionResultChanged, SentenceEnd消息中使用
          */
         private List<Word> words;
-        
+
         /**
          * 当前句子识别结果的置信度，取值范围：[0.0,1.0]
          * 在TranscriptionResultChanged, SentenceEnd消息中使用
          */
         private Double confidence;
-        
+
         /**
          * 当前句子的情感
          * 包含positive(正面情感)、negative(负面情感)、neutral(无明显情感)三种类别
@@ -160,46 +160,46 @@ public class RealTimeMessage extends OpenapiResponse {
          */
         @JsonProperty("emo_tag")
         private String emoTag;
-        
+
         /**
          * 当前句子识别情感的置信度，取值范围：[0.0,1.0]
          * 在SentenceEnd消息中使用
          */
         @JsonProperty("emo_confidence")
         private Double emoConfidence;
-        
+
         /**
          * 会话ID
          * 在TranscriptionStarted消息中使用
          */
         @JsonProperty("session_id")
         private String sessionId;
-        
+
         // === 在StartTranscription请求中使用的字段 ===
-        
+
         /**
          * 音频格式
          */
         private String format;
-        
+
         /**
          * 采样率
          */
         @JsonProperty("sample_rate")
         private Integer sampleRate;
-        
+
         /**
          * 是否启用中间结果
          */
         @JsonProperty("enable_intermediate_result")
         private Boolean enableIntermediateResult;
-        
+
         /**
          * 是否启用标点预测
          */
         @JsonProperty("enable_punctuation_prediction")
         private Boolean enablePunctuationPrediction;
-        
+
         /**
          * 是否启用逆文本规范化
          */
@@ -211,72 +211,72 @@ public class RealTimeMessage extends OpenapiResponse {
          */
         @JsonProperty("customization_id")
         private String customizationId;
-        
+
         /**
          * 词汇表ID
          */
         @JsonProperty("vocabulary_id")
         private String vocabularyId;
-        
+
         /**
          * 最大句子静音时长
          */
         @JsonProperty("max_sentence_silence")
         private String maxSentenceSilence;
-        
+
         /**
          * 是否启用词级别时间戳
          */
         @JsonProperty("enable_words")
         private Boolean enableWords;
-        
+
         /**
          * 是否忽略句子超时
          */
         @JsonProperty("enable_ignore_sentence_timeout")
         private Boolean enableIgnoreSentenceTimeout;
-        
+
         /**
          * 是否处理口吃
          */
         private Boolean disfluency;
-        
+
         /**
          * 语音噪声阈值
          */
         @JsonProperty("speech_noise_threshold")
         private Float speechNoiseThreshold;
-        
+
         /**
          * 是否启用语义句子检测
          */
         @JsonProperty("enable_semantic_sentence_detection")
         private Boolean enableSemanticSentenceDetection;
-        
+
         /**
          * LLM选项配置
          */
         @JsonProperty("llm_option")
         private LlmOption llmOption;
-        
+
         /**
          * TTS选项配置
          */
         @JsonProperty("tts_option")
         private TtsOption ttsOption;
-        
+
         /**
          * 变量配置
          */
         private Map<String, Object> variables;
-        
+
         /**
          * 热词字符串
          * 用于语音识别热词配置
          */
         @JsonProperty("hot_words")
         private String hotWords;
-        
+
         /**
          * 热词表ID
          * 用于语音识别热词表配置
@@ -284,7 +284,7 @@ public class RealTimeMessage extends OpenapiResponse {
         @JsonProperty("hot_words_table_id")
         private String hotWordsTableId;
     }
-    
+
     /**
      * LLM选项配置类
      * 用于配置大语言模型的参数
@@ -292,102 +292,102 @@ public class RealTimeMessage extends OpenapiResponse {
     @Data
     public static class LlmOption implements Serializable {
         private static final long serialVersionUID = 1L;
-        
+
         /**
          * 主要LLM配置
          */
         private MainLlmOption main;
-        
+
         /**
          * 工作者LLM配置列表
          */
         private List<WorkerLlmOption> workers;
     }
-    
+
     /**
      * 主要LLM配置
      */
     @Data
     public static class MainLlmOption implements Serializable {
         private static final long serialVersionUID = 1L;
-        
+
         /**
          * 模型名称
          */
         private String model;
-        
+
         /**
          * 系统提示词
          * 用于设置模型的行为和角色
          */
         @JsonProperty("sys_prompt")
         private String sysPrompt;
-        
+
         /**
          * 用户提示词
          * 用于引导模型生成特定内容
          */
         private String prompt;
-        
+
         /**
          * 温度参数
          * 控制输出的随机性，值越大随机性越高，取值范围[0.0, 2.0]
          */
         private Float temperature = 1.0f;
     }
-    
+
     /**
      * 工作者LLM配置
      */
     @Data
     public static class WorkerLlmOption implements Serializable {
         private static final long serialVersionUID = 1L;
-        
+
         /**
          * 模型名称
          */
         private String model;
-        
+
         /**
          * 是否阻塞
          */
         private Boolean blocking = false;
-        
+
         /**
          * 结果变量名
          */
         @JsonProperty("variable_name")
         private String variableName;
-        
+
         /**
          * 变量类型，如text、json等
          */
         @JsonProperty("variable_type")
         private String variableType;
-        
+
         /**
          * 系统提示词
          */
         @JsonProperty("sys_prompt")
         private String sysPrompt;
-        
+
         /**
          * 用户提示词
          */
         private String prompt;
-        
+
         /**
          * 温度参数
          */
         private Float temperature = 1.0f;
-        
+
         /**
          * JSON模式定义
          */
         @JsonProperty("json_schema")
         private String jsonSchema;
     }
-    
+
     /**
      * TTS选项配置类
      * 用于配置文本转语音的参数
@@ -395,48 +395,48 @@ public class RealTimeMessage extends OpenapiResponse {
     @Data
     public static class TtsOption implements Serializable {
         private static final long serialVersionUID = 1L;
-        
+
         /**
          * 模型名称
          */
         private String model;
-        
+
         /**
          * 语音角色
          */
         private String voice;
-        
+
         /**
          * 采样率
          */
         @JsonProperty("sample_rate")
         private Integer sampleRate;
     }
-    
+
     /**
      * 词信息
      */
     @Data
     public static class Word implements Serializable {
         private static final long serialVersionUID = 1L;
-        
+
         /**
          * 文本
          */
         private String text;
-        
+
         /**
          * 词开始时间，单位为毫秒
          */
         @JsonProperty("start_time")
         private Integer startTime;
-        
+
         /**
          * 词结束时间，单位为毫秒
          */
         @JsonProperty("end_time")
         private Integer endTime;
-        
+
         /**
          * 词的置信度
          */

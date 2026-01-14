@@ -58,7 +58,8 @@ public class MockAdaptor implements CompletionAdaptorDelegator<CompletionPropert
 
     @Override
     public CompletionResponse completion(CompletionRequest request, String url, CompletionProperty property) {
-        MockCompletionRequest mockCompletionRequest = new MockCompletionRequest((CompletionRequest) EndpointContext.getProcessData().getRequest(), BellaContext.getHeaders(), property);
+        MockCompletionRequest mockCompletionRequest = new MockCompletionRequest((CompletionRequest) EndpointContext.getProcessData().getRequest(),
+                BellaContext.getHeaders(), property);
         CompletionResponse response = new CompletionResponse();
         response.setCreated(DateTimeUtils.getCurrentSeconds());
         response.setModel("mock-model");
@@ -81,7 +82,8 @@ public class MockAdaptor implements CompletionAdaptorDelegator<CompletionPropert
 
     @Override
     public void streamCompletion(CompletionRequest request, String url, CompletionProperty property, Callbacks.StreamCompletionCallback callback) {
-        MockCompletionRequest mockCompletionRequest = new MockCompletionRequest((CompletionRequest) EndpointContext.getProcessData().getRequest(), BellaContext.getHeaders(), property);
+        MockCompletionRequest mockCompletionRequest = new MockCompletionRequest((CompletionRequest) EndpointContext.getProcessData().getRequest(),
+                BellaContext.getHeaders(), property);
         CompletionSseListener sseListener = new CompletionSseListener(callback, new Callbacks.DefaultSseConverter());
         List<StreamCompletionResponse> chunks = mockCompletionRequest.getChunks();
         CompletableFuture<?> future = new CompletableFuture<>();
@@ -92,7 +94,7 @@ public class MockAdaptor implements CompletionAdaptorDelegator<CompletionPropert
         } catch (InterruptedException interruptedException) {
             interruptedException.printStackTrace();
             Thread.currentThread().interrupt();
-        }  catch (ExecutionException e) {
+        } catch (ExecutionException e) {
             if(e.getCause() instanceof RuntimeException) {
                 throw (RuntimeException) e.getCause();
             }
@@ -252,9 +254,9 @@ public class MockAdaptor implements CompletionAdaptorDelegator<CompletionPropert
 
             // 如果同时存在 content 和 reasoning，按照 3:7 的比例分配
             if(StringUtils.isNotBlank(content) && StringUtils.isNotBlank(reasoning)) {
-                totalChunks = isReason ?
-                        (int)(totalChunks * 0.7) : // reasoning 占 70%
-                        (int)(totalChunks * 0.3);  // content 占 30%
+                totalChunks = isReason ? (int) (totalChunks * 0.7) : // reasoning
+                                                                     // 占 70%
+                        (int) (totalChunks * 0.3);  // content 占 30%
             }
 
             // 计算每个分包的大致长度
@@ -262,11 +264,11 @@ public class MockAdaptor implements CompletionAdaptorDelegator<CompletionPropert
 
             // 分包
             int start = 0;
-            while(start < text.length()) {
+            while (start < text.length()) {
                 int end = Math.min(start + chunkSize, text.length());
                 // 确保不会在单词中间截断
                 if(end < text.length()) {
-                    while(end > start && !Character.isWhitespace(text.charAt(end))) {
+                    while (end > start && !Character.isWhitespace(text.charAt(end))) {
                         end--;
                     }
                     if(end == start) {

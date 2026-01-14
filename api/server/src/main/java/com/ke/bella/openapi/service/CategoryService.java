@@ -56,7 +56,7 @@ public class CategoryService {
         if(parentCode == null) {
             return;
         }
-        //加锁，防止执行过程中，变成叶子节点
+        // 加锁，防止执行过程中，变成叶子节点
         CategoryDB existed = categoryRepo.queryByUniqueKeyForUpdate(parentCode);
         Assert.notNull(existed, "父类目编码不存在");
         long endpointNum = categoryRepo.countEndpointCategoriesByCategoryCode(parentCode);
@@ -100,7 +100,7 @@ public class CategoryService {
                 .map(EndpointCategoryRelDB::getId)
                 .collect(Collectors.toList());
         if(CollectionUtils.isNotEmpty(ids)) {
-        categoryRepo.deleteRelations(ids);
+            categoryRepo.deleteRelations(ids);
         }
     }
 
@@ -118,7 +118,7 @@ public class CategoryService {
         orgin.forEach(db -> {
             if(op.getCategoryCodes().contains(db.getCategoryCode())) {
                 insertCodes.remove(db.getCategoryCode());
-            } else if(!systemCategory.contains(db.getCategoryCode())){
+            } else if(!systemCategory.contains(db.getCategoryCode())) {
                 deletes.add(db.getId());
             }
         });
@@ -131,13 +131,13 @@ public class CategoryService {
     }
 
     private void checkLeafCategories(Set<String> categoryCodes) {
-        //当一次性要关联多个节点时，获取其中一个锁失败时不等待，直接抛异常，防止死锁发生
+        // 当一次性要关联多个节点时，获取其中一个锁失败时不等待，直接抛异常，防止死锁发生
         boolean nowait = categoryCodes.size() > 1;
         categoryCodes.forEach(code -> checkLeafCategory(code, nowait));
     }
 
     private void checkLeafCategory(String categoryCode, boolean nowait) {
-        //加锁，防止执行过程中变成了父节点
+        // 加锁，防止执行过程中变成了父节点
         CategoryDB existed = nowait ? categoryRepo.queryByUniqueKeyForUpdateNoWait(categoryCode)
                 : categoryRepo.queryByUniqueKeyForUpdate(categoryCode);
         Assert.notNull(existed, "类目编码不存在: " + categoryCode);
@@ -163,10 +163,11 @@ public class CategoryService {
         List<CategoryDB> topCategories = categoryRepo.list(Condition.CategoryCondition.builder()
                 .status(ACTIVE).topCategory(true).build());
         List<EndpointCategoryTree> result = new ArrayList<>();
-        for(CategoryDB top : topCategories) {
+        for (CategoryDB top : topCategories) {
             List<CategoryDB> categories = categoryRepo.queryAllChildrenIncludeSelfByCategoryCode(top.getCategoryCode(), ACTIVE);
             categories.stream().filter(db -> db.getCategoryCode().equals(top.getCategoryCode())).findAny().ifPresent(
-                    category -> result.add(getTreeByCategoryCode(category, categories.stream().collect(Collectors.groupingBy(CategoryDB::getParentCode)), true)));
+                    category -> result.add(
+                            getTreeByCategoryCode(category, categories.stream().collect(Collectors.groupingBy(CategoryDB::getParentCode)), true)));
         }
         return result;
     }

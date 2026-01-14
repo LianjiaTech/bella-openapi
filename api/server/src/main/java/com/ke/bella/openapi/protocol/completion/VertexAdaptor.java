@@ -13,7 +13,6 @@ import okhttp3.RequestBody;
 import org.apache.commons.collections4.MapUtils;
 import org.springframework.stereotype.Component;
 
-
 @Slf4j
 @Component("VertexCompletion")
 public class VertexAdaptor implements CompletionAdaptor<VertexProperty> {
@@ -48,8 +47,8 @@ public class VertexAdaptor implements CompletionAdaptor<VertexProperty> {
     }
 
     @Override
-    public void streamCompletion(CompletionRequest request, String url, VertexProperty property, 
-                                Callbacks.StreamCompletionCallback callback) {
+    public void streamCompletion(CompletionRequest request, String url, VertexProperty property,
+            Callbacks.StreamCompletionCallback callback) {
         // Build Vertex AI streaming URL
         String vertexUrl = buildVertexUrl(url, true);
 
@@ -67,37 +66,36 @@ public class VertexAdaptor implements CompletionAdaptor<VertexProperty> {
         // Use HttpUtils for streaming request
         HttpUtils.streamRequest(httpRequest, listener);
     }
-    
+
     private String buildVertexUrl(String baseUrl, boolean isStreaming) {
         StringBuilder urlBuilder = new StringBuilder(baseUrl);
-        
-        if (isStreaming) {
+
+        if(isStreaming) {
             urlBuilder.append(":streamGenerateContent?alt=sse");
         } else {
             urlBuilder.append(":generateContent");
         }
-        
+
         return urlBuilder.toString();
     }
-    
+
     private Request buildHttpRequest(String url, GeminiRequest geminiRequest, VertexProperty property) {
         byte[] requestBytes = JacksonUtils.toByte(geminiRequest);
 
         RequestBody body = RequestBody.create(MediaType.parse("application/json"), requestBytes);
-        
+
         Request.Builder builder = authorizationRequestBuilder(property.getAuth())
                 .url(url)
                 .post(body)
                 .header("Content-Type", "application/json");
-        
+
         // Add extra headers if configured
-        if (MapUtils.isNotEmpty(property.getExtraHeaders())) {
+        if(MapUtils.isNotEmpty(property.getExtraHeaders())) {
             property.getExtraHeaders().forEach(builder::header);
         }
-        
+
         return builder.build();
     }
-
 
     /**
      * Vertex AI Gemini SSE 事件转换器
@@ -117,7 +115,7 @@ public class VertexAdaptor implements CompletionAdaptor<VertexProperty> {
             try {
                 // Gemini API 流式响应直接是 JSON 格式
                 GeminiResponse geminiResponse = JacksonUtils.deserialize(eventData, GeminiResponse.class);
-                if (geminiResponse != null) {
+                if(geminiResponse != null) {
                     return VertexConverter.convertGeminiToStreamResponse(geminiResponse, created);
                 }
                 return null;

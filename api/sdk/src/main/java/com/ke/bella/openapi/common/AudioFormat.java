@@ -22,7 +22,7 @@ public enum AudioFormat {
     }
 
     public static String getContentType(String format) {
-        if (format == null) {
+        if(format == null) {
             return UNKNOWN.contentType;
         }
         return Arrays.stream(values())

@@ -56,10 +56,11 @@ public class MetricsController {
                 condition.setEntityCodes(models);
             }
         }
-        Map<String, String> channelMap = channelService.listByCondition(condition).stream().collect(Collectors.toMap(ChannelDB::getChannelCode, ChannelDB::getEntityCode));
+        Map<String, String> channelMap = channelService.listByCondition(condition).stream()
+                .collect(Collectors.toMap(ChannelDB::getChannelCode, ChannelDB::getEntityCode));
         Map<String, Map<String, Object>> metrics = metricsManager.queryMetrics(endpoint, channelMap.keySet());
         List<MetricsQueryResult> results = new ArrayList<>();
-        for(Map.Entry<String, Map<String, Object>> entry : metrics.entrySet()) {
+        for (Map.Entry<String, Map<String, Object>> entry : metrics.entrySet()) {
             MetricsQueryResult result = new MetricsQueryResult();
             result.setChannelCode(entry.getKey());
             result.setEndpoint(endpoint);

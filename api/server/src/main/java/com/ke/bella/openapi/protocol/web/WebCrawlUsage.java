@@ -21,7 +21,8 @@ public class WebCrawlUsage {
 
     /**
      * Whether natural language instructions were provided
-     * Affects mapping cost: regular mapping (1 credit/10 pages) vs instruction mapping (2 credits/10 pages)
+     * Affects mapping cost: regular mapping (1 credit/10 pages) vs instruction
+     * mapping (2 credits/10 pages)
      */
     private boolean hasInstructions;
 
@@ -33,7 +34,8 @@ public class WebCrawlUsage {
 
     /**
      * The extraction depth used (basic or advanced)
-     * Affects extraction cost: basic (1 credit/5 extractions) vs advanced (2 credits/5 extractions)
+     * Affects extraction cost: basic (1 credit/5 extractions) vs advanced (2
+     * credits/5 extractions)
      */
     private String extractDepth;
 }

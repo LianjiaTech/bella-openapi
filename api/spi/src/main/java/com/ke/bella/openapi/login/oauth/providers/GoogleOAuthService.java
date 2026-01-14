@@ -24,7 +24,7 @@ public class GoogleOAuthService extends AbstractOAuthService {
     @Override
     protected String parseAccessToken(String response) throws IOException {
         JsonNode node = JacksonUtils.deserialize(response);
-        if (node == null || !node.has("access_token")) {
+        if(node == null || !node.has("access_token")) {
             throw new IOException("Invalid token response");
         }
         return node.get("access_token").asText();
@@ -38,11 +38,11 @@ public class GoogleOAuthService extends AbstractOAuthService {
                 .build();
 
         try (Response response = client.newCall(request).execute()) {
-            if (!response.isSuccessful() || response.body() == null) {
+            if(!response.isSuccessful() || response.body() == null) {
                 throw new IOException("Failed to get user info");
             }
             JsonNode userInfo = JacksonUtils.deserialize(response.body().string());
-            if (userInfo == null) {
+            if(userInfo == null) {
                 throw new IOException("Invalid userInfo response");
             }
             Operator operator = new Operator();

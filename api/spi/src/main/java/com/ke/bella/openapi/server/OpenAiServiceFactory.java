@@ -41,18 +41,18 @@ public class OpenAiServiceFactory {
      */
     public OpenAiService create(int connectTimeoutSeconds, int readTimeoutSeconds) {
         ObjectMapper mapper = OpenAiService.defaultObjectMapper();
-        
+
         // 创建带有自定义超时的client
         OkHttpClient client = new OkHttpClient.Builder()
                 .addInterceptor(new BellaInterceptor(openapiProperties.getHost(), BellaContext.snapshot()))
                 .connectTimeout(connectTimeoutSeconds, TimeUnit.SECONDS)
                 .readTimeout(readTimeoutSeconds, TimeUnit.SECONDS)
                 .build();
-        
+
         Retrofit retrofit = OpenAiService.defaultRetrofit(client, mapper, openapiProperties.getHost() + "/v1/");
         OpenAiApi openAiApi = retrofit.create(OpenAiApi.class);
         ExecutorService executorService = client.dispatcher().executorService();
-        
+
         return new OpenAiService(openAiApi, executorService);
     }
 

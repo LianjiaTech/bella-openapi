@@ -7,7 +7,7 @@ import com.ke.bella.openapi.protocol.IModelFeatures;
 import lombok.Data;
 
 @Data
-public class TTSModelFeatures implements IModelFeatures  {
+public class TTSModelFeatures implements IModelFeatures {
 
     private boolean stream;
 

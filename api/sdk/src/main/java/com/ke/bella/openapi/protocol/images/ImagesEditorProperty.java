@@ -11,24 +11,24 @@ import java.util.Map;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class ImagesEditorProperty extends ImagesProperty {
-    
+
     /**
      * 是否支持文件上传
      */
     private boolean supportFile = true;
-    
+
     /**
      * 是否支持URL输入
      * 默认为false，只支持文件上传
      */
     private boolean supportUrl = false;
-    
+
     /**
      * 是否支持Base64输入
      * 默认为false，只支持文件上传
      */
     private boolean supportBase64 = false;
-    
+
     @Override
     public Map<String, String> description() {
         Map<String, String> desc = super.description();

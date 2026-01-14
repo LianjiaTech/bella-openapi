@@ -14,7 +14,7 @@ import java.util.Collections;
  */
 @Slf4j
 public class ResponsesApiSseConverter implements Callbacks.SseEventConverter<StreamCompletionResponse> {
-    
+
     private String responseId;
     private String model;
     private final long created;
@@ -29,7 +29,7 @@ public class ResponsesApiSseConverter implements Callbacks.SseEventConverter<Str
     public StreamCompletionResponse convert(String eventId, String eventType, String eventData) {
         try {
             ResponsesApiStreamEvent event = JacksonUtils.deserialize(eventData, ResponsesApiStreamEvent.class);
-            if (event != null && event.getType() != null) {
+            if(event != null && event.getType() != null) {
                 return processStreamEvent(event);
             }
             return null;
@@ -44,31 +44,31 @@ public class ResponsesApiSseConverter implements Callbacks.SseEventConverter<Str
      */
     private StreamCompletionResponse processStreamEvent(ResponsesApiStreamEvent event) {
         switch (event.getType()) {
-            case "response.created":
-                return handleResponseCreated(event);
-            case "response.in_progress":
-                return handleResponseInProgress(event);
-            case "response.output_item.added":
-                return handleOutputItemAdded(event);
-            case "response.output_text.delta":
-                return handleOutputTextDelta(event);
-            case "response.function_call_arguments.delta":
-                return handleFunctionCallArgumentsDelta(event);
-            case "response.function_call_arguments.done":
-                return handleFunctionCallArgumentsDone(event);
-            case "response.reasoning_summary_text.delta":
-                return handleReasoningSummaryDelta(event);
-            case "response.reasoning_summary_text.done":
-                return handleReasoningSummaryDone(event);
-            case "response.output_item.done":
-                return handleOutputItemDone(event);
-            case "response.completed":
-                return handleResponseCompleted(event);
-            case "response.error":
-                return handleResponseError(event);
-            default:
-                log.debug("Unknown Responses API event type: {}", event.getType());
-                return null;
+        case "response.created":
+            return handleResponseCreated(event);
+        case "response.in_progress":
+            return handleResponseInProgress(event);
+        case "response.output_item.added":
+            return handleOutputItemAdded(event);
+        case "response.output_text.delta":
+            return handleOutputTextDelta(event);
+        case "response.function_call_arguments.delta":
+            return handleFunctionCallArgumentsDelta(event);
+        case "response.function_call_arguments.done":
+            return handleFunctionCallArgumentsDone(event);
+        case "response.reasoning_summary_text.delta":
+            return handleReasoningSummaryDelta(event);
+        case "response.reasoning_summary_text.done":
+            return handleReasoningSummaryDone(event);
+        case "response.output_item.done":
+            return handleOutputItemDone(event);
+        case "response.completed":
+            return handleResponseCompleted(event);
+        case "response.error":
+            return handleResponseError(event);
+        default:
+            log.debug("Unknown Responses API event type: {}", event.getType());
+            return null;
         }
     }
 
@@ -77,12 +77,12 @@ public class ResponsesApiSseConverter implements Callbacks.SseEventConverter<Str
      */
     private StreamCompletionResponse handleResponseCreated(ResponsesApiStreamEvent event) {
         // 从 response 对象中提取信息
-        if (event.getResponse() != null) {
+        if(event.getResponse() != null) {
             ResponsesApiResponse response = event.getResponse();
             this.responseId = response.getId();
             this.model = response.getModel();
         }
-        
+
         return null;
     }
 
@@ -99,11 +99,11 @@ public class ResponsesApiSseConverter implements Callbacks.SseEventConverter<Str
      */
     private StreamCompletionResponse handleOutputItemAdded(ResponsesApiStreamEvent event) {
         // 从 item 对象中获取类型信息
-        if (event.getItem() != null) {
+        if(event.getItem() != null) {
             ResponsesApiResponse.OutputItem item = event.getItem();
             String itemType = item.getType();
-            
-            if ("function_call".equals(itemType)) {
+
+            if("function_call".equals(itemType)) {
                 hasToolCalls = true;
                 return sendToolCallStart(event);
             }
@@ -117,7 +117,7 @@ public class ResponsesApiSseConverter implements Callbacks.SseEventConverter<Str
      */
     private StreamCompletionResponse handleOutputTextDelta(ResponsesApiStreamEvent event) {
         String delta = event.getDelta();
-        if (StringUtils.isNotEmpty(delta)) {
+        if(StringUtils.isNotEmpty(delta)) {
             return StreamCompletionResponse.builder()
                     .id(responseId)
                     .object("chat.completion.chunk")
@@ -128,8 +128,7 @@ public class ResponsesApiSseConverter implements Callbacks.SseEventConverter<Str
                                     .index(0)
                                     .delta(Message.builder().content(delta).build())
                                     .finish_reason(null)
-                                    .build()
-                    ))
+                                    .build()))
                     .build();
         }
         return null;
@@ -140,8 +139,8 @@ public class ResponsesApiSseConverter implements Callbacks.SseEventConverter<Str
      */
     private StreamCompletionResponse handleFunctionCallArgumentsDelta(ResponsesApiStreamEvent event) {
         String delta = event.getDelta();
-        
-        if (StringUtils.isNotEmpty(delta)) {
+
+        if(StringUtils.isNotEmpty(delta)) {
             // 发送工具调用参数增量
             return StreamCompletionResponse.builder()
                     .id(responseId)
@@ -158,12 +157,10 @@ public class ResponsesApiSseConverter implements Callbacks.SseEventConverter<Str
                                                             .function(Message.FunctionCall.builder()
                                                                     .arguments(delta)
                                                                     .build())
-                                                            .build()
-                                            ))
+                                                            .build()))
                                             .build())
                                     .finish_reason(null)
-                                    .build()
-                    ))
+                                    .build()))
                     .build();
         }
         return null;
@@ -184,7 +181,7 @@ public class ResponsesApiSseConverter implements Callbacks.SseEventConverter<Str
      */
     private StreamCompletionResponse handleReasoningSummaryDelta(ResponsesApiStreamEvent event) {
         String delta = event.getDelta();
-        if (StringUtils.isNotEmpty(delta)) {
+        if(StringUtils.isNotEmpty(delta)) {
             // 发送推理内容增量
             return StreamCompletionResponse.builder()
                     .id(responseId)
@@ -196,8 +193,7 @@ public class ResponsesApiSseConverter implements Callbacks.SseEventConverter<Str
                                     .index(0)
                                     .delta(Message.builder().reasoning_content(delta).build())
                                     .finish_reason(null)
-                                    .build()
-                    ))
+                                    .build()))
                     .build();
         }
         return null;
@@ -226,7 +222,7 @@ public class ResponsesApiSseConverter implements Callbacks.SseEventConverter<Str
      */
     private StreamCompletionResponse handleResponseCompleted(ResponsesApiStreamEvent event) {
         String finishReason = hasToolCalls ? "tool_calls" : "stop";
-        
+
         return StreamCompletionResponse.builder()
                 .id(responseId)
                 .object("chat.completion.chunk")
@@ -237,8 +233,7 @@ public class ResponsesApiSseConverter implements Callbacks.SseEventConverter<Str
                                 .index(0)
                                 .delta(Message.builder().build())
                                 .finish_reason(finishReason)
-                                .build()
-                ))
+                                .build()))
                 .usage(ResponsesApiConverter.convertToken(event.getResponse().getUsage()))
                 .build();
     }
@@ -264,14 +259,14 @@ public class ResponsesApiSseConverter implements Callbacks.SseEventConverter<Str
     private StreamCompletionResponse sendToolCallStart(ResponsesApiStreamEvent event) {
         String callId = null;
         String functionName = null;
-        
+
         // 从 item 对象中提取工具调用信息
-        if (event.getItem() != null) {
+        if(event.getItem() != null) {
             ResponsesApiResponse.OutputItem item = event.getItem();
             callId = item.getCall_id();
             functionName = item.getName();
         }
-        
+
         return StreamCompletionResponse.builder()
                 .id(responseId)
                 .object("chat.completion.chunk")
@@ -290,12 +285,10 @@ public class ResponsesApiSseConverter implements Callbacks.SseEventConverter<Str
                                                                 .name(functionName)
                                                                 .arguments("")
                                                                 .build())
-                                                        .build()
-                                        ))
+                                                        .build()))
                                         .build())
                                 .finish_reason(null)
-                                .build()
-                ))
+                                .build()))
                 .build();
     }
 }

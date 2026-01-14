@@ -28,19 +28,19 @@ public class HttpSessionManager implements SessionManager {
     private final SessionProperty sessionProperty; // Added field
 
     public HttpSessionManager(String bellaOpenApiBaseUrl,
-                              SessionProperty sessionProperty) {
+            SessionProperty sessionProperty) {
         this.bellaOpenApiBaseUrl = bellaOpenApiBaseUrl;
         this.sessionProperty = sessionProperty;
     }
 
     private String extractCookie(HttpServletRequest request) {
-        if (request == null || this.sessionProperty == null || this.sessionProperty.getCookieName() == null) {
+        if(request == null || this.sessionProperty == null || this.sessionProperty.getCookieName() == null) {
             return "";
         }
         javax.servlet.http.Cookie[] cookies = request.getCookies();
-        if (cookies != null) {
+        if(cookies != null) {
             for (javax.servlet.http.Cookie cookie : cookies) {
-                if (this.sessionProperty.getCookieName().equals(cookie.getName())) {
+                if(this.sessionProperty.getCookieName().equals(cookie.getName())) {
                     return cookie.getName() + "=" + cookie.getValue();
                 }
             }
@@ -58,7 +58,7 @@ public class HttpSessionManager implements SessionManager {
                     .header("Cookie", extractCookie(request));
             if("true".equals(request.getHeader(CONSOLE_HEADER))) {
                 builder.header(CONSOLE_HEADER, "true");
-            } else if(request.getHeader(CONSOLE_HEADER) == null){
+            } else if(request.getHeader(CONSOLE_HEADER) == null) {
                 log.info("CONSOLE_HEADER is null");
             }
             Response response = HttpUtils.httpRequest(builder.build(), 10, 30);
@@ -72,7 +72,8 @@ public class HttpSessionManager implements SessionManager {
             if(response.body() == null) {
                 return null;
             }
-            return Optional.ofNullable(JacksonUtils.deserialize(response.body().bytes(), new TypeReference<BellaResponse<Operator>>(){}))
+            return Optional.ofNullable(JacksonUtils.deserialize(response.body().bytes(), new TypeReference<BellaResponse<Operator>>() {
+            }))
                     .orElse(new BellaResponse<>()).getData();
         } catch (IOException e) {
             throw ChannelException.fromResponse(502, e.getMessage());

@@ -16,7 +16,7 @@ import java.util.Map;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class CitationMetadata {
     private List<Citation> citations;
-    
+
     @Data
     @Builder
     @NoArgsConstructor

@@ -43,7 +43,8 @@ public class CapacityCalculator {
         this.redissonClient = redissonClient;
     }
 
-    public CapacityCalculator(ChannelDB channelDB, RedissonClient redissonClient, LuaScriptExecutor luaScriptExecutor, LimiterManager limiterManager) {
+    public CapacityCalculator(ChannelDB channelDB, RedissonClient redissonClient, LuaScriptExecutor luaScriptExecutor,
+            LimiterManager limiterManager) {
         this.channel = channelDB;
         this.channelCode = channelDB.getChannelCode();
         this.fittingAlgorithm = new EmaFittingAlgorithm(0.3);

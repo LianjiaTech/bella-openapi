@@ -29,7 +29,8 @@ public class BellaCasClient {
     public FilterRegistrationBean<BellaValidatorFilter> casValidationFilter() {
         FilterRegistrationBean<BellaValidatorFilter> filterRegistrationBean = new FilterRegistrationBean<>();
         BellaValidatorFilter targetCasValidationFilter = new BellaValidatorFilter(casProperties.isUseCasUserId(), casProperties.getIdAttribute(),
-                casProperties.getNameAttribute(), casProperties.getEmailAttribute(), casProperties.getSource(), casProperties.getOptionalAttributes(), sessionManager);
+                casProperties.getNameAttribute(), casProperties.getEmailAttribute(), casProperties.getSource(), casProperties.getOptionalAttributes(),
+                sessionManager);
         filterRegistrationBean.setFilter(targetCasValidationFilter);
         filterRegistrationBean.setOrder(CAS_STEP_ONE);
         Map<String, String> initParams = new HashMap<>();

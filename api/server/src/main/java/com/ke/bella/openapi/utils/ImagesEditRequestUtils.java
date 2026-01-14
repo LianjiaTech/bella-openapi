@@ -61,10 +61,10 @@ public class ImagesEditRequestUtils {
     private static void processImageFiles(MultipartHttpServletRequest request, ImagesEditRequest editRequest) {
         List<MultipartFile> imageFiles = collectImageFiles(request);
 
-        if (!imageFiles.isEmpty() && !imageFiles.stream().allMatch(MultipartFile::isEmpty)) {
+        if(!imageFiles.isEmpty() && !imageFiles.stream().allMatch(MultipartFile::isEmpty)) {
             MultipartFile[] validFiles = imageFiles.stream()
-                .filter(file -> !file.isEmpty())
-                .toArray(MultipartFile[]::new);
+                    .filter(file -> !file.isEmpty())
+                    .toArray(MultipartFile[]::new);
 
             editRequest.setImage(validFiles);
         }
@@ -76,7 +76,7 @@ public class ImagesEditRequestUtils {
      */
     private static void processMaskFile(MultipartHttpServletRequest request, ImagesEditRequest editRequest) {
         MultipartFile maskFile = request.getFile("mask");
-        if (maskFile != null && !maskFile.isEmpty()) {
+        if(maskFile != null && !maskFile.isEmpty()) {
             editRequest.setMask(maskFile);
         }
     }
@@ -105,10 +105,9 @@ public class ImagesEditRequestUtils {
      */
     private static void processImageUrls(MultipartHttpServletRequest request, ImagesEditRequest editRequest) {
         String[] urls = mergeParameterArrays(
-            request.getParameterValues("image_url"),
-            request.getParameterValues("image_url[]")
-        );
-        if (urls.length > 0) {
+                request.getParameterValues("image_url"),
+                request.getParameterValues("image_url[]"));
+        if(urls.length > 0) {
             editRequest.setImage_url(urls);
         }
     }
@@ -118,10 +117,9 @@ public class ImagesEditRequestUtils {
      */
     private static void processImageBase64(MultipartHttpServletRequest request, ImagesEditRequest editRequest) {
         String[] base64s = mergeParameterArrays(
-            request.getParameterValues("image_b64_json"),
-            request.getParameterValues("image_b64_json[]")
-        );
-        if (base64s.length > 0) {
+                request.getParameterValues("image_b64_json"),
+                request.getParameterValues("image_b64_json[]"));
+        if(base64s.length > 0) {
             editRequest.setImage_b64_json(base64s);
         }
     }
@@ -135,7 +133,7 @@ public class ImagesEditRequestUtils {
 
         for (Map.Entry<String, String[]> entry : parameterMap.entrySet()) {
             String key = entry.getKey();
-            if (!knownParams.contains(key)) {
+            if(!knownParams.contains(key)) {
                 Object value = convertParameterValues(entry.getValue());
                 editRequest.setExtraBodyField(key, value);
             }
@@ -147,9 +145,8 @@ public class ImagesEditRequestUtils {
      */
     private static Set<String> getKnownParameters() {
         return new HashSet<>(Arrays.asList(
-            "model", "prompt", "size", "response_format", "user", "n",
-            "image_url", "image_url[]", "image_b64_json", "image_b64_json[]"
-        ));
+                "model", "prompt", "size", "response_format", "user", "n",
+                "image_url", "image_url[]", "image_b64_json", "image_b64_json[]"));
     }
 
     /**
@@ -157,10 +154,10 @@ public class ImagesEditRequestUtils {
      */
     private static String[] mergeParameterArrays(String[] array1, String[] array2) {
         List<String> result = new ArrayList<>();
-        if (array1 != null) {
+        if(array1 != null) {
             result.addAll(Arrays.asList(array1));
         }
-        if (array2 != null) {
+        if(array2 != null) {
             result.addAll(Arrays.asList(array2));
         }
         return result.toArray(new String[0]);
@@ -170,7 +167,7 @@ public class ImagesEditRequestUtils {
      * 解析整数参数
      */
     private static void parseIntegerParameter(String paramValue, java.util.function.Consumer<Integer> setter) {
-        if (paramValue != null && !paramValue.trim().isEmpty()) {
+        if(paramValue != null && !paramValue.trim().isEmpty()) {
             try {
                 setter.accept(Integer.valueOf(paramValue));
             } catch (NumberFormatException e) {
@@ -183,12 +180,12 @@ public class ImagesEditRequestUtils {
      * 转换参数值
      */
     private static Object convertParameterValues(String[] values) {
-        if (values.length == 1) {
+        if(values.length == 1) {
             return convertBasicType(values[0]);
         } else {
             return Arrays.stream(values)
-                .map(ImagesEditRequestUtils::convertBasicType)
-                .toArray();
+                    .map(ImagesEditRequestUtils::convertBasicType)
+                    .toArray();
         }
     }
 
@@ -196,22 +193,22 @@ public class ImagesEditRequestUtils {
      * 简单的类型转换
      */
     private static Object convertBasicType(String value) {
-        if (value == null) {
+        if(value == null) {
             return null;
         }
 
         String trimmed = value.trim();
 
         // 布尔类型
-        if ("true".equalsIgnoreCase(trimmed)) {
+        if("true".equalsIgnoreCase(trimmed)) {
             return true;
         }
-        if ("false".equalsIgnoreCase(trimmed)) {
+        if("false".equalsIgnoreCase(trimmed)) {
             return false;
         }
 
         // 整数类型
-        if (trimmed.matches("-?\\d+")) {
+        if(trimmed.matches("-?\\d+")) {
             try {
                 return Integer.parseInt(trimmed);
             } catch (NumberFormatException e) {
@@ -224,7 +221,7 @@ public class ImagesEditRequestUtils {
         }
 
         // 小数类型
-        if (trimmed.matches("-?\\d+\\.\\d+")) {
+        if(trimmed.matches("-?\\d+\\.\\d+")) {
             try {
                 return Double.parseDouble(trimmed);
             } catch (NumberFormatException e) {

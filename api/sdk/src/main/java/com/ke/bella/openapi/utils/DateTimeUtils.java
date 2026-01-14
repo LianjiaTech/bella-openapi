@@ -5,6 +5,7 @@ import java.time.format.DateTimeFormatter;
 
 public class DateTimeUtils {
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM");
+
     public static boolean isCurrentMonth(String month) {
         return getCurrentMonth().equals(month);
     }
@@ -14,7 +15,7 @@ public class DateTimeUtils {
     }
 
     public static long getCurrentMills() {
-       return System.currentTimeMillis();
+        return System.currentTimeMillis();
     }
 
     public static long getCurrentSeconds() {

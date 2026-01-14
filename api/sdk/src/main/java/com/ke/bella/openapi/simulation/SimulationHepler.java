@@ -64,7 +64,7 @@ public class SimulationHepler {
             }
             if(msg.getRole().equals("assistant")) {
                 if(CollectionUtils.isNotEmpty(msg.getTool_calls())) {
-                    for(Message.ToolCall call : msg.getTool_calls()) {
+                    for (Message.ToolCall call : msg.getTool_calls()) {
                         toolMap.put(call.getId(), call.getFunction().getName());
                     }
                 }
@@ -194,7 +194,7 @@ public class SimulationHepler {
 
     private static String mapTypeToPython(JsonNode paramDef) {
         JsonNode type = paramDef.get("type");
-        if (type != null) {
+        if(type != null) {
             return mapTypeToPython(type.asText(null));
         }
         return "Any";

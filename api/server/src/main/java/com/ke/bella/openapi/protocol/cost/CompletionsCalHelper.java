@@ -13,7 +13,8 @@ import java.util.function.Function;
 
 public class CompletionsCalHelper {
 
-    public final static List<CompletionsCalElement> INPUT = Lists.newArrayList(CompletionsCalElement.IMAGE_INPUT, CompletionsCalElement.CACHE_READ, CompletionsCalElement.CACHE_CREATION);
+    public final static List<CompletionsCalElement> INPUT = Lists.newArrayList(CompletionsCalElement.IMAGE_INPUT, CompletionsCalElement.CACHE_READ,
+            CompletionsCalElement.CACHE_CREATION);
     public final static List<CompletionsCalElement> OUTPUT = Lists.newArrayList(CompletionsCalElement.IMAGE_OUTPUT);
 
     @Getter
@@ -29,13 +30,14 @@ public class CompletionsCalHelper {
         final Function<CompletionResponse.TokensDetail, Integer> tokensGetter;
     }
 
-    public static Pair<BigDecimal, Integer> calculateAllElements(List<CompletionsCalElement> elements, CompletionPriceInfo priceInfo, CompletionResponse.TokensDetail tokensDetail) {
+    public static Pair<BigDecimal, Integer> calculateAllElements(List<CompletionsCalElement> elements, CompletionPriceInfo priceInfo,
+            CompletionResponse.TokensDetail tokensDetail) {
         if(tokensDetail == null) {
             return Pair.of(BigDecimal.ZERO, 0);
         }
         int totalTokens = 0;
         BigDecimal amount = BigDecimal.ZERO;
-        for(CompletionsCalElement element : elements) {
+        for (CompletionsCalElement element : elements) {
             BigDecimal price = element.getPriceGetter().apply(priceInfo);
             Integer tokens = element.getTokensGetter().apply(tokensDetail);
             if(price != null && tokens != null) {

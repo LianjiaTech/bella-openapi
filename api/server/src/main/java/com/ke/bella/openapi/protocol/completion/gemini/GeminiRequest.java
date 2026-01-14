@@ -52,7 +52,7 @@ public class GeminiRequest implements IMemoryClearable, ITransfer {
 
     @Override
     public void clearLargeData() {
-        if (!cleared) {
+        if(!cleared) {
             // 清理最大的内存占用 - 内容列表、工具列表、系统指令等
             // 注意：某些 List 可能是不可修改的（如 Collections.singletonList），直接置 null
             this.contents = null;

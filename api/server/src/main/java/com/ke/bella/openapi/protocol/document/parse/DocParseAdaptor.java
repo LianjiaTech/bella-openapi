@@ -14,7 +14,7 @@ public interface DocParseAdaptor<T extends DocParseProperty> extends IProtocolAd
         DocParseTaskInfo taskInfo = doParse(request, channelCode, url, property);
         String[] infos = TaskIdUtils.extractTaskId(taskInfo.getTaskId());
         String taskId = infos[1];
-        
+
         if("blocking".equals(request.getType())) {
             return waitForCompletion(taskId, url, property, request.getMaxTimeoutMillis());
         } else {
@@ -33,27 +33,28 @@ public interface DocParseAdaptor<T extends DocParseProperty> extends IProtocolAd
 
     /**
      * 等待任务完成（阻塞模式）
-     * @param taskId 任务ID
-     * @param url 服务URL
-     * @param property 渠道属性
+     * 
+     * @param taskId           任务ID
+     * @param url              服务URL
+     * @param property         渠道属性
      * @param maxTimeoutMillis 最大超时时间（毫秒）
+     * 
      * @return 任务完成后的结果或超时异常
      */
     default Object waitForCompletion(String taskId, String url, T property, int maxTimeoutMillis) {
-        //最大等待时间，不能小于30s
+        // 最大等待时间，不能小于30s
         maxTimeoutMillis = Math.max(30000, maxTimeoutMillis);
         Logger log = LoggerFactory.getLogger(this.getClass());
         long startTime = System.currentTimeMillis();
         long timeoutTime = startTime + maxTimeoutMillis;
-        
+
         log.info("Starting block mode waiting for task completion - taskId: {}, timeout: {}ms", taskId, maxTimeoutMillis);
 
-        
         while (System.currentTimeMillis() < timeoutTime) {
             try {
                 Thread.sleep(5000);
                 // 检查任务是否完成
-                if (isCompletion(taskId, url, property)) {
+                if(isCompletion(taskId, url, property)) {
                     long elapsedTime = System.currentTimeMillis() - startTime;
                     log.info("Task completed in block mode - taskId: {}, elapsed time: {}ms", taskId, elapsedTime);
                     DocParseResponse response = queryResult(taskId, url, property);
@@ -65,16 +66,16 @@ public interface DocParseAdaptor<T extends DocParseProperty> extends IProtocolAd
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 log.error("Task waiting was interrupted - taskId: {}", taskId, e);
-                throw ChannelException.fromResponse(500,"Task waiting was interrupted for taskId: " + taskId);
+                throw ChannelException.fromResponse(500, "Task waiting was interrupted for taskId: " + taskId);
             } catch (Exception e) {
                 log.warn("Error during task completion check - taskId: {}, error: {}", taskId, e.getMessage());
             }
         }
-        
+
         // 超时处理
         long elapsedTime = System.currentTimeMillis() - startTime;
         log.error("Task completion timeout in block mode - taskId: {}, elapsed time: {}ms", taskId, elapsedTime);
-        throw ChannelException.fromResponse(408,"Task completion timeout after " + maxTimeoutMillis + "ms for taskId: " + taskId);
+        throw ChannelException.fromResponse(408, "Task completion timeout after " + maxTimeoutMillis + "ms for taskId: " + taskId);
     }
 
     default String endpoint() {

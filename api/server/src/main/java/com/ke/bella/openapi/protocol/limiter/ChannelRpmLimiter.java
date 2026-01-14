@@ -41,10 +41,10 @@ public class ChannelRpmLimiter {
             List<Object> result = (List<Object>) executor.execute("/channel_rpm", ScriptType.limiter, keys, params);
 
             Integer pass = ((Number) result.get(0)).intValue();
-            if (pass == 1) {
+            if(pass == 1) {
                 Integer currentUsage = ((Number) result.get(1)).intValue();
                 log.debug("Channel RPM consumed: channelCode={}, currentUsage={}, limit={}",
-                    channelCode, currentUsage, rpmLimit);
+                        channelCode, currentUsage, rpmLimit);
                 return true;
             } else {
                 log.warn("Channel RPM limit exceeded: channelCode={}, limit={}", channelCode, rpmLimit);
@@ -121,7 +121,7 @@ public class ChannelRpmLimiter {
         @Override
         public String toString() {
             return String.format("RpmStatus[available=%s, usage=%d/%d, remaining=%d, message=%s]",
-                available, currentUsage, limit, remaining, message);
+                    available, currentUsage, limit, remaining, message);
         }
     }
 }

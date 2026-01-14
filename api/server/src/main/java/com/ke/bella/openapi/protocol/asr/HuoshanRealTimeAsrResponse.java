@@ -29,9 +29,9 @@ public class HuoshanRealTimeAsrResponse {
     public static class Result {
         private int begin_time;
         private int end_time;
-        //默认每次返回所有分句结果。
-        //如果想每次只返回当前分句结果，则设置 show_utterances=true 和 result_type=single；
-        //如果当前分句结果是中间结果则返回的 definite=false，如果是分句最终结果则返回的 definite=true
+        // 默认每次返回所有分句结果。
+        // 如果想每次只返回当前分句结果，则设置 show_utterances=true 和 result_type=single；
+        // 如果当前分句结果是中间结果则返回的 definite=false，如果是分句最终结果则返回的 definite=true
         private boolean definite;
         private String text;
         private List<Result> utterances;

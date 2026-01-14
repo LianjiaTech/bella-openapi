@@ -62,6 +62,7 @@ public class ModelRepo extends StatusRepo<ModelDB, ModelRecord, String> {
     public Page<ModelDB> page(Condition.ModelCondition op) {
         return queryPage(db, constructSql(op), op.getPage(), op.getSize(), ModelDB.class);
     }
+
     @SuppressWarnings("all")
     private SelectSeekStep1<Record, Long> constructSql(Condition.ModelCondition op) {
         SelectJoinStep step = db.select(MODEL.fields())
@@ -76,35 +77,33 @@ public class ModelRepo extends StatusRepo<ModelDB, ModelRecord, String> {
         }
 
         org.jooq.Condition propertiesCondition = DSL.noCondition();
-        if (op.getMaxInputTokensLimit() != null) {
+        if(op.getMaxInputTokensLimit() != null) {
             propertiesCondition = propertiesCondition.and(
                     DSL.field("JSON_EXTRACT({0}, '$.max_input_context') >= {1}", Boolean.class,
-                            MODEL.PROPERTIES, op.getMaxInputTokensLimit()).isTrue()
-            );
+                            MODEL.PROPERTIES, op.getMaxInputTokensLimit()).isTrue());
         }
-        if (op.getMaxOutputTokensLimit() != null) {
+        if(op.getMaxOutputTokensLimit() != null) {
             propertiesCondition = propertiesCondition.and(
                     DSL.field("JSON_EXTRACT({0}, '$.max_output_context') >= {1}", Boolean.class,
-                            MODEL.PROPERTIES, op.getMaxOutputTokensLimit()).isTrue()
-            );
+                            MODEL.PROPERTIES, op.getMaxOutputTokensLimit()).isTrue());
         }
 
         org.jooq.Condition featuresCondition = DSL.noCondition();
-        if (CollectionUtils.isNotEmpty(op.getFeatures())) {
+        if(CollectionUtils.isNotEmpty(op.getFeatures())) {
             for (String feature : op.getFeatures()) {
                 featuresCondition = featuresCondition.and(
-                        MODEL.FEATURES.like("%\"" + feature + "\":true%")
-                );
+                        MODEL.FEATURES.like("%\"" + feature + "\":true%"));
             }
         }
 
-        return step.where(StringUtils.isEmpty(op.getModelName()) ? DSL.noCondition() : op.isIncludeLinkedTo() ?
-                        MODEL.MODEL_NAME.like(op.getModelName() + "%").or(MODEL.LINKED_TO.like(op.getModelName() + "%")) :
-                        MODEL.MODEL_NAME.like(op.getModelName() + "%"))
+        return step
+                .where(StringUtils.isEmpty(op.getModelName()) ? DSL.noCondition()
+                        : op.isIncludeLinkedTo() ? MODEL.MODEL_NAME.like(op.getModelName() + "%").or(MODEL.LINKED_TO.like(op.getModelName() + "%"))
+                                : MODEL.MODEL_NAME.like(op.getModelName() + "%"))
                 .and(StringUtils.isEmpty(op.getOwnerName()) ? DSL.noCondition() : MODEL.OWNER_NAME.eq(op.getOwnerName()))
-                .and(CollectionUtils.isEmpty(op.getModelNames()) ? DSL.noCondition() : op.isIncludeLinkedTo() ?
-                        MODEL.MODEL_NAME.in(op.getModelNames()).or(MODEL.LINKED_TO.in(op.getModelNames())) :
-                        MODEL.MODEL_NAME.in(op.getModelNames()))
+                .and(CollectionUtils.isEmpty(op.getModelNames()) ? DSL.noCondition()
+                        : op.isIncludeLinkedTo() ? MODEL.MODEL_NAME.in(op.getModelNames()).or(MODEL.LINKED_TO.in(op.getModelNames()))
+                                : MODEL.MODEL_NAME.in(op.getModelNames()))
                 .and(StringUtils.isEmpty(op.getVisibility()) ? DSL.noCondition() : MODEL.VISIBILITY.eq(op.getVisibility()))
                 .and(StringUtils.isEmpty(op.getStatus()) ? DSL.noCondition() : MODEL.STATUS.eq(op.getStatus()))
                 .and(StringUtils.isEmpty(op.getEndpoint()) ? DSL.noCondition() : MODEL_ENDPOINT_REL.ENDPOINT.eq(op.getEndpoint()))
@@ -122,11 +121,11 @@ public class ModelRepo extends StatusRepo<ModelDB, ModelRecord, String> {
         org.jooq.Condition condition = MODEL.VISIBILITY.eq(PUBLIC);
         if(StringUtils.isNotEmpty(personalCode)) {
             condition = condition.or(MODEL_AUTHORIZER_REL.AUTHORIZER_TYPE.eq(PERSON)
-                            .and(MODEL_AUTHORIZER_REL.AUTHORIZER_CODE.eq(personalCode)));
+                    .and(MODEL_AUTHORIZER_REL.AUTHORIZER_CODE.eq(personalCode)));
         }
         if(CollectionUtils.isNotEmpty(orgCodes)) {
-                condition = condition.or(MODEL_AUTHORIZER_REL.AUTHORIZER_TYPE.eq(ORG)
-                                .and(MODEL_AUTHORIZER_REL.AUTHORIZER_CODE.in(orgCodes)));
+            condition = condition.or(MODEL_AUTHORIZER_REL.AUTHORIZER_TYPE.eq(ORG)
+                    .and(MODEL_AUTHORIZER_REL.AUTHORIZER_CODE.in(orgCodes)));
 
         }
         return condition;

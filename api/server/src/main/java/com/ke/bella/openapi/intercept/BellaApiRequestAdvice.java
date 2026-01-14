@@ -18,6 +18,7 @@ import java.lang.reflect.Type;
 public class BellaApiRequestAdvice extends RequestBodyAdviceAdapter {
     @Value("${spring.profiles.active}")
     private String profile;
+
     @Override
     public boolean supports(MethodParameter methodParameter, Type targetType, Class<? extends HttpMessageConverter<?>> converterType) {
         return true;

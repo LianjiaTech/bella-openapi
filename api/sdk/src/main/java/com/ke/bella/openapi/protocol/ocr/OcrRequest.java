@@ -41,12 +41,12 @@ public class OcrRequest implements UserRequest, ISummary, Serializable, IMemoryC
 
     @Override
     public String[] ignoreFields() {
-        return new String[] {"imageBase64"};
+        return new String[] { "imageBase64" };
     }
 
     @Override
     public void clearLargeData() {
-        if (!cleared) {
+        if(!cleared) {
             this.imageBase64 = null;
             this.cleared = true;
         }

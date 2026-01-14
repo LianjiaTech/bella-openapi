@@ -22,6 +22,7 @@ public class VertexConverter {
      * 将 OpenAI 图像请求转换为 Gemini 请求格式
      *
      * @param imagesRequest OpenAI 格式的图像生成请求
+     * 
      * @return Gemini 格式的请求
      */
     public static GeminiRequest convertToGeminiRequest(ImagesRequest imagesRequest) {
@@ -53,10 +54,11 @@ public class VertexConverter {
      * 忽略 thoughtSignature，专注于图像数据
      *
      * @param geminiResponse Gemini API 响应
+     * 
      * @return OpenAI 格式的图像响应
      */
     public static ImagesResponse convertToImagesResponse(GeminiResponse geminiResponse) {
-        if (geminiResponse == null || CollectionUtils.isEmpty(geminiResponse.getCandidates())) {
+        if(geminiResponse == null || CollectionUtils.isEmpty(geminiResponse.getCandidates())) {
             log.warn("Gemini response is empty or has no candidates");
             return ImagesResponse.builder()
                     .created(DateTimeUtils.getCurrentSeconds())
@@ -69,18 +71,18 @@ public class VertexConverter {
 
         // 遍历所有 candidates
         for (Candidate candidate : geminiResponse.getCandidates()) {
-            if (candidate.getContent() == null || CollectionUtils.isEmpty(candidate.getContent().getParts())) {
+            if(candidate.getContent() == null || CollectionUtils.isEmpty(candidate.getContent().getParts())) {
                 continue;
             }
 
             // 从 parts 中提取所有 inlineData (图像) 和文本
             for (Part part : candidate.getContent().getParts()) {
                 // 提取图像数据
-                if (part.getInlineData() != null) {
+                if(part.getInlineData() != null) {
                     String base64Data = part.getInlineData().getData();
                     String mimeType = part.getInlineData().getMimeType();
 
-                    if (base64Data != null) {
+                    if(base64Data != null) {
                         ImagesResponse.ImageData imageData = ImagesResponse.ImageData.builder()
                                 .b64_json(base64Data)
                                 .output_format(extractFormatFromMimeType(mimeType))
@@ -90,14 +92,14 @@ public class VertexConverter {
                 }
 
                 // 收集文本内容（可能包含错误信息或说明）
-                if (part.getText() != null) {
+                if(part.getText() != null) {
                     textContent.append(part.getText()).append(" ");
                 }
             }
         }
 
         // 如果没有生成任何图像，记录警告并附带文本信息
-        if (imageDataList.isEmpty()) {
+        if(imageDataList.isEmpty()) {
             String errorMessage = textContent.length() > 0
                     ? textContent.toString().trim()
                     : "No images generated";
@@ -119,13 +121,13 @@ public class VertexConverter {
      * 例如：image/png -> png, image/jpeg -> jpeg
      */
     private static String extractFormatFromMimeType(String mimeType) {
-        if (mimeType == null) {
+        if(mimeType == null) {
             return "png"; // 默认格式
         }
 
-        if (mimeType.contains("/")) {
+        if(mimeType.contains("/")) {
             String[] parts = mimeType.split("/");
-            if (parts.length == 2) {
+            if(parts.length == 2) {
                 return parts[1].toLowerCase();
             }
         }
@@ -137,7 +139,7 @@ public class VertexConverter {
      * 转换 usage 信息
      */
     private static ImagesResponse.Usage convertUsage(com.ke.bella.openapi.protocol.completion.gemini.UsageMetadata usageMetadata) {
-        if (usageMetadata == null) {
+        if(usageMetadata == null) {
             return null;
         }
 

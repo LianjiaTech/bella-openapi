@@ -161,7 +161,7 @@ public class BaiduAdaptor implements IdcardAdaptor<BaiduOcrProperty> {
     }
 
     private OcrIdcardResponse.IdCardSide determineActualSide(BaiduRequest baiduRequest,
-                                                             BaiduResponse baiduResponse) {
+            BaiduResponse baiduResponse) {
         String expectedSide = baiduRequest.getIdCardSide();
         String imageStatus = baiduResponse.getImageStatus();
 

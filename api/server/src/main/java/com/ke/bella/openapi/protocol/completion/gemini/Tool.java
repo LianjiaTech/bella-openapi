@@ -18,7 +18,7 @@ import java.util.Map;
 public class Tool {
     private List<FunctionDeclaration> functionDeclarations;
     private Map<String, Object> codeExecution;
-    
+
     @Data
     @Builder
     @NoArgsConstructor

@@ -35,7 +35,7 @@ public class AwsAdaptor implements CompletionAdaptor<AwsProperty> {
     @Override
     public CompletionResponse completion(CompletionRequest request, String url, AwsProperty property) {
         request.setModel(property.deployName);
-        ConverseRequest awsRequest =  AwsCompletionConverter.convert2AwsRequest(request, property);
+        ConverseRequest awsRequest = AwsCompletionConverter.convert2AwsRequest(request, property);
 
         // 清理大型数据以释放内存，在长时间HTTP请求期间避免内存占用
         clearLargeData(request);
@@ -89,7 +89,7 @@ public class AwsAdaptor implements CompletionAdaptor<AwsProperty> {
             if(event.start().toolUse() != null) {
                 toolNum += 1;
             }
-            StreamCompletionResponse response = AwsCompletionConverter.convert2OpenAIStreamResponse(event.start(), Math.max(0, toolNum -1));
+            StreamCompletionResponse response = AwsCompletionConverter.convert2OpenAIStreamResponse(event.start(), Math.max(0, toolNum - 1));
             callback.callback(response);
         }
 
@@ -99,10 +99,9 @@ public class AwsAdaptor implements CompletionAdaptor<AwsProperty> {
                 callback.onOpen();
                 isFirst = false;
             }
-            StreamCompletionResponse response = AwsCompletionConverter.convert2OpenAIStreamResponse(event.delta(), Math.max(0, toolNum -1));
+            StreamCompletionResponse response = AwsCompletionConverter.convert2OpenAIStreamResponse(event.delta(), Math.max(0, toolNum - 1));
             callback.callback(response);
         }
-
 
         @Override
         public void visitMetadata(ConverseStreamMetadataEvent event) {
@@ -119,7 +118,7 @@ public class AwsAdaptor implements CompletionAdaptor<AwsProperty> {
         @Override
         public void accept(Throwable throwable) {
             log.warn(throwable.getMessage(), throwable);
-            if (throwable instanceof BedrockRuntimeException) {
+            if(throwable instanceof BedrockRuntimeException) {
                 BedrockRuntimeException bedrockException = (BedrockRuntimeException) throwable;
                 callback.finish(ChannelException.fromResponse(bedrockException.statusCode(), bedrockException.getMessage()));
                 return;

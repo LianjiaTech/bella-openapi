@@ -17,7 +17,8 @@ import java.util.Map;
 
 /**
  * Web Extract Response based on Tavily Extract API
- * Contains extracted content, metadata, and timing information from web extraction
+ * Contains extracted content, metadata, and timing information from web
+ * extraction
  */
 @Data
 @SuperBuilder
@@ -76,7 +77,8 @@ public class WebExtractResponse extends OpenapiResponse {
 
         /**
          * The full content extracted from the page
-         * This contains the complete extracted content in the specified format (markdown or text)
+         * This contains the complete extracted content in the specified format
+         * (markdown or text)
          */
         @JsonProperty("raw_content")
         private String rawContent;
@@ -133,11 +135,12 @@ public class WebExtractResponse extends OpenapiResponse {
     }
 
     /**
-     * Handle unknown properties during deserialization and store them in extraFields
+     * Handle unknown properties during deserialization and store them in
+     * extraFields
      */
     @JsonAnySetter
     public void setExtraField(String key, Object value) {
-        if (extraFields == null) {
+        if(extraFields == null) {
             extraFields = new HashMap<>();
         }
         extraFields.put(key, value);

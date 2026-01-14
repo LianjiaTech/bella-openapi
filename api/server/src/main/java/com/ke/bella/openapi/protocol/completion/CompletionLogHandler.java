@@ -63,7 +63,8 @@ public class CompletionLogHandler implements EndpointLogHandler {
         return "/v1/chat/completions";
     }
 
-    private Map<String, Object> countMetrics(long startTime, long startMills, long endTime, long firstPackageTime, CompletionResponse.TokenUsage usage) {
+    private Map<String, Object> countMetrics(long startTime, long startMills, long endTime, long firstPackageTime,
+            CompletionResponse.TokenUsage usage) {
         int inputToken = usage.getPrompt_tokens();
         int outputToken = usage.getCompletion_tokens();
         int ttft = 0;
@@ -88,14 +89,14 @@ public class CompletionLogHandler implements EndpointLogHandler {
 
         // 2. 优先使用预计算的RequestMetrics
         RequestMetrics metrics = processData.getRequestMetrics();
-        if (metrics != null && metrics.getInputTokens() != null) {
+        if(metrics != null && metrics.getInputTokens() != null) {
             log.debug("Using pre-calculated inputTokens: {}", metrics.getInputTokens());
             return metrics.getInputTokens();
         }
 
         // 3. 尝试从原始request计算
         Object request = processData.getRequest();
-        if (request instanceof CompletionRequest) {
+        if(request instanceof CompletionRequest) {
             EncodingType encoding = EncodingType.fromName(encodingType).orElse(EncodingType.CL100K_BASE);
             int tokens = TokenCalculationUtils.calculateCompletionInputTokens((CompletionRequest) request, encoding);
             log.debug("Calculated inputTokens from original request: {}", tokens);
@@ -103,9 +104,9 @@ public class CompletionLogHandler implements EndpointLogHandler {
         }
 
         // 4. Double check: 如果request是null，再检查一次metrics
-        if (request == null) {
+        if(request == null) {
             metrics = processData.getRequestMetrics();
-            if (metrics != null && metrics.getInputTokens() != null) {
+            if(metrics != null && metrics.getInputTokens() != null) {
                 log.debug("Got inputTokens from metrics on double-check: {}", metrics.getInputTokens());
                 return metrics.getInputTokens();
             }
@@ -119,7 +120,7 @@ public class CompletionLogHandler implements EndpointLogHandler {
      * 计算输出token数量
      */
     private int calculateOutputTokens(CompletionResponse response, String encodingType) {
-        if (response != null && response.getChoices() != null) {
+        if(response != null && response.getChoices() != null) {
             EncodingType encoding = EncodingType.fromName(encodingType).orElse(EncodingType.CL100K_BASE);
             int tokens = TokenCalculationUtils.calculateCompletionOutputTokens(response, encoding);
             log.debug("Calculated outputTokens from response choices: {}", tokens);

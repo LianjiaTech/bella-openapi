@@ -21,10 +21,9 @@ public interface MessageDelegatorAdaptor<T extends CompletionProperty> extends M
         AnthropicProperty anthropicProperty = new AnthropicProperty();
         anthropicProperty.setAuth(property.getAuth());
         anthropicProperty.setAnthropicVersion(
-            property.getAnthropicVersion() != null
-                ? property.getAnthropicVersion()
-                : "2023-06-01"
-        );
+                property.getAnthropicVersion() != null
+                        ? property.getAnthropicVersion()
+                        : "2023-06-01");
         anthropicProperty.setDefaultMaxToken(property.getDefaultMaxToken());
         anthropicProperty.setExtraHeaders(property.getExtraHeaders());
         anthropicProperty.setEncodingType(property.getEncodingType());
@@ -36,13 +35,12 @@ public interface MessageDelegatorAdaptor<T extends CompletionProperty> extends M
         return anthropicProperty;
     }
 
-
     @Override
-    default MessageResponse createMessages (MessageRequest request, String url, T property) {
+    default MessageResponse createMessages(MessageRequest request, String url, T property) {
         // 检查是否启用 Anthropic 原生代理
-        if (StringUtils.isNotBlank(property.getMessageEndpointUrl())) {
+        if(StringUtils.isNotBlank(property.getMessageEndpointUrl())) {
             AnthropicAdaptor adaptor = anthropicAdaptor();
-            if (adaptor == null) {
+            if(adaptor == null) {
                 throw new IllegalStateException("AnthropicAdaptor not injected for native proxy");
             }
             AnthropicProperty anthropicProperty = buildAnthropicProperty(property);
@@ -52,7 +50,7 @@ public interface MessageDelegatorAdaptor<T extends CompletionProperty> extends M
 
         // 原有的委托逻辑
         CompletionAdaptor<T> delegator = decorateAdaptor(delegator(), property, EndpointContext.getProcessData());
-        CompletionRequest completionRequest = TransferFromCompletionsUtils.convertRequest(request ,isNativeSupport());
+        CompletionRequest completionRequest = TransferFromCompletionsUtils.convertRequest(request, isNativeSupport());
         request.clearLargeData();
         CompletionResponse completionResponse = delegator.completion(completionRequest, url, property);
         EndpointContext.getProcessData().setResponse(completionResponse);
@@ -62,9 +60,9 @@ public interface MessageDelegatorAdaptor<T extends CompletionProperty> extends M
     @Override
     default void streamMessages(MessageRequest request, String url, T property, Callbacks.StreamCompletionCallback callback) {
         // 检查是否启用 Anthropic 原生代理
-        if (StringUtils.isNotBlank(property.getMessageEndpointUrl())) {
+        if(StringUtils.isNotBlank(property.getMessageEndpointUrl())) {
             AnthropicAdaptor adaptor = anthropicAdaptor();
-            if (adaptor == null) {
+            if(adaptor == null) {
                 throw new IllegalStateException("AnthropicAdaptor not injected for native proxy");
             }
             AnthropicProperty anthropicProperty = buildAnthropicProperty(property);
@@ -75,7 +73,7 @@ public interface MessageDelegatorAdaptor<T extends CompletionProperty> extends M
 
         // 原有的委托逻辑
         CompletionAdaptor<T> delegator = decorateAdaptor(delegator(), property, EndpointContext.getProcessData());
-        CompletionRequest completionRequest =  TransferFromCompletionsUtils.convertRequest(request, isNativeSupport());
+        CompletionRequest completionRequest = TransferFromCompletionsUtils.convertRequest(request, isNativeSupport());
         request.clearLargeData();
         delegator.streamCompletion(completionRequest, url, property, callback);
     }

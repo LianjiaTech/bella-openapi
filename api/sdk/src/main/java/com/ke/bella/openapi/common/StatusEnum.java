@@ -10,16 +10,16 @@ import lombok.Getter;
 @Getter
 public enum StatusEnum {
 
-	VALID((byte)0, "有效"),
+    VALID((byte) 0, "有效"),
 
-	INVALID((byte)-1, "无效");
+    INVALID((byte) -1, "无效");
 
-	StatusEnum(Byte code, String desc) {
-		this.code = code;
-		this.desc = desc;
-	}
+    StatusEnum(Byte code, String desc) {
+        this.code = code;
+        this.desc = desc;
+    }
 
-	private Byte code;
+    private Byte code;
 
-	private String desc;
+    private String desc;
 }

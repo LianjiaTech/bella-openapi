@@ -33,14 +33,14 @@ public class ImageConverter {
      * 适用于需要纯base64数据的场景，如百度OCR API
      */
     public static String cleanBase64DataHeader(String base64) {
-        if (base64 == null || base64.isEmpty()) {
+        if(base64 == null || base64.isEmpty()) {
             return base64;
         }
 
         // 如果包含数据头，去掉数据头部分
-        if (base64.startsWith("data:")) {
+        if(base64.startsWith("data:")) {
             int commaIndex = base64.indexOf(",");
-            if (commaIndex > 0) {
+            if(commaIndex > 0) {
                 return base64.substring(commaIndex + 1);
             }
         }

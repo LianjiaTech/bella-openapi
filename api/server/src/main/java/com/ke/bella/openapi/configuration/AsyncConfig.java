@@ -31,7 +31,7 @@ public class AsyncConfig {
         executor.setKeepAliveSeconds(60);
         executor.setThreadNamePrefix("cache-clear-");
         executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
-        
+
         // 设置任务装饰器，添加异常处理
         executor.setTaskDecorator(runnable -> () -> {
             try {
@@ -40,7 +40,7 @@ public class AsyncConfig {
                 log.warn("异步缓存清理任务执行失败", e);
             }
         });
-        
+
         executor.initialize();
         return executor;
     }
