@@ -5,6 +5,7 @@ import com.ke.bella.openapi.script.LuaScriptExecutor;
 import com.ke.bella.openapi.script.ScriptType;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RMap;
 import org.redisson.api.RScoredSortedSet;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.protocol.ScoredEntry;
@@ -18,14 +19,17 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
  * QPS 限流管理器
- * 基于 ZSET 滑动窗口实现精确的 QPS 限流，天然支持 Redis Cluster
+ * 基于分段滑动窗口实现高性能 QPS 限流，天然支持 Redis Cluster
  *
  * 数据结构：
- *   限流 Key: bella-openapi-limiter-qps:{akCode} (ZSET，每个 APIKey 独立)
+ *   限流 Key: bella-openapi-limiter-qps:{akCode} (Hash，每个 APIKey 独立)
+ *     - 1 秒窗口分成 10 个 100ms 段，每段一个字段存储计数
+ *     - 使用时间权重计算精确用量，固定内存开销
  *   排行榜 Key: bella-openapi-qps-ranking (ZSET，全局)
  *
  * 注意：排行榜数据为近似值，记录的是最后一次请求时的瞬时 QPS，
@@ -43,9 +47,6 @@ public class QpsLimiterManager {
 
     /**
      * QPS 限流开关，默认开启
-	 * -- GETTER --
-	 *  判断 QPS 限流是否启用
-
 	 */
     @Getter
 	@Value("${bella.limiter.qps.enabled:true}")
@@ -53,9 +54,6 @@ public class QpsLimiterManager {
 
     /**
      * 默认 QPS 限制值，当 APIKey 未配置时使用
-	 * -- GETTER --
-	 *  获取默认 QPS 限制值
-
 	 */
     @Getter
 	@Value("${bella.limiter.qps.default-limit:100}")
@@ -63,8 +61,14 @@ public class QpsLimiterManager {
 
     private static final String QPS_KEY_FORMAT = "bella-openapi-limiter-qps:%s";
     private static final String RANKING_KEY = "bella-openapi-qps-ranking";
-    private static final long WINDOW_SIZE_MS = 1000L;
     private static final long RANKING_EXPIRE_SECONDS = 60L;
+
+    /**
+     * 分段滑动窗口配置
+     * 窗口大小 = SEGMENT_SIZE_MS * NUM_SEGMENTS = 1000ms = 1秒
+     */
+    private static final long SEGMENT_SIZE_MS = 100L;
+    private static final int NUM_SEGMENTS = 10;
 
     /**
      * 检查 QPS 限制（使用 APIKey 配置的限制值，未配置则使用默认值）
@@ -98,7 +102,7 @@ public class QpsLimiterManager {
         if (qpsLimit == null || qpsLimit == 0) {
             return defaultLimit;  // 使用默认值
         }
-        return qpsLimit;  // 使用配置值（包括负数表示不限制）
+        return qpsLimit;  // 使用配置值
     }
 
     /**
@@ -112,6 +116,8 @@ public class QpsLimiterManager {
         List<Object> params = new ArrayList<>();
         params.add(qpsLimit);
         params.add(currentTimeMs);
+        params.add(SEGMENT_SIZE_MS);
+        params.add(NUM_SEGMENTS);
 
         try {
             @SuppressWarnings("unchecked")
@@ -150,7 +156,7 @@ public class QpsLimiterManager {
     }
 
     /**
-     * 异步更新排行榜（与限流脚本解耦，支持 Redis Cluster）
+     * 异步更新排行榜
      */
     private void updateRankingAsync(String akCode, Long currentCount) {
         try {
@@ -164,7 +170,7 @@ public class QpsLimiterManager {
     }
 
     /**
-     * 获取当前 QPS（精确实时值）
+     * 获取当前 QPS（加权近似值）
      *
      * @param akCode API Key 编码
      * @return 当前 QPS 值
@@ -172,11 +178,38 @@ public class QpsLimiterManager {
     public Long getCurrentQps(String akCode) {
         String key = String.format(QPS_KEY_FORMAT, akCode);
         long currentTimeMs = System.currentTimeMillis();
-        long windowStartMs = currentTimeMs - WINDOW_SIZE_MS;
+        long windowSizeMs = SEGMENT_SIZE_MS * NUM_SEGMENTS;
+        long windowStartMs = currentTimeMs - windowSizeMs;
 
         try {
-            RScoredSortedSet<String> sortedSet = redisson.getScoredSortedSet(key);
-            return (long) sortedSet.count(windowStartMs, true, currentTimeMs, true);
+            RMap<String, String> hashMap = redisson.getMap(key);
+            Map<String, String> allFields = hashMap.readAllMap();
+
+            if (allFields.isEmpty()) {
+                return 0L;
+            }
+
+            long currentSegment = currentTimeMs / SEGMENT_SIZE_MS;
+            double total = 0;
+
+            for (int i = 0; i < NUM_SEGMENTS; i++) {
+                long segmentId = currentSegment - i;
+                String countStr = allFields.get(String.valueOf(segmentId));
+                if (countStr != null) {
+                    long count = Long.parseLong(countStr);
+                    // 计算该段在窗口内的有效比例（权重）
+                    long segmentStartMs = segmentId * SEGMENT_SIZE_MS;
+                    long segmentEndMs = segmentStartMs + SEGMENT_SIZE_MS;
+                    long effectiveStart = Math.max(segmentStartMs, windowStartMs);
+                    long effectiveEnd = Math.min(segmentEndMs, currentTimeMs);
+                    double weight = (double) (effectiveEnd - effectiveStart) / SEGMENT_SIZE_MS;
+                    if (weight > 0) {
+                        total += count * weight;
+                    }
+                }
+            }
+
+            return (long) total;
         } catch (Exception e) {
             log.error("Failed to get current QPS for akCode: {}, error: {}",
                     akCode, e.getMessage(), e);

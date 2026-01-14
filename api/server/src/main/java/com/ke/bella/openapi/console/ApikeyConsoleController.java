@@ -86,6 +86,13 @@ public class ApikeyConsoleController {
         return true;
     }
 
+    @PostMapping("/qpsLimit/update")
+    public Boolean updateQpsLimit(@RequestBody ApikeyOps.QpsLimitOp op) {
+        Assert.hasText(op.getCode(), "code不可为空");
+        apikeyService.updateQpsLimit(op);
+        return true;
+    }
+
     @PostMapping("/certify")
     public Boolean certify(@RequestBody ApikeyOps.CertifyOp op) {
         Assert.hasText(op.getCode(), "code不可为空");
