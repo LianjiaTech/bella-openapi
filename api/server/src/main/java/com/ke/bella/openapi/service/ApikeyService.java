@@ -265,6 +265,13 @@ public class ApikeyService {
     }
 
     @Transactional
+    public void updateQpsLimit(ApikeyOps.QpsLimitOp op) {
+        apikeyRepo.checkExist(op.getCode(), true);
+        checkPermission(op.getCode());
+        apikeyRepo.update(op, op.getCode());
+    }
+
+    @Transactional
     public void changeStatus(ApikeyOps.CodeOp op, boolean active) {
         apikeyRepo.checkExist(op.getCode(), true);
         checkPermission(op.getCode());
