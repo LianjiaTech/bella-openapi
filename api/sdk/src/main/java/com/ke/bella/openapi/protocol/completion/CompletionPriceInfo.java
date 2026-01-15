@@ -138,25 +138,22 @@ public class CompletionPriceInfo implements IPriceInfo, Serializable {
             return false;
         }
 
-        // 1. 按起始位置排序
-        List<RangePrice> sortedIntervals = new ArrayList<>(intervals);
-        sortedIntervals.sort(Comparator.comparingInt(RangePrice::getMinToken));
-
-        // 2. 检查第一个区间是否从0开始
-        if(sortedIntervals.get(0).getMinToken() != 0) {
+        intervals.sort(Comparator.comparingInt(RangePrice::getMinToken));
+        // 1. 检查第一个区间是否从0开始
+        if(intervals.get(0).getMinToken() != 0) {
             return false;
         }
 
-        // 3. 检查连续性
+        // 2. 检查连续性
         int expectedStart = 0;
-        for (RangePrice interval : sortedIntervals) {
+        for (RangePrice interval : intervals) {
             if(interval.getMinToken() != expectedStart) {
                 return false;
             }
             expectedStart = interval.getMaxToken();
         }
 
-        // 4. 检查最后一个区间是否到达Integer.MAX_VALUE
+        // 3. 检查最后一个区间是否到达Integer.MAX_VALUE
         return expectedStart == Integer.MAX_VALUE;
     }
 }
