@@ -143,13 +143,13 @@ public class CompletionPriceInfo implements IPriceInfo, Serializable {
         sortedIntervals.sort(Comparator.comparingInt(RangePrice::getMinToken));
 
         // 2. 检查第一个区间是否从0开始
-        if(intervals.get(0).getMinToken() != 0) {
+        if(sortedIntervals.get(0).getMinToken() != 0) {
             return false;
         }
 
         // 3. 检查连续性
         int expectedStart = 0;
-        for (RangePrice interval : intervals) {
+        for (RangePrice interval : sortedIntervals) {
             if(interval.getMinToken() != expectedStart) {
                 return false;
             }
