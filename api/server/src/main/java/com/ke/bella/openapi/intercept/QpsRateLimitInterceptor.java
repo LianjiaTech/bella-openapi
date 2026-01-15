@@ -3,6 +3,7 @@ package com.ke.bella.openapi.intercept;
 import com.ke.bella.openapi.EndpointContext;
 import com.ke.bella.openapi.apikey.ApikeyInfo;
 import com.ke.bella.openapi.common.exception.ChannelException;
+import com.ke.bella.openapi.protocol.limiter.QpsCheckResult;
 import com.ke.bella.openapi.protocol.limiter.QpsLimiterManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -39,10 +40,14 @@ public class QpsRateLimitInterceptor extends HandlerInterceptorAdapter {
 
         // 执行 QPS 限流检查（Manager 内部处理默认值和开关逻辑）
         String akCode = apikey.getCode();
-        boolean allowed = qpsLimiterManager.checkLimit(akCode, apikey.getQpsLimit());
+        QpsCheckResult result = qpsLimiterManager.checkLimit(akCode, apikey.getQpsLimit());
 
-        if (!allowed) {
-            throw new ChannelException.RateLimitException("QPS 超过限制，请稍后重试");
+        if (!result.isAllowed()) {
+            // 添加 Retry-After 响应头，建议客户端 1 秒后重试
+            response.setHeader("Retry-After", "1");
+            throw new ChannelException.RateLimitException(
+                    String.format("QPS 超过限制（当前: %d, 限制: %d），请 1 秒后重试",
+                            result.getCurrentQps(), result.getLimit()));
         }
 
         return true;

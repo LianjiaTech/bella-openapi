@@ -66,18 +66,18 @@ public class QpsLimiterManager {
      *
      * @param akCode   API Key 编码
      * @param qpsLimit APIKey 配置的 QPS 限制值，可为 null
-     * @return true=允许通过, false=拒绝（超限）
+     * @return 检查结果，包含是否允许、当前 QPS、限制值
      */
-    public boolean checkLimit(String akCode, Integer qpsLimit) {
+    public QpsCheckResult checkLimit(String akCode, Integer qpsLimit) {
         // 限流开关关闭时直接放行
         if (!enabled) {
-            return true;
+            return QpsCheckResult.skipped();
         }
 
         // 处理默认值：null 或 0 使用默认限制，负数表示不限制
         int effectiveLimit = resolveEffectiveLimit(qpsLimit);
         if (effectiveLimit < 0) {
-            return true;  // 负数表示不限制
+            return QpsCheckResult.skipped();  // 负数表示不限制
         }
 
         return doCheckLimit(akCode, effectiveLimit);
@@ -99,7 +99,7 @@ public class QpsLimiterManager {
     /**
      * 执行 QPS 限流检查
      */
-    private boolean doCheckLimit(String akCode, int qpsLimit) {
+    private QpsCheckResult doCheckLimit(String akCode, int qpsLimit) {
         String key = String.format(QPS_KEY_FORMAT, akCode);
         long currentTimeMs = System.currentTimeMillis();
 
@@ -123,23 +123,23 @@ public class QpsLimiterManager {
                         log.debug("QPS limit exceeded for akCode: {}, limit: {}, current: {}",
                                 akCode, qpsLimit, currentCount);
                     }
-                    return false;
+                    return QpsCheckResult.rejected(currentCount, qpsLimit);
                 }
 
-                return true;
+                return QpsCheckResult.allowed(currentCount, qpsLimit);
             }
 
             log.error("Unexpected result from QPS limiter script: {}", result);
-            return true;
+            return QpsCheckResult.skipped();
 
         } catch (IOException e) {
             log.error("Failed to execute QPS limiter script for akCode: {}, error: {}",
                     akCode, e.getMessage(), e);
-            return true;
+            return QpsCheckResult.skipped();
         } catch (Exception e) {
             log.error("Unexpected error in QPS limiter for akCode: {}, error: {}",
                     akCode, e.getMessage(), e);
-            return true;
+            return QpsCheckResult.skipped();
         }
     }
 
