@@ -2,6 +2,8 @@ package com.ke.bella.openapi.protocol.cost;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
 
 import org.apache.commons.collections4.CollectionUtils;
@@ -93,7 +95,7 @@ public class CostCalculator {
     static EndpointCostCalculator completion = new EndpointCostCalculator() {
         @Override
         public BigDecimal calculate(String priceInfo, Object usage) {
-            CompletionPriceInfo price = JacksonUtils.deserialize(priceInfo, CompletionPriceInfo.class);
+            CompletionPriceInfo price = convertPriceInfo(priceInfo);
             CompletionResponse.TokenUsage tokenUsage;
             if(usage instanceof CompletionResponse.TokenUsage) {
                 tokenUsage = (CompletionResponse.TokenUsage) usage;
@@ -103,9 +105,11 @@ public class CostCalculator {
             }
             int promptTokens = tokenUsage.getPrompt_tokens();
             int completionsTokens = tokenUsage.getCompletion_tokens();
-            Pair<BigDecimal, Integer> inputParts = CompletionsCalHelper.calculateAllElements(CompletionsCalHelper.INPUT, price,
+
+            CompletionPriceInfo.RangePrice rangePrice = price.matchRangePrice(promptTokens, completionsTokens);
+            Pair<BigDecimal, Integer> inputParts = CompletionsCalHelper.calculateAllElements(CompletionsCalHelper.INPUT, rangePrice,
                     tokenUsage.getPrompt_tokens_details());
-            Pair<BigDecimal, Integer> outputParts = CompletionsCalHelper.calculateAllElements(CompletionsCalHelper.OUTPUT, price,
+            Pair<BigDecimal, Integer> outputParts = CompletionsCalHelper.calculateAllElements(CompletionsCalHelper.OUTPUT, rangePrice,
                     tokenUsage.getCompletion_tokens_details());
             if(inputParts.getLeft().doubleValue() > 0) {
                 promptTokens -= inputParts.getRight();
@@ -113,15 +117,70 @@ public class CostCalculator {
             if(outputParts.getLeft().doubleValue() > 0) {
                 completionsTokens -= outputParts.getRight();
             }
-            return price.getInput().multiply(BigDecimal.valueOf(promptTokens / 1000.0))
-                    .add(price.getOutput().multiply(BigDecimal.valueOf(completionsTokens / 1000.0)))
+
+            return rangePrice.getInput().multiply(BigDecimal.valueOf(promptTokens / 1000.0))
+                    .add(rangePrice.getOutput().multiply(BigDecimal.valueOf(completionsTokens / 1000.0)))
                     .add(inputParts.getLeft()).add(outputParts.getLeft());
+        }
+
+        private CompletionPriceInfo convertPriceInfo(String priceInfoJson) {
+            try {
+                CompletionPriceInfo priceInfo = JacksonUtils.deserialize(priceInfoJson, CompletionPriceInfo.class);
+                if(priceInfo != null && priceInfo.getTiers() != null && !priceInfo.getTiers().isEmpty()) {
+                    return priceInfo;
+                }
+                return convert(priceInfoJson);
+            } catch (Exception e) {
+                return convert(priceInfoJson);
+            }
+        }
+
+        @SuppressWarnings("unchecked")
+        private CompletionPriceInfo convert(String oldPriceInfoJson) {
+            try {
+                if(oldPriceInfoJson == null || oldPriceInfoJson.isEmpty()) {
+                    return null;
+                }
+
+                Map<String, Object> oldPriceMap = JacksonUtils.deserialize(oldPriceInfoJson, Map.class);
+                if(oldPriceMap == null || oldPriceMap.isEmpty()) {
+                    return null;
+                }
+
+                CompletionPriceInfo newPriceInfo = new CompletionPriceInfo();
+                Object unitObj = oldPriceMap.get("unit");
+                newPriceInfo.setUnit(unitObj != null ? unitObj.toString() : "分/千token");
+                Object batchDiscountObj = oldPriceMap.get("batchDiscount");
+                newPriceInfo.setBatchDiscount(batchDiscountObj != null ? Double.parseDouble(batchDiscountObj.toString()) : 1.0);
+                CompletionPriceInfo.Tier tier = new CompletionPriceInfo.Tier();
+                CompletionPriceInfo.RangePrice rangePrice = new CompletionPriceInfo.RangePrice();
+                rangePrice.setMinToken(0);
+                rangePrice.setMaxToken(Integer.MAX_VALUE);
+                rangePrice.setInput((BigDecimal) oldPriceMap.get("input"));
+                rangePrice.setOutput((BigDecimal) oldPriceMap.get("output"));
+                rangePrice.setImageInput((BigDecimal) oldPriceMap.get("imageInput"));
+                rangePrice.setImageOutput((BigDecimal) oldPriceMap.get("imageOutput"));
+                rangePrice.setCachedRead((BigDecimal) oldPriceMap.get("cachedRead"));
+                rangePrice.setCachedCreation((BigDecimal) oldPriceMap.get("cachedCreation"));
+                tier.setInputRangePrice(rangePrice);
+                newPriceInfo.setTiers(Collections.singletonList(tier));
+                return newPriceInfo;
+            } catch (Exception e) {
+                throw new IllegalArgumentException("JSON格式错误或不兼容", e);
+            }
         }
 
         @Override
         public boolean checkPriceInfo(String priceInfo) {
-            CompletionPriceInfo price = JacksonUtils.deserialize(priceInfo, CompletionPriceInfo.class);
-            return price != null && price.getInput() != null && price.getOutput() != null;
+            try {
+                CompletionPriceInfo price = JacksonUtils.deserialize(priceInfo, CompletionPriceInfo.class);
+                if(price == null) {
+                    return false;
+                }
+                return price.validate();
+            } catch (Exception e) {
+                return false;
+            }
         }
     };
 
@@ -238,7 +297,7 @@ public class CostCalculator {
 
             return price != null && CollectionUtils.isNotEmpty(price.getDetails())
                     && price.getDetails().stream().allMatch(d -> StringUtils.isNotBlank(d.getSize()) &&
-                            d.getHdPricePerImage() != null && d.getMdPricePerImage() != null && d.getLdPricePerImage() != null);
+                    d.getHdPricePerImage() != null && d.getMdPricePerImage() != null && d.getLdPricePerImage() != null);
         }
     };
 
