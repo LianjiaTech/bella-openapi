@@ -8,6 +8,8 @@ import com.ke.bella.openapi.apikey.ApikeyOps;
 import com.ke.bella.openapi.apikey.ApikeyTransferLog;
 import com.ke.bella.openapi.apikey.TransferApikeyOwnerOp;
 import com.ke.bella.openapi.db.repo.Page;
+import com.ke.bella.openapi.protocol.limiter.QpsLimiterManager;
+import com.ke.bella.openapi.protocol.limiter.QpsRankEntry;
 import com.ke.bella.openapi.service.ApikeyService;
 import com.ke.bella.openapi.tables.pojos.ApikeyDB;
 import com.ke.bella.openapi.tables.pojos.ApikeyMonthCostDB;
@@ -39,6 +41,9 @@ import com.ke.bella.openapi.utils.DateTimeUtils;
 public class ApikeyConsoleController {
     @Autowired
     private ApikeyService apikeyService;
+
+    @Autowired
+    private QpsLimiterManager qpsLimiterManager;
 
     @PostMapping("/apply")
     public String apply(@RequestBody ApikeyOps.ApplyOp op) {
@@ -173,5 +178,17 @@ public class ApikeyConsoleController {
     public List<ApikeyTransferLog> getTransferHistory(@RequestParam String akCode) {
         Assert.hasText(akCode, "API Key编码不能为空");
         return apikeyService.getTransferHistory(akCode);
+    }
+
+    @GetMapping("/qps/topN")
+    public List<QpsRankEntry> getQpsTopN(@RequestParam(value = "topN", defaultValue = "10") int topN) {
+        Assert.isTrue(topN > 0 && topN <= 100, "topN 必须在 1-100 之间");
+        return qpsLimiterManager.getTopN(topN);
+    }
+
+    @GetMapping("/qps/{akCode}")
+    public Long getCurrentQps(@PathVariable String akCode) {
+        Assert.hasText(akCode, "akCode 不可为空");
+        return qpsLimiterManager.getCurrentQps(akCode);
     }
 }

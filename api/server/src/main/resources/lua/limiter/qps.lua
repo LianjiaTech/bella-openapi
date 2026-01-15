@@ -20,15 +20,21 @@ local EXPIRY_TIME = math.ceil(SEGMENT_SIZE_MS * NUM_SEGMENTS / 1000) + 2
 
 -- 计算当前段 ID
 local current_segment = math.floor(current_time_ms / SEGMENT_SIZE_MS)
-local window_start_segment = current_segment - NUM_SEGMENTS + 1
 
--- 统计窗口内各段计数
-local total = 0
+-- 构建段 ID 列表
+local fields = {}
 for i = 0, NUM_SEGMENTS - 1 do
-    local segment_id = current_segment - i
-    if segment_id >= window_start_segment then
-        local count = tonumber(redis.call('HGET', key, segment_id) or 0)
-        total = total + count
+    fields[i + 1] = tostring(current_segment - i)
+end
+
+-- 一次 HMGET 读取所有段
+local values = redis.call('HMGET', key, unpack(fields))
+
+-- 累加计数
+local total = 0
+for i, v in ipairs(values) do
+    if v then
+        total = total + tonumber(v)
     end
 end
 
