@@ -90,6 +90,11 @@ public class MetadataController {
         return modelService.listByConditionWithPermission(condition, true);
     }
 
+    @GetMapping("/model/endpoints")
+    public List<String> getModelEndpoints(@RequestParam String modelName) {
+        return modelService.getAllEndpoints(modelName);
+    }
+
     @GetMapping("/model/page")
     public Page<ModelDB> pageModel(Condition.ModelCondition condition) {
         return modelService.pageByConditionWithPermission(condition, true);

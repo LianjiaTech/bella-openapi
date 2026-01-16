@@ -13,24 +13,28 @@ import java.util.function.Function;
 
 public class CompletionsCalHelper {
 
-    public final static List<CompletionsCalElement> INPUT = Lists.newArrayList(CompletionsCalElement.IMAGE_INPUT, CompletionsCalElement.CACHE_READ,
+    public final static List<CompletionsCalElement> INPUT = Lists.newArrayList(
+            CompletionsCalElement.IMAGE_INPUT,
+            CompletionsCalElement.CACHE_READ,
             CompletionsCalElement.CACHE_CREATION);
-    public final static List<CompletionsCalElement> OUTPUT = Lists.newArrayList(CompletionsCalElement.IMAGE_OUTPUT);
+
+    public final static List<CompletionsCalElement> OUTPUT = Lists.newArrayList(
+            CompletionsCalElement.IMAGE_OUTPUT);
 
     @Getter
     @AllArgsConstructor
     public enum CompletionsCalElement {
-        CACHE_READ(CompletionPriceInfo::getCachedRead, CompletionResponse.TokensDetail::getCached_tokens),
-        CACHE_CREATION(CompletionPriceInfo::getCachedCreation, CompletionResponse.TokensDetail::getCache_creation_tokens),
-        IMAGE_INPUT(CompletionPriceInfo::getImageInput, CompletionResponse.TokensDetail::getImage_tokens),
-        IMAGE_OUTPUT(CompletionPriceInfo::getImageOutput, CompletionResponse.TokensDetail::getImage_tokens),
+        CACHE_READ(CompletionPriceInfo.RangePrice::getCachedRead, CompletionResponse.TokensDetail::getCached_tokens),
+        CACHE_CREATION(CompletionPriceInfo.RangePrice::getCachedCreation, CompletionResponse.TokensDetail::getCache_creation_tokens),
+        IMAGE_INPUT(CompletionPriceInfo.RangePrice::getImageInput, CompletionResponse.TokensDetail::getImage_tokens),
+        IMAGE_OUTPUT(CompletionPriceInfo.RangePrice::getImageOutput, CompletionResponse.TokensDetail::getImage_tokens),
         ;
 
-        final Function<CompletionPriceInfo, BigDecimal> priceGetter;
+        final Function<CompletionPriceInfo.RangePrice, BigDecimal> priceGetter;
         final Function<CompletionResponse.TokensDetail, Integer> tokensGetter;
     }
 
-    public static Pair<BigDecimal, Integer> calculateAllElements(List<CompletionsCalElement> elements, CompletionPriceInfo priceInfo,
+    public static Pair<BigDecimal, Integer> calculateAllElements(List<CompletionsCalElement> elements, CompletionPriceInfo.RangePrice rangePrice,
             CompletionResponse.TokensDetail tokensDetail) {
         if(tokensDetail == null) {
             return Pair.of(BigDecimal.ZERO, 0);
@@ -38,7 +42,7 @@ public class CompletionsCalHelper {
         int totalTokens = 0;
         BigDecimal amount = BigDecimal.ZERO;
         for (CompletionsCalElement element : elements) {
-            BigDecimal price = element.getPriceGetter().apply(priceInfo);
+            BigDecimal price = element.getPriceGetter().apply(rangePrice);
             Integer tokens = element.getTokensGetter().apply(tokensDetail);
             if(price != null && tokens != null) {
                 totalTokens += tokens;
