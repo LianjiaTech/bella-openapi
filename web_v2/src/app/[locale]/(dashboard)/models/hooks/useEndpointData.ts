@@ -1,13 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from "react"
 import { getEndpointDetails } from "@/lib/api/meta"
-import { processModelsArray } from "@/components/ui/models/utils"
+import { processModelsArray } from "@/components/ui/modelFilterPanel/utils"
 import { EndpointDetails } from "@/lib/types/openapi"
+import { DEFAULT_ENDPOINT } from "@/lib/constants/constants"
 
 /**
  * SessionStorage 缓存相关常量和类型定义
  */
 const CACHE_KEY = 'models-default-endpoint-cache'
-const DEFAULT_ENDPOINT = '/v1/chat/completions'
 const CACHE_EXPIRY_TIME = 2 * 60 * 60 * 1000  // 2小时（单位：毫秒）
 
 interface DefaultEndpointCache {
