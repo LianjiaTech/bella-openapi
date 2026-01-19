@@ -139,14 +139,30 @@ export interface EndpointDetails {
     priceDetails: PriceDetails;
 }
 
+export interface CompletionPriceInfo {
+    unit: string;
+    batchDiscount: number;
+    tiers: Tier[];
+}
+
+export interface Tier {
+    inputRangePrice: RangePrice;
+    outputRangePrices?: RangePrice[];
+}
+
+export interface RangePrice {
+    minToken: number;
+    maxToken: number;
+    input: number;
+    output: number;
+    imageInput?: number;
+    imageOutput?: number;
+    cachedRead?: number;
+    cachedCreation?: number;
+}
+
 export interface PriceDetails {
-    priceInfo?: {
-        input: number;
-        output: number;
-        cachedRead?: number;
-        cachedCreation?: number;
-        unit: string;
-    };
+    priceInfo?: CompletionPriceInfo;
     displayPrice: Record<string, string>;
     unit: string;
 }

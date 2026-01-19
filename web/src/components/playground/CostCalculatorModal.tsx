@@ -5,6 +5,8 @@ import { Dialog, DialogHeader, DialogTitle, DialogOverlay, DialogPortal } from '
 import { Model } from '@/lib/types/openapi';
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Cross2Icon } from "@radix-ui/react-icons";
+import { RenderAllTiersTable } from '@/components/meta/price-display';
+import { matchRangePrice, calculateCost } from '@/lib/utils/price-matcher';
 
 interface CostCalculatorModalProps {
   isOpen: boolean;
@@ -18,72 +20,113 @@ interface CostCalculatorModalProps {
   };
 }
 
-const TOKEN_PER_WORD = 1.5; // 1字 ≈ 1.5 tokens (估算)
-
 export function CostCalculatorModal({
   isOpen,
   onClose,
   model,
   currentSessionTokens,
 }: CostCalculatorModalProps) {
-  const [customInputTokens, setCustomInputTokens] = useState<number>(100000); // tokens
-  const [customOutputTokens, setCustomOutputTokens] = useState<number>(50000); // tokens
+  // 自定义使用量状态
+  const [avgInputTokens, setAvgInputTokens] = useState<number>(1000); // 平均输入tokens（单次）
+  const [avgOutputTokens, setAvgOutputTokens] = useState<number>(500); // 平均输出tokens（单次）
+  const [dailyRequestCount, setDailyRequestCount] = useState<number>(100); // 每日请求次数
 
-  // 解析价格信息
-  const [inputPricePerK, setInputPricePerK] = useState<number>(0);
-  const [outputPricePerK, setOutputPricePerK] = useState<number>(0);
-  const [cachedReadPricePerK, setCachedReadPricePerK] = useState<number>(0);
-  const [cachedCreationPricePerK, setCachedCreationPricePerK] = useState<number>(0);
   const [priceUnit, setPriceUnit] = useState<string>('分/千token');
-  const [hasCachePrice, setHasCachePrice] = useState<boolean>(false);
 
   useEffect(() => {
-    if (model?.priceDetails?.priceInfo) {
-      const { input, output, cachedRead, cachedCreation, unit } = model.priceDetails.priceInfo;
-      // 直接使用原始价格，不做转换（保持"分"为单位）
-      setInputPricePerK(Number(input) || 0);
-      setOutputPricePerK(Number(output) || 0);
-      setCachedReadPricePerK(Number(cachedRead) || 0);
-      setCachedCreationPricePerK(Number(cachedCreation) || 0);
-      setPriceUnit(unit || '分/千token');
-      setHasCachePrice(!!(cachedRead || cachedCreation));
+    if (model?.priceDetails?.unit) {
+      setPriceUnit(model.priceDetails.unit);
     }
   }, [model]);
 
-  // 计算当前会话费用
-  const calculateCurrentSessionCost = () => {
-    const inputCost = (currentSessionTokens.inputTokens / 1000) * inputPricePerK;
-    const outputCost = (currentSessionTokens.outputTokens / 1000) * outputPricePerK;
-    const cacheReadCost = ((currentSessionTokens.cacheReadTokens || 0) / 1000) * cachedReadPricePerK;
-    const cacheCreationCost = ((currentSessionTokens.cacheCreationTokens || 0) / 1000) * cachedCreationPricePerK;
+  // 计算当前会话的匹配结果和费用
+  const calculateSessionCost = () => {
+    const tiers = model?.priceDetails?.priceInfo?.tiers;
+    const matchResult = matchRangePrice(
+        tiers,
+        currentSessionTokens.inputTokens,
+        currentSessionTokens.outputTokens
+    );
+
+    if (!matchResult.rangePrice) {
+      return {
+        matchResult,
+        inputCost: 0,
+        outputCost: 0,
+        cacheReadCost: 0,
+        cacheCreationCost: 0,
+        totalCost: 0,
+        inputPricePerK: 0,
+        outputPricePerK: 0,
+        cachedReadPricePerK: 0,
+        cachedCreationPricePerK: 0,
+      };
+    }
+
+    const rangePrice = matchResult.rangePrice;
+    const inputPricePerK = Number(rangePrice.input) || 0;
+    const outputPricePerK = Number(rangePrice.output) || 0;
+    const cachedReadPricePerK = Number(rangePrice.cachedRead) || 0;
+    const cachedCreationPricePerK = Number(rangePrice.cachedCreation) || 0;
+
+    const inputCost = calculateCost(currentSessionTokens.inputTokens, inputPricePerK);
+    const outputCost = calculateCost(currentSessionTokens.outputTokens, outputPricePerK);
+    const cacheReadCost = calculateCost(currentSessionTokens.cacheReadTokens || 0, cachedReadPricePerK);
+    const cacheCreationCost = calculateCost(currentSessionTokens.cacheCreationTokens || 0, cachedCreationPricePerK);
+    const totalCost = inputCost + outputCost + cacheReadCost + cacheCreationCost;
+
     return {
+      matchResult,
       inputCost,
       outputCost,
       cacheReadCost,
       cacheCreationCost,
-      totalCost: inputCost + outputCost + cacheReadCost + cacheCreationCost
+      totalCost,
+      inputPricePerK,
+      outputPricePerK,
+      cachedReadPricePerK,
+      cachedCreationPricePerK,
     };
   };
 
-  // 计算预估费用
+  // 计算预估费用（基于平均单次tokens和每日请求次数）
   const calculateEstimatedCost = () => {
-    // 直接使用用户输入的 token 数量
-    const inputTokens = customInputTokens; // 总输入tokens
-    const outputTokens = customOutputTokens; // 总输出tokens
+    const tiers = model?.priceDetails?.priceInfo?.tiers;
+    const matchResult = matchRangePrice(tiers, avgInputTokens, avgOutputTokens);
 
-    // 计算费用（注意：价格是"分"为单位，需要转换为"元"）
-    const dailyInputCostFen = (inputTokens / 1000) * inputPricePerK; // 分
-    const dailyOutputCostFen = (outputTokens / 1000) * outputPricePerK; // 分
+    if (!matchResult.rangePrice) {
+      return {
+        matchResult,
+        dailyInputCost: 0,
+        dailyOutputCost: 0,
+        dailyTotalCost: 0,
+        monthlyTotalCost: 0,
+        inputPercent: 0,
+        outputPercent: 0,
+        totalInputTokens: 0,
+        totalOutputTokens: 0,
+        inputPricePerK: 0,
+        outputPricePerK: 0,
+      };
+    }
+
+    const rangePrice = matchResult.rangePrice;
+    const inputPricePerK = Number(rangePrice.input) || 0;
+    const outputPricePerK = Number(rangePrice.output) || 0;
+
+    // 每日总tokens = 单次tokens * 每日请求次数
+    const totalInputTokens = avgInputTokens * dailyRequestCount;
+    const totalOutputTokens = avgOutputTokens * dailyRequestCount;
+
+    // 计算费用（单位：分）
+    const dailyInputCostFen = calculateCost(totalInputTokens, inputPricePerK);
+    const dailyOutputCostFen = calculateCost(totalOutputTokens, outputPricePerK);
 
     // 转换为元
-    const dailyInputCost = dailyInputCostFen / 100; // 元
-    const dailyOutputCost = dailyOutputCostFen / 100; // 元
-    const dailyTotalCost = dailyInputCost + dailyOutputCost; // 元
-    const monthlyTotalCost = dailyTotalCost * 30; // 元
-
-    // 计算对应的字数（用于提示）
-    const inputWords = Math.round(inputTokens / TOKEN_PER_WORD);
-    const outputWords = Math.round(outputTokens / TOKEN_PER_WORD);
+    const dailyInputCost = dailyInputCostFen / 100;
+    const dailyOutputCost = dailyOutputCostFen / 100;
+    const dailyTotalCost = dailyInputCost + dailyOutputCost;
+    const monthlyTotalCost = dailyTotalCost * 30;
 
     // 计算成本占比
     let inputPercent = 0;
@@ -94,16 +137,17 @@ export function CostCalculatorModal({
     }
 
     return {
+      matchResult,
       dailyInputCost,
       dailyOutputCost,
       dailyTotalCost,
       monthlyTotalCost,
       inputPercent,
       outputPercent,
-      inputTokens,
-      outputTokens,
-      inputWords,
-      outputWords
+      totalInputTokens,
+      totalOutputTokens,
+      inputPricePerK,
+      outputPricePerK,
     };
   };
 
@@ -123,14 +167,15 @@ export function CostCalculatorModal({
     return new Intl.NumberFormat('zh-CN').format(Math.round(value));
   };
 
-  const sessionCost = calculateCurrentSessionCost();
+  const sessionCost = calculateSessionCost();
   const estimatedCost = calculateEstimatedCost();
+  const hasCachePrice = !!(sessionCost.cachedReadPricePerK || sessionCost.cachedCreationPricePerK);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogPortal>
         <DialogOverlay className="bg-black/5" />
-        <DialogPrimitive.Content className="fixed left-[50%] top-[50%] z-50 w-full max-w-4xl translate-x-[-50%] translate-y-[-50%] border bg-white shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg max-h-[90vh] flex flex-col overflow-hidden">
+        <DialogPrimitive.Content className="fixed left-[50%] top-[50%] z-50 w-full max-w-5xl translate-x-[-50%] translate-y-[-50%] border bg-white shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg max-h-[90vh] flex flex-col overflow-hidden">
         {/* 固定的标题栏 */}
         <div className="flex-shrink-0 border-b border-gray-200 px-6 py-4">
           <DialogHeader>
@@ -175,32 +220,56 @@ export function CostCalculatorModal({
                     </span>
                   </div>
                 )}
+
+                {/* 匹配的价格区间 */}
+                {sessionCost.matchResult.rangePrice && (
+                    <div className="mt-3 p-2 bg-white/60 rounded border border-blue-200">
+                      <div className="text-xs space-y-0.5">
+                        <div className="text-gray-700 flex flex-wrap items-center gap-x-4">
+                          <span className="font-medium text-gray-600">匹配区间:</span>
+                          <span><span className="font-medium">输入范围:</span> {sessionCost.matchResult.inputRange} tokens</span>
+                          {sessionCost.matchResult.outputRange && (
+                              <span><span className="font-medium">输出范围:</span> {sessionCost.matchResult.outputRange} tokens</span>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-blue-200">
+                          <div className="text-gray-700">
+                            输入价格: <span className="font-semibold">{formatPrice(sessionCost.inputPricePerK)}</span> {priceUnit}
+                          </div>
+                          <div className="text-gray-700">
+                            输出价格: <span className="font-semibold">{formatPrice(sessionCost.outputPricePerK)}</span> {priceUnit}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                )}
+
                 <div className="border-t border-blue-200 pt-2 mt-2">
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-medium text-gray-700">已使用费用:</span>
                     <span className="text-2xl font-extrabold text-indigo-600">
-                      {formatCurrency(sessionCost.totalCost, 4)}
-                    </span>
+                    {formatCurrency(sessionCost.totalCost, 4)}
+                  </span>
                   </div>
                   <div className="text-xs text-gray-500 mt-1 space-y-0.5">
                     <div className="flex justify-between">
                       <span>输入成本:</span>
-                      <span>{formatCurrency(sessionCost.inputCost, 4)}</span>
+                      <span>{formatCurrency(sessionCost.inputCost, 6)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>输出成本:</span>
-                      <span>{formatCurrency(sessionCost.outputCost, 4)}</span>
+                      <span>{formatCurrency(sessionCost.outputCost, 6)}</span>
                     </div>
                     {hasCachePrice && (currentSessionTokens.cacheReadTokens || 0) > 0 && (
                       <div className="flex justify-between">
                         <span>缓存读取成本:</span>
-                        <span>{formatCurrency(sessionCost.cacheReadCost || 0, 4)}</span>
+                        <span>{formatCurrency(sessionCost.cacheReadCost || 0, 6)}</span>
                       </div>
                     )}
                     {hasCachePrice && (currentSessionTokens.cacheCreationTokens || 0) > 0 && (
                       <div className="flex justify-between">
                         <span>缓存创建成本:</span>
-                        <span>{formatCurrency(sessionCost.cacheCreationCost || 0, 4)}</span>
+                        <span>{formatCurrency(sessionCost.cacheCreationCost || 0, 6)}</span>
                       </div>
                     )}
                   </div>
@@ -209,95 +278,142 @@ export function CostCalculatorModal({
             </div>
 
             {/* 模型信息 */}
-            <div className="p-4 border border-gray-200 rounded-lg space-y-2">
+            <div className="p-4 border border-gray-200 rounded-lg space-y-2 overflow-y-auto max-h-96">
+              <div className="flex justify-between items-center">
               <p className="text-sm text-gray-500">当前模型:</p>
+              <p className="text-xs text-gray-500">({priceUnit})</p>
+              </div>
               <p className="text-lg font-semibold text-gray-800">{model?.modelName || '--'}</p>
 
+              {/* 区间价格展示 */}
+              {model?.priceDetails?.priceInfo?.tiers &&
+                  model.priceDetails.priceInfo.tiers.length > 0 && (
               <div className="mt-2 space-y-1">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">输入价格:</span>
-                  <span className="font-bold text-blue-600">
-                    {formatPrice(inputPricePerK)} {priceUnit?.includes('分') ? '分' : '元'}/1K Tokens
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">输出价格:</span>
-                  <span className="font-bold text-red-600">
-                    {formatPrice(outputPricePerK)} {priceUnit?.includes('分') ? '分' : '元'}/1K Tokens
-                  </span>
-                </div>
-                {hasCachePrice && (
-                  <>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">缓存读取价格:</span>
-                      <span className="font-bold text-green-600">
-                        {formatPrice(cachedReadPricePerK)} {priceUnit?.includes('分') ? '分' : '元'}/1K Tokens
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">缓存创建价格:</span>
-                      <span className="font-bold text-purple-600">
-                        {formatPrice(cachedCreationPricePerK)} {priceUnit?.includes('分') ? '分' : '元'}/1K Tokens
-                      </span>
-                    </div>
-                  </>
+                <p className="text-xs text-gray-600 mb-2">费用:</p>
+                <RenderAllTiersTable
+                    tiers={model.priceDetails.priceInfo.tiers.filter(
+                        tier => tier.inputRangePrice
                 )}
+                />
               </div>
+                  )}
             </div>
           </div>
 
-          {/* 第二行：自定义输入输出和费用预估 */}
-          <div className="space-y-6">
-            {/* 自定义输入输出 tokens */}
-            <div className="space-y-3">
+          {/* 第二行：自定义使用量预估 */}
+          <div className="space-y-4">
+            <h3 className="font-semibold text-gray-800 text-base">费用预估</h3>
+
+            {/* 输入参数 */}
+            <div className="p-4 bg-gray-50 rounded-lg space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-gray-800 text-sm">自定义每日使用量</h3>
+                <h4 className="text-sm font-medium text-gray-700">自定义使用参数</h4>
                 <p className="text-xs text-gray-500">
-                  映射参考: 中文 1字≈1.5token, 英文 4字符≈1token
+                  参考: 中文 1字≈1.5token, 英文 4字符≈1token
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {/* 输入 tokens */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* 平均输入 tokens */}
                 <div className="space-y-2">
-                  <p className="text-sm text-gray-600">输入 Tokens (每日):</p>
+                  <label className="text-sm text-gray-600">平均输入 Tokens (单次):</label>
                   <div className="flex items-center gap-2">
                     <input
-                      type="number"
-                      value={customInputTokens}
-                      onChange={(e) => setCustomInputTokens(parseFloat(e.target.value) || 0)}
-                      min="0"
-                      step="1000"
-                      className="flex-1 p-2 border border-gray-300 rounded-md text-right text-lg font-bold"
+                        type="number"
+                        value={avgInputTokens}
+                        onChange={(e) => setAvgInputTokens(parseFloat(e.target.value) || 0)}
+                        min="0"
+                        step="100"
+                        className="flex-1 p-2 border border-gray-300 rounded-md text-right text-base font-semibold"
                     />
-                    <span className="text-sm font-medium text-gray-800">tokens</span>
+                    <span className="text-sm font-medium text-gray-700">tokens</span>
                   </div>
                 </div>
 
-                {/* 输出 tokens */}
+                  {/* 平均输出 tokens */}
                 <div className="space-y-2">
-                  <p className="text-sm text-gray-600">输出 Tokens (每日):</p>
+                  <label className="text-sm text-gray-600">平均输出 Tokens (单次):</label>
                   <div className="flex items-center gap-2">
                     <input
                       type="number"
-                      value={customOutputTokens}
-                      onChange={(e) => setCustomOutputTokens(parseFloat(e.target.value) || 0)}
+                      value={avgOutputTokens}
+                      onChange={(e) => setAvgOutputTokens(parseFloat(e.target.value) || 0)}
                       min="0"
-                      step="1000"
-                      className="flex-1 p-2 border border-gray-300 rounded-md text-right text-lg font-bold"
+                      step="100"
+                      className="flex-1 p-2 border border-gray-300 rounded-md text-right text-base font-semibold"
                     />
-                    <span className="text-sm font-medium text-gray-800">tokens</span>
+                    <span className="text-sm font-medium text-gray-700">tokens</span>
+                  </div>
+                </div>
+
+                {/* 每日请求次数 */}
+                <div className="space-y-2">
+                  <label className="text-sm text-gray-600">每日请求次数:</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      value={dailyRequestCount}
+                      onChange={(e) => setDailyRequestCount(parseFloat(e.target.value) || 0)}
+                      min="0"
+                      step="10"
+                      className="flex-1 p-2 border border-gray-300 rounded-md text-right text-base font-semibold"
+                    />
+                    <span className="text-sm font-medium text-gray-700">次</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* 费用预估 */}
+                {/* 匹配的价格区间和费用预估结果 */}
             <div className="p-4 bg-gradient-to-br from-emerald-50 to-green-50 border-2 border-emerald-200 rounded-lg space-y-4">
-              <h3 className="font-semibold text-gray-800 text-sm">费用预估 (单位: 元)</h3>
+              {estimatedCost.matchResult.rangePrice ? (
+                  <>
+                    {/* 匹配的区间信息 */}
+              <div className="p-3 bg-white/70 rounded border border-emerald-300">
+                <div className="text-xs space-y-1">
+                  <div className="text-gray-700 flex flex-wrap items-center gap-x-4">
+                    <span className="font-medium text-gray-600">匹配区间:</span>
+                    <span><span className="font-medium">输入范围:</span> {estimatedCost.matchResult.inputRange} tokens</span>
+                    {estimatedCost.matchResult.outputRange && (
+                        <span><span className="font-medium">输出范围:</span> {estimatedCost.matchResult.outputRange} tokens</span>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-emerald-200">
+                    <div className="text-gray-700">
+                      输入价格: <span className="font-semibold">{formatPrice(estimatedCost.inputPricePerK)}</span> {priceUnit}
+                    </div>
+                    <div className="text-gray-700">
+                      输出价格: <span className="font-semibold">{formatPrice(estimatedCost.outputPricePerK)}</span> {priceUnit}
+                    </div>
+                  </div>
+                </div>
+              </div>
 
+              {/* 成本明细 */}
+              <div className="text-sm space-y-2 bg-white/50 p-3 rounded border border-emerald-200">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">输入成本:</span>
+                  <span className="font-semibold text-blue-600">
+                {formatCurrency(estimatedCost.dailyInputCost, 4, true)}
+              </span>
+                </div>
+                <div className="text-xs text-gray-500 ml-4">
+                  {avgInputTokens.toLocaleString()} tokens × {dailyRequestCount} 次 × {formatPrice(estimatedCost.inputPricePerK)} {priceUnit}
+                </div>
+                <div className="flex justify-between items-center mt-2">
+                  <span className="text-gray-600">输出成本:</span>
+                  <span className="font-semibold text-red-600">
+                {formatCurrency(estimatedCost.dailyOutputCost, 4, true)}
+              </span>
+                </div>
+                <div className="text-xs text-gray-500 ml-4">
+                  {avgOutputTokens.toLocaleString()} tokens × {dailyRequestCount} 次 × {formatPrice(estimatedCost.outputPricePerK)} {priceUnit}
+                </div>
+              </div>
+
+              {/* 费用统计 */}
               <div>
-                <p className="text-sm text-gray-500 mb-1">日均费用</p>
+                <p className="text-sm text-gray-600 mb-1">日均费用</p>
                 <p className="text-3xl font-extrabold text-emerald-600">
                   {formatCurrency(estimatedCost.dailyTotalCost, 4, true)}
                 </p>
@@ -305,7 +421,7 @@ export function CostCalculatorModal({
 
               {/* 成本占比进度条 */}
               <div>
-                <p className="text-sm text-gray-500 mb-2">成本占比</p>
+                <p className="text-sm text-gray-600 mb-2">成本占比</p>
                 <div className="h-3 rounded-full overflow-hidden bg-gray-200 flex">
                   <div
                     className="bg-blue-500"
@@ -336,6 +452,13 @@ export function CostCalculatorModal({
                   </span>
                 </div>
               </div>
+              </>
+              ) : (
+                  <div className="text-center text-gray-500 py-4">
+                    <p className="text-sm">未能匹配到价格区间</p>
+                    <p className="text-xs mt-1">请检查输入/输出 tokens 是否在有效范围内</p>
+                  </div>
+              )}
             </div>
           </div>
 
