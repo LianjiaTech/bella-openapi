@@ -140,6 +140,13 @@ export default function ChatCompletions() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
+  const usageProcessedRef = useRef<boolean>(false); // 防止重复处理 usage
+  const sessionTokensRef = useRef({
+    inputTokens: 0,
+    outputTokens: 0,
+    cacheCreationTokens: 0,
+    cacheReadTokens: 0
+  });
 
   // 图像处理函数
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -469,16 +476,22 @@ export default function ChatCompletions() {
 
   // 初始化ChatCompletionsWriter
   useEffect(() => {
+    // 先清理旧实例的监听器
+    if (chatCompletionsWriterRef.current) {
+      chatCompletionsWriterRef.current.removeAllListeners();
+    }
+
     const protocol = typeof window !== 'undefined' ? window.location.protocol : 'http:';
     const host = api_host || window.location.host;
-    chatCompletionsWriterRef.current = new ChatCompletionsProcessor({
+    const newWriter = new ChatCompletionsProcessor({
       url: `${protocol}//${host}/v1/chat/completions`,
       headers: {
         'Content-Type': 'application/json'
       }
     });
 
-    const writer = chatCompletionsWriterRef.current;
+    chatCompletionsWriterRef.current = newWriter;
+    const writer = newWriter;
 
     // 设置事件监听
     writer.on(ChatCompletionsEventType.START, () => {
@@ -496,6 +509,8 @@ export default function ChatCompletions() {
       // 重置内联数据处理状态
       setIsReceivingInline(false);
       setInlineBuffer('');
+      // 重置usage处理标志
+      usageProcessedRef.current = false;
     });
 
     writer.on(ChatCompletionsEventType.DELTA, (data) => {
@@ -638,13 +653,18 @@ export default function ChatCompletions() {
       setStreamingResponse('');
 
       // 使用后端返回的 usage 信息更新 token 统计
-      if (data?.usage) {
-        setSessionTokens(prevTokens => ({
-          inputTokens: prevTokens.inputTokens + (data.usage.prompt_tokens || 0),
-          outputTokens: prevTokens.outputTokens + (data.usage.completion_tokens || 0),
-          cacheCreationTokens: prevTokens.cacheCreationTokens + (data.usage.cache_creation_tokens || 0),
-          cacheReadTokens: prevTokens.cacheReadTokens + (data.usage.cache_read_tokens || 0)
-        }));
+      // 使用 ref 防止重复处理 - FINISH 事件可能触发多次
+      if (data?.usage && !usageProcessedRef.current) {
+        usageProcessedRef.current = true; // 标记为已处理
+        // 先在 ref 中累加
+        sessionTokensRef.current = {
+          inputTokens: sessionTokensRef.current.inputTokens + (data.usage.prompt_tokens || 0),
+          outputTokens: sessionTokensRef.current.outputTokens + (data.usage.completion_tokens || 0),
+          cacheCreationTokens: sessionTokensRef.current.cacheCreationTokens + (data.usage.cache_creation_tokens || 0),
+          cacheReadTokens: sessionTokensRef.current.cacheReadTokens + (data.usage.cache_read_tokens || 0)
+        };
+        // 然后直接设置 state（避免 React 双重渲染导致的重复累加）
+        setSessionTokens(sessionTokensRef.current);
       }
 
       // 确保所有内联数据都已处理完成
@@ -739,7 +759,7 @@ export default function ChatCompletions() {
         writer.removeAllListeners();
       }
     };
-  }, [isReceivingInline, inlineBuffer, model]);
+  }, [model]); // 只在 model 改变时重新初始化
 
   // 自动滚动到底部
   useEffect(() => {
@@ -795,13 +815,14 @@ export default function ChatCompletions() {
     setUploadedImages([]);
     setUploadedVideos([]);
 
-    // 重置 token 统计
-    setSessionTokens({
+    // 重置 token 统计（同时重置 ref 和 state）
+    sessionTokensRef.current = {
       inputTokens: 0,
       outputTokens: 0,
       cacheCreationTokens: 0,
       cacheReadTokens: 0
-    });
+    };
+    setSessionTokens(sessionTokensRef.current);
   };
 
   // 发送消息 - 支持多模态格式
