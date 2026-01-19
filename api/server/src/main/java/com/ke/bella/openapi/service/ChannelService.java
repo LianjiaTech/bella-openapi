@@ -114,7 +114,7 @@ public class ChannelService {
         if(StringUtils.isNotEmpty(op.getPriceInfo())) {
             List<String> endpoints = new ArrayList<>();
             Entity entity = getEntityInfoByCode(op.getChannelCode());
-            if(entity.getEntityCode().equals(MODEL)) {
+            if(entity.getEntityType().equals(MODEL)) {
                 ModelDB model = modelService.getOne(entity.getEntityCode());
                 endpoints = modelService.getAllEndpoints(model.getModelName());
             } else {

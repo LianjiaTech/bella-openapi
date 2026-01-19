@@ -103,9 +103,11 @@ public class CostCalculator {
             }
             int promptTokens = tokenUsage.getPrompt_tokens();
             int completionsTokens = tokenUsage.getCompletion_tokens();
-            Pair<BigDecimal, Integer> inputParts = CompletionsCalHelper.calculateAllElements(CompletionsCalHelper.INPUT, price,
+
+            CompletionPriceInfo.RangePrice rangePrice = price.matchRangePrice(promptTokens, completionsTokens);
+            Pair<BigDecimal, Integer> inputParts = CompletionsCalHelper.calculateAllElements(CompletionsCalHelper.INPUT, rangePrice,
                     tokenUsage.getPrompt_tokens_details());
-            Pair<BigDecimal, Integer> outputParts = CompletionsCalHelper.calculateAllElements(CompletionsCalHelper.OUTPUT, price,
+            Pair<BigDecimal, Integer> outputParts = CompletionsCalHelper.calculateAllElements(CompletionsCalHelper.OUTPUT, rangePrice,
                     tokenUsage.getCompletion_tokens_details());
             if(inputParts.getLeft().doubleValue() > 0) {
                 promptTokens -= inputParts.getRight();
@@ -113,15 +115,19 @@ public class CostCalculator {
             if(outputParts.getLeft().doubleValue() > 0) {
                 completionsTokens -= outputParts.getRight();
             }
-            return price.getInput().multiply(BigDecimal.valueOf(promptTokens / 1000.0))
-                    .add(price.getOutput().multiply(BigDecimal.valueOf(completionsTokens / 1000.0)))
+
+            return rangePrice.getInput().multiply(BigDecimal.valueOf(promptTokens / 1000.0))
+                    .add(rangePrice.getOutput().multiply(BigDecimal.valueOf(completionsTokens / 1000.0)))
                     .add(inputParts.getLeft()).add(outputParts.getLeft());
         }
 
         @Override
         public boolean checkPriceInfo(String priceInfo) {
             CompletionPriceInfo price = JacksonUtils.deserialize(priceInfo, CompletionPriceInfo.class);
-            return price != null && price.getInput() != null && price.getOutput() != null;
+            if(price == null) {
+                return false;
+            }
+            return price.validate();
         }
     };
 
