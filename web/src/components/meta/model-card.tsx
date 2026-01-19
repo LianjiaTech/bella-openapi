@@ -2,15 +2,52 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ExternalLink, Settings } from "lucide-react";
 import Link from "next/link";
-import { Model } from "@/lib/types/openapi";
+import { Model, PriceDetails } from "@/lib/types/openapi";
 import { Badge } from "@/components/ui/badge";
 import {useUser} from "@/lib/context/user-context";
 import {hasPermission} from "@/lib/api/userInfo";
+import { RenderAllTiersTable } from '@/components/meta/price-display';
 
 interface ModelCardProps {
     model: Model;
     update: boolean;
 }
+
+// 渲染价格详情
+const renderPriceDetails = (priceDetails: PriceDetails) => {
+    if (priceDetails.priceInfo?.tiers && priceDetails.priceInfo.tiers.length > 0) {
+        const validTiers = priceDetails.priceInfo.tiers.filter(tier => tier.inputRangePrice);
+        if (validTiers.length === 0) {
+            return null;
+        }
+
+        return (
+            <div className="bg-gray-50 rounded-lg p-3">
+                <RenderAllTiersTable tiers={validTiers} />
+
+                <div className="text-xs text-gray-500 mt-2 text-right">
+                    单位: {priceDetails.unit}
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="bg-gray-50 rounded-lg p-3">
+            {Object.entries(priceDetails.displayPrice).map(([key, value]) => (
+                <div key={key} className="flex justify-between items-start mb-1">
+                    <span className="text-xs text-gray-600">{key}</span>
+                    <span className="text-sm font-semibold text-gray-800 text-right whitespace-pre-line">
+                        {value}
+                    </span>
+                </div>
+            ))}
+            <div className="text-xs text-gray-500 mt-2 text-right">
+                单位: {priceDetails.unit}
+            </div>
+        </div>
+    );
+};
 
 export function ModelCard({ model, update }: ModelCardProps) {
     const properties = JSON.parse(model.properties) as Record<string, any>;
@@ -87,22 +124,10 @@ export function ModelCard({ model, update }: ModelCardProps) {
                         </div>
                     </div>
                 )}
-                {model.priceDetails && (
+                {model.priceDetails && renderPriceDetails(model.priceDetails) && (
                     <div className="mt-4">
                         <h3 className="text-sm font-medium text-gray-600 mb-2">费用</h3>
-                        <div className="bg-gray-50 rounded-lg p-3">
-                            {Object.entries(model.priceDetails.displayPrice).map(([key, value]) => (
-                                <div key={key} className="flex justify-between items-start mb-1">
-                                    <span className="text-xs text-gray-600">{key}</span>
-                                    <span className="text-sm font-semibold text-gray-800 text-right whitespace-pre-line">
-                                        {value}
-                                    </span>
-                                </div>
-                            ))}
-                            <div className="text-xs text-gray-500 mt-2 text-right">
-                                单位: {model.priceDetails.unit}
-                            </div>
-                        </div>
+                        {renderPriceDetails(model.priceDetails)}
                     </div>
                 )}
             </CardContent>
