@@ -31,6 +31,7 @@ public class CompletionPriceInfo implements IPriceInfo, Serializable {
     }
 
     @Data
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class Tier implements Serializable {
         private static final long serialVersionUID = 1L;
         private RangePrice inputRangePrice;
@@ -52,6 +53,7 @@ public class CompletionPriceInfo implements IPriceInfo, Serializable {
     }
 
     @Data
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class RangePrice implements Serializable {
         private static final long serialVersionUID = 1L;
         private int minToken;
