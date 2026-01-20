@@ -83,8 +83,8 @@ public class PaddleOCRAdaptor implements GeneralAdaptor<BaiduOcrProperty> {
             // 方式1: file_id → 转为 Base64
             if (extraBody == null || !extraBody.containsKey("fileType")) {
                 throw new IllegalArgumentException(
-                    "fileType is required when using file_id. " +
-                    "Please specify fileType in request body: 0 for PDF, 1 for image"
+                    "使用 file_id 时必须提供 fileType 参数。" +
+                    "请在请求体中指定 fileType: 0 表示 PDF, 1 表示图片"
                 );
             }
 
@@ -104,8 +104,8 @@ public class PaddleOCRAdaptor implements GeneralAdaptor<BaiduOcrProperty> {
                 // file 是 Base64，需要 fileType
                 if (!extraBody.containsKey("fileType")) {
                     throw new IllegalArgumentException(
-                        "fileType is required when file is Base64 encoded. " +
-                        "Please specify fileType in request body: 0 for PDF, 1 for image"
+                        "当 file 为 Base64 编码时必须提供 fileType 参数。" +
+                        "请在请求体中指定 fileType: 0 表示 PDF, 1 表示图片"
                     );
                 }
                 builder.file(file);
@@ -114,8 +114,8 @@ public class PaddleOCRAdaptor implements GeneralAdaptor<BaiduOcrProperty> {
         } else {
             // 没有提供任何文件输入
             throw new IllegalArgumentException(
-                "Either file_id or file (in request body) is required. " +
-                "file can be a URL or Base64 encoded string."
+                "必须提供 file_id 或 file (在请求体中) 之一。" +
+                "file 可以是 URL 或 Base64 编码字符串"
             );
         }
 
@@ -160,8 +160,8 @@ public class PaddleOCRAdaptor implements GeneralAdaptor<BaiduOcrProperty> {
             byte[] jsonBytes = objectMapper.writeValueAsBytes(request);
             return RequestBody.create(MediaType.parse("application/json; charset=utf-8"), jsonBytes);
         } catch (Exception e) {
-            log.error("Failed to serialize PaddleOCRRequest to JSON", e);
-            throw new RuntimeException("Failed to build request body", e);
+            log.error("序列化 PaddleOCRRequest 为 JSON 失败", e);
+            throw new RuntimeException("构建请求体失败", e);
         }
     }
 
