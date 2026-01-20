@@ -8,7 +8,8 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * CompletionPriceInfo.matchRangePrice 方法的单元测试
@@ -376,8 +377,12 @@ public class CompletionPriceInfoMatchTest {
         priceInfo.setTiers(tiers);
 
         // 输入token=2000超出了唯一区间的范围
-        CompletionPriceInfo.RangePrice result = priceInfo.matchRangePrice(2000, 100);
-        assertNull("输入token不在任何区间内应该返回null", result);
+        try {
+            priceInfo.matchRangePrice(2000, 100);
+            fail("期望抛出 IllegalStateException，但未抛出");
+        } catch (IllegalStateException e) {
+            assertTrue(e.getMessage().contains("未匹配到任何输入价格区间"));
+        }
     }
 
     /**
@@ -410,8 +415,12 @@ public class CompletionPriceInfoMatchTest {
         priceInfo.setTiers(tiers);
 
         // 输出token=2000超出了输出区间的范围
-        CompletionPriceInfo.RangePrice result = priceInfo.matchRangePrice(5000, 2000);
-        assertNull("输出token不在任何输出区间内应该返回null", result);
+        try {
+            priceInfo.matchRangePrice(5000, 2000);
+            fail("期望抛出 IllegalStateException，但未抛出");
+        } catch (IllegalStateException e) {
+            assertTrue(e.getMessage().contains("未匹配到任何输入价格区间"));
+        }
     }
 
     /**
@@ -421,9 +430,12 @@ public class CompletionPriceInfoMatchTest {
     public void testMatchRangePrice_EmptyTiers() {
         CompletionPriceInfo priceInfo = new CompletionPriceInfo();
         priceInfo.setTiers(new ArrayList<>());
-
-        CompletionPriceInfo.RangePrice result = priceInfo.matchRangePrice(1000, 500);
-        assertNull("空的tier列表应该返回null", result);
+        try {
+            priceInfo.matchRangePrice(1000, 500);
+            fail("期望抛出 IllegalStateException，但未抛出");
+        } catch (IllegalStateException e) {
+            assertTrue(e.getMessage().contains("未匹配到任何输入价格区间"));
+        }
     }
 
     /**
