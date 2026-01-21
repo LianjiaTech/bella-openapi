@@ -72,16 +72,22 @@ public class ChatController {
     @PostMapping("/completions")
     public Object completion(HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException {
         String endpoint = httpRequest.getRequestURI();
+        boolean isDirectMode = BellaContext.isDirectMode();
 
-        // Check for direct mode - skip body deserialization for performance
-        if(BellaContext.isDirectMode()) {
-            return processDirectModeRequest(endpoint, httpRequest, httpResponse);
-        }
-
-        // Normal mode - read and parse request body
+        // Read and parse request body (common for both modes)
         byte[] bodyBytes = IOUtils.toByteArray(httpRequest.getInputStream());
         CompletionRequest request = JacksonUtils.deserialize(bodyBytes, CompletionRequest.class);
-        String model = request.getModel();
+
+        // Get model from request or header (direct mode uses X-BELLA-MODEL header)
+        String model = isDirectMode ? BellaContext.getDirectModel() : request.getModel();
+
+        // Set endpoint data (common for both modes)
+        endpointDataService.setEndpointData(endpoint, model, request);
+
+        // Check for direct mode
+        if(isDirectMode) {
+            return processDirectModeRequest(endpoint, bodyBytes, httpResponse);
+        }
 
         // Handle multi-model requests
         if(model != null && model.contains(",")) {
@@ -126,7 +132,6 @@ public class ChatController {
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     private Object processCompletionRequest(String endpoint, String model, CompletionRequest request) {
-        endpointDataService.setEndpointData(endpoint, model, request);
         boolean isMock = EndpointContext.getProcessData().isMock();
 
         // Initialize channel using common method
@@ -199,9 +204,6 @@ public class ChatController {
     }
 
     private ChannelContext initializeChannel(String endpoint, String model, boolean isDirectMode) {
-        // Set endpoint data
-        endpointDataService.setEndpointData(endpoint, model, null);
-
         // Route to channel (direct mode skips availability checks)
         ChannelDB channel = router.route(endpoint, model, EndpointContext.getApikey(), false, isDirectMode);
         endpointDataService.setChannel(channel);
@@ -237,7 +239,7 @@ public class ChatController {
      * 5. Async processing for logging, metrics
      */
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    private Object processDirectModeRequest(String endpoint, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException {
+    private Object processDirectModeRequest(String endpoint, byte[] bodyBytes, HttpServletResponse httpResponse) throws IOException {
         String model = BellaContext.getDirectModel();
         ChannelContext ctx = initializeChannel(endpoint, model, true);
 
@@ -252,7 +254,8 @@ public class ChatController {
         // Create DirectPassthroughAdaptor with HttpServletResponse
         // The adaptor will automatically detect stream vs non-stream based on
         // response Content-Type
-        CompletionAdaptor adaptor = new DirectPassthroughAdaptor(delegator, httpRequest.getInputStream(), ctx.property, httpResponse, logger);
+        // Re-wrap body bytes as InputStream since we already consumed it
+        CompletionAdaptor adaptor = new DirectPassthroughAdaptor(delegator, new java.io.ByteArrayInputStream(bodyBytes), ctx.property, httpResponse, logger);
         adaptor.completion(null, ctx.url, ctx.property);
         return null; // Response already written directly
     }

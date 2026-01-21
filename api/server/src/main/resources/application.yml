@@ -56,6 +56,10 @@ springdoc:
 
 
 bella:
+  limiter:
+    qps:
+      default-limit: 200
+      enabled: true
   server:
     initializer:
       enabled: true

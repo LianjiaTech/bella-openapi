@@ -1,29 +1,18 @@
 'use client'
 import { TopBar } from "@/components/layout"
 import { useLanguage } from "@/components/providers/language-provider"
-import { useSidebar } from "@/components/providers"
+import { useSidebar } from "@/components/providers/sidebar-provider"
 import { useMemo, useDeferredValue } from "react"
-import { ModelFilterPanel } from "@/components/ui/models"
+import { ModelFilterPanel } from "@/components/ui/modelFilterPanel/index"
 import { useSearchParams } from "next/navigation"
 import { useState, useEffect, useCallback } from "react"
 import { useEndpointData } from "./hooks/useEndpointData"
 import { getInitialEndpoint } from "@/lib/utils"
 import { Model } from "@/lib/types/openapi"
 import { Loader, AlertCircle } from "lucide-react"
-import { ModelCard } from "@/components/ui/modelCard"
+import { ModelCard } from "@/components/ui/modelCard/index"
 import { Button } from "@/components/common/button"
-
-// 标签颜色配置
-const tagColors = [
-  "bg-green-500/10 text-green-500 border-green-500/20",
-  "bg-blue-500/10 text-blue-500 border-blue-500/20",
-  "bg-purple-500/10 text-purple-500 border-purple-500/20",
-  "bg-orange-500/10 text-orange-500 border-orange-500/20",
-  "bg-pink-500/10 text-pink-500 border-pink-500/20",
-  "bg-indigo-500/10 text-indigo-500 border-indigo-500/20",
-  "bg-cyan-500/10 text-cyan-500 border-cyan-500/20",
-  "bg-red-500/10 text-red-500 border-red-500/20",
-]
+import { VirtualGrid } from "@/components/ui/virtualGrid/index"
 
 /**
  * 模型目录页面组件
@@ -100,15 +89,46 @@ const ModelsPage = () => {
    * 处理添加渠道操作
    */
   const handleAddChannel = (model: Model) => {
-    console.log("添加私有渠道:", model.modelName)
+
   }
+
+  /**
+   * 智能预估 ModelCard 高度
+   * 根据卡片内容特征动态计算预估高度，减少首屏抖动
+   */
+  const estimateModelCardHeight = useCallback((model: Model) => {
+    // 固定部分高度
+    const CARD_PADDING = 40        // p-5 (20px 上下)
+    const HEADER_HEIGHT = 52       // 图标 + 标题 + 间距
+    const ACTION_HEIGHT = 36       // 底部按钮区域
+
+    // Feature Tags 高度（动态）
+    const features = typeof model.features === 'string'
+      ? model.features.split(',').filter(f => f.trim())
+      : []
+    // 每个标签约 24px 高，每行放3个，gap-2 = 8px 行间距，mb-4 = 16px 底部间距
+    const tagsPerRow = 3
+    const tagRows = Math.ceil(features.length / tagsPerRow)
+    const FEATURE_HEIGHT = tagRows > 0
+      ? tagRows * 24 + (tagRows - 1) * 8 + 16
+      : 16 // 无标签时仍有 mb-4
+
+    // Info Section 高度（固定为 2-3 行）
+    // 每行约 20px，space-y-2 = 8px 行间距，mb-4 = 16px 底部间距
+    const hasCachedPrice = model.priceDetails?.priceInfo?.cachedRead !== null
+    const infoRows = hasCachedPrice ? 3 : 2
+    const INFO_HEIGHT = infoRows * 20 + (infoRows - 1) * 8 + 16
+
+    return CARD_PADDING + HEADER_HEIGHT + FEATURE_HEIGHT + INFO_HEIGHT + ACTION_HEIGHT
+  }, [])
 
   return (
     <>
       <TopBar title={t("modelCatalog")} description={t("modelCatalogDesc")} />
       <div className="flex h-[calc(100vh-4rem)] flex-col overflow-hidden">
-        <div className="flex-1 overflow-y-auto">
-          <div className="container px-6 py-8">
+        {/* 筛选面板区域（固定不滚动） */}
+        <div className="flex-shrink-0 border-b bg-background">
+          <div className="container px-6 py-4">
             {/* 模型筛选面板 */}
             <ModelFilterPanel
               categoryTrees={categoryTrees}
@@ -123,7 +143,7 @@ const ModelsPage = () => {
 
             {/* 错误提示 */}
             {error && (
-              <div className="mb-4 rounded-lg border border-red-500/20 bg-red-500/10 p-4">
+              <div className="mt-4 rounded-lg border border-red-500/20 bg-red-500/10 p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-500" />
@@ -141,31 +161,38 @@ const ModelsPage = () => {
               </div>
             )}
 
-            {/* 模型列表 */}
-            <div className="mb-4">
+            {/* 模型列表统计 */}
+            <div className="mt-4">
               <h2 className="text-sm font-medium text-muted-foreground">
                 {t("foundModels")} {filteredModels.length} {t("modelsCount")}
               </h2>
             </div>
-
-            {modelsLoading ? (
-              <div className="flex items-center justify-center py-12 text-muted-foreground">
-                <Loader className="h-6 w-6 animate-spin mr-2" />
-                <span className="text-sm">{t("loadingModels")}</span>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {filteredModels.map((model) => (
-                  <ModelCard
-                    key={model.modelName}
-                    model={model}
-                    tagColors={tagColors}
-                    onAddChannel={handleAddChannel}
-                  />
-                ))}
-              </div>
-            )}
           </div>
+        </div>
+
+        {/* 虚拟滚动容器（可滚动区域）estimateItemSize={estimateModelCardHeight} */}
+        <div className="flex-1 overflow-hidden">
+          {modelsLoading ? (
+            <div className="flex items-center justify-center h-full text-muted-foreground">
+              <Loader className="h-6 w-6 animate-spin mr-2" />
+              <span className="text-sm">{t("loadingModels")}</span>
+            </div>
+          ) : (
+            <VirtualGrid
+              items={filteredModels}
+              overscan={5}
+              getItemKey={(model) => model.modelName}
+              renderItem={(model) => (
+                <ModelCard model={model} onAddChannel={handleAddChannel} />
+              )}
+              emptyElement={
+                <div className="flex items-center justify-center h-full text-muted-foreground">
+                  <p className="text-sm">{t("noModelsFound")}</p>
+                </div>
+              }
+              className="px-6 py-6"
+            />
+          )}
         </div>
       </div>
     </>
