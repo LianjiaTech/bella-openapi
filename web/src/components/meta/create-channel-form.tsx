@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useState, useRef} from 'react';
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
@@ -9,15 +9,17 @@ import {
     createPrivateChannel,
     getChannelInfoSchema,
     getPriceInfoSchema,
-    listProtocols
+    listProtocols,
+    getModelEndpoints
 } from '@/lib/api/meta';
-import {Channel, JsonSchema} from '@/lib/types/openapi';
+import {Channel, JsonSchema, CompletionPriceInfo} from '@/lib/types/openapi';
 import {Textarea} from "@/components/ui/textarea";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
 import {NestedObject} from "@/lib/types/common";
 import {renderField} from "@/components/ui/render-field";
 import {Switch} from "@/components/ui/switch";
 import {useRouter, useSearchParams} from 'next/navigation';
+import {CompletionPriceEditor, CompletionPriceEditorRef} from '@/components/meta/completion-price-editor';
 
 interface Props {
     entityType: string,
@@ -55,6 +57,9 @@ export function CreateChannelForm({
     const [priceInfoValue, setPriceInfoValue] = useState<NestedObject>({});
     const [channelInfoValue, setChannelInfoValue] = useState<NestedObject>({});
     const [loading, setLoading] = useState(false);
+    const [completionPriceInfo, setCompletionPriceInfo] = useState<CompletionPriceInfo | null>(null);
+    const [isChatCompletionsEndpoint, setIsChatCompletionsEndpoint] = useState(false);
+    const completionPriceEditorRef = useRef<CompletionPriceEditorRef>(null);
 
     const handleChange = (field: keyof Channel, value: string | number) => {
         if(field == 'protocol') {
@@ -75,6 +80,10 @@ export function CreateChannelForm({
             current[keys[keys.length - 1]] = value;
             return newValue;
         });
+    };
+
+    const handleCompletionPriceChange = (priceInfo: CompletionPriceInfo) => {
+        setCompletionPriceInfo(priceInfo);
     };
 
     const handleChannelInfoChange = (path: string, value: any) => {
@@ -99,9 +108,25 @@ export function CreateChannelForm({
             const priceSchema = await getPriceInfoSchema(entityType, entityCode);
             setPriceInfoSchema(priceSchema);
             setPriceInfoValue({});
+
+            // 判断是否需要使用区间价格编辑器
+            if (entityType === 'model') {
+                try {
+                    const endpoints = await getModelEndpoints(entityCode);
+                    const hasChatCompletions = endpoints.includes('/v1/chat/completions');
+                    setIsChatCompletionsEndpoint(hasChatCompletions);
+                } catch (error) {
+                    setIsChatCompletionsEndpoint(false);
+                }
+            } else if (entityType === 'endpoint') {
+                const hasChatCompletions = entityCode === '/v1/chat/completions';
+                setIsChatCompletionsEndpoint(hasChatCompletions);
+            } else {
+                setIsChatCompletionsEndpoint(false);
+            }
         }
         fetchData();
-    }, []);
+    }, [entityType, entityCode]);
 
     useEffect(() => {
         async function fetchChannelInfoSchema() {
@@ -133,9 +158,23 @@ export function CreateChannelForm({
         try {
             const isPrivate = searchParams.get('private') === 'true';
             const createFunction = isPrivate ? createPrivateChannel : createChannel;
+
+            // 根据endpoint类型决定使用哪种价格信息
+            let priceInfoToSubmit: string;
+            if (isChatCompletionsEndpoint) {
+                // 验证阶梯价格配置
+                if (completionPriceEditorRef.current && !completionPriceEditorRef.current.validate()) {
+                    setLoading(false);
+                    return;
+                }
+                priceInfoToSubmit = JSON.stringify(completionPriceInfo);
+            } else {
+                priceInfoToSubmit = JSON.stringify(priceInfoValue);
+            }
+
             const finalChannel = {
                 ...channel,
-                priceInfo: JSON.stringify(priceInfoValue),
+                priceInfo: priceInfoToSubmit,
                 channelInfo: JSON.stringify(channelInfoValue)
             };
             await createFunction(finalChannel);
@@ -326,7 +365,18 @@ export function CreateChannelForm({
                                 ))}
                             </div>
                         )}
-                        {priceInfoSchema && (
+                        {/* 根据endpoint类型显示不同的价格输入方式 */}
+                        {isChatCompletionsEndpoint ? (
+                            <div className="space-y-2">
+                                <Label htmlFor="priceInfo">单价信息</Label>
+                                <CompletionPriceEditor
+                                    ref={completionPriceEditorRef}
+                                    value={completionPriceInfo}
+                                    onChange={handleCompletionPriceChange}
+                                />
+                            </div>
+                        ) : (
+                        priceInfoSchema && (
                             <div className="space-y-2">
                                 <Label htmlFor="channelInfo">单价信息</Label>
                                 {priceInfoSchema.params.map((schema) => (
@@ -336,7 +386,7 @@ export function CreateChannelForm({
                                     </div>
                                 ))}
                             </div>
-                        )}
+                        ))}
                         <Button type="submit" className="w-full">
                             创建渠道
                         </Button>

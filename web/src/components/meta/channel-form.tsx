@@ -1,14 +1,22 @@
-import React, {useState, useEffect} from 'react';
-import {Channel} from '@/lib/types/openapi';
-import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
-import {EditableField} from './editable-field';
-import {Button} from "@/components/ui/button";
-import {Badge} from "@/components/ui/badge";
-import {ConfirmDialog} from '@/components/ui/confirm-dialog';
-import {Label} from "@/components/ui/label";
-import {Switch} from "@/components/ui/switch";
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
-import {Input} from "@/components/ui/input";
+import React, { useState, useEffect, useRef } from 'react';
+import { Channel, CompletionPriceInfo } from '@/lib/types/openapi';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EditableField } from './editable-field';
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import { CompletionPriceEditor, CompletionPriceEditorRef } from './completion-price-editor';
+import { useToast } from '@/hooks/use-toast';
 
 interface ChannelFormProps {
     channel: Channel;
@@ -18,11 +26,17 @@ interface ChannelFormProps {
 }
 
 export function ChannelForm({ channel, onUpdate, onBatchUpdate, onToggleStatus }: ChannelFormProps) {
+    const { toast } = useToast();
+    const priceEditorRef = useRef<CompletionPriceEditorRef>(null);
+
     const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
     const [isTrialDialogOpen, setIsTrialDialogOpen] = useState(false);
     const [isQueueEditing, setIsQueueEditing] = useState(false);
+    const [isPriceDialogOpen, setIsPriceDialogOpen] = useState(false);
+
     const [queueMode, setQueueMode] = useState(channel.queueMode ?? 0);
     const [queueName, setQueueName] = useState(channel.queueName ?? '');
+    const [priceInfo, setPriceInfo] = useState<CompletionPriceInfo | null>(null);
 
     // 同步props变化到本地状态
     useEffect(() => {
@@ -69,6 +83,40 @@ export function ChannelForm({ channel, onUpdate, onBatchUpdate, onToggleStatus }
         setIsQueueEditing(false);
     };
 
+    const handlePriceEdit = () => {
+        // 解析当前的价格信息JSON
+        try {
+            const parsedPrice = JSON.parse(channel.priceInfo);
+            setPriceInfo(parsedPrice);
+            setIsPriceDialogOpen(true);
+        } catch (error) {
+            toast({
+                title: '解析失败',
+                description: '无法解析当前价格信息，请检查JSON格式',
+                variant: 'destructive',
+            });
+        }
+    };
+
+    const handlePriceSave = () => {
+        // 调用编辑器的验证方法
+        if (priceEditorRef.current?.validate()) {
+            // 验证通过，保存价格信息
+            const priceInfoString = JSON.stringify(priceInfo);
+            onUpdate(channel.channelCode, 'priceInfo', priceInfoString);
+            setIsPriceDialogOpen(false);
+            toast({
+                title: '保存成功',
+                description: '价格信息已更新',
+            });
+        }
+    };
+
+    const handlePriceCancel = () => {
+        setIsPriceDialogOpen(false);
+        setPriceInfo(null);
+    };
+
     const getQueueModeText = (mode: number) => {
         switch (mode) {
             case 0: return 'NONE';
@@ -76,6 +124,29 @@ export function ChannelForm({ channel, onUpdate, onBatchUpdate, onToggleStatus }
             case 2: return 'ROUTE';
             case 3: return 'BOTH';
             default: return 'NONE';
+        }
+    };
+
+    const formatPricePreview = (priceInfoStr: string) => {
+        try {
+            const price = JSON.parse(priceInfoStr);
+            if (!price.tiers || price.tiers.length === 0) {
+                return '未配置';
+            }
+
+            const totalRanges = price.tiers.reduce(
+                (sum: number, tier: any) => {
+                    if (Array.isArray(tier.outputRangePrices) && tier.outputRangePrices.length > 0) {
+                        return sum + tier.outputRangePrices.length;
+                    }
+                    return sum + 1;
+                },
+                0
+            );
+
+            return `${totalRanges} 个价格区间`;
+        } catch {
+            return '格式错误';
         }
     };
 
@@ -128,12 +199,26 @@ export function ChannelForm({ channel, onUpdate, onBatchUpdate, onToggleStatus }
                     onUpdate={(value) => onUpdate(channel.channelCode, 'channelInfo', value)}
                     multiline
                 />
-                <EditableField
-                    label="价格信息"
-                    value={channel.priceInfo}
-                    onUpdate={(value) => onUpdate(channel.channelCode, 'priceInfo', value)}
-                    multiline
-                />
+
+                {/* 价格信息 - 使用弹窗编辑 */}
+                <div className="space-y-4 bg-white bg-opacity-50 p-4 rounded-lg">
+                    <div className="flex items-center justify-between">
+                        <Label className="text-sm font-medium text-gray-700">价格信息</Label>
+                        <Button
+                            onClick={handlePriceEdit}
+                            size="sm"
+                            variant="outline"
+                        >
+                            编辑
+                        </Button>
+                    </div>
+                    <div className="space-y-1">
+                        <div className="text-sm font-medium text-gray-700">
+                            {formatPricePreview(channel.priceInfo)}
+                        </div>
+                    </div>
+                </div>
+
                 <EditableField
                     label='优先级'
                     value={channel.priority}
@@ -221,6 +306,32 @@ export function ChannelForm({ channel, onUpdate, onBatchUpdate, onToggleStatus }
                         </div>
                     )}
                 </div>
+
+                {/* 价格编辑弹窗 */}
+                <Dialog open={isPriceDialogOpen} onOpenChange={setIsPriceDialogOpen}>
+                    <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white dark:bg-slate-900">
+                        <DialogHeader>
+                            <DialogTitle>编辑价格信息</DialogTitle>
+                        </DialogHeader>
+
+                        {priceInfo && (
+                            <CompletionPriceEditor
+                                ref={priceEditorRef}
+                                value={priceInfo}
+                                onChange={setPriceInfo}
+                            />
+                        )}
+
+                        <DialogFooter>
+                            <Button onClick={handlePriceSave}>
+                                保存
+                            </Button>
+                            <Button variant="outline" onClick={handlePriceCancel}>
+                                取消
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
 
                 <ConfirmDialog
                     isOpen={isStatusDialogOpen}
