@@ -478,7 +478,7 @@ public class CompletionPriceInfoMatchTest {
     }
 
     /**
-     * 测试场景17: 包含缓存价格的匹配
+     * 测试场景17: 包含缓存价格的匹配 - 显式设置cachedCreation
      */
     @Test
     public void testMatchRangePrice_WithCachePrices() {
@@ -502,6 +502,118 @@ public class CompletionPriceInfoMatchTest {
         assertNotNull(result);
         assertEquals(new BigDecimal("2"), result.getCachedRead());
         assertEquals(new BigDecimal("5"), result.getCachedCreation());
+    }
+
+    /**
+     * 测试场景20: 缓存创建价格使用计算值 - cachedCreation未设置时返回input*1.25
+     */
+    @Test
+    public void testMatchRangePrice_CachedCreation_DefaultCalculation() {
+        CompletionPriceInfo priceInfo = new CompletionPriceInfo();
+        List<CompletionPriceInfo.Tier> tiers = new ArrayList<>();
+
+        CompletionPriceInfo.Tier tier = new CompletionPriceInfo.Tier();
+        CompletionPriceInfo.RangePrice range = new CompletionPriceInfo.RangePrice();
+        range.setMinToken(0);
+        range.setMaxToken(Integer.MAX_VALUE);
+        range.setInput(new BigDecimal("10"));
+        range.setOutput(new BigDecimal("20"));
+        range.setCachedRead(new BigDecimal("2"));
+        // 不设置 cachedCreation，让它使用计算值 input * 1.25 = 12.5
+        tier.setInputRangePrice(range);
+
+        tiers.add(tier);
+        priceInfo.setTiers(tiers);
+
+        CompletionPriceInfo.RangePrice result = priceInfo.matchRangePrice(5000, 1000);
+        assertNotNull(result);
+        assertEquals(new BigDecimal("2"), result.getCachedRead());
+        // 验证 getCachedCreation() 返回计算值 10 * 1.25 = 12.5
+        assertEquals("cachedCreation未设置时应返回input*1.25",
+                BigDecimal.valueOf(12.5), result.getCachedCreation());
+    }
+
+    /**
+     * 测试场景21: 缓存创建价格计算 - cachedRead不存在时返回null
+     */
+    @Test
+    public void testMatchRangePrice_CachedCreation_NullWhenCachedReadIsNull() {
+        CompletionPriceInfo priceInfo = new CompletionPriceInfo();
+        List<CompletionPriceInfo.Tier> tiers = new ArrayList<>();
+
+        CompletionPriceInfo.Tier tier = new CompletionPriceInfo.Tier();
+        CompletionPriceInfo.RangePrice range = new CompletionPriceInfo.RangePrice();
+        range.setMinToken(0);
+        range.setMaxToken(Integer.MAX_VALUE);
+        range.setInput(new BigDecimal("10"));
+        range.setOutput(new BigDecimal("20"));
+        // cachedRead 和 cachedCreation 都不设置
+        tier.setInputRangePrice(range);
+
+        tiers.add(tier);
+        priceInfo.setTiers(tiers);
+
+        CompletionPriceInfo.RangePrice result = priceInfo.matchRangePrice(5000, 1000);
+        assertNotNull(result);
+        // 验证 getCachedCreation() 返回null
+        assertEquals("cachedRead不存在且cachedCreation未设置时应返回null",
+                null, result.getCachedCreation());
+    }
+
+    /**
+     * 测试场景22: 输出梯度场景下的缓存价格计算
+     */
+    @Test
+    public void testMatchRangePrice_CachedCreation_WithOutputRanges() {
+        CompletionPriceInfo priceInfo = new CompletionPriceInfo();
+        List<CompletionPriceInfo.Tier> tiers = new ArrayList<>();
+
+        CompletionPriceInfo.Tier tier = new CompletionPriceInfo.Tier();
+        CompletionPriceInfo.RangePrice inputRange = new CompletionPriceInfo.RangePrice();
+        inputRange.setMinToken(0);
+        inputRange.setMaxToken(10000);
+        inputRange.setInput(new BigDecimal("10"));
+        inputRange.setOutput(new BigDecimal("20"));
+        inputRange.setCachedRead(new BigDecimal("2"));
+        // cachedCreation不设置
+        tier.setInputRangePrice(inputRange);
+
+        // 添加输出梯度
+        List<CompletionPriceInfo.RangePrice> outputRanges = new ArrayList<>();
+        CompletionPriceInfo.RangePrice outputRange1 = new CompletionPriceInfo.RangePrice();
+        outputRange1.setMinToken(0);
+        outputRange1.setMaxToken(1000);
+        outputRange1.setInput(new BigDecimal("10"));
+        outputRange1.setOutput(new BigDecimal("30"));
+        outputRange1.setCachedRead(new BigDecimal("2"));
+        // 输出区间的cachedCreation也不设置
+        outputRanges.add(outputRange1);
+
+        CompletionPriceInfo.RangePrice outputRange2 = new CompletionPriceInfo.RangePrice();
+        outputRange2.setMinToken(1000);
+        outputRange2.setMaxToken(Integer.MAX_VALUE);
+        outputRange2.setInput(new BigDecimal("10"));
+        outputRange2.setOutput(new BigDecimal("25"));
+        outputRange2.setCachedRead(new BigDecimal("2"));
+        outputRanges.add(outputRange2);
+
+        tier.setOutputRangePrices(outputRanges);
+        tiers.add(tier);
+        priceInfo.setTiers(tiers);
+
+        // 测试第一个输出区间
+        CompletionPriceInfo.RangePrice result1 = priceInfo.matchRangePrice(5000, 500);
+        assertNotNull(result1);
+        assertEquals(new BigDecimal("30"), result1.getOutput());
+        assertEquals("输出区间的cachedCreation应为input*1.25",
+                BigDecimal.valueOf(12.5), result1.getCachedCreation());
+
+        // 测试第二个输出区间
+        CompletionPriceInfo.RangePrice result2 = priceInfo.matchRangePrice(5000, 5000);
+        assertNotNull(result2);
+        assertEquals(new BigDecimal("25"), result2.getOutput());
+        assertEquals("输出区间的cachedCreation应为input*1.25",
+                BigDecimal.valueOf(12.5), result2.getCachedCreation());
     }
 
     /**
