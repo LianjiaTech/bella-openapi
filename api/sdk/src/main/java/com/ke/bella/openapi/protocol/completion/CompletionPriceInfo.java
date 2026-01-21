@@ -65,6 +65,13 @@ public class CompletionPriceInfo implements IPriceInfo, Serializable {
         private BigDecimal cachedRead;
         private BigDecimal cachedCreation;
 
+        public BigDecimal getCachedCreation() {
+            if(cachedCreation == null && cachedRead != null && input != null) {
+                return BigDecimal.valueOf(input.doubleValue() * 1.25);
+            }
+            return cachedCreation;
+        }
+
         public boolean match(int token) {
             if(token == 0 && minToken == 0) {
                 return true;
