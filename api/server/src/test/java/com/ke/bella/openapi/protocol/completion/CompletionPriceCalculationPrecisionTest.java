@@ -381,4 +381,109 @@ public class CompletionPriceCalculationPrecisionTest {
         assertTrue("第二个输出区间的费用计算误差应该在0.001以内，实际差值: " + diff2,
                 diff2.compareTo(new BigDecimal("0.001")) < 0);
     }
+
+    /**
+     * 测试场景9: 缓存创建价格计算 - cachedCreation未设置时使用计算值 (input * 1.25)
+     */
+    @Test
+    public void testCalculateCost_CachedCreation_DefaultCalculation() {
+        CompletionPriceInfo priceInfo = new CompletionPriceInfo();
+        List<CompletionPriceInfo.Tier> tiers = new ArrayList<>();
+
+        CompletionPriceInfo.Tier tier = new CompletionPriceInfo.Tier();
+        CompletionPriceInfo.RangePrice range = new CompletionPriceInfo.RangePrice();
+        range.setMinToken(0);
+        range.setMaxToken(Integer.MAX_VALUE);
+        range.setInput(new BigDecimal("10"));
+        range.setOutput(new BigDecimal("20"));
+        range.setCachedRead(new BigDecimal("2"));
+        // cachedCreation 不设置，应该返回 input * 1.25 = 10 * 1.25 = 12.5
+        tier.setInputRangePrice(range);
+        tiers.add(tier);
+        priceInfo.setTiers(tiers);
+
+        // 验证 getCachedCreation() 返回计算值
+        BigDecimal expectedCachedCreation = BigDecimal.valueOf(10 * 1.25);
+        assertEquals("未设置 cachedCreation 时应该返回 input * 1.25",
+                0, expectedCachedCreation.compareTo(range.getCachedCreation()));
+    }
+
+    /**
+     * 测试场景10: 缓存创建价格计算 - cachedCreation已设置时使用设置值
+     */
+    @Test
+    public void testCalculateCost_CachedCreation_ExplicitValue() {
+        CompletionPriceInfo priceInfo = new CompletionPriceInfo();
+        List<CompletionPriceInfo.Tier> tiers = new ArrayList<>();
+
+        CompletionPriceInfo.Tier tier = new CompletionPriceInfo.Tier();
+        CompletionPriceInfo.RangePrice range = new CompletionPriceInfo.RangePrice();
+        range.setMinToken(0);
+        range.setMaxToken(Integer.MAX_VALUE);
+        range.setInput(new BigDecimal("10"));
+        range.setOutput(new BigDecimal("20"));
+        range.setCachedRead(new BigDecimal("2"));
+        range.setCachedCreation(new BigDecimal("15")); // 显式设置为15
+        tier.setInputRangePrice(range);
+        tiers.add(tier);
+        priceInfo.setTiers(tiers);
+
+        // 验证 getCachedCreation() 返回显式设置的值
+        assertEquals("设置 cachedCreation 时应该返回设置的值",
+                new BigDecimal("15"), range.getCachedCreation());
+    }
+
+    /**
+     * 测试场景11: 缓存创建价格计算 - 高精度的input导致高精度的cachedCreation
+     */
+    @Test
+    public void testCalculateCost_CachedCreation_HighPrecisionInput() {
+        CompletionPriceInfo priceInfo = new CompletionPriceInfo();
+        List<CompletionPriceInfo.Tier> tiers = new ArrayList<>();
+
+        CompletionPriceInfo.Tier tier = new CompletionPriceInfo.Tier();
+        CompletionPriceInfo.RangePrice range = new CompletionPriceInfo.RangePrice();
+        range.setMinToken(0);
+        range.setMaxToken(Integer.MAX_VALUE);
+        range.setInput(new BigDecimal("0.123456789")); // 高精度input
+        range.setOutput(new BigDecimal("20"));
+        range.setCachedRead(new BigDecimal("0.05"));
+        // cachedCreation 未设置，应该返回 0.123456789 * 1.25
+        tier.setInputRangePrice(range);
+        tiers.add(tier);
+        priceInfo.setTiers(tiers);
+
+        BigDecimal calculatedValue = range.getCachedCreation();
+        assertNotNull("cachedCreation不应该为null", calculatedValue);
+
+        // 验证计算精度
+        BigDecimal expected = BigDecimal.valueOf(0.123456789 * 1.25);
+        BigDecimal diff = calculatedValue.subtract(expected).abs();
+        assertTrue("高精度input的cachedCreation计算应该保持精度，差值: " + diff,
+                diff.compareTo(new BigDecimal("0.000001")) < 0);
+    }
+
+    /**
+     * 测试场景12: 缓存创建价格 - cachedRead不存在时cachedCreation为null
+     */
+    @Test
+    public void testCalculateCost_CachedCreation_NullWhenCachedReadIsNull() {
+        CompletionPriceInfo priceInfo = new CompletionPriceInfo();
+        List<CompletionPriceInfo.Tier> tiers = new ArrayList<>();
+
+        CompletionPriceInfo.Tier tier = new CompletionPriceInfo.Tier();
+        CompletionPriceInfo.RangePrice range = new CompletionPriceInfo.RangePrice();
+        range.setMinToken(0);
+        range.setMaxToken(Integer.MAX_VALUE);
+        range.setInput(new BigDecimal("10"));
+        range.setOutput(new BigDecimal("20"));
+        // cachedRead 和 cachedCreation 都不设置
+        tier.setInputRangePrice(range);
+        tiers.add(tier);
+        priceInfo.setTiers(tiers);
+
+        // 验证 getCachedCreation() 返回null
+        assertEquals("cachedRead不存在时，未设置的cachedCreation应该返回null",
+                null, range.getCachedCreation());
+    }
 }
