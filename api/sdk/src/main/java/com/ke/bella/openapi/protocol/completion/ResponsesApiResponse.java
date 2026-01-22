@@ -1,5 +1,8 @@
 package com.ke.bella.openapi.protocol.completion;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.ke.bella.openapi.protocol.OpenapiResponse;
 import lombok.AllArgsConstructor;
@@ -8,6 +11,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -80,6 +84,30 @@ public class ResponsesApiResponse extends OpenapiResponse {
      * Whether processed in background
      */
     private Boolean background;
+
+    /**
+     * Bella internal response metadata
+     */
+    private BellaResponse _bella_response;
+
+    /**
+     * Extra body fields for vendor-specific parameters
+     */
+    @JsonIgnore
+    private Map<String, Object> _extra_body;
+
+    @JsonAnyGetter
+    public Map<String, Object> getExtraBodyFields() {
+        return _extra_body != null && !_extra_body.isEmpty() ? _extra_body : null;
+    }
+
+    @JsonAnySetter
+    public void setExtraBodyField(String key, Object value) {
+        if(_extra_body == null) {
+            _extra_body = new HashMap<>();
+        }
+        _extra_body.put(key, value);
+    }
 
     @Data
     @NoArgsConstructor
@@ -203,6 +231,37 @@ public class ResponsesApiResponse extends OpenapiResponse {
          * Reasoning tokens (for reasoning models)
          */
         private OutputTokensDetail output_tokens_details;
+
+        /**
+         * Tool usage count map (for tool-based billing)
+         * Example: {"web_search": 1}
+         */
+        private Map<String, Integer> tool_usage;
+
+        /**
+         * Detailed tool usage breakdown (for source-specific billing)
+         * Example: {"web_search": {"search_engine": 1, "toutiao": 1}}
+         */
+        private Map<String, Map<String, Integer>> tool_usage_details;
+
+        /**
+         * Extra body fields for vendor-specific parameters
+         */
+        @JsonIgnore
+        private Map<String, Object> _extra_body;
+
+        @JsonAnyGetter
+        public Map<String, Object> getExtraBodyFields() {
+            return _extra_body != null && !_extra_body.isEmpty() ? _extra_body : null;
+        }
+
+        @JsonAnySetter
+        public void setExtraBodyField(String key, Object value) {
+            if(_extra_body == null) {
+                _extra_body = new HashMap<>();
+            }
+            _extra_body.put(key, value);
+        }
     }
 
     @Data
@@ -237,5 +296,17 @@ public class ResponsesApiResponse extends OpenapiResponse {
          * Reasoning summary
          */
         private String summary;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public static class BellaResponse {
+        /**
+         * Channel code that was used to process this request
+         */
+        private String channel_code;
     }
 }

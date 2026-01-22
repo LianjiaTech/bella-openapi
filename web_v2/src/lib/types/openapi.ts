@@ -35,7 +35,4 @@ export interface EndpointDetails {
     features: MetadataFeature[];
     priceDetails: PriceDetails;
 }
-export interface CategoryTree {
-   
-}
 export interface Model {}
