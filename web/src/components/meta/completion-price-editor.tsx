@@ -39,6 +39,7 @@ export const CompletionPriceEditor = forwardRef<CompletionPriceEditorRef, Comple
                     outputRangePrices: undefined,
                 },
             ],
+            toolPrices: undefined,
         });
 
         // 仅在 value 从外部传入时更新内部状态（避免无限循环）
@@ -421,6 +422,37 @@ export const CompletionPriceEditor = forwardRef<CompletionPriceEditorRef, Comple
             notifyChange({...priceInfo, tiers: updatedTiers});
         };
 
+        const addToolPrice = () => {
+            const newToolPrices = priceInfo.toolPrices ? {...priceInfo.toolPrices} : {};
+            newToolPrices[''] = 0;
+            notifyChange({...priceInfo, toolPrices: newToolPrices});
+        };
+
+        const removeToolPrice = (toolName: string) => {
+            if (!priceInfo.toolPrices) return;
+            const newToolPrices = {...priceInfo.toolPrices};
+            delete newToolPrices[toolName];
+            notifyChange({
+                ...priceInfo,
+                toolPrices: Object.keys(newToolPrices).length > 0 ? newToolPrices : undefined
+            });
+        };
+
+        const updateToolPrice = (oldToolName: string, newToolName: string, price: number) => {
+            if (!priceInfo.toolPrices) return;
+            const newToolPrices = {...priceInfo.toolPrices};
+            
+            if (oldToolName !== newToolName) {
+                delete newToolPrices[oldToolName];
+            }
+            
+            if (newToolName.trim()) {
+                newToolPrices[newToolName.trim()] = price;
+            }
+            
+            notifyChange({...priceInfo, toolPrices: newToolPrices});
+        };
+
         return (
             <div className="space-y-4">
                 <div className="space-y-3">
@@ -783,6 +815,74 @@ export const CompletionPriceEditor = forwardRef<CompletionPriceEditorRef, Comple
                     ))}
                 </div>
 
+                <Card className="border-l-4 border-l-green-500">
+                    <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                            <CardTitle className="text-sm font-medium">工具调用价格配置（可选）</CardTitle>
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={addToolPrice}
+                            >
+                                <PlusIcon className="mr-1 h-4 w-4"/>
+                                添加工具价格
+                            </Button>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                        {priceInfo.toolPrices && Object.keys(priceInfo.toolPrices).length > 0 ? (
+                            Object.entries(priceInfo.toolPrices).map(([toolName, price], index) => {
+                                const priceValue = typeof price === 'number' ? price : 0;
+                                return (
+                                    <div key={index} className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
+                                        <div className="flex-1 space-y-1">
+                                            <Label className="text-xs text-gray-500">工具名称</Label>
+                                            <Input
+                                                type="text"
+                                                value={toolName}
+                                                onChange={(e) => updateToolPrice(toolName, e.target.value, priceValue)}
+                                                placeholder="如: web_search"
+                                                className="text-sm"
+                                            />
+                                        </div>
+                                        <div className="flex-1 space-y-1">
+                                            <Label className="text-xs text-gray-500">单价（分/次）</Label>
+                                            <Input
+                                                type="number"
+                                                step="0.01"
+                                                min="0"
+                                                value={priceValue}
+                                                onChange={(e) => {
+                                                    const val = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                                                    if (!isNaN(val)) {
+                                                        updateToolPrice(toolName, toolName, val);
+                                                    }
+                                                }}
+                                                placeholder="0.5"
+                                                className="text-sm"
+                                            />
+                                        </div>
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            variant="ghost"
+                                            onClick={() => removeToolPrice(toolName)}
+                                            className="mt-5"
+                                        >
+                                            <TrashIcon className="h-4 w-4 text-red-500"/>
+                                        </Button>
+                                    </div>
+                                );
+                            })
+                        ) : (
+                            <div className="text-sm text-gray-500 text-center py-2">
+                                暂无工具价格配置
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+
                 <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-gray-600">
                     <p className="font-medium mb-1">提示:</p>
                     <ul className="list-disc list-inside space-y-1">
@@ -790,6 +890,7 @@ export const CompletionPriceEditor = forwardRef<CompletionPriceEditorRef, Comple
                         <li>第一个区间必须从0开始，最后一个区间必须到+∞</li>
                         <li>启用输出区间后，可以根据输出Token数量设置不同价格</li>
                         <li>缓存相关价格为可选字段，适用于支持缓存的模型</li>
+                        <li>工具价格配置为可选项，用于基于工具调用次数计费（如: web_search, code_interpreter）</li>
                     </ul>
                 </div>
             </div>
