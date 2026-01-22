@@ -92,35 +92,6 @@ const ModelsPage = () => {
 
   }
 
-  /**
-   * 智能预估 ModelCard 高度
-   * 根据卡片内容特征动态计算预估高度，减少首屏抖动
-   */
-  const estimateModelCardHeight = useCallback((model: Model) => {
-    // 固定部分高度
-    const CARD_PADDING = 40        // p-5 (20px 上下)
-    const HEADER_HEIGHT = 52       // 图标 + 标题 + 间距
-    const ACTION_HEIGHT = 36       // 底部按钮区域
-
-    // Feature Tags 高度（动态）
-    const features = typeof model.features === 'string'
-      ? model.features.split(',').filter(f => f.trim())
-      : []
-    // 每个标签约 24px 高，每行放3个，gap-2 = 8px 行间距，mb-4 = 16px 底部间距
-    const tagsPerRow = 3
-    const tagRows = Math.ceil(features.length / tagsPerRow)
-    const FEATURE_HEIGHT = tagRows > 0
-      ? tagRows * 24 + (tagRows - 1) * 8 + 16
-      : 16 // 无标签时仍有 mb-4
-
-    // Info Section 高度（固定为 2-3 行）
-    // 每行约 20px，space-y-2 = 8px 行间距，mb-4 = 16px 底部间距
-    const hasCachedPrice = model.priceDetails?.priceInfo?.cachedRead !== null
-    const infoRows = hasCachedPrice ? 3 : 2
-    const INFO_HEIGHT = infoRows * 20 + (infoRows - 1) * 8 + 16
-
-    return CARD_PADDING + HEADER_HEIGHT + FEATURE_HEIGHT + INFO_HEIGHT + ACTION_HEIGHT
-  }, [])
 
   return (
     <>

@@ -61,7 +61,8 @@
     "beta": "Beta",
     "quickStart": "快速开始",
     "viewAPIKeys": "查看 API Keys",
-    "browseDocs": "浏览文档"
+    "browseDocs": "浏览文档",
+    "noFilterTags": "暂无可用筛选标签"
   },
   "models": {
     "modelCatalog": "模型目录",
@@ -86,6 +87,7 @@
     "loadingModels": "正在加载模型...",
     "loading": "加载中...",
     "noFilterTags": "暂无可用筛选标签",
+    "noModelsFound": "未找到匹配的模型",
     "retry": "重试"
   },
   "metadata": {
