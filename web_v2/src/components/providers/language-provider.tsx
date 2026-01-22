@@ -149,6 +149,11 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       "privateChannel": "models.privateChannel",
       "inputOutputLength": "models.inputOutputLength",
       "pricing": "models.pricing",
+      "loadingModels": "models.loadingModels",
+      "loading": "models.loading",
+      "noFilterTags": "models.noFilterTags",
+      "noModelsFound": "models.noModelsFound",
+      "retry": "models.retry",
 
       // Metadata page
       "metadataManagement": "metadata.metadataManagement",

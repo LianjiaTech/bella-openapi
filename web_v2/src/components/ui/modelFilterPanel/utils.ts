@@ -1,4 +1,5 @@
-import { CategoryTree, Model } from "@/lib/types/openapi"
+import { Model } from "@/lib/types/openapi"
+import { CategoryTree } from "@/lib/types/models"
 
 /**
  * 扁平化后的 Endpoint 数据结构
