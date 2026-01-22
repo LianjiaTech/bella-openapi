@@ -143,6 +143,7 @@ export interface CompletionPriceInfo {
     unit: string;
     batchDiscount: number;
     tiers: Tier[];
+    toolPrices?: Record<string, number>;
 }
 
 export interface Tier {
