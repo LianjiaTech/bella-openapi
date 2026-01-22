@@ -86,6 +86,7 @@
     "loadingModels": "Loading models...",
     "loading": "Loading...",
     "noFilterTags": "No filter tags available",
+    "noModelsFound": "No models found",
     "retry": "Retry"
   },
   "metadata": {

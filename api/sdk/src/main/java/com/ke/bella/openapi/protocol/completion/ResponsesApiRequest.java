@@ -1,16 +1,20 @@
 package com.ke.bella.openapi.protocol.completion;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.ke.bella.openapi.protocol.IMemoryClearable;
 import com.ke.bella.openapi.protocol.ITransfer;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.List;
-import java.util.Map;
 
 /**
  * OpenAI Responses API request format
@@ -73,12 +77,12 @@ public class ResponsesApiRequest implements IMemoryClearable, ITransfer {
      * Whether to store conversation state
      * For chat completion simulation, this is false
      */
-    private Boolean store = false;
+    private Boolean store;
 
     /**
      * Background processing mode
      */
-    private Boolean background = false;
+    private Boolean background;
 
     /**
      * Previous response ID for conversation continuation
@@ -116,6 +120,33 @@ public class ResponsesApiRequest implements IMemoryClearable, ITransfer {
      */
     private String prompt_cache_key;
 
+    /**
+     * Extra body fields for vendor-specific parameters
+     * Prefixed with underscore to indicate internal usage
+     */
+    @JsonIgnore
+    private Map<String, Object> _extra_body;
+
+    /**
+     * Flatten _extra_body fields to the outer JSON during serialization
+     */
+    @JsonAnyGetter
+    public Map<String, Object> getExtraBodyFields() {
+        return _extra_body != null && !_extra_body.isEmpty() ? _extra_body : null;
+    }
+
+    /**
+     * Handle unknown properties during deserialization and store them in
+     * _extra_body
+     */
+    @JsonAnySetter
+    public void setExtraBodyField(String key, Object value) {
+        if(_extra_body == null) {
+            _extra_body = new HashMap<>();
+        }
+        _extra_body.put(key, value);
+    }
+
     @Data
     @NoArgsConstructor
     @Builder
@@ -133,6 +164,25 @@ public class ResponsesApiRequest implements IMemoryClearable, ITransfer {
          * auto, concise, or detailed.
          */
         private String summary;
+
+        /**
+         * Extra fields for vendor-specific parameters
+         */
+        @JsonIgnore
+        private Map<String, Object> _extra_body;
+
+        @JsonAnyGetter
+        public Map<String, Object> getExtraBodyFields() {
+            return _extra_body != null && !_extra_body.isEmpty() ? _extra_body : null;
+        }
+
+        @JsonAnySetter
+        public void setExtraBodyField(String key, Object value) {
+            if(_extra_body == null) {
+                _extra_body = new HashMap<>();
+            }
+            _extra_body.put(key, value);
+        }
     }
 
     @Data
@@ -165,6 +215,25 @@ public class ResponsesApiRequest implements IMemoryClearable, ITransfer {
          * Whether to use strict mode
          */
         private Boolean strict;
+
+        /**
+         * Extra fields for vendor-specific parameters
+         */
+        @JsonIgnore
+        private Map<String, Object> _extra_body;
+
+        @JsonAnyGetter
+        public Map<String, Object> getExtraBodyFields() {
+            return _extra_body != null && !_extra_body.isEmpty() ? _extra_body : null;
+        }
+
+        @JsonAnySetter
+        public void setExtraBodyField(String key, Object value) {
+            if(_extra_body == null) {
+                _extra_body = new HashMap<>();
+            }
+            _extra_body.put(key, value);
+        }
     }
 
     @Data
@@ -212,6 +281,25 @@ public class ResponsesApiRequest implements IMemoryClearable, ITransfer {
          * Status (for function calls)
          */
         private String status;
+
+        /**
+         * Extra fields for vendor-specific parameters
+         */
+        @JsonIgnore
+        private Map<String, Object> _extra_body;
+
+        @JsonAnyGetter
+        public Map<String, Object> getExtraBodyFields() {
+            return _extra_body != null && !_extra_body.isEmpty() ? _extra_body : null;
+        }
+
+        @JsonAnySetter
+        public void setExtraBodyField(String key, Object value) {
+            if(_extra_body == null) {
+                _extra_body = new HashMap<>();
+            }
+            _extra_body.put(key, value);
+        }
     }
 
     @Data
@@ -249,6 +337,25 @@ public class ResponsesApiRequest implements IMemoryClearable, ITransfer {
          * Image detail level
          */
         private String detail;
+
+        /**
+         * Extra fields for vendor-specific parameters
+         */
+        @JsonIgnore
+        private Map<String, Object> _extra_body;
+
+        @JsonAnyGetter
+        public Map<String, Object> getExtraBodyFields() {
+            return _extra_body != null && !_extra_body.isEmpty() ? _extra_body : null;
+        }
+
+        @JsonAnySetter
+        public void setExtraBodyField(String key, Object value) {
+            if(_extra_body == null) {
+                _extra_body = new HashMap<>();
+            }
+            _extra_body.put(key, value);
+        }
     }
 
     // 内存清理相关字段和方法
@@ -266,6 +373,9 @@ public class ResponsesApiRequest implements IMemoryClearable, ITransfer {
             }
             if(this.metadata != null) {
                 this.metadata.clear();
+            }
+            if(this._extra_body != null) {
+                this._extra_body.clear();
             }
             this.reasoning = null;
 
