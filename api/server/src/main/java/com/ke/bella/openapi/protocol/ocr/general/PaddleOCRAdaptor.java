@@ -43,7 +43,7 @@ public class PaddleOCRAdaptor implements GeneralAdaptor<BaiduOcrProperty> {
 
     @Override
     public OcrGeneralResponse general(OcrRequest request, String url, BaiduOcrProperty property) {
-        // 1. 构建 PaddleOCR 请求（内部包含 fileType 校验）
+        // 1. 构建 PaddleOCR 请求
         PaddleOCRRequest paddleRequest = buildPaddleRequest(request);
 
         // 2. 构建 HTTP 请求（JSON 格式）
@@ -64,54 +64,23 @@ public class PaddleOCRAdaptor implements GeneralAdaptor<BaiduOcrProperty> {
 
     /**
      * 构建 PaddleOCR 请求
-     *
-     * 关键点：在映射 file 字段时进行 fileType 校验
+     * 只负责文件字段的获取和转换，所有参数平铺透传给渠道
      */
     private PaddleOCRRequest buildPaddleRequest(OcrRequest request) {
-        PaddleOCRRequest.PaddleOCRRequestBuilder builder = PaddleOCRRequest.builder()
-                .model(request.getModel());
-
         Map<String, Object> extraBody = request.getExtra_body();
 
-        // 处理文件输入 - 统一映射到 file 字段
-        // 规则：
-        // 1. file_id → 转为 Base64，需要 fileType
-        // 2. file (URL) → 直接使用
-        // 3. file (Base64) → 需要 fileType
-
+        // 处理文件输入
         if (StringUtils.hasText(request.getFileId())) {
-            // 方式1: file_id → 转为 Base64
-            if (extraBody == null || !extraBody.containsKey("fileType")) {
-                throw new IllegalArgumentException(
-                    "使用 file_id 时必须提供 fileType 参数。" +
-                    "请在请求体中指定 fileType: 0 表示 PDF, 1 表示图片"
-                );
-            }
-
-            // 通过 fileId 获取图片并转 Base64
+            // 方式1: file_id → 转为 Base64，覆盖到 extraBody 中的 file 字段
             byte[] imageData = imageRetrievalService.getImageFromFileId(request.getFileId());
             String base64Data = Base64.getEncoder().encodeToString(imageData);
-            builder.file(base64Data);
 
-        } else if (extraBody != null && extraBody.containsKey("file")) {
-            // 方式2/3: 从 extra_body 中获取 file 字段
-            String file = String.valueOf(extraBody.get("file"));
+            // 创建新的 Map 避免修改原始 extraBody
+            Map<String, Object> params = extraBody != null ? new java.util.HashMap<>(extraBody) : new java.util.HashMap<>();
+            params.put("file", base64Data);
+            extraBody = params;
 
-            if (file.startsWith("https://") || file.startsWith("http://")) {
-                // file 是 URL，直接使用
-                builder.file(file);
-            } else {
-                // file 是 Base64，需要 fileType
-                if (!extraBody.containsKey("fileType")) {
-                    throw new IllegalArgumentException(
-                        "当 file 为 Base64 编码时必须提供 fileType 参数。" +
-                        "请在请求体中指定 fileType: 0 表示 PDF, 1 表示图片"
-                    );
-                }
-                builder.file(file);
-            }
-
-        } else {
+        } else if (extraBody == null || !extraBody.containsKey("file")) {
             // 没有提供任何文件输入
             throw new IllegalArgumentException(
                 "必须提供 file_id 或 file (在请求体中) 之一。" +
@@ -119,37 +88,11 @@ public class PaddleOCRAdaptor implements GeneralAdaptor<BaiduOcrProperty> {
             );
         }
 
-        // 从 extra_body 中提取 PaddleOCR 参数并映射到字段
-        if (extraBody != null) {
-            extractField(extraBody, "fileType", Integer.class, builder::fileType);
-            extractField(extraBody, "useDocOrientationClassify", Boolean.class, builder::useDocOrientationClassify);
-            extractField(extraBody, "useDocUnwarping", Boolean.class, builder::useDocUnwarping);
-            extractField(extraBody, "useLayoutDetection", Boolean.class, builder::useLayoutDetection);
-            extractField(extraBody, "layoutNms", Boolean.class, builder::layoutNms);
-            extractField(extraBody, "useChartRecognition", Boolean.class, builder::useChartRecognition);
-            extractField(extraBody, "repetitionPenalty", Float.class, builder::repetitionPenalty);
-            extractField(extraBody, "temperature", Float.class, builder::temperature);
-            extractField(extraBody, "topP", Float.class, builder::topP);
-            extractField(extraBody, "minPixels", Integer.class, builder::minPixels);
-            extractField(extraBody, "maxPixels", Integer.class, builder::maxPixels);
-            extractField(extraBody, "visualize", Boolean.class, builder::visualize);
-        }
-
-        return builder.build();
-    }
-
-    /**
-     * 从 Map 中提取字段并调用 setter
-     */
-    @SuppressWarnings("unchecked")
-    private <T> void extractField(Map<String, Object> map, String key, Class<T> type,
-                                   java.util.function.Consumer<T> setter) {
-        if (map.containsKey(key)) {
-            Object value = map.get(key);
-            if (type.isInstance(value)) {
-                setter.accept((T) value);
-            }
-        }
+        // extra_body 中的所有字段（包括 file）直接平铺覆盖到 PaddleOCRRequest
+        return PaddleOCRRequest.builder()
+                .model(request.getModel())
+                .extraParams(extraBody)
+                .build();
     }
 
     /**

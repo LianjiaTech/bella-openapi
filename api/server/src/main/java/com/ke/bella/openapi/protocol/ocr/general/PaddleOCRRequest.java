@@ -1,5 +1,9 @@
 package com.ke.bella.openapi.protocol.ocr.general;
 
+import java.util.Map;
+
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.ke.bella.openapi.protocol.ocr.provider.baidu.BaiduBaseRequest;
@@ -20,86 +24,35 @@ import lombok.experimental.SuperBuilder;
 public class PaddleOCRRequest extends BaiduBaseRequest {
 
     /**
-     * 必选参数: 大模型ID，目前固定为 "paddleocr-vl-0.9b"
+     * 必选参数: 大模型ID
      */
     private String model;
 
     /**
-     * 必选参数: 支持图像/PDF的URL或Base64
-     * 通过 prepareFileField() 方法从 url/image 字段设置
+     * 所有参数 - 直接透传给渠道
+     * 包括：file, fileType, useLayoutDetection, temperature 等所有 PaddleOCR 支持的参数
+     * 通过 @JsonAnyGetter 平铺到 JSON 根级别
      */
-    private String file;
+    @JsonIgnore
+    private Map<String, Object> extraParams;
 
     /**
-     * 文件类型
-     * 0: PDF
-     * 1: 图像
-     * Base64 上传时必传
+     * 将 extraParams 中的字段平铺到 JSON 根级别
      */
-    private Integer fileType;
+    @JsonAnyGetter
+    public Map<String, Object> getExtraParams() {
+        return extraParams;
+    }
 
     /**
-     * 图片方向自动矫正
-     */
-    private Boolean useDocOrientationClassify;
-
-    /**
-     * 切边展平/去畸变
-     */
-    private Boolean useDocUnwarping;
-
-    /**
-     * 开启版面分析（检测标题、段落等）
-     */
-    private Boolean useLayoutDetection;
-
-    /**
-     * 版面分析结果重叠过滤
-     */
-    private Boolean layoutNms;
-
-    /**
-     * 是否开启图表/表格识别
-     */
-    private Boolean useChartRecognition;
-
-    /**
-     * 重复惩罚系数，取值范围 [1.0, 2.0]
-     */
-    private Float repetitionPenalty;
-
-    /**
-     * 采样随机性，取值范围 [0, 2]
-     */
-    private Float temperature;
-
-    /**
-     * 核采样阈值，取值范围 [0, 1]
-     */
-    private Float topP;
-
-    /**
-     * 最小分辨率限制
-     */
-    private Integer minPixels;
-
-    /**
-     * 最大分辨率限制
-     */
-    private Integer maxPixels;
-
-    /**
-     * 是否返回可视化中间结果图
-     */
-    private Boolean visualize;
-
-    /**
-     * 重写清理方法，清理 file 字段而不是 image 字段
+     * 重写清理方法，清理 extraParams 中的 file 字段
      */
     @Override
     public void clearLargeData() {
         if (!isCleared()) {
-            this.file = null;
+            if (extraParams != null && extraParams.containsKey("file")) {
+                extraParams.put("file", null);
+            }
             super.clearLargeData();
         }
     }
