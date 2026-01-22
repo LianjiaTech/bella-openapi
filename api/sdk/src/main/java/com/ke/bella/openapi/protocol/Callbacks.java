@@ -166,4 +166,11 @@ public interface Callbacks {
         }
     }
 
+    interface ResponsesApiSseCallback extends Callbacks {
+        void onEvent(String eventId, String eventType, String eventData);
+
+        void onComplete();
+
+        void onError(ChannelException exception);
+    }
 }
