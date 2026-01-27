@@ -49,7 +49,7 @@ public class ChannelRouter {
 
     /**
      * Route to channel with optional direct mode
-     * 
+     *
      * @param isDirectMode if true, skips availability checks (no Redis queries)
      */
     public ChannelDB route(String endpoint, String model, ApikeyInfo apikeyInfo, boolean isMock, boolean isDirectMode) {
@@ -74,7 +74,7 @@ public class ChannelRouter {
             }
         }
         if(!isMock) {
-            channels = filter(channels, entityCode, apikeyInfo, isDirectMode);
+            channels = filter(endpoint, channels, entityCode, apikeyInfo, isDirectMode);
         }
         channels = pickMaxPriority(channels);
         ChannelDB channel = random(channels);
@@ -97,22 +97,30 @@ public class ChannelRouter {
      *
      * @return
      */
-    private List<ChannelDB> filter(List<ChannelDB> channels, String entityCode, ApikeyInfo apikeyInfo) {
-        return filter(channels, entityCode, apikeyInfo, false);
+    private List<ChannelDB> filter(String endpoint, List<ChannelDB> channels, String entityCode, ApikeyInfo apikeyInfo) {
+        return filter(endpoint, channels, entityCode, apikeyInfo, false);
     }
 
-    private List<ChannelDB> filter(List<ChannelDB> channels, String entityCode, ApikeyInfo apikeyInfo, boolean isDirectMode) {
+    private List<ChannelDB> filter(String endpoint, List<ChannelDB> channels, String entityCode, ApikeyInfo apikeyInfo, boolean isDirectMode) {
+        List<ChannelDB> endpointMatched = channels.stream()
+                .filter(channel -> AdaptorManager.getInstance().support(endpoint, channel.getProtocol()))
+                .collect(Collectors.toList());
+
+        if(CollectionUtils.isEmpty(endpointMatched)) {
+            throw new BizParamCheckException("没有支持当前endpoint的可用渠道: " + endpoint);
+        }
+
         Byte safetyLevel = apikeyInfo.getSafetyLevel();
         String accountType = apikeyInfo.getOwnerType();
         String accountCode = apikeyInfo.getOwnerCode();
-        List<ChannelDB> filtered = channels.stream()
+        List<ChannelDB> filtered = endpointMatched.stream()
                 .filter(channel -> !EntityConstants.PRIVATE.equals(channel.getVisibility()) ||
                         (accountType.equals(channel.getOwnerType()) && accountCode.equals(channel.getOwnerCode())))
                 .filter(channel -> getSafetyLevelLimit(channel.getDataDestination()) <= safetyLevel)
                 .collect(Collectors.toList());
         if(CollectionUtils.isEmpty(filtered)) {
             if(LOWEST_SAFETY_LEVEL.equals(safetyLevel)) {
-                filtered = channels.stream().filter(this::isTestUsed)
+                filtered = endpointMatched.stream().filter(this::isTestUsed)
                         .collect(Collectors.toList());
             }
             if(CollectionUtils.isEmpty(filtered)) {
@@ -236,9 +244,17 @@ public class ChannelRouter {
             channels = channelService.listActives(EntityConstants.MODEL, terminalName);
         }
 
-        List<ChannelDB> filteredChannels = Optional.ofNullable(channels)
+        List<ChannelDB> endpointMatched = Optional.ofNullable(channels)
                 .orElse(Collections.emptyList())
                 .stream()
+                .filter(channel -> AdaptorManager.getInstance().support(endpoint, channel.getProtocol()))
+                .collect(Collectors.toList());
+
+        if(CollectionUtils.isEmpty(endpointMatched)) {
+            throw new BizParamCheckException("没有支持当前endpoint的可用通道: " + endpoint);
+        }
+
+        List<ChannelDB> filteredChannels = endpointMatched.stream()
                 .filter(channel -> queueMode == null
                         || QueueMode.of(channel.getQueueMode()).supports(queueMode))
                 .filter(channel -> isAccessible(channel, apikey))
