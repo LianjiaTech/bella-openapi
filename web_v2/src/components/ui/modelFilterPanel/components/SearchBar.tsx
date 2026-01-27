@@ -22,7 +22,7 @@ export const SearchBar = memo(({
   className = "",
 }: SearchBarProps) => {
   return (
-    <div className={`mb-6 ${className}`}>
+    <div className={`${className}`}>
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input

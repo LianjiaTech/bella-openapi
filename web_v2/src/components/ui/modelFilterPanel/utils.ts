@@ -94,10 +94,11 @@ const formatNumber = (value: number | string): string => {
 /**
  * 解析 properties 字段
  * 将 JSON 字符串解析为对象,并对特定数字字段应用千分位格式化
+ * 注意：格式化后的字段会变成字符串类型
  */
 const parseProperties = (properties: string | object): { [key: string]: unknown } => {
   try {
-    let parsed: any
+    let parsed: Record<string, unknown>
 
     if (typeof properties === 'string') {
       parsed = JSON.parse(properties)
@@ -107,7 +108,7 @@ const parseProperties = (properties: string | object): { [key: string]: unknown 
       return {}
     }
 
-    // 对特定字段应用千分位格式化
+    // 对特定字段应用千分位格式化（将数字转为格式化字符串）
     if (parsed.max_input_context !== undefined && typeof parsed.max_input_context === 'number') {
       parsed.max_input_context = formatNumber(parsed.max_input_context)
     }

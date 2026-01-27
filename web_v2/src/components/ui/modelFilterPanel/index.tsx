@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useCallback } from "react"
+import { useState, useMemo, useCallback, useEffect } from "react"
 import { Layers, Loader } from "lucide-react"
 import type { MetadataFeature } from "@/lib/types/openapi"
 import type { CategoryTree } from "@/lib/types/models"
@@ -8,7 +8,6 @@ import { flattenCategoryTrees } from "./utils"
 import { useLanguage } from "@/components/providers/language-provider"
 import { FeatureTagList } from "./components/FeatureTagList"
 import { CapabilitySelector } from "./components/CapabilitySelector"
-import { SearchBar } from "./components/SearchBar"
 import { CustomFilterSection } from "./components/CustomFilterSection"
 import { useCustomFilters } from "./hooks/useCustomFilters"
 import { CustomFilter } from "./types"
@@ -29,7 +28,6 @@ export interface ModelFilterPanelProps {
   // 事件回调
   onCapabilityChange: (endpoint: string) => void
   onTagsChange: (tags: string[]) => void
-  onSearchChange?: (query: string) => void
 
   // 自定义筛选器配置
   customFilters?: CustomFilter[]
@@ -37,7 +35,6 @@ export interface ModelFilterPanelProps {
 
   // 可选配置
   className?: string
-  searchPlaceholder?: string
 }
 
 /**
@@ -52,16 +49,13 @@ export function ModelFilterPanel({
   isLoadingFeatures = false,
   onCapabilityChange,
   onTagsChange,
-  onSearchChange,
   customFilters = [],
   onCustomFilterChange,
   className = "",
-  searchPlaceholder,
 }: ModelFilterPanelProps) {
   const { t } = useLanguage()
 
   // 状态管理 - 使用非受控模式,仅在初始化时读取 props
-  const [searchQuery, setSearchQuery] = useState("")
   const [selectedCapability, setSelectedCapability] = useState(initialEndpoint)
   const [selectedTags, setSelectedTags] = useState<string[]>(initialTags)
 
@@ -69,10 +63,21 @@ export function ModelFilterPanel({
   const { values: customFilterValues, setValue: setCustomFilterValue } = useCustomFilters(customFilters)
 
   // 扁平化端点数据
-  const flattenedEndpoints = useMemo(
-    () => flattenCategoryTrees(categoryTrees),
-    [categoryTrees]
-  )
+  const flattenedEndpoints = useMemo(() => flattenCategoryTrees(categoryTrees),[categoryTrees])
+
+  // 同步 initialEndpoint prop 的变化到内部状态
+  useEffect(() => {
+    if (initialEndpoint && initialEndpoint !== selectedCapability) {
+      setSelectedCapability(initialEndpoint)
+    }
+  }, [initialEndpoint])
+
+  // 同步 initialTags prop 的变化到内部状态
+  useEffect(() => {
+    if (initialTags.length > 0 && JSON.stringify(initialTags) !== JSON.stringify(selectedTags)) {
+      setSelectedTags(initialTags)
+    }
+  }, [initialTags])
 
   // 处理能力分类变化
   const handleCapabilityChange = useCallback((endpoint: string) => {
@@ -92,18 +97,6 @@ export function ModelFilterPanel({
     onTagsChange(newTags)
   }, [selectedTags, onTagsChange])
 
-  // 处理搜索变化
-  const handleSearchChange = useCallback((value: string) => {
-    setSearchQuery(value)
-    onSearchChange?.(value)
-  }, [onSearchChange])
-
-  // 清空搜索
-  const handleClearSearch = useCallback(() => {
-    setSearchQuery("")
-    onSearchChange?.("")
-  }, [onSearchChange])
-
   // 处理自定义筛选器变化
   const handleCustomFilterChange = useCallback((filterId: string, value: string | string[]) => {
     setCustomFilterValue(filterId, value)
@@ -118,14 +111,6 @@ export function ModelFilterPanel({
         selectedCapability={selectedCapability}
         onCapabilityChange={handleCapabilityChange}
         label={t("capabilityCategory")}
-      />
-
-      {/* 搜索框 */}
-      <SearchBar
-        value={searchQuery}
-        onChange={handleSearchChange}
-        onClear={handleClearSearch}
-        placeholder={searchPlaceholder || t("searchModels")}
       />
 
       {/* 快速筛选标签 */}

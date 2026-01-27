@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { DEFAULT_ENDPOINT } from "@/lib/constants/constants";
 
 /**
  * 合并 Tailwind CSS 类名
@@ -8,6 +9,10 @@ import { twMerge } from "tailwind-merge";
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
+/**
+ * 获取初始端点
+ * 如果 URL 参数中没有指定端点,则返回默认端点
+ */
 export function getInitialEndpoint(endpoint: string | null): string {
-    return endpoint || ""
+    return endpoint || DEFAULT_ENDPOINT
 }
