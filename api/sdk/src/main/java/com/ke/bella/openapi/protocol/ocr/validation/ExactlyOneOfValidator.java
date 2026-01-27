@@ -1,5 +1,7 @@
 package com.ke.bella.openapi.protocol.ocr.validation;
 
+import java.util.Map;
+
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 
@@ -9,14 +11,10 @@ import com.ke.bella.openapi.protocol.ocr.OcrRequest;
 
 /**
  * Validator implementation for {@link ExactlyOneOf} annotation.
- * Ensures that exactly one of the three image input fields (imageBase64,
- * imageUrl, fileId) is provided.
+ * Ensures that exactly one of the four image input fields is provided:
+ * imageBase64, imageUrl, fileId, or file (in extra_body)
  */
 public class ExactlyOneOfValidator implements ConstraintValidator<ExactlyOneOf, OcrRequest> {
-
-    @Override
-    public void initialize(ExactlyOneOf constraintAnnotation) {
-    }
 
     @Override
     public boolean isValid(OcrRequest request, ConstraintValidatorContext context) {
@@ -34,6 +32,15 @@ public class ExactlyOneOfValidator implements ConstraintValidator<ExactlyOneOf, 
         }
         if(StringUtils.hasText(request.getFileId())) {
             imageInputCount++;
+        }
+
+        // 检查 extra_body 中的 file 字段
+        Map<String, Object> extraBody = request.getExtra_body();
+        if(extraBody != null && extraBody.containsKey("file")) {
+            Object file = extraBody.get("file");
+            if(file != null && StringUtils.hasText(String.valueOf(file))) {
+                imageInputCount++;
+            }
         }
 
         return imageInputCount == 1;

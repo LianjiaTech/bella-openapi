@@ -56,7 +56,7 @@ public class BellaAutoConf {
 
     @Bean
     public AdaptorManager adaptorManager(@Autowired List<IProtocolAdaptor> adaptors) {
-        AdaptorManager manager = new AdaptorManager();
+        AdaptorManager manager = AdaptorManager.getInstance();
         adaptors.forEach(adaptor -> manager.register(adaptor.endpoint(), adaptor));
         return manager;
     }
