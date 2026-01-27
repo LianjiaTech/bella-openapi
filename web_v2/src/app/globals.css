@@ -124,4 +124,14 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* 隐藏所有 div 的滚动条,但保持滚动功能 */
+  div {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE 和 Edge */
+  }
+
+  div::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+  }
 }

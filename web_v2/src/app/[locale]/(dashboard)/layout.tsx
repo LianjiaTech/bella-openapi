@@ -13,7 +13,7 @@ export default function DashboardLayout({
         <Sidebar />
 
         {/* 主内容区域 */}
-        <main className="flex-1 ml-64 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <main className="flex-1 ml-64 max-w-[calc(100vw-16rem)]  bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="h-full">
             {children}
           </div>
