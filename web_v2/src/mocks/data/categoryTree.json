@@ -1,0 +1,382 @@
+[
+    {
+      "categoryCode": "0001",
+      "categoryName": "语言类",
+      "endpoints": [
+        {
+          "cuid": 0,
+          "cuName": "system",
+          "muid": 0,
+          "muName": "system",
+          "ctime": "2024-09-12 10:23:05",
+          "mtime": "2024-09-12 10:23:05",
+          "endpoint": "/v1/chat/completions",
+          "endpointCode": "ep-cd2190a7-38dc-427e-a167-2f138b9078e7",
+          "endpointName": "智能问答",
+          "maintainerCode": "1000000001",
+          "maintainerName": "张明",
+          "status": "active"
+        },
+        {
+          "cuid": 0,
+          "cuName": "system",
+          "muid": 0,
+          "muName": "system",
+          "ctime": "2024-09-12 10:23:05",
+          "mtime": "2024-09-12 10:23:05",
+          "endpoint": "/v1/embeddings",
+          "endpointCode": "ep-4eb69c9c-4acc-40e8-a671-0b25d9473139",
+          "endpointName": "向量化",
+          "maintainerCode": "1000000001",
+          "maintainerName": "张明",
+          "status": "active"
+        }
+      ]
+    },
+    {
+      "categoryCode": "0002",
+      "categoryName": "语音类",
+      "children": [
+        {
+          "categoryCode": "0002-0001",
+          "categoryName": "语音合成",
+          "endpoints": [
+            {
+              "cuid": 0,
+              "cuName": "system",
+              "muid": 0,
+              "muName": "system",
+              "ctime": "2024-09-12 10:23:05",
+              "mtime": "2024-09-12 10:23:05",
+              "endpoint": "/v1/audio/speech",
+              "endpointCode": "ep-c73addd8-0517-4ad9-8272-8fb1286ef456",
+              "endpointName": "语音合成",
+              "maintainerCode": "1000000002",
+              "maintainerName": "李华",
+              "status": "active"
+            }
+          ]
+        },
+        {
+          "categoryCode": "0002-0002",
+          "categoryName": "语音识别",
+          "endpoints": [
+            {
+              "cuid": 0,
+              "cuName": "system",
+              "muid": 0,
+              "muName": "system",
+              "ctime": "2024-09-12 10:23:05",
+              "mtime": "2025-06-04 16:20:16",
+              "endpoint": "/v1/audio/transcriptions",
+              "endpointCode": "ep-bd4b69f0-f9b8-4175-8296-3b267bf76fb1",
+              "endpointName": "语音识别",
+              "maintainerCode": "1000000003",
+              "maintainerName": "王芳",
+              "status": "active"
+            },
+            {
+              "cuid": 0,
+              "cuName": "system",
+              "muid": 0,
+              "muName": "system",
+              "ctime": "2025-03-20 11:55:02",
+              "mtime": "2025-03-20 11:55:02",
+              "endpoint": "/v1/audio/asr/flash",
+              "endpointCode": "ep-b45867ef-be00-415f-8383-4e1da7267da4",
+              "endpointName": "一句话语音识别",
+              "maintainerCode": "1000000001",
+              "maintainerName": "张明",
+              "status": "active"
+            },
+            {
+              "cuid": 0,
+              "cuName": "system",
+              "muid": 0,
+              "muName": "system",
+              "ctime": "2025-04-08 15:02:58",
+              "mtime": "2025-04-08 15:02:58",
+              "endpoint": "/v1/audio/asr/stream",
+              "endpointCode": "ep-4a92a33c-3057-46a5-9456-305ed8f77c48",
+              "endpointName": "实时语音识别",
+              "maintainerCode": "1000000001",
+              "maintainerName": "张明",
+              "status": "active"
+            },
+            {
+              "cuid": 0,
+              "cuName": "system",
+              "muid": 0,
+              "muName": "system",
+              "ctime": "2025-08-05 17:47:05",
+              "mtime": "2025-08-05 18:16:44",
+              "endpoint": "/v1/audio/speaker/embedding",
+              "endpointCode": "ep-2cf7df08-594a-4f4f-8a70-f20fd71bee9c",
+              "endpointName": "声纹向量化",
+              "maintainerCode": "1000000003",
+              "maintainerName": "王芳",
+              "status": "active"
+            },
+            {
+              "cuid": 0,
+              "cuName": "system",
+              "muid": 0,
+              "muName": "system",
+              "ctime": "2025-09-19 16:49:38",
+              "mtime": "2025-09-19 16:49:38",
+              "endpoint": "/v1/audio/speaker/diarization",
+              "endpointCode": "ep-908f953b-69c0-43fe-b897-bbf46b67dba6",
+              "endpointName": "说话人识别",
+              "maintainerCode": "1000000003",
+              "maintainerName": "王芳",
+              "status": "active"
+            }
+          ]
+        },
+        {
+          "categoryCode": "0002-0003",
+          "categoryName": "语音对话",
+          "endpoints": [
+            {
+              "cuid": 0,
+              "cuName": "system",
+              "muid": 0,
+              "muName": "system",
+              "ctime": "2025-04-15 12:00:52",
+              "mtime": "2025-04-15 12:00:52",
+              "endpoint": "/v1/audio/realtime",
+              "endpointCode": "ep-ae10bf3c-3d91-48ac-961b-0aa068cef5f9",
+              "endpointName": "实时对话",
+              "maintainerCode": "1000000001",
+              "maintainerName": "张明",
+              "status": "active"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "categoryCode": "0003",
+      "categoryName": "图像类",
+      "endpoints": [
+        {
+          "cuid": 0,
+          "cuName": "system",
+          "muid": 0,
+          "muName": "system",
+          "ctime": "2024-09-12 10:23:05",
+          "mtime": "2024-09-12 10:23:05",
+          "endpoint": "/v1/images/generations",
+          "endpointCode": "ep-c1079a7b-1c29-44fa-b5d8-ef8a2bfd493d",
+          "endpointName": "文生图",
+          "maintainerCode": "1000000003",
+          "maintainerName": "王芳",
+          "status": "active"
+        },
+        {
+          "cuid": 0,
+          "cuName": "system",
+          "muid": 0,
+          "muName": "system",
+          "ctime": "2024-09-12 10:23:05",
+          "mtime": "2024-09-12 10:23:05",
+          "endpoint": "/v1/images/edits",
+          "endpointCode": "ep-ed2a031e-15e7-4199-9f93-73e1d190798e",
+          "endpointName": "图生图",
+          "maintainerCode": "1000000003",
+          "maintainerName": "王芳",
+          "status": "active"
+        }
+      ]
+    },
+    {
+      "categoryCode": "0004",
+      "categoryName": "视频类",
+      "children": [
+        {
+          "categoryCode": "0004-0001",
+          "categoryName": "知识检索",
+          "endpoints": [
+            {
+              "cuid": 1000000029406069,
+              "cuName": "system",
+              "muid": 0,
+              "muName": "system",
+              "ctime": "2025-03-14 16:22:25",
+              "mtime": "2025-03-14 18:08:28",
+              "endpoint": "/v1/api/rag",
+              "endpointCode": "ep-f431290a-2acc-4b0f-9b1c-9dfbae0e8b5b",
+              "endpointName": "检索增强生成",
+              "maintainerCode": "1000000004",
+              "maintainerName": "赵强",
+              "status": "active"
+            }
+          ]
+        },
+        {
+          "categoryCode": "0004-0002",
+          "categoryName": "文档处理",
+          "endpoints": [
+            {
+              "cuid": 0,
+              "cuName": "system",
+              "muid": 0,
+              "muName": "system",
+              "ctime": "2025-07-02 16:05:17",
+              "mtime": "2025-08-11 10:58:08",
+              "endpoint": "/v1/document/parse",
+              "endpointCode": "ep-a9c38f78-73ee-498f-8b26-2d8cd93cc670",
+              "endpointName": "文档解析",
+              "maintainerCode": "1000000001",
+              "maintainerName": "张明",
+              "status": "active"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "categoryCode": "0005",
+      "categoryName": "平台能力",
+      "endpoints": [
+        {
+          "cuid": 0,
+          "cuName": "system",
+          "muid": 0,
+          "muName": "system",
+          "ctime": "2025-08-12 18:36:00",
+          "mtime": "2025-08-12 18:36:00",
+          "endpoint": "/v1/workflow",
+          "endpointCode": "ep-75caf118-3294-4bcc-b1a2-36d9037a1796",
+          "endpointName": "AI工作流",
+          "maintainerCode": "1000000005",
+          "maintainerName": "刘伟",
+          "status": "active"
+        }
+      ]
+    },
+    {
+      "categoryCode": "0006",
+      "categoryName": "Web技术",
+      "endpoints": [
+        {
+          "cuid": 0,
+          "cuName": "system",
+          "muid": 0,
+          "muName": "system",
+          "ctime": "2025-10-15 11:33:07",
+          "mtime": "2025-10-15 11:33:07",
+          "endpoint": "/v1/web/search",
+          "endpointCode": "ep-f6e43c21-36fb-4632-a45b-3de6503aa21f",
+          "endpointName": "网络搜索",
+          "maintainerCode": "30873314",
+          "maintainerName": "赛卓林",
+          "status": "active"
+        },
+        {
+          "cuid": 0,
+          "cuName": "system",
+          "muid": 0,
+          "muName": "system",
+          "ctime": "2025-10-15 11:34:21",
+          "mtime": "2025-10-15 11:34:21",
+          "endpoint": "/v1/web/extract",
+          "endpointCode": "ep-bc498993-cd9f-4be0-966a-d414bd490363",
+          "endpointName": "网页提取",
+          "maintainerCode": "30873314",
+          "maintainerName": "赛卓林",
+          "status": "active"
+        },
+        {
+          "cuid": 0,
+          "cuName": "system",
+          "muid": 0,
+          "muName": "system",
+          "ctime": "2025-10-15 11:34:47",
+          "mtime": "2025-10-15 11:34:47",
+          "endpoint": "/v1/web/crawl",
+          "endpointCode": "ep-eb47ae1f-0248-4569-a957-74d0bb231b98",
+          "endpointName": "网络爬虫",
+          "maintainerCode": "30873314",
+          "maintainerName": "赛卓林",
+          "status": "active"
+        }
+      ]
+    },
+    {
+      "categoryCode": "0007",
+      "categoryName": "OCR",
+      "endpoints": [
+        {
+          "cuid": 0,
+          "cuName": "system",
+          "muid": 0,
+          "muName": "system",
+          "ctime": "2025-11-17 21:31:57",
+          "mtime": "2025-11-17 21:31:57",
+          "endpoint": "/v1/ocr/hmt-residence-permit",
+          "endpointCode": "ep-f7a16df5-799f-4cdc-8d66-de132347aae8",
+          "endpointName": "港澳台居住证",
+          "maintainerCode": "1000000006",
+          "maintainerName": "孙杰",
+          "status": "active"
+        },
+        {
+          "cuid": 0,
+          "cuName": "system",
+          "muid": 0,
+          "muName": "system",
+          "ctime": "2025-11-17 21:33:01",
+          "mtime": "2025-11-17 21:33:01",
+          "endpoint": "/v1/ocr/idcard",
+          "endpointCode": "ep-d8b05abc-ee72-4e9d-b18a-377bac736292",
+          "endpointName": "身份证",
+          "maintainerCode": "1000000006",
+          "maintainerName": "孙杰",
+          "status": "active"
+        },
+        {
+          "cuid": 0,
+          "cuName": "system",
+          "muid": 0,
+          "muName": "system",
+          "ctime": "2025-11-17 21:33:51",
+          "mtime": "2025-11-17 21:33:51",
+          "endpoint": "/v1/ocr/bankcard",
+          "endpointCode": "ep-01693d8d-41d8-4566-81d7-1164852f6564",
+          "endpointName": "银行卡",
+          "maintainerCode": "1000000006",
+          "maintainerName": "孙杰",
+          "status": "active"
+        },
+        {
+          "cuid": 0,
+          "cuName": "system",
+          "muid": 0,
+          "muName": "system",
+          "ctime": "2025-11-17 21:34:35",
+          "mtime": "2025-11-17 21:34:35",
+          "endpoint": "/v1/ocr/tmp-idcard",
+          "endpointCode": "ep-f05c3e52-e261-419a-9fcf-d18fc8abadce",
+          "endpointName": "临时身份证",
+          "maintainerCode": "1000000006",
+          "maintainerName": "孙杰",
+          "status": "active"
+        },
+        {
+          "cuid": 0,
+          "cuName": "system",
+          "muid": 0,
+          "muName": "system",
+          "ctime": "2025-12-11 20:33:59",
+          "mtime": "2025-12-11 20:33:59",
+          "endpoint": "/v1/ocr/general",
+          "endpointCode": "ep-83321684-1084-44aa-a050-6cdb0dd75889",
+          "endpointName": "通用文字识别",
+          "maintainerCode": "1000000006",
+          "maintainerName": "孙杰",
+          "status": "active"
+        }
+      ]
+    }
+  ]

@@ -1,3 +1,9 @@
+export interface ModelProperties {
+    max_input_context?: number;
+    max_output_context?: number;
+    // 其他模型属性可以根据实际需求扩展
+}
+
 export interface Model {
     modelName: string;
     description?: string;
