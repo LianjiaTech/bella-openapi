@@ -9,7 +9,15 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class AdaptorManager {
+    private static final AdaptorManager INSTANCE = new AdaptorManager();
     private final Map<String, Map<String, IProtocolAdaptor>> adaptors = new ConcurrentHashMap<>();
+
+    private AdaptorManager() {
+    }
+
+    public static AdaptorManager getInstance() {
+        return INSTANCE;
+    }
 
     public Set<String> getProtocols(String endpoint) {
         if(!adaptors.containsKey(endpoint)) {
