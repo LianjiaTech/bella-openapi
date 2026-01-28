@@ -29,9 +29,9 @@ public class AnthropicAdaptor implements MessageAdaptor<AnthropicProperty> {
 
     private final Callbacks.ChannelErrorCallback<MessageResponse> errorCallback = (errorResponse, res) -> {
         if(errorResponse != null && errorResponse.getError() != null) {
-            throw ChannelException.fromResponse(res.code(), errorResponse.getError().getMessage());
+            throw new ChannelException.OpenAIException(res.code(), "channel_error", errorResponse.getError().getMessage());
         }
-        throw ChannelException.fromResponse(res.code(), res.message());
+        throw new ChannelException.OpenAIException(res.code(), "channel_error", res.message());
     };
 
     @Override
@@ -204,10 +204,10 @@ public class AnthropicAdaptor implements MessageAdaptor<AnthropicProperty> {
         private ChannelException convertToException(Response response) {
             try {
                 String msg = response.body().string();
-                return ChannelException.fromResponse(response.code(), msg);
+                return new ChannelException.OpenAIException(response.code(), "channel_error", msg);
             } catch (Exception e) {
                 log.warn(e.getMessage(), e);
-                return ChannelException.fromResponse(response.code(), response.message());
+                return new ChannelException.OpenAIException(response.code(), "channel_error", response.message());
             }
         }
     }

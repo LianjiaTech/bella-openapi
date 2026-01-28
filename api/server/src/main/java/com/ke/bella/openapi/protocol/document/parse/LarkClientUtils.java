@@ -40,7 +40,7 @@ public class LarkClientUtils {
                     .build();
             UploadAllFileResp resp = client.drive().v1().file().uploadAll(req);
             if(resp.getCode() != 0) {
-                throw ChannelException.fromResponse(502, resp.getMsg());
+                throw new ChannelException.OpenAIException(502, "channel_error", resp.getMsg());
             }
             return resp.getData().getFileToken();
         } catch (Exception e) {
@@ -64,7 +64,7 @@ public class LarkClientUtils {
         try {
             CreateImportTaskResp resp = client.drive().v1().importTask().create(req);
             if(resp.getCode() != 0) {
-                throw ChannelException.fromResponse(502, resp.getMsg());
+                throw new ChannelException.OpenAIException(502, "channel_error", resp.getMsg());
             }
             return resp.getData().getTicket();
         } catch (Exception e) {
@@ -79,7 +79,7 @@ public class LarkClientUtils {
         try {
             GetImportTaskResp resp = client.drive().v1().importTask().get(req);
             if(resp.getCode() != 0) {
-                throw ChannelException.fromResponse(502, resp.getMsg());
+                throw new ChannelException.OpenAIException(502, "channel_error", resp.getMsg());
             }
             DocParseResponse response = new DocParseResponse();
             switch (resp.getData().getResult().getJobStatus()) {

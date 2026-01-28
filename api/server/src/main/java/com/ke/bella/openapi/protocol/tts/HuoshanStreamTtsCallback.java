@@ -106,7 +106,7 @@ public class HuoshanStreamTtsCallback implements Callbacks.WebSocketCallback {
         case EVENT_SessionFailed: {
             String errorStr = response.optional.response_meta_json;
             Map<String, Object> map = JacksonUtils.toMap(errorStr);
-            ChannelException exception = ChannelException.fromResponse(convertCode((Integer) map.get("status_code")), (String) map.get("message"));
+            ChannelException exception = new ChannelException.OpenAIException(convertCode((Integer) map.get("status_code")), "channel_error", (String) map.get("message"));
             onError(exception);
             break;
         }
@@ -158,7 +158,7 @@ public class HuoshanStreamTtsCallback implements Callbacks.WebSocketCallback {
         if(response != null) {
             int code = response.code();
             String msg = response.message();
-            exception = ChannelException.fromResponse(code, msg);
+            exception = new ChannelException.OpenAIException(code, "channel_error", msg);
         } else {
             exception = ChannelException.fromException(t);
         }

@@ -45,7 +45,7 @@ public class AwsAdaptor implements CompletionAdaptor<AwsProperty> {
             ConverseResponse response = client.converse(awsRequest);
             return AwsCompletionConverter.convert2OpenAIResponse(response);
         } catch (BedrockRuntimeException bedrockException) {
-            throw ChannelException.fromResponse(bedrockException.statusCode(), bedrockException.getMessage());
+            throw new ChannelException.OpenAIException(bedrockException.statusCode(), "channel_error", bedrockException.getMessage());
         }
     }
 
@@ -120,7 +120,7 @@ public class AwsAdaptor implements CompletionAdaptor<AwsProperty> {
             log.warn(throwable.getMessage(), throwable);
             if(throwable instanceof BedrockRuntimeException) {
                 BedrockRuntimeException bedrockException = (BedrockRuntimeException) throwable;
-                callback.finish(ChannelException.fromResponse(bedrockException.statusCode(), bedrockException.getMessage()));
+                callback.finish(new ChannelException.OpenAIException(bedrockException.statusCode(), "channel_error", bedrockException.getMessage()));
                 return;
             }
             callback.finish(ChannelException.fromException(throwable));
