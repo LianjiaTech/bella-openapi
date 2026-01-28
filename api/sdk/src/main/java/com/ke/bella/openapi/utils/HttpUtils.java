@@ -259,9 +259,9 @@ public class HttpUtils {
                 if(result == null) {
                     if(response.code() > 499 && response.code() < 600) {
                         String message = "供应商返回：code: " + response.code() + " message: " + response.message();
-                        throw ChannelException.fromResponse(503, message);
+                        throw new ChannelException.OpenAIException(503, "channel_error", message);
                     }
-                    throw ChannelException.fromResponse(response.code(), response.message());
+                    throw new ChannelException.OpenAIException(response.code(), "channel_error", response.message());
                 } else {
                     if(errorCallback != null) {
                         errorCallback.callback(result, response);

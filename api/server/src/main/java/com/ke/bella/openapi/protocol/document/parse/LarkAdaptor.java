@@ -150,7 +150,7 @@ public class LarkAdaptor implements DocParseAdaptor<LarkProperty> {
         try {
             ListDocumentBlockResp resp = client.docx().v1().documentBlock().list(req);
             if(resp.getCode() != 0) {
-                throw ChannelException.fromResponse(502, resp.getMsg());
+                throw new ChannelException.OpenAIException(502, "channel_error", resp.getMsg());
             }
             ListDocumentBlockRespBody body = resp.getData();
             List<Block> blocks = new ArrayList<>(Arrays.asList(body.getItems()));

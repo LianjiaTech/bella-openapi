@@ -45,7 +45,7 @@ public class BellaStreamCallback implements Callback {
         if(!response.isSuccessful()) {
             String errorMsg = "流式请求返回错误状态码: " + response.code() + ", message: " + response.message();
             log.error(errorMsg);
-            ChannelException exception = ChannelException.fromResponse(response.code(), response.message());
+            ChannelException exception = new ChannelException.OpenAIException(response.code(), "channel_error", response.message());
             if(connectionInitFuture.isDone()) {
                 callback.finish(exception);
             } else {
