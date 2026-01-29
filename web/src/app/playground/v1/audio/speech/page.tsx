@@ -336,7 +336,7 @@ export default function SpeechPlayground() {
       <div className="mt-3 text-xs text-gray-500 bg-gray-50 p-3 rounded flex-shrink-0">
         <p className="font-medium mb-1">使用说明:</p>
         <ol className="list-decimal pl-5 space-y-1">
-          <li>输入要转换为语音的文本。注意：Soulx-TTS模型支持双人对话，普通话输入形式为[S1]text[S2]text；方言：粤语为[S1]<|Yue|>text[S2]<|Yue|>text，河南为[S1]<|Henan|>text[S2]<|Henan|>text，四川为[S1]<|Sichuan|>text[S2]<|Sichuan|>text</li>
+          <li>输入要转换为语音的文本。注意：Soulx-TTS模型支持双人对话，普通话输入形式为[S1]text[S2]text；方言：粤语为[S1]&lt;|Yue|&gt;text[S2]&lt;|Yue|&gt;text，河南为[S1]&lt;|Henan|&gt;text[S2]&lt;|Henan|&gt;text，四川为[S1]&lt;|Sichuan|&gt;text[S2]&lt;|Sichuan|&gt;text</li>
           <li>选择合适的声音类型</li>
           <li>点击播放按钮开始语音合成</li>
           <li>合成完成后会自动播放语音</li>
