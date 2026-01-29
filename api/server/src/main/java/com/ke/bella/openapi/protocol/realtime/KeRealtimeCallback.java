@@ -113,7 +113,7 @@ public class KeRealtimeCallback implements Callbacks.WebSocketCallback {
         if(t != null) {
             onError(ChannelException.fromException(t));
         } else {
-            onError(ChannelException.fromResponse(response.code(), response.message()));
+            onError(new ChannelException.OpenAIException(response.code(), response.message()));
         }
     }
 

@@ -195,7 +195,7 @@ public class OpenAIResponsesAdaptor implements ResponsesAdaptor<ResponsesApiProp
     private ChannelException convertToException(Response response) {
         try {
             if(response.body() == null) {
-                return ChannelException.fromResponse(response.code(), response.message());
+                return new ChannelException.OpenAIException(response.code(), response.message());
             }
             String msg = response.body().string();
             ResponsesApiResponse errorResponse = JacksonUtils.deserialize(msg, ResponsesApiResponse.class);
@@ -206,11 +206,11 @@ public class OpenAIResponsesAdaptor implements ResponsesAdaptor<ResponsesApiProp
                         errorResponse.getError().getMessage(),
                         errorResponse.getError());
             } else {
-                return ChannelException.fromResponse(response.code(), msg);
+                return new ChannelException.OpenAIException(response.code(), msg);
             }
         } catch (Exception e) {
             log.warn("Failed to parse error response", e);
-            return ChannelException.fromResponse(response.code(), response.message());
+            return new ChannelException.OpenAIException(response.code(), response.message());
         } finally {
             response.close();
         }

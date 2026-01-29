@@ -8,7 +8,6 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 
 import javax.servlet.ServletException;
 import java.io.IOException;
-import java.util.concurrent.ExecutionException;
 
 public abstract class ChannelException extends RuntimeException {
 
@@ -147,6 +146,10 @@ public abstract class ChannelException extends RuntimeException {
         protected final Integer httpCode;
         protected final String type;
         private final OpenapiResponse.OpenapiError response;
+
+        public OpenAIException(Integer httpCode, String message) {
+            this(httpCode, "Channel Exception", message);
+        }
 
         public OpenAIException(Integer httpCode, String type, String message) {
             this(httpCode, type, message, new OpenapiResponse.OpenapiError(type, message, httpCode));

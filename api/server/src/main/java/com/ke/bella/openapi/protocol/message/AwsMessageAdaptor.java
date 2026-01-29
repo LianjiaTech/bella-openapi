@@ -65,7 +65,7 @@ public class AwsMessageAdaptor implements MessageAdaptor<AwsMessageProperty> {
             EndpointContext.getProcessData().setResponse(TransferToCompletionsUtils.convertResponse(messageResponse));
             return messageResponse;
         } catch (BedrockRuntimeException bedrockException) {
-            throw ChannelException.fromResponse(bedrockException.statusCode(), bedrockException.getMessage());
+            throw new ChannelException.OpenAIException(bedrockException.statusCode(), bedrockException.getMessage());
         }
     }
 
@@ -100,7 +100,7 @@ public class AwsMessageAdaptor implements MessageAdaptor<AwsMessageProperty> {
         try {
             client.invokeModelWithResponseStream(streamRequest, handler);
         } catch (BedrockRuntimeException bedrockException) {
-            throw ChannelException.fromResponse(bedrockException.statusCode(), bedrockException.getMessage());
+            throw new ChannelException.OpenAIException(bedrockException.statusCode(), bedrockException.getMessage());
         }
     }
 
@@ -172,7 +172,7 @@ public class AwsMessageAdaptor implements MessageAdaptor<AwsMessageProperty> {
             log.warn(throwable.getMessage(), throwable);
             if(throwable instanceof BedrockRuntimeException) {
                 BedrockRuntimeException bedrockException = (BedrockRuntimeException) throwable;
-                callback.finish(ChannelException.fromResponse(bedrockException.statusCode(), bedrockException.getMessage()));
+                callback.finish(new ChannelException.OpenAIException(bedrockException.statusCode(), bedrockException.getMessage()));
                 return;
             }
             callback.finish(ChannelException.fromException(throwable));

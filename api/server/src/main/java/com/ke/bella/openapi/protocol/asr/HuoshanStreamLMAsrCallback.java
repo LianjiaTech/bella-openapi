@@ -575,7 +575,7 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
      * 处理转录失败事件
      */
     private void handleTranscriptionFailed(int code, String errorMsg) {
-        onError(ChannelException.fromResponse(code, errorMsg));
+        onError(new ChannelException.OpenAIException(code, errorMsg));
     }
 
     /**

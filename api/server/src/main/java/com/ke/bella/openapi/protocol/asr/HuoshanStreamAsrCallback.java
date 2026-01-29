@@ -146,7 +146,7 @@ public class HuoshanStreamAsrCallback implements Callbacks.WebSocketCallback {
         int httpCode = response != null ? response.code() : 500;
         String message = t.getMessage();
 
-        onError(ChannelException.fromResponse(httpCode, message));
+        onError(new ChannelException.OpenAIException(httpCode, message));
     }
 
     @Override
@@ -326,7 +326,7 @@ public class HuoshanStreamAsrCallback implements Callbacks.WebSocketCallback {
      */
     public void sendAudioDataInChunks(WebSocket webSocket, byte[] audioData, int chunkSize, int intervalMs) {
         if(audioData == null || audioData.length == 0) {
-            onProcessError(ChannelException.fromResponse(400, "No audio data to send"));
+            onProcessError(new ChannelException.OpenAIException(400, "No audio data to send"));
             return;
         }
 
@@ -375,7 +375,7 @@ public class HuoshanStreamAsrCallback implements Callbacks.WebSocketCallback {
             payloadOffset += 4;
             payloadOffset += 4;
         } else {
-            onProcessError(ChannelException.fromResponse(400, "Unsupported message type"));
+            onProcessError(new ChannelException.OpenAIException(400, "Unsupported message type"));
             return;
         }
 
@@ -453,7 +453,7 @@ public class HuoshanStreamAsrCallback implements Callbacks.WebSocketCallback {
     private void handleTranscriptionFailed(int code, String errorMsg) {
         log.error("Transcription failed: {}", errorMsg);
         isRunning = false;
-        sender.onError(ChannelException.fromResponse(getHttpCode(code), errorMsg));
+        sender.onError(new ChannelException.OpenAIException(getHttpCode(code), errorMsg));
         if(!request.isAsync()) {
             complete();
         }

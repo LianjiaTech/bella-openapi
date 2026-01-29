@@ -116,7 +116,7 @@ public class TencentStreamAsrCallback implements Callbacks.WebSocketCallback {
         int httpCode = response != null ? response.code() : 500;
         String message = t.getMessage();
 
-        onError(ChannelException.fromResponse(httpCode, message));
+        onError(new ChannelException.OpenAIException(httpCode, message));
     }
 
     @Override
@@ -204,7 +204,7 @@ public class TencentStreamAsrCallback implements Callbacks.WebSocketCallback {
     private void handleTranscriptionFailed(int code, String errorMsg) {
         log.error("Transcription failed: code={}, message={}", code, errorMsg);
         isRunning = false;
-        sender.onError(ChannelException.fromResponse(getHttpCode(code), errorMsg));
+        sender.onError(new ChannelException.OpenAIException(getHttpCode(code), errorMsg));
 
         complete();
     }
