@@ -26,6 +26,7 @@ public class KeResponse {
     public static class Result {
         private Map<String, Object> others;
         private List<StructuredResult> structuredResult;
+        private List<WordsResult> wordsResult;
     }
 
     @Data
@@ -36,5 +37,34 @@ public class KeResponse {
         private String enKeyName;
         private String keyName;
         private String value;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class WordsResult {
+        private String words;
+        private Location location;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Location {
+        private Point leftTop;
+        private Point rightTop;
+        private Point leftBottom;
+        private Point rightBottom;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Point {
+        private int x;
+        private int y;
     }
 }
