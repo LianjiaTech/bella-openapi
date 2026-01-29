@@ -13,7 +13,7 @@ import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import com.ke.bella.openapi.EndpointProcessData;
-import com.ke.bella.openapi.common.exception.ChannelException;
+import com.ke.bella.openapi.common.exception.BellaException;
 import com.ke.bella.openapi.protocol.Callbacks;
 import com.ke.bella.openapi.protocol.Callbacks.WebSocketCallback;
 import com.ke.bella.openapi.protocol.asr.AsrProperty;
@@ -261,7 +261,7 @@ public class RealTimeHandler extends TextWebSocketHandler {
 
             @Override
             public void onError(Throwable e) {
-                ChannelException exception = ChannelException.fromException(e);
+                BellaException exception = BellaException.fromException(e);
                 RealTimeMessage res = sendErrorResponse(session, exception.getHttpCode() < 500 ? 40000000 : 50000000, exception.getMessage());
                 processData.setResponse(res);
             }
