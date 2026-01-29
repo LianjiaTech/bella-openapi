@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { CompletionPriceEditor, CompletionPriceEditorRef } from './completion-price-editor';
 import { useToast } from '@/hooks/use-toast';
+import { isChatCompletionsEndpoint } from '@/lib/utils';
 
 interface ChannelFormProps {
     channel: Channel;
@@ -33,10 +34,17 @@ export function ChannelForm({ channel, onUpdate, onBatchUpdate, onToggleStatus }
     const [isTrialDialogOpen, setIsTrialDialogOpen] = useState(false);
     const [isQueueEditing, setIsQueueEditing] = useState(false);
     const [isPriceDialogOpen, setIsPriceDialogOpen] = useState(false);
+    const [usePriceDialog, setUsePriceDialog] = useState(false);
 
     const [queueMode, setQueueMode] = useState(channel.queueMode ?? 0);
     const [queueName, setQueueName] = useState(channel.queueName ?? '');
     const [priceInfo, setPriceInfo] = useState<CompletionPriceInfo | null>(null);
+
+    // 判断是否需要使用区间价格编辑器
+    useEffect(() => {
+        isChatCompletionsEndpoint(channel.entityType, channel.entityCode)
+            .then(setUsePriceDialog);
+    }, [channel.entityType, channel.entityCode]);
 
     // 同步props变化到本地状态
     useEffect(() => {
@@ -200,7 +208,9 @@ export function ChannelForm({ channel, onUpdate, onBatchUpdate, onToggleStatus }
                     multiline
                 />
 
-                {/* 价格信息 - 使用弹窗编辑 */}
+                {/* 价格信息 - 根据 endpoint 类型选择编辑方式 */}
+                {usePriceDialog ? (
+                // chat completions endpoint 使用弹窗编辑
                 <div className="space-y-4 bg-white bg-opacity-50 p-4 rounded-lg">
                     <div className="flex items-center justify-between">
                         <Label className="text-sm font-medium text-gray-700">价格信息</Label>
@@ -218,6 +228,15 @@ export function ChannelForm({ channel, onUpdate, onBatchUpdate, onToggleStatus }
                         </div>
                     </div>
                 </div>
+                ) : (
+                    // 其他 endpoint 使用 EditableField
+                    <EditableField
+                        label="价格信息"
+                        value={channel.priceInfo}
+                        onUpdate={(value) => onUpdate(channel.channelCode, 'priceInfo', value)}
+                        multiline
+                    />
+                )}
 
                 <EditableField
                     label='优先级'
@@ -306,8 +325,8 @@ export function ChannelForm({ channel, onUpdate, onBatchUpdate, onToggleStatus }
                         </div>
                     )}
                 </div>
-
-                {/* 价格编辑弹窗 */}
+            {/* 价格编辑弹窗 - 仅在 chat completions endpoint 时使用 */}
+            {usePriceDialog && (
                 <Dialog open={isPriceDialogOpen} onOpenChange={setIsPriceDialogOpen}>
                     <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white dark:bg-slate-900">
                         <DialogHeader>
@@ -332,6 +351,7 @@ export function ChannelForm({ channel, onUpdate, onBatchUpdate, onToggleStatus }
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
+                )}
 
                 <ConfirmDialog
                     isOpen={isStatusDialogOpen}

@@ -9,8 +9,7 @@ import {
     createPrivateChannel,
     getChannelInfoSchema,
     getPriceInfoSchema,
-    listProtocols,
-    getModelEndpoints
+    listProtocols
 } from '@/lib/api/meta';
 import {Channel, JsonSchema, CompletionPriceInfo} from '@/lib/types/openapi';
 import {Textarea} from "@/components/ui/textarea";
@@ -20,6 +19,7 @@ import {renderField} from "@/components/ui/render-field";
 import {Switch} from "@/components/ui/switch";
 import {useRouter, useSearchParams} from 'next/navigation';
 import {CompletionPriceEditor, CompletionPriceEditorRef} from '@/components/meta/completion-price-editor';
+import {isChatCompletionsEndpoint} from '@/lib/utils';
 
 interface Props {
     entityType: string,
@@ -58,7 +58,7 @@ export function CreateChannelForm({
     const [channelInfoValue, setChannelInfoValue] = useState<NestedObject>({});
     const [loading, setLoading] = useState(false);
     const [completionPriceInfo, setCompletionPriceInfo] = useState<CompletionPriceInfo | null>(null);
-    const [isChatCompletionsEndpoint, setIsChatCompletionsEndpoint] = useState(false);
+    const [usePriceDialog, setUsePriceDialog] = useState(false);
     const completionPriceEditorRef = useRef<CompletionPriceEditorRef>(null);
 
     const handleChange = (field: keyof Channel, value: string | number) => {
@@ -108,22 +108,8 @@ export function CreateChannelForm({
             const priceSchema = await getPriceInfoSchema(entityType, entityCode);
             setPriceInfoSchema(priceSchema);
             setPriceInfoValue({});
-
-            // 判断是否需要使用区间价格编辑器
-            if (entityType === 'model') {
-                try {
-                    const endpoints = await getModelEndpoints(entityCode);
-                    const hasChatCompletions = endpoints.includes('/v1/chat/completions');
-                    setIsChatCompletionsEndpoint(hasChatCompletions);
-                } catch (error) {
-                    setIsChatCompletionsEndpoint(false);
-                }
-            } else if (entityType === 'endpoint') {
-                const hasChatCompletions = entityCode === '/v1/chat/completions';
-                setIsChatCompletionsEndpoint(hasChatCompletions);
-            } else {
-                setIsChatCompletionsEndpoint(false);
-            }
+            const shouldUsePriceDialog = await isChatCompletionsEndpoint(entityType, entityCode);
+            setUsePriceDialog(shouldUsePriceDialog);
         }
         fetchData();
     }, [entityType, entityCode]);
@@ -161,7 +147,7 @@ export function CreateChannelForm({
 
             // 根据endpoint类型决定使用哪种价格信息
             let priceInfoToSubmit: string;
-            if (isChatCompletionsEndpoint) {
+            if (usePriceDialog) {
                 // 验证阶梯价格配置
                 if (completionPriceEditorRef.current && !completionPriceEditorRef.current.validate()) {
                     setLoading(false);
@@ -366,7 +352,7 @@ export function CreateChannelForm({
                             </div>
                         )}
                         {/* 根据endpoint类型显示不同的价格输入方式 */}
-                        {isChatCompletionsEndpoint ? (
+                        {usePriceDialog ? (
                             <div className="space-y-2">
                                 <Label htmlFor="priceInfo">单价信息</Label>
                                 <CompletionPriceEditor
