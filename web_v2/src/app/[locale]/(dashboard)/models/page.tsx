@@ -1,17 +1,20 @@
 'use client'
 import { TopBar } from "@/components/layout"
 import { useLanguage } from "@/components/providers/language-provider"
-import { useSidebar } from "@/components/providers"
+import { useSidebar } from "@/components/providers/sidebar-provider"
 import { useMemo, useDeferredValue } from "react"
-import { ModelFilterPanel } from "@/components/ui/models"
+import { ModelFilterPanel } from "@/components/ui/modelFilterPanel/index"
 import { useSearchParams } from "next/navigation"
 import { useState, useEffect, useCallback } from "react"
 import { useEndpointData } from "./hooks/useEndpointData"
 import { getInitialEndpoint } from "@/lib/utils"
 import { Model } from "@/lib/types/openapi"
 import { Loader, AlertCircle } from "lucide-react"
-import { ModelCard } from "@/components/ui/modelCard"
+import { ModelCard } from "./components/modelCard"
 import { Button } from "@/components/common/button"
+import { VirtualGrid } from "@/components/ui/virtualGrid/index"
+import { SearchBar } from "@/components/ui/modelFilterPanel/components/SearchBar"
+
 
 /**
  * 模型目录页面组件
@@ -88,15 +91,17 @@ const ModelsPage = () => {
    * 处理添加渠道操作
    */
   const handleAddChannel = (model: Model) => {
-    
+    // TODO: 添加渠道操作
   }
+
 
   return (
     <>
       <TopBar title={t("modelCatalog")} description={t("modelCatalogDesc")} />
-      <div className="flex h-[calc(100vh-4rem)] flex-col overflow-hidden">
-        <div className="flex-1 overflow-y-auto">
-          <div className="container px-6 py-8">
+      <div className=" flex h-[calc(100vh-4rem)] flex-col overflow-hidden">
+        {/* 筛选面板区域（固定不滚动） */}
+        <div className="flex-shrink-0 border-b bg-background">
+          <div className="px-6 py-4">
             {/* 模型筛选面板 */}
             <ModelFilterPanel
               categoryTrees={categoryTrees}
@@ -106,12 +111,11 @@ const ModelsPage = () => {
               isLoadingFeatures={initialLoading}
               onCapabilityChange={handleCapabilityChange}
               onTagsChange={handleTagsChange}
-              onSearchChange={handleSearchChange}
             />
 
             {/* 错误提示 */}
             {error && (
-              <div className="mb-4 rounded-lg border border-red-500/20 bg-red-500/10 p-4">
+              <div className="mt-4 rounded-lg border border-red-500/20 bg-red-500/10 p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-500" />
@@ -129,30 +133,49 @@ const ModelsPage = () => {
               </div>
             )}
 
-            {/* 模型列表 */}
-            <div className="mb-4">
-              <h2 className="text-sm font-medium text-muted-foreground">
-                {t("foundModels")} {filteredModels.length} {t("modelsCount")}
-              </h2>
+            {/* 搜索框与模型列表统计 */}
+            <div className="mt-4 flex items-center justify-between  gap-4">
+              <div className="flex-shrink-0">
+                <h2 className="text-sm font-medium text-muted-foreground whitespace-nowrap">
+                  {t("foundModels")} {filteredModels.length} {t("modelsCount")}
+                </h2>
+              </div>
+              <div>
+                <SearchBar
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                  onClear={() => setSearchQuery("")}
+                  placeholder={t("searchModels")}
+                  className="mb-0"
+                />
+              </div>
             </div>
-
-            {modelsLoading ? (
-              <div className="flex items-center justify-center py-12 text-muted-foreground">
-                <Loader className="h-6 w-6 animate-spin mr-2" />
-                <span className="text-sm">{t("loadingModels")}</span>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {filteredModels.map((model) => (
-                  <ModelCard
-                    key={model.modelName}
-                    model={model}
-                    onAddChannel={handleAddChannel}
-                  />
-                ))}
-              </div>
-            )}
           </div>
+        </div>
+
+        {/* 虚拟滚动容器（可滚动区域）estimateItemSize={estimateModelCardHeight} */}
+        <div className="flex-1 overflow-hidden">
+          {modelsLoading ? (
+            <div className="flex items-center justify-center h-full text-muted-foreground">
+              <Loader className="h-6 w-6 animate-spin mr-2" />
+              <span className="text-sm">{t("loadingModels")}</span>
+            </div>
+          ) : (
+            <VirtualGrid
+              items={filteredModels}
+              overscan={5}
+              getItemKey={(model) => model.modelName}
+              renderItem={(model) => (
+                <ModelCard model={model} onAddChannel={handleAddChannel} />
+              )}
+              emptyElement={
+                <div className="flex items-center justify-center h-full text-muted-foreground">
+                  <p className="text-sm">{t("noModelsFound")}</p>
+                </div>
+              }
+              className="px-6 py-6"
+            />
+          )}
         </div>
       </div>
     </>

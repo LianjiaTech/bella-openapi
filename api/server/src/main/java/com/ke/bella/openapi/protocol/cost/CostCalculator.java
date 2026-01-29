@@ -2,6 +2,7 @@ package com.ke.bella.openapi.protocol.cost;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Optional;
 
 import org.apache.commons.collections4.CollectionUtils;
@@ -14,6 +15,8 @@ import com.ke.bella.openapi.protocol.asr.flash.FlashAsrPriceInfo;
 import com.ke.bella.openapi.protocol.asr.transcription.TranscriptionsAsrPriceInfo;
 import com.ke.bella.openapi.protocol.completion.CompletionPriceInfo;
 import com.ke.bella.openapi.protocol.completion.CompletionResponse;
+import com.ke.bella.openapi.protocol.completion.ResponsesApiResponse;
+import com.ke.bella.openapi.protocol.completion.ResponsesPriceInfo;
 import com.ke.bella.openapi.protocol.embedding.EmbeddingPriceInfo;
 import com.ke.bella.openapi.protocol.embedding.EmbeddingResponse;
 import com.ke.bella.openapi.protocol.images.ImagesEditsPriceInfo;
@@ -67,6 +70,7 @@ public class CostCalculator {
     enum CostCalculators {
         COMPLETION("/v*/chat/completions", completion),
         MESSAGES("/v*/messages", completion),
+        RESPONSES("/v*/responses", responses),
         GEMINI("/v1beta/models", completion),
         EMBEDDING("/v*/embeddings", embedding),
         TTS("/v*/audio/speech", tts),
@@ -103,9 +107,11 @@ public class CostCalculator {
             }
             int promptTokens = tokenUsage.getPrompt_tokens();
             int completionsTokens = tokenUsage.getCompletion_tokens();
-            Pair<BigDecimal, Integer> inputParts = CompletionsCalHelper.calculateAllElements(CompletionsCalHelper.INPUT, price,
+
+            CompletionPriceInfo.RangePrice rangePrice = price.matchRangePrice(promptTokens, completionsTokens);
+            Pair<BigDecimal, Integer> inputParts = CompletionsCalHelper.calculateAllElements(CompletionsCalHelper.INPUT, rangePrice,
                     tokenUsage.getPrompt_tokens_details());
-            Pair<BigDecimal, Integer> outputParts = CompletionsCalHelper.calculateAllElements(CompletionsCalHelper.OUTPUT, price,
+            Pair<BigDecimal, Integer> outputParts = CompletionsCalHelper.calculateAllElements(CompletionsCalHelper.OUTPUT, rangePrice,
                     tokenUsage.getCompletion_tokens_details());
             if(inputParts.getLeft().doubleValue() > 0) {
                 promptTokens -= inputParts.getRight();
@@ -113,15 +119,19 @@ public class CostCalculator {
             if(outputParts.getLeft().doubleValue() > 0) {
                 completionsTokens -= outputParts.getRight();
             }
-            return price.getInput().multiply(BigDecimal.valueOf(promptTokens / 1000.0))
-                    .add(price.getOutput().multiply(BigDecimal.valueOf(completionsTokens / 1000.0)))
+
+            return rangePrice.getInput().multiply(BigDecimal.valueOf(promptTokens / 1000.0))
+                    .add(rangePrice.getOutput().multiply(BigDecimal.valueOf(completionsTokens / 1000.0)))
                     .add(inputParts.getLeft()).add(outputParts.getLeft());
         }
 
         @Override
         public boolean checkPriceInfo(String priceInfo) {
             CompletionPriceInfo price = JacksonUtils.deserialize(priceInfo, CompletionPriceInfo.class);
-            return price != null && price.getInput() != null && price.getOutput() != null;
+            if(price == null) {
+                return false;
+            }
+            return price.validate();
         }
     };
 
@@ -472,6 +482,122 @@ public class CostCalculator {
         public boolean checkPriceInfo(String priceInfo) {
             VideoPriceInfo price = JacksonUtils.deserialize(priceInfo, VideoPriceInfo.class);
             return price != null && price.getOutput() != null;
+        }
+    };
+
+    static EndpointCostCalculator responses = new EndpointCostCalculator() {
+        @Override
+        public BigDecimal calculate(String priceInfo, Object usage) {
+            ResponsesPriceInfo price = JacksonUtils.deserialize(priceInfo, ResponsesPriceInfo.class);
+
+            ResponsesApiResponse.Usage responsesUsage = null;
+            CompletionResponse.TokenUsage tokenUsage = null;
+
+            if(usage instanceof ResponsesApiResponse.Usage) {
+                responsesUsage = (ResponsesApiResponse.Usage) usage;
+            } else if(usage instanceof CompletionResponse.TokenUsage) {
+                tokenUsage = (CompletionResponse.TokenUsage) usage;
+            } else {
+                String usageJson = JacksonUtils.serialize(usage);
+                responsesUsage = JacksonUtils.deserialize(usageJson, ResponsesApiResponse.Usage.class);
+            }
+
+            int inputTokens = 0;
+            int outputTokens = 0;
+            BigDecimal cost = BigDecimal.ZERO;
+
+            if(responsesUsage != null) {
+                inputTokens = responsesUsage.getInput_tokens() != null ? responsesUsage.getInput_tokens() : 0;
+                outputTokens = responsesUsage.getOutput_tokens() != null ? responsesUsage.getOutput_tokens() : 0;
+
+                ResponsesPriceInfo.RangePrice rangePrice = price.matchRangePrice(inputTokens, outputTokens);
+
+                if(responsesUsage.getInput_tokens_details() != null
+                        && responsesUsage.getInput_tokens_details().getCached_tokens() != null) {
+                    int cachedTokens = responsesUsage.getInput_tokens_details().getCached_tokens();
+                    if(cachedTokens > 0 && rangePrice.getCachedInput() != null) {
+                        cost = cost.add(rangePrice.getCachedInput().multiply(BigDecimal.valueOf(cachedTokens / 1000.0)));
+                        inputTokens -= cachedTokens;
+                    }
+                }
+
+                if(responsesUsage.getOutput_tokens_details() != null
+                        && responsesUsage.getOutput_tokens_details().getReasoning_tokens() != null) {
+                    int reasoningTokens = responsesUsage.getOutput_tokens_details().getReasoning_tokens();
+                    if(reasoningTokens > 0 && rangePrice.getReasoningOutput() != null) {
+                        cost = cost.add(rangePrice.getReasoningOutput().multiply(BigDecimal.valueOf(reasoningTokens / 1000.0)));
+                        outputTokens -= reasoningTokens;
+                    }
+                }
+
+                cost = cost.add(rangePrice.getInput().multiply(BigDecimal.valueOf(inputTokens / 1000.0)))
+                        .add(rangePrice.getOutput().multiply(BigDecimal.valueOf(outputTokens / 1000.0)));
+
+                if(price.getToolPrices() != null && responsesUsage.getTool_usage() != null) {
+                    cost = cost.add(calculateToolCost(price.getToolPrices(), responsesUsage.getTool_usage()));
+                }
+            } else if(tokenUsage != null) {
+                inputTokens = tokenUsage.getPrompt_tokens();
+                outputTokens = tokenUsage.getCompletion_tokens();
+
+                ResponsesPriceInfo.RangePrice rangePrice = price.matchRangePrice(inputTokens, outputTokens);
+
+                if(tokenUsage.getPrompt_tokens_details() != null) {
+                    int cachedTokens = tokenUsage.getPrompt_tokens_details().getCached_tokens();
+                    if(cachedTokens > 0 && rangePrice.getCachedInput() != null) {
+                        cost = cost.add(rangePrice.getCachedInput().multiply(BigDecimal.valueOf(cachedTokens / 1000.0)));
+                        inputTokens -= cachedTokens;
+                    }
+                }
+
+                if(tokenUsage.getCompletion_tokens_details() != null) {
+                    int reasoningTokens = tokenUsage.getCompletion_tokens_details().getReasoning_tokens();
+                    if(reasoningTokens > 0 && rangePrice.getReasoningOutput() != null) {
+                        cost = cost.add(rangePrice.getReasoningOutput().multiply(BigDecimal.valueOf(reasoningTokens / 1000.0)));
+                        outputTokens -= reasoningTokens;
+                    }
+                }
+
+                cost = cost.add(rangePrice.getInput().multiply(BigDecimal.valueOf(inputTokens / 1000.0)))
+                        .add(rangePrice.getOutput().multiply(BigDecimal.valueOf(outputTokens / 1000.0)));
+            }
+
+            return cost;
+        }
+
+        private BigDecimal calculateToolCost(
+                Map<String, BigDecimal> toolPrices,
+                Map<String, Integer> toolUsage) {
+            BigDecimal toolCost = BigDecimal.ZERO;
+
+            if(toolUsage == null || toolUsage.isEmpty()) {
+                return toolCost;
+            }
+
+            for(Map.Entry<String, Integer> entry : toolUsage.entrySet()) {
+                String toolName = entry.getKey();
+                Integer count = entry.getValue();
+
+                if(count == null || count == 0) {
+                    continue;
+                }
+
+                BigDecimal unitPrice = toolPrices.get(toolName);
+                if(unitPrice != null) {
+                    toolCost = toolCost.add(unitPrice.multiply(BigDecimal.valueOf(count)));
+                }
+            }
+
+            return toolCost;
+        }
+
+        @Override
+        public boolean checkPriceInfo(String priceInfo) {
+            ResponsesPriceInfo price = JacksonUtils.deserialize(priceInfo, ResponsesPriceInfo.class);
+            if(price == null) {
+                return false;
+            }
+            return price.validate();
         }
     };
 

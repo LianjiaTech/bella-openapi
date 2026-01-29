@@ -70,6 +70,12 @@ export async function getModelDetails(modelName: string): Promise<ModelDetails> 
     return response.data;
 }
 
+export async function getModelEndpoints(modelName: string): Promise<string[]> {
+    const response = await openapi.get<string[]>('/v1/meta/model/endpoints', {
+        params: { modelName },
+    });
+    return response.data;
+}
 
 export async function updateModel(modelName: string, update: Partial<Model>): Promise<Boolean> {
     const requestBody: Model = {

@@ -76,6 +76,21 @@ public class ApikeyOps {
     @SuperBuilder
     @AllArgsConstructor
     @NoArgsConstructor
+    public static class QpsLimitOp extends Operator {
+        private String code;
+        /**
+         * QPS 限制值
+         * null 或 0：使用系统默认值
+         * 正数：具体的 QPS 限制
+         * 负数：不限制
+         */
+        private Integer qpsLimit;
+    }
+
+    @Data
+    @SuperBuilder
+    @AllArgsConstructor
+    @NoArgsConstructor
     public static class CodeOp extends Operator {
         private String code;
     }

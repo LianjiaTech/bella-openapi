@@ -60,8 +60,6 @@ public class ChannelService {
     @Autowired
     private ModelService modelService;
     @Autowired
-    private AdaptorManager adaptorManager;
-    @Autowired
     private CacheManager cacheManager;
     private static final String channelCacheKey = "channels:active:";
 
@@ -93,7 +91,7 @@ public class ChannelService {
 
         }
         endpoints.forEach(endpoint -> Assert.isTrue(CostCalculator.validate(endpoint, op.getPriceInfo()), "priceInfo invalid"));
-        endpoints.forEach(endpoint -> Assert.isTrue(adaptorManager.support(endpoint, op.getProtocol()), "不支持的协议"));
+        endpoints.forEach(endpoint -> Assert.isTrue(AdaptorManager.getInstance().support(endpoint, op.getProtocol()), "不支持的协议"));
 
         if(StringUtils.isEmpty(op.getVisibility())) {
             op.setVisibility(PUBLIC);
@@ -114,7 +112,7 @@ public class ChannelService {
         if(StringUtils.isNotEmpty(op.getPriceInfo())) {
             List<String> endpoints = new ArrayList<>();
             Entity entity = getEntityInfoByCode(op.getChannelCode());
-            if(entity.getEntityCode().equals(MODEL)) {
+            if(entity.getEntityType().equals(MODEL)) {
                 ModelDB model = modelService.getOne(entity.getEntityCode());
                 endpoints = modelService.getAllEndpoints(model.getModelName());
             } else {

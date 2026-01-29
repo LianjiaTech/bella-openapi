@@ -35,7 +35,7 @@ public class OcrGeneralResponse extends OpenapiResponse {
     /**
      * 识别结果数据
      */
-    private GeneralData data;
+    private Object data;
 
     /**
      * 通用文字识别数据结构

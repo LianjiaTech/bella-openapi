@@ -81,11 +81,14 @@
     "deepThinking": "Deep Thinking",
     "streaming": "Streaming",
     "privateChannel": "Private Channel",
-    "inputOutputLength": "Input/Output Length",
+    "inputOutputLength": "Input/Output Length:",
+    "inputOutputPricing": "Input/Output Pricing",
+    "cachedReadPricing": "Cached Read Pricing",
     "pricing": "Pricing",
     "loadingModels": "Loading models...",
     "loading": "Loading...",
     "noFilterTags": "No filter tags available",
+    "noModelsFound": "No models found",
     "retry": "Retry"
   },
   "metadata": {
