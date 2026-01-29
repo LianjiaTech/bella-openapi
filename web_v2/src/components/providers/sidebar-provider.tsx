@@ -3,7 +3,7 @@
 import React, { createContext, useState, useEffect, useContext, useCallback, useRef } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { getAllCategoryTrees } from "@/lib/api/meta"
-import { CategoryTree } from "@/lib/types/openapi"
+import { CategoryTree } from "@/lib/types/models"
 import { DEFAULT_ENDPOINT } from "@/lib/constants/constants"
 import { safeGetItem, safeGetJSON, safeSetItem, safeSetJSON } from "@/lib/utils/storage"
 
