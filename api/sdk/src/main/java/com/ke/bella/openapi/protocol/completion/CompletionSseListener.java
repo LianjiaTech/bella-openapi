@@ -1,7 +1,7 @@
 package com.ke.bella.openapi.protocol.completion;
 
 import com.google.common.collect.ImmutableSet;
-import com.ke.bella.openapi.common.exception.ChannelException;
+import com.ke.bella.openapi.common.exception.BellaException;
 import com.ke.bella.openapi.protocol.BellaEventSourceListener;
 import com.ke.bella.openapi.protocol.Callbacks;
 import lombok.extern.slf4j.Slf4j;
@@ -49,15 +49,15 @@ public class CompletionSseListener extends BellaEventSourceListener {
 
     @Override
     public void onFailure(EventSource eventSource, Throwable t, Response response) {
-        ChannelException exception = null;
+        BellaException exception = null;
         try {
             if(t == null) {
                 exception = convertToException(response);
             } else {
-                exception = ChannelException.fromException(t);
+                exception = BellaException.fromException(t);
             }
         } catch (Exception e) {
-            exception = ChannelException.fromException(e);
+            exception = BellaException.fromException(e);
         } finally {
             if(connectionInitFuture.isDone()) {
                 callback.finish(exception);
@@ -67,20 +67,20 @@ public class CompletionSseListener extends BellaEventSourceListener {
         }
     }
 
-    public ChannelException convertToException(Response response) throws IOException {
+    public BellaException convertToException(Response response) throws IOException {
         String msg;
         try {
             msg = response.body().string();
             StreamCompletionResponse streamCompletionResponse = sseConverter.convert(null, null, msg);
             if(streamCompletionResponse != null && streamCompletionResponse.getError() != null) {
-                return new ChannelException.OpenAIException(response.code(), streamCompletionResponse.getError().getType(),
+                return new BellaException.ChannelException(response.code(), streamCompletionResponse.getError().getType(),
                         streamCompletionResponse.getError().getMessage(), streamCompletionResponse.getError());
             } else {
-                return new ChannelException.OpenAIException(response.code(), HttpStatus.valueOf(response.code()).getReasonPhrase(), msg);
+                return new BellaException.ChannelException(response.code(), msg);
             }
         } catch (Exception e) {
             log.warn(e.getMessage(), e);
-            return ChannelException.fromResponse(response.code(), response.message());
+            return new BellaException.ChannelException(response.code(), response.message());
         }
     }
 }

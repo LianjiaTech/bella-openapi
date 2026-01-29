@@ -1,6 +1,6 @@
 package com.ke.bella.openapi.protocol.document.parse;
 
-import com.ke.bella.openapi.common.exception.ChannelException;
+import com.ke.bella.openapi.common.exception.BellaException;
 import com.lark.oapi.Client;
 import com.lark.oapi.service.docx.v1.model.Image;
 import com.lark.oapi.service.drive.v1.model.CreateImportTaskReq;
@@ -40,11 +40,11 @@ public class LarkClientUtils {
                     .build();
             UploadAllFileResp resp = client.drive().v1().file().uploadAll(req);
             if(resp.getCode() != 0) {
-                throw ChannelException.fromResponse(502, resp.getMsg());
+                throw new BellaException.ChannelException(502, resp.getMsg());
             }
             return resp.getData().getFileToken();
         } catch (Exception e) {
-            throw ChannelException.fromException(e);
+            throw BellaException.fromException(e);
         }
     }
 
@@ -64,11 +64,11 @@ public class LarkClientUtils {
         try {
             CreateImportTaskResp resp = client.drive().v1().importTask().create(req);
             if(resp.getCode() != 0) {
-                throw ChannelException.fromResponse(502, resp.getMsg());
+                throw new BellaException.ChannelException(502, resp.getMsg());
             }
             return resp.getData().getTicket();
         } catch (Exception e) {
-            throw ChannelException.fromException(e);
+            throw BellaException.fromException(e);
         }
     }
 
@@ -79,7 +79,7 @@ public class LarkClientUtils {
         try {
             GetImportTaskResp resp = client.drive().v1().importTask().get(req);
             if(resp.getCode() != 0) {
-                throw ChannelException.fromResponse(502, resp.getMsg());
+                throw new BellaException.ChannelException(502, resp.getMsg());
             }
             DocParseResponse response = new DocParseResponse();
             switch (resp.getData().getResult().getJobStatus()) {
@@ -96,7 +96,7 @@ public class LarkClientUtils {
             }
             return response;
         } catch (Exception e) {
-            throw ChannelException.fromException(e);
+            throw BellaException.fromException(e);
         }
     }
 
