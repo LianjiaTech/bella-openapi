@@ -10,9 +10,11 @@ import { useEndpointData } from "./hooks/useEndpointData"
 import { getInitialEndpoint } from "@/lib/utils"
 import { Model } from "@/lib/types/openapi"
 import { Loader, AlertCircle } from "lucide-react"
-import { ModelCard } from "@/components/ui/modelCard/index"
+import { ModelCard } from "./components/modelCard"
 import { Button } from "@/components/common/button"
 import { VirtualGrid } from "@/components/ui/virtualGrid/index"
+import { SearchBar } from "@/components/ui/modelFilterPanel/components/SearchBar"
+
 
 /**
  * 模型目录页面组件
@@ -89,17 +91,17 @@ const ModelsPage = () => {
    * 处理添加渠道操作
    */
   const handleAddChannel = (model: Model) => {
-
+    // TODO: 添加渠道操作
   }
 
 
   return (
     <>
       <TopBar title={t("modelCatalog")} description={t("modelCatalogDesc")} />
-      <div className="flex h-[calc(100vh-4rem)] flex-col overflow-hidden">
+      <div className=" flex h-[calc(100vh-4rem)] flex-col overflow-hidden">
         {/* 筛选面板区域（固定不滚动） */}
         <div className="flex-shrink-0 border-b bg-background">
-          <div className="container px-6 py-4">
+          <div className="px-6 py-4">
             {/* 模型筛选面板 */}
             <ModelFilterPanel
               categoryTrees={categoryTrees}
@@ -109,7 +111,6 @@ const ModelsPage = () => {
               isLoadingFeatures={initialLoading}
               onCapabilityChange={handleCapabilityChange}
               onTagsChange={handleTagsChange}
-              onSearchChange={handleSearchChange}
             />
 
             {/* 错误提示 */}
@@ -132,11 +133,22 @@ const ModelsPage = () => {
               </div>
             )}
 
-            {/* 模型列表统计 */}
-            <div className="mt-4">
-              <h2 className="text-sm font-medium text-muted-foreground">
-                {t("foundModels")} {filteredModels.length} {t("modelsCount")}
-              </h2>
+            {/* 搜索框与模型列表统计 */}
+            <div className="mt-4 flex items-center justify-between  gap-4">
+              <div className="flex-shrink-0">
+                <h2 className="text-sm font-medium text-muted-foreground whitespace-nowrap">
+                  {t("foundModels")} {filteredModels.length} {t("modelsCount")}
+                </h2>
+              </div>
+              <div>
+                <SearchBar
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                  onClear={() => setSearchQuery("")}
+                  placeholder={t("searchModels")}
+                  className="mb-0"
+                />
+              </div>
             </div>
           </div>
         </div>
