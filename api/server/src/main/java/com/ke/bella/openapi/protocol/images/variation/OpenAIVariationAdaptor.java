@@ -1,5 +1,6 @@
 package com.ke.bella.openapi.protocol.images.variation;
 
+import com.ke.bella.openapi.common.exception.BellaException;
 import com.ke.bella.openapi.protocol.images.ImagesVariationRequest;
 import com.ke.bella.openapi.protocol.images.ImagesProperty;
 import com.ke.bella.openapi.protocol.images.ImagesResponse;
@@ -80,7 +81,7 @@ public class OpenAIVariationAdaptor implements ImagesVariationAdaptor<ImagesProp
             return HttpUtils.httpRequest(httpRequest, ImagesResponse.class);
 
         } catch (IOException e) {
-            throw new RuntimeException("图片变化请求处理失败: " + e.getMessage(), e);
+            throw new BellaException.ChannelException(502, "图片变化请求处理失败: " + e.getMessage());
         }
     }
 }

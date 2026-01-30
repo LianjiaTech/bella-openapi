@@ -3,7 +3,7 @@ package com.ke.bella.openapi.server.intercept;
 import com.ke.bella.openapi.BellaContext;
 import com.ke.bella.openapi.Operator;
 import com.ke.bella.openapi.apikey.ApikeyInfo;
-import com.ke.bella.openapi.common.exception.ChannelException;
+import com.ke.bella.openapi.common.exception.BellaException;
 import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;
 
 import javax.servlet.http.HttpServletRequest;
@@ -19,7 +19,7 @@ public class AuthorizationInterceptor extends HandlerInterceptorAdapter {
         }
         ApikeyInfo apikeyInfo = BellaContext.getApikeyIgnoreNull();
         if(apikeyInfo == null) {
-            throw new ChannelException.AuthorizationException("invalid Authorization header");
+            throw new BellaException.AuthorizationException("invalid Authorization header");
         }
 
         String user = request.getHeader("ucid");

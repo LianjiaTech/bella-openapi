@@ -5,15 +5,13 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
-import com.ke.bella.openapi.protocol.log.EndpointLogger;
-import com.ke.bella.openapi.protocol.realtime.RealTimeMessage;
 import okhttp3.WebSocket;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.stereotype.Component;
 
 import com.google.common.collect.Lists;
 import com.ke.bella.openapi.EndpointProcessData;
-import com.ke.bella.openapi.common.exception.ChannelException;
+import com.ke.bella.openapi.common.exception.BellaException;
 import com.ke.bella.openapi.protocol.BellaWebSocketListener;
 import com.ke.bella.openapi.protocol.Callbacks;
 import com.ke.bella.openapi.protocol.asr.AsrRequest;
@@ -140,7 +138,7 @@ public class HuoshanAdaptor implements FlashAsrAdaptor<HuoshanProperty> {
             }
             return response;
         } catch (Exception e) {
-            throw ChannelException.fromException(e);
+            throw BellaException.fromException(e);
         }
     }
 

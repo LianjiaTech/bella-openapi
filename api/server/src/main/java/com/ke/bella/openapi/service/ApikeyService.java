@@ -18,9 +18,8 @@ import com.ke.bella.openapi.apikey.ApikeyOps;
 import com.ke.bella.openapi.apikey.ApikeyTransferLog;
 import com.ke.bella.openapi.apikey.SubApikeyUpdateOp;
 import com.ke.bella.openapi.apikey.TransferApikeyOwnerOp;
-import com.ke.bella.openapi.common.EntityConstants;
 import com.ke.bella.openapi.event.ApiKeyTransferEvent;
-import com.ke.bella.openapi.common.exception.ChannelException;
+import com.ke.bella.openapi.common.exception.BellaException;
 import com.ke.bella.openapi.db.repo.ApikeyCostRepo;
 import com.ke.bella.openapi.db.repo.ApikeyRepo;
 import com.ke.bella.openapi.db.repo.ApikeyRoleRepo;
@@ -144,7 +143,7 @@ public class ApikeyService {
         ApikeyInfo cur = EndpointContext.getApikey();
         ApikeyInfo apikey = queryByCode(op.getParentCode(), true);
         if(!apikey.getOwnerCode().equals(cur.getOwnerCode())) {
-            throw new ChannelException.AuthorizationException("请求使用AK和父AK必须属于同一个人");
+            throw new BellaException.AuthorizationException("请求使用AK和父AK必须属于同一个人");
         }
         Assert.notNull(apikey, "父AK不存在或已停用");
         Assert.isTrue(StringUtils.isEmpty(apikey.getParentCode()), "当前AK无创建子AK权限");
@@ -187,7 +186,7 @@ public class ApikeyService {
         ApikeyInfo apikey = queryByCode(subApikey.getParentCode(), false);
         Assert.notNull(apikey, "只可以修改子ak");
         if(!apikey.getOwnerCode().equals(cur.getOwnerCode())) {
-            throw new ChannelException.AuthorizationException("只能修改自己的apikey");
+            throw new BellaException.AuthorizationException("只能修改自己的apikey");
         }
         if(StringUtils.isNotEmpty(op.getRoleCode())) {
             apikeyRoleRepo.checkExist(op.getRoleCode(), true);
@@ -291,14 +290,14 @@ public class ApikeyService {
         if(info == null) {
             String display = EncryptUtils.desensitizeByLength(auth);
             String displayAk = EncryptUtils.desensitize(ak);
-            throw new ChannelException.AuthorizationException("api key不存在，请求的header为：" + display + ", apikey为：" + displayAk);
+            throw new BellaException.AuthorizationException("api key不存在，请求的header为：" + display + ", apikey为：" + displayAk);
         }
         if(StringUtils.isNotEmpty(info.getParentCode())) {
             ApikeyInfo parent = queryByCode(info.getParentCode(), true);
             if(parent == null) {
                 String display = EncryptUtils.desensitizeByLength(auth);
                 String displayAk = EncryptUtils.desensitize(ak);
-                throw new ChannelException.AuthorizationException("api key不存在，请求的header为：" + display + ", apikey为：" + displayAk);
+                throw new BellaException.AuthorizationException("api key不存在，请求的header为：" + display + ", apikey为：" + displayAk);
             }
             info.setParentInfo(parent);
         }
@@ -370,7 +369,7 @@ public class ApikeyService {
         // todo: 获取所有 org
         Set<String> orgCodes = new HashSet<>();
         if(db.getOwnerType().equals(SYSTEM)) {
-            throw new ChannelException.AuthorizationException("没有操作权限");
+            throw new BellaException.AuthorizationException("没有操作权限");
         }
         if(db.getOwnerType().equals(ORG)) {
             validateOrgPermission(apikeyInfo, Sets.newHashSet(db.getOwnerCode()), orgCodes);
@@ -389,7 +388,7 @@ public class ApikeyService {
         Operator op = BellaContext.getOperatorIgnoreNull();
         if(apikeyInfo == null || (!apikeyFirst && op != null)) {
             if(op == null || CollectionUtils.isNotEmpty(condition.getOrgCodes())) {
-                throw new ChannelException.AuthorizationException("没有操作权限");
+                throw new BellaException.AuthorizationException("没有操作权限");
             }
             if(StringUtils.isNotEmpty(condition.getPersonalCode())) {
                 Assert.isTrue(op.getUserId().toString().equals(condition.getPersonalCode()), "没有操作权限");
@@ -421,14 +420,14 @@ public class ApikeyService {
                 && personalCode.equals(apikeyInfo.getOwnerCode()))) {
             return;
         }
-        throw new ChannelException.AuthorizationException("没有操作权限");
+        throw new BellaException.AuthorizationException("没有操作权限");
     }
 
     private void validateOrgPermission(ApikeyInfo apikeyInfo, Set<String> conditionOrgCodes, Set<String> orgCodes) {
         if(apikeyInfo.getOwnerType().equals(SYSTEM) || CollectionUtils.isEmpty(conditionOrgCodes) || orgCodes.containsAll(conditionOrgCodes)) {
             return;
         }
-        throw new ChannelException.AuthorizationException("没有操作权限");
+        throw new BellaException.AuthorizationException("没有操作权限");
     }
 
     @Cached(name = apikeyCacheKey, key = "#sha")
@@ -454,25 +453,25 @@ public class ApikeyService {
         // 1. 验证API Key是否存在且为主API Key
         ApikeyInfo apikeyInfo = apikeyRepo.queryByCode(op.getAkCode());
         if(apikeyInfo == null) {
-            throw new ChannelException.AuthorizationException("API Key不存在");
+            throw new BellaException.AuthorizationException("API Key不存在");
         }
 
         if(StringUtils.isNotEmpty(apikeyInfo.getParentCode())) {
-            throw new ChannelException.AuthorizationException("子API Key不允许转移，只能转移主API Key");
+            throw new BellaException.AuthorizationException("子API Key不允许转移，只能转移主API Key");
         }
 
         if(!ACTIVE.equals(apikeyInfo.getStatus())) {
-            throw new ChannelException.AuthorizationException("API Key状态不允许转移");
+            throw new BellaException.AuthorizationException("API Key状态不允许转移");
         }
 
         // 只有个人类型的API Key才能转移
         if(!PERSON.equals(apikeyInfo.getOwnerType())) {
-            throw new ChannelException.AuthorizationException("只有个人类型的API Key才能转移");
+            throw new BellaException.AuthorizationException("只有个人类型的API Key才能转移");
         }
 
         // 2. 验证当前用户权限 (只有当前所有者可以转移)
         if(!apikeyInfo.getOwnerCode().equals(currentOperator.getUserId().toString())) {
-            throw new ChannelException.AuthorizationException("只有API Key所有者才能执行转移操作");
+            throw new BellaException.AuthorizationException("只有API Key所有者才能执行转移操作");
         }
 
         // 3. 查找并验证目标用户
@@ -547,13 +546,13 @@ public class ApikeyService {
         // 验证权限：只有API Key所有者或系统管理员可以查看转移历史
         ApikeyInfo apikeyInfo = apikeyRepo.queryByCode(akCode);
         if(apikeyInfo == null) {
-            throw new ChannelException.AuthorizationException("API Key不存在");
+            throw new BellaException.AuthorizationException("API Key不存在");
         }
 
         ApikeyInfo currentApikey = EndpointContext.getApikey();
         if(!apikeyInfo.getOwnerCode().equals(currentApikey.getOwnerCode())
                 && !SYSTEM.equals(currentApikey.getOwnerType())) {
-            throw new ChannelException.AuthorizationException("没有权限查看转移历史");
+            throw new BellaException.AuthorizationException("没有权限查看转移历史");
         }
 
         return apikeyTransferLogRepo.queryByAkCode(akCode);
@@ -589,11 +588,11 @@ public class ApikeyService {
         else if(StringUtils.isNotEmpty(op.getTargetUserSource()) && StringUtils.isNotEmpty(op.getTargetUserEmail())) {
             targetUser = userRepo.queryBySourceAndEmail(op.getTargetUserSource(), op.getTargetUserEmail());
         } else {
-            throw new ChannelException.AuthorizationException("必须指定目标用户：可使用用户ID、source+sourceId或source+email");
+            throw new BellaException.AuthorizationException("必须指定目标用户：可使用用户ID、source+sourceId或source+email");
         }
 
         if(targetUser == null) {
-            throw new ChannelException.AuthorizationException("目标用户不存在");
+            throw new BellaException.AuthorizationException("目标用户不存在");
         }
 
         return targetUser;

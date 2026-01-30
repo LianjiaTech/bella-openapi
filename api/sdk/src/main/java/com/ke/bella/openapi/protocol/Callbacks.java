@@ -1,6 +1,6 @@
 package com.ke.bella.openapi.protocol;
 
-import com.ke.bella.openapi.common.exception.ChannelException;
+import com.ke.bella.openapi.common.exception.BellaException;
 import com.ke.bella.openapi.protocol.completion.StreamCompletionResponse;
 import com.ke.bella.openapi.utils.DateTimeUtils;
 import com.ke.bella.openapi.utils.JacksonUtils;
@@ -48,7 +48,7 @@ public interface Callbacks {
 
         void finish();
 
-        void finish(ChannelException exception);
+        void finish(BellaException exception);
 
         void send(Object data);
 
@@ -77,7 +77,7 @@ public interface Callbacks {
 
         void finish();
 
-        void finish(ChannelException exception);
+        void finish(BellaException exception);
     }
 
     interface WebSocketCallback extends StreamCallback {
@@ -124,7 +124,7 @@ public interface Callbacks {
                     msg = doCallback(msg);
                 }
             } catch (Exception e) {
-                finish(ChannelException.fromException(e));
+                finish(BellaException.fromException(e));
                 e.printStackTrace();
             } finally {
                 if(next != null) {
@@ -150,7 +150,7 @@ public interface Callbacks {
         }
 
         @Override
-        public void finish(ChannelException exception) {
+        public void finish(BellaException exception) {
             if(next != null) {
                 next.finish(exception);
             }
@@ -171,6 +171,6 @@ public interface Callbacks {
 
         void onComplete();
 
-        void onError(ChannelException exception);
+        void onError(BellaException exception);
     }
 }
