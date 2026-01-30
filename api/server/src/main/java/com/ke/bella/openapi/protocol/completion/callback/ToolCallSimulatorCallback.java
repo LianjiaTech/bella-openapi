@@ -4,7 +4,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import com.ke.bella.openapi.EndpointProcessData;
 import com.ke.bella.openapi.TaskExecutor;
-import com.ke.bella.openapi.common.exception.ChannelException;
+import com.ke.bella.openapi.common.exception.BellaException;
 import com.ke.bella.openapi.protocol.Callbacks;
 import com.ke.bella.openapi.protocol.completion.StreamCompletionResponse;
 import com.ke.bella.openapi.simulation.FunctionCallContentBuffer;
@@ -87,7 +87,7 @@ public class ToolCallSimulatorCallback extends Callbacks.StreamCompletionCallbac
     }
 
     @Override
-    public void finish(ChannelException exception) {
+    public void finish(BellaException exception) {
         if(isOpen) {
             buffer.finish();
         } else {

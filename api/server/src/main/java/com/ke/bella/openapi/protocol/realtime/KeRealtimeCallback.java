@@ -1,7 +1,7 @@
 package com.ke.bella.openapi.protocol.realtime;
 
 import com.ke.bella.openapi.EndpointProcessData;
-import com.ke.bella.openapi.common.exception.ChannelException;
+import com.ke.bella.openapi.common.exception.BellaException;
 import com.ke.bella.openapi.protocol.Callbacks;
 import com.ke.bella.openapi.protocol.log.EndpointLogger;
 import com.ke.bella.openapi.utils.DateTimeUtils;
@@ -111,9 +111,9 @@ public class KeRealtimeCallback implements Callbacks.WebSocketCallback {
     @Override
     public void onFailure(WebSocket webSocket, Throwable t, Response response) {
         if(t != null) {
-            onError(ChannelException.fromException(t));
+            onError(BellaException.fromException(t));
         } else {
-            onError(ChannelException.fromResponse(response.code(), response.message()));
+            onError(new BellaException.ChannelException(response.code(), response.message()));
         }
     }
 
@@ -124,14 +124,14 @@ public class KeRealtimeCallback implements Callbacks.WebSocketCallback {
             return true;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw ChannelException.fromException(e);
+            throw BellaException.fromException(e);
         } catch (ExecutionException | TimeoutException e) {
             log.warn(e.getMessage(), e);
-            throw ChannelException.fromException(e);
+            throw BellaException.fromException(e);
         }
     }
 
-    private void onError(ChannelException exception) {
+    private void onError(BellaException exception) {
         log.warn("realtime error: {}", exception.getMessage(), exception);
         sender.onError(exception);
         complete();
