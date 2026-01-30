@@ -1,6 +1,6 @@
 package com.ke.bella.openapi;
 
-import com.ke.bella.openapi.common.exception.ChannelException;
+import com.ke.bella.openapi.common.exception.BellaException;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
@@ -56,7 +56,7 @@ public class TypeSchema implements Serializable {
                     try {
                         return name.invoke(em).toString();
                     } catch (IllegalAccessException | InvocationTargetException e) {
-                        throw ChannelException.fromException(e);
+                        throw BellaException.fromException(e);
                     }
                 }).collect(Collectors.toList()));
             } else if(isPrimitiveOrWrapper(fieldType) || fieldType == String.class || fieldType == BigDecimal.class) {
@@ -87,7 +87,7 @@ public class TypeSchema implements Serializable {
             return schema;
         } catch (NoSuchMethodException e) {
             log.warn(e.getMessage(), e);
-            throw ChannelException.fromException(e);
+            throw BellaException.fromException(e);
         } catch (InstantiationException | IllegalAccessException e) {
             throw new RuntimeException(e);
         }

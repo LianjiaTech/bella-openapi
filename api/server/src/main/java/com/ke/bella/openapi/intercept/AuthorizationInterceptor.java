@@ -14,7 +14,7 @@ import com.ke.bella.openapi.BellaContext;
 import com.ke.bella.openapi.EndpointContext;
 import com.ke.bella.openapi.Operator;
 import com.ke.bella.openapi.apikey.ApikeyInfo;
-import com.ke.bella.openapi.common.exception.ChannelException;
+import com.ke.bella.openapi.common.exception.BellaException;
 import com.ke.bella.openapi.service.ApikeyService;
 
 @Component
@@ -34,7 +34,7 @@ public class AuthorizationInterceptor extends com.ke.bella.openapi.server.interc
             String apikey = op.getManagerAk();
             ApikeyInfo apikeyInfo = apikeyService.verifyAuth(apikey);
             if(apikeyInfo == null) {
-                throw new ChannelException.AuthorizationException("apikey不存在");
+                throw new BellaException.AuthorizationException("apikey不存在");
             }
             op.getOptionalInfo().put("roles", apikeyInfo.getRolePath().getIncluded());
             op.getOptionalInfo().put("excludes", apikeyInfo.getRolePath().getExcluded());
@@ -52,7 +52,7 @@ public class AuthorizationInterceptor extends com.ke.bella.openapi.server.interc
                 }
                 // 备选 header 也为空，抛出异常
                 if (StringUtils.isEmpty(auth)) {
-                    throw new ChannelException.AuthorizationException("Authorization is empty");
+                    throw new BellaException.AuthorizationException("Authorization is empty");
                 }
             }
             ApikeyInfo apikeyInfo = apikeyService.verifyAuth(auth);
@@ -68,7 +68,7 @@ public class AuthorizationInterceptor extends com.ke.bella.openapi.server.interc
             EndpointContext.setApikey(apikeyInfo);
         }
         if(!hasPermission) {
-            throw new ChannelException.AuthorizationException("没有操作权限");
+            throw new BellaException.AuthorizationException("没有操作权限");
         }
         return true;
     }

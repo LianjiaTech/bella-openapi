@@ -4,7 +4,7 @@ import com.ke.bella.openapi.EndpointProcessData;
 import com.ke.bella.openapi.server.OpenAiServiceFactory;
 import com.theokanning.openai.file.FileUrl;
 import com.theokanning.openai.service.OpenAiService;
-import com.ke.bella.openapi.common.exception.ChannelException;
+import com.ke.bella.openapi.common.exception.BellaException;
 import com.ke.bella.openapi.protocol.asr.QwenProperty;
 import com.ke.bella.openapi.protocol.asr.AsrRequest;
 import com.theokanning.openai.file.File;
@@ -46,7 +46,7 @@ public class QwenAdaptor implements FlashAsrAdaptor<QwenProperty> {
             return convertToFlashAsrResponse(aliResponse, processData);
 
         } catch (Exception e) {
-            throw ChannelException.fromException(e);
+            throw BellaException.fromException(e);
         }
     }
 

@@ -1,6 +1,6 @@
 package com.ke.bella.openapi.protocol.completion;
 
-import com.ke.bella.openapi.common.exception.ChannelException;
+import com.ke.bella.openapi.common.exception.BellaException;
 import com.ke.bella.openapi.protocol.Callbacks;
 import com.ke.bella.openapi.protocol.Callbacks.StreamCompletionCallback;
 import lombok.extern.slf4j.Slf4j;
@@ -45,7 +45,7 @@ public class AwsAdaptor implements CompletionAdaptor<AwsProperty> {
             ConverseResponse response = client.converse(awsRequest);
             return AwsCompletionConverter.convert2OpenAIResponse(response);
         } catch (BedrockRuntimeException bedrockException) {
-            throw ChannelException.fromResponse(bedrockException.statusCode(), bedrockException.getMessage());
+            throw new BellaException.ChannelException(bedrockException.statusCode(), bedrockException.getMessage());
         }
     }
 
@@ -120,10 +120,10 @@ public class AwsAdaptor implements CompletionAdaptor<AwsProperty> {
             log.warn(throwable.getMessage(), throwable);
             if(throwable instanceof BedrockRuntimeException) {
                 BedrockRuntimeException bedrockException = (BedrockRuntimeException) throwable;
-                callback.finish(ChannelException.fromResponse(bedrockException.statusCode(), bedrockException.getMessage()));
+                callback.finish(new BellaException.ChannelException(bedrockException.statusCode(), bedrockException.getMessage()));
                 return;
             }
-            callback.finish(ChannelException.fromException(throwable));
+            callback.finish(BellaException.fromException(throwable));
         }
     }
 }
