@@ -2,7 +2,7 @@ package com.ke.bella.openapi.intercept;
 
 import com.ke.bella.openapi.EndpointContext;
 import com.ke.bella.openapi.apikey.ApikeyInfo;
-import com.ke.bella.openapi.common.exception.ChannelException;
+import com.ke.bella.openapi.common.exception.BellaException;
 import com.ke.bella.openapi.service.ApikeyService;
 import com.ke.bella.openapi.utils.DateTimeUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,7 +32,7 @@ public class MonthQuotaInterceptor extends HandlerInterceptorAdapter {
             double costVal = cost.doubleValue() / 100.0;
             if(apikey.getMonthQuota().doubleValue() <= costVal) {
                 String msg = "已达每月额度上限, limit:" + apikey.getMonthQuota() + ", cost:" + costVal;
-                throw new ChannelException.RateLimitException(msg);
+                throw new BellaException.RateLimitException(msg);
             }
         }
         // 父ak的总额度不能超出
@@ -42,7 +42,7 @@ public class MonthQuotaInterceptor extends HandlerInterceptorAdapter {
             double costVal = cost.doubleValue() / 100.0;
             if(quota.doubleValue() <= costVal) {
                 String msg = "主ak的总额度已达上限, limit:" + quota + ", cost:" + costVal;
-                throw new ChannelException.RateLimitException(msg);
+                throw new BellaException.RateLimitException(msg);
             }
         }
         return true;

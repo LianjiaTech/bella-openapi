@@ -7,7 +7,7 @@ import org.springframework.http.HttpStatus;
  *
  * @author chenhongliang001
  */
-public class BizParamCheckException extends ChannelException {
+public class BizParamCheckException extends BellaException {
 
     public BizParamCheckException(String message) {
         super(message);
