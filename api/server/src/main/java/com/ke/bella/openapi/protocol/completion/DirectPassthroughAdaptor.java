@@ -12,6 +12,7 @@ import com.ke.bella.openapi.EndpointContext;
 import com.ke.bella.openapi.EndpointProcessData;
 import com.ke.bella.openapi.TaskExecutor;
 import com.ke.bella.openapi.apikey.ApikeyInfo;
+import com.ke.bella.openapi.common.exception.BellaException;
 import com.ke.bella.openapi.protocol.AuthorizationProperty;
 import com.ke.bella.openapi.protocol.Callbacks;
 import com.ke.bella.openapi.protocol.completion.callback.StreamCompletionCallback;
@@ -142,7 +143,7 @@ public class DirectPassthroughAdaptor implements CompletionAdaptor<CompletionPro
 
         } catch (IOException e) {
             log.error("Direct passthrough error", e);
-            throw new RuntimeException(e);
+            throw new BellaException.ChannelException(502, "Direct passthrough error: " + e.getMessage());
         }
 
         return null;

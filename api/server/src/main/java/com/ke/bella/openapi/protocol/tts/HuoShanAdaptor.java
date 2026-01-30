@@ -3,13 +3,13 @@ package com.ke.bella.openapi.protocol.tts;
 import java.util.Base64;
 import java.util.UUID;
 
+import com.ke.bella.openapi.common.exception.BellaException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
 import com.ke.bella.openapi.EndpointContext;
 import com.ke.bella.openapi.EndpointProcessData;
-import com.ke.bella.openapi.common.exception.ChannelException;
 import com.ke.bella.openapi.protocol.BellaWebSocketListener;
 import com.ke.bella.openapi.protocol.Callbacks;
 import com.ke.bella.openapi.protocol.log.EndpointLogger;
@@ -92,7 +92,7 @@ public class HuoShanAdaptor implements TtsAdaptor<HuoShanProperty> {
         if(huoshanResponse == null || huoshanResponse.getCode() != HuoShanResponseCodeEnum.OK.code || huoshanResponse.getData() == null) {
             HttpStatus status = getHttpStatus(HuoShanAdaptor.HuoShanResponseCodeEnum
                     .getByCode(huoshanResponse == null ? HuoShanResponseCodeEnum.OTHER_ERROR.code : huoshanResponse.getCode()));
-            throw new ChannelException.OpenAIException(status.value(), status.getReasonPhrase(),
+            throw new BellaException.ChannelException(status.value(), status.getReasonPhrase(),
                     huoshanResponse == null ? HuoShanResponseCodeEnum.OTHER_ERROR.message : huoshanResponse.getMessage());
         }
         return BASE64_DECODER.decode(huoshanResponse.getData());

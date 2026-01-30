@@ -21,7 +21,7 @@ import com.ke.bella.openapi.EndpointContext;
 import com.ke.bella.openapi.EndpointProcessData;
 import com.ke.bella.openapi.annotations.EndpointAPI;
 import com.ke.bella.openapi.common.exception.BizParamCheckException;
-import com.ke.bella.openapi.common.exception.ChannelException;
+import com.ke.bella.openapi.common.exception.BellaException;
 import com.ke.bella.openapi.protocol.AdaptorManager;
 import com.ke.bella.openapi.protocol.ChannelRouter;
 import com.ke.bella.openapi.protocol.completion.CompletionAdaptor;
@@ -120,7 +120,7 @@ public class ChatController {
 
             // If we get here, all models failed
             if(lastException != null) {
-                throw ChannelException.fromException(lastException);
+                throw BellaException.fromException(lastException);
             } else {
                 throw new BizParamCheckException("所有指定的模型都无法处理请求");
             }

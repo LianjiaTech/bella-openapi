@@ -33,7 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StreamUtils;
 
 import com.google.common.collect.Lists;
-import com.ke.bella.openapi.common.exception.ChannelException;
+import com.ke.bella.openapi.common.exception.BellaException;
 import com.ke.bella.openapi.protocol.completion.CompletionResponse;
 import com.ke.bella.openapi.protocol.completion.Message;
 import com.ke.bella.openapi.protocol.completion.ResponseHelper;
@@ -172,7 +172,7 @@ public class EndpointTest {
                             }
                             responses.add(streamResponse);
                             if(streamResponse.getError() != null) {
-                                throw new ChannelException.OpenAIException(response.getStatus(), "", "", streamResponse.getError());
+                                throw new BellaException.ChannelException(response.getStatus(), "", "", streamResponse.getError());
                             }
                         }
                     }

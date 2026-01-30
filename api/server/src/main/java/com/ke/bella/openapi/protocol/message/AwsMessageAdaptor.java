@@ -2,7 +2,7 @@ package com.ke.bella.openapi.protocol.message;
 
 import com.ke.bella.openapi.EndpointContext;
 import com.ke.bella.openapi.EndpointProcessData;
-import com.ke.bella.openapi.common.exception.ChannelException;
+import com.ke.bella.openapi.common.exception.BellaException;
 import com.ke.bella.openapi.protocol.Callbacks;
 import com.ke.bella.openapi.protocol.completion.AwsClientManager;
 import com.ke.bella.openapi.protocol.completion.AwsMessageProperty;
@@ -65,7 +65,7 @@ public class AwsMessageAdaptor implements MessageAdaptor<AwsMessageProperty> {
             EndpointContext.getProcessData().setResponse(TransferToCompletionsUtils.convertResponse(messageResponse));
             return messageResponse;
         } catch (BedrockRuntimeException bedrockException) {
-            throw ChannelException.fromResponse(bedrockException.statusCode(), bedrockException.getMessage());
+            throw new BellaException.ChannelException(bedrockException.statusCode(), bedrockException.getMessage());
         }
     }
 
@@ -100,7 +100,7 @@ public class AwsMessageAdaptor implements MessageAdaptor<AwsMessageProperty> {
         try {
             client.invokeModelWithResponseStream(streamRequest, handler);
         } catch (BedrockRuntimeException bedrockException) {
-            throw ChannelException.fromResponse(bedrockException.statusCode(), bedrockException.getMessage());
+            throw new BellaException.ChannelException(bedrockException.statusCode(), bedrockException.getMessage());
         }
     }
 
@@ -172,10 +172,10 @@ public class AwsMessageAdaptor implements MessageAdaptor<AwsMessageProperty> {
             log.warn(throwable.getMessage(), throwable);
             if(throwable instanceof BedrockRuntimeException) {
                 BedrockRuntimeException bedrockException = (BedrockRuntimeException) throwable;
-                callback.finish(ChannelException.fromResponse(bedrockException.statusCode(), bedrockException.getMessage()));
+                callback.finish(new BellaException.ChannelException(bedrockException.statusCode(), bedrockException.getMessage()));
                 return;
             }
-            callback.finish(ChannelException.fromException(throwable));
+            callback.finish(BellaException.fromException(throwable));
         }
     }
 }

@@ -3,6 +3,7 @@ package com.ke.bella.openapi.protocol.gemini;
 import com.ke.bella.openapi.EndpointContext;
 import com.ke.bella.openapi.EndpointProcessData;
 import com.ke.bella.openapi.TaskExecutor;
+import com.ke.bella.openapi.common.exception.BellaException;
 import com.ke.bella.openapi.protocol.completion.CompletionResponse;
 import com.ke.bella.openapi.protocol.completion.VertexConverter;
 import com.ke.bella.openapi.protocol.completion.VertexProperty;
@@ -143,7 +144,7 @@ public class VertexAdaptor implements GeminiAdaptor<VertexProperty> {
 
         } catch (IOException e) {
             log.error("Gemini request failed", e);
-            throw new RuntimeException("Gemini request failed: " + e.getMessage(), e);
+            throw new BellaException.ChannelException(502, "Gemini request failed: " + e.getMessage());
         }
     }
 

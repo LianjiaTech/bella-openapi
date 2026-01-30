@@ -3,7 +3,7 @@ package com.ke.bella.openapi.login.session;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.ke.bella.openapi.BellaResponse;
 import com.ke.bella.openapi.Operator;
-import com.ke.bella.openapi.common.exception.ChannelException;
+import com.ke.bella.openapi.common.exception.BellaException;
 import com.ke.bella.openapi.utils.HttpUtils;
 import com.ke.bella.openapi.utils.JacksonUtils;
 import okhttp3.Request;
@@ -65,9 +65,9 @@ public class HttpSessionManager implements SessionManager {
             if(response.code() != 200 && "true".equals(request.getHeader(CONSOLE_HEADER))) {
                 String redirectUrl = response.header(REDIRECT_HEADER);
                 if(response.code() == 401 && StringUtils.isNotEmpty(redirectUrl)) {
-                    throw new ChannelException.ClientNotLoginException(redirectUrl);
+                    throw new BellaException.ClientNotLoginException(redirectUrl);
                 }
-                throw ChannelException.fromResponse(response.code(), response.message());
+                throw BellaException.fromResponse(response.code(), response.message());
             }
             if(response.body() == null) {
                 return null;
@@ -76,7 +76,7 @@ public class HttpSessionManager implements SessionManager {
             }))
                     .orElse(new BellaResponse<>()).getData();
         } catch (IOException e) {
-            throw ChannelException.fromResponse(502, e.getMessage());
+            throw BellaException.fromResponse(502, e.getMessage());
         }
     }
 

@@ -14,7 +14,7 @@ import com.google.common.net.HttpHeaders;
 import com.ke.bella.openapi.BellaResponse;
 import com.ke.bella.openapi.EndpointProcessData;
 import com.ke.bella.openapi.apikey.ApikeyInfo;
-import com.ke.bella.openapi.common.exception.ChannelException;
+import com.ke.bella.openapi.common.exception.BellaException;
 import com.ke.bella.openapi.metadata.Model;
 import com.ke.bella.openapi.protocol.route.RouteRequest;
 import com.ke.bella.openapi.protocol.route.RouteResult;
@@ -56,7 +56,7 @@ public class OpenapiClient {
             }
             return apikeyInfo;
         } catch (ExecutionException e) {
-            throw ChannelException.fromException(e);
+            throw BellaException.fromException(e);
         }
     }
 
@@ -90,7 +90,7 @@ public class OpenapiClient {
         try {
             return modelCache.get(modelName, () -> requestModel(modelName));
         } catch (ExecutionException e) {
-            throw ChannelException.fromException(e);
+            throw BellaException.fromException(e);
         }
     }
 
@@ -123,7 +123,7 @@ public class OpenapiClient {
         BellaResponse<RouteResult> bellaResp = HttpUtils.httpRequest(request, new TypeReference<BellaResponse<RouteResult>>() {
         });
         if(bellaResp.getCode() != 200) {
-            throw ChannelException.fromResponse(bellaResp.getCode(), bellaResp.getMessage());
+            throw BellaException.fromResponse(bellaResp.getCode(), bellaResp.getMessage());
         }
         return bellaResp.getData();
     }
@@ -143,7 +143,7 @@ public class OpenapiClient {
         BellaResponse<Boolean> bellaResp = HttpUtils.httpRequest(request, new TypeReference<BellaResponse<Boolean>>() {
         });
         if(bellaResp.getCode() != 200) {
-            throw ChannelException.fromResponse(bellaResp.getCode(), bellaResp.getMessage());
+            throw BellaException.fromResponse(bellaResp.getCode(), bellaResp.getMessage());
         }
         return bellaResp.getData();
     }
@@ -161,7 +161,7 @@ public class OpenapiClient {
         BellaResponse<RouteResult> bellaResp = HttpUtils.httpRequest(request, new TypeReference<BellaResponse<RouteResult>>() {
         });
         if(bellaResp.getCode() != 200) {
-            throw ChannelException.fromResponse(bellaResp.getCode(), bellaResp.getMessage());
+            throw BellaException.fromResponse(bellaResp.getCode(), bellaResp.getMessage());
         }
         return bellaResp.getData();
     }
@@ -179,7 +179,7 @@ public class OpenapiClient {
                 new TypeReference<BellaResponse<Channel>>() {
                 });
         if(bellaResp.getCode() != 200) {
-            throw ChannelException.fromResponse(bellaResp.getCode(), bellaResp.getMessage());
+            throw BellaException.fromResponse(bellaResp.getCode(), bellaResp.getMessage());
         }
         return bellaResp.getData();
     }
@@ -199,7 +199,7 @@ public class OpenapiClient {
         BellaResponse<Boolean> bellaResp = HttpUtils.httpRequest(request, new TypeReference<BellaResponse<Boolean>>() {
         });
         if(bellaResp.getCode() != 200) {
-            throw ChannelException.fromResponse(bellaResp.getCode(), bellaResp.getMessage());
+            throw BellaException.fromResponse(bellaResp.getCode(), bellaResp.getMessage());
         }
         return bellaResp.getData();
     }
