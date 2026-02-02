@@ -42,10 +42,22 @@ export const CompletionPriceEditor = forwardRef<CompletionPriceEditorRef, Comple
             toolPrices: undefined,
         });
 
+        // 用于折扣输入的本地临时状态，允许为空以便用户清空输入框
+        const [discountInputValue, setDiscountInputValue] = useState<string | number>('');
+        // 是否启用折扣开关
+        const [isDiscountEnabled, setIsDiscountEnabled] = useState(false);
+
         // 仅在 value 从外部传入时更新内部状态（避免无限循环）
         useEffect(() => {
             if (value && value.tiers && value.tiers.length > 0) {
                 setPriceInfo(value);
+                const hasDiscount = value.batchDiscount < 1;
+                setIsDiscountEnabled(hasDiscount);
+                if (hasDiscount) {
+                    setDiscountInputValue((value.batchDiscount * 10).toString());
+                } else {
+                    setDiscountInputValue('');
+                }
             }
         }, [value]);
 
@@ -167,8 +179,21 @@ export const CompletionPriceEditor = forwardRef<CompletionPriceEditorRef, Comple
             return null;
         };
 
+        const isValidBatchDiscount = (discount: number): boolean => {
+            return discount > 0 && discount <= 1;
+        };
+
         // 完整验证
         const validatePriceInfo = (): boolean => {
+            if (!isValidBatchDiscount(priceInfo.batchDiscount)) {
+                toast({
+                    title: '验证失败',
+                    description: `折扣必须大于 0 且不超过 10`,
+                    variant: 'destructive',
+                });
+                return false;
+            }
+
             // tiers 必须存在且不为空
             if (!priceInfo.tiers || priceInfo.tiers.length === 0) {
                 toast({
@@ -455,6 +480,87 @@ export const CompletionPriceEditor = forwardRef<CompletionPriceEditorRef, Comple
 
         return (
             <div className="space-y-4">
+                {/* Batch Discount 配置 */}
+                <Card className="border-l-4 border-l-purple-500">
+                    <CardHeader className="pb-3">
+                        <CardTitle className="text-sm font-medium">批量折扣配置</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                                <Switch
+                                    checked={isDiscountEnabled}
+                                    onCheckedChange={(checked) => {
+                                        setIsDiscountEnabled(checked);
+                                        if (checked) {
+                                            setDiscountInputValue('5');
+                                            notifyChange({
+                                                ...priceInfo,
+                                                batchDiscount: 0.5
+                                            });
+                                        } else {
+                                            notifyChange({
+                                                ...priceInfo,
+                                                batchDiscount: 1.0
+                                            });
+                                            setDiscountInputValue('');
+                                        }
+                                    }}
+                                />
+                                <Label className="text-sm">启用批量折扣</Label>
+                            </div>
+                            {isDiscountEnabled && (
+                                <div className="flex items-center space-x-2">
+                                    <Input
+                                        type="number"
+                                        value={discountInputValue}
+                                        onChange={(e) => {
+                                            setDiscountInputValue(e.target.value);
+                                        }}
+                                        onBlur={(e) => {
+                                            const val = parseFloat(e.target.value);
+                                            if (!isNaN(val) && val > 0) {
+                                                const batchDiscount = val / 10;
+                                                if (isValidBatchDiscount(batchDiscount)) {
+                                                    notifyChange({
+                                                        ...priceInfo,
+                                                        batchDiscount: batchDiscount
+                                                    });
+                                                } else {
+                                                    toast({
+                                                        title: '输入无效',
+                                                        description: '折扣必须大于 0 且不超过 10',
+                                                        variant: 'destructive',
+                                                    });
+                                                    setDiscountInputValue('');
+                                                }
+                                            } else if (e.target.value !== '') {
+                                                toast({
+                                                    title: '输入无效',
+                                                    description: '折扣必须大于 0 且不超过 10',
+                                                    variant: 'destructive',
+                                                });
+                                                setDiscountInputValue('');
+                                            }
+                                        }}
+                                        placeholder="如 5 折"
+                                        className="w-24"
+                                    />
+                                    <span className="text-sm">折</span>
+                                    <span className="text-xs text-gray-500">
+                                        (支付原价的 {
+                                            (() => {
+                                                const val = parseFloat(discountInputValue.toString());
+                                                return !isNaN(val) && val > 0 ? (val * 10).toFixed(2) : '100.00';
+                                            })()
+                                        }%)
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+                    </CardContent>
+                </Card>
+
                 <div className="space-y-3">
                     <div className="flex items-center justify-end">
                         <Button
