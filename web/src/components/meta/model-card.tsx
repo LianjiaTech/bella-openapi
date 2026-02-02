@@ -21,11 +21,19 @@ const renderPriceDetails = (priceDetails: PriceDetails) => {
             return null;
         }
 
+        const batchDiscount = priceDetails.priceInfo.batchDiscount;
+        const hasDiscount = batchDiscount && batchDiscount < 1;
+
         return (
             <div className="bg-gray-50 rounded-lg p-3">
                 <RenderAllTiersTable tiers={validTiers} />
 
                 <div className="text-xs text-gray-500 mt-2 text-right">
+                    {hasDiscount && (
+                        <span className="mr-4">
+                            批量折扣：{(batchDiscount * 10).toFixed(2)} 折
+                        </span>
+                    )}
                     单位: {priceDetails.unit}
                 </div>
             </div>
