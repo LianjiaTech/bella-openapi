@@ -13,7 +13,7 @@ import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RedissonClient;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.Objects;
 
 @Slf4j
@@ -21,7 +21,8 @@ import java.util.Objects;
 @SuppressWarnings("all")
 public class WorkerContext {
 
-    private static final String QUEUE_NAME_TEMPLATE = "%s:1";
+    private static final String QUEUE_NAME_LEVEL1_TEMPLATE = "%s:1";
+    private static final String QUEUE_NAME_LEVEL0_TEMPLATE = "%s:0";
 
     private final ChannelDB channel;
     private final RedissonClient redissonClient;
@@ -137,14 +138,17 @@ public class WorkerContext {
                 return new ProcessResult(false, false);
             }
 
+            String level0Queue = String.format(QUEUE_NAME_LEVEL0_TEMPLATE, channel.getQueueName());
+            String level1Queue = String.format(QUEUE_NAME_LEVEL1_TEMPLATE, channel.getQueueName());
+            Take take = Take.builder()
+                    .queues(Arrays.asList(level0Queue, level1Queue))
+                    .size(1)
+                    .strategy("active_passive")
+                    .build();
+
             boolean hasWork = false;
             int takedSize;
             do {
-                String queue = String.format(QUEUE_NAME_TEMPLATE, channel.getQueueName());
-                Take take = Take.builder()
-                        .queues(Collections.singletonList(queue))
-                        .size(Integer.valueOf(100))
-                        .build();
                 takedSize = worker.takeAndRun(take);
                 if(takedSize > 0) {
                     hasWork = true;
