@@ -8,6 +8,7 @@ import com.ke.bella.openapi.protocol.UserRequest;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.util.Map;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Data
@@ -22,6 +23,7 @@ public class TtsRequest implements UserRequest, Serializable, IMemoryClearable {
     @JsonProperty("sample_rate")
     Integer sampleRate;
     boolean stream = true;
+    Map<String, Object> speakers;
 
     // 内存清理相关字段和方法
     @JsonIgnore
