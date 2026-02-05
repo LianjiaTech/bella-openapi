@@ -42,8 +42,8 @@ export const CompletionPriceEditor = forwardRef<CompletionPriceEditorRef, Comple
             toolPrices: undefined,
         });
 
-        // 用于折扣输入的本地临时状态，允许为空以便用户清空输入框
-        const [discountInputValue, setDiscountInputValue] = useState<string | number>('');
+        // 用于折扣输入的本地临时状态
+        const [discountInputValue, setDiscountInputValue] = useState<string>('');
         // 是否启用折扣开关
         const [isDiscountEnabled, setIsDiscountEnabled] = useState(false);
 
@@ -54,7 +54,7 @@ export const CompletionPriceEditor = forwardRef<CompletionPriceEditorRef, Comple
                 const hasDiscount = value.batchDiscount < 1;
                 setIsDiscountEnabled(hasDiscount);
                 if (hasDiscount) {
-                    setDiscountInputValue((value.batchDiscount * 10).toString());
+                    setDiscountInputValue(value.batchDiscount.toString());
                 } else {
                     setDiscountInputValue('');
                 }
@@ -188,7 +188,7 @@ export const CompletionPriceEditor = forwardRef<CompletionPriceEditorRef, Comple
             if (!isValidBatchDiscount(priceInfo.batchDiscount)) {
                 toast({
                     title: '验证失败',
-                    description: `折扣必须大于 0 且不超过 10`,
+                    description: `批量折扣系数必须在 (0, 1] 范围内`,
                     variant: 'destructive',
                 });
                 return false;
@@ -493,7 +493,7 @@ export const CompletionPriceEditor = forwardRef<CompletionPriceEditorRef, Comple
                                     onCheckedChange={(checked) => {
                                         setIsDiscountEnabled(checked);
                                         if (checked) {
-                                            setDiscountInputValue('5');
+                                            setDiscountInputValue('0.5');
                                             notifyChange({
                                                 ...priceInfo,
                                                 batchDiscount: 0.5
@@ -518,42 +518,63 @@ export const CompletionPriceEditor = forwardRef<CompletionPriceEditorRef, Comple
                                             setDiscountInputValue(e.target.value);
                                         }}
                                         onBlur={(e) => {
-                                            const val = parseFloat(e.target.value);
-                                            if (!isNaN(val) && val > 0) {
-                                                const batchDiscount = val / 10;
-                                                if (isValidBatchDiscount(batchDiscount)) {
+                                            const value = e.target.value;
+                                            const val = parseFloat(value);
+
+                                            if (value !== '' && !isNaN(val) && val > 0) {
+                                                // 检查小数位数
+                                                if (value.includes('.')) {
+                                                    const decimalPart = value.split('.')[1];
+                                                    if (decimalPart && decimalPart.length > 2) {
+                                                        toast({
+                                                            title: '输入无效',
+                                                            description: '折扣系数最多只能输入两位小数',
+                                                            variant: 'destructive',
+                                                        });
+                                                        setDiscountInputValue('');
+                                                        return;
+                                                    }
+                                                }
+
+                                                if (isValidBatchDiscount(val)) {
+                                                    // 格式化为两位小数并更新显示
+                                                    const formattedVal = val.toFixed(2);
+                                                    setDiscountInputValue(formattedVal);
                                                     notifyChange({
                                                         ...priceInfo,
-                                                        batchDiscount: batchDiscount
+                                                        batchDiscount: parseFloat(formattedVal)
                                                     });
                                                 } else {
                                                     toast({
                                                         title: '输入无效',
-                                                        description: '折扣必须大于 0 且不超过 10',
+                                                        description: '折扣系数必须在 (0, 1] 范围内',
                                                         variant: 'destructive',
                                                     });
                                                     setDiscountInputValue('');
                                                 }
-                                            } else if (e.target.value !== '') {
+                                            } else if (value !== '') {
                                                 toast({
                                                     title: '输入无效',
-                                                    description: '折扣必须大于 0 且不超过 10',
+                                                    description: '折扣系数必须在 (0, 1] 范围内',
                                                     variant: 'destructive',
                                                 });
                                                 setDiscountInputValue('');
                                             }
                                         }}
-                                        placeholder="如 5 折"
+                                        placeholder="如 0.5"
                                         className="w-24"
+                                        step="any"
+                                        min="0"
+                                        max="1"
                                     />
-                                    <span className="text-sm">折</span>
-                                    <span className="text-xs text-gray-500">
-                                        (支付原价的 {
-                                            (() => {
-                                                const val = parseFloat(discountInputValue.toString());
-                                                return !isNaN(val) && val > 0 ? (val * 10).toFixed(2) : '100.00';
-                                            })()
-                                        }%)
+                                    <span className="text-xs text-gray-500 inline-block w-16">
+                                        {(() => {
+                                            const val = parseFloat(discountInputValue.toString());
+                                            if (!isNaN(val) && val > 0 && val < 1) {
+                                                return `(${parseFloat((val * 10).toFixed(2))} 折)`;
+                                            }
+                                            return '';
+                                        })()}
                                     </span>
                                 </div>
                             )}
