@@ -43,6 +43,8 @@ public class MessageRequest implements IMemoryClearable {
     private Object system; // String or List<RequestTextBlock>
     private Float temperature;
     private ThinkingConfig thinking;
+    @JsonProperty("output_config")
+    private Object outputConfig;
     @JsonProperty("tool_choice")
     private ToolChoice toolChoice;
     private List<Tool> tools;
@@ -320,7 +322,8 @@ public class MessageRequest implements IMemoryClearable {
                                                                                                                                                 // needed
     @JsonSubTypes({
             @JsonSubTypes.Type(value = ThinkingConfigEnabled.class, name = "enabled"),
-            @JsonSubTypes.Type(value = ThinkingConfigDisabled.class, name = "disabled")
+            @JsonSubTypes.Type(value = ThinkingConfigDisabled.class, name = "disabled"),
+            @JsonSubTypes.Type(value = ThinkingConfigAdaptive.class, name = "adaptive")
     })
     @JsonInclude(JsonInclude.Include.NON_NULL)
     @Data
@@ -349,6 +352,15 @@ public class MessageRequest implements IMemoryClearable {
     public static class ThinkingConfigDisabled extends ThinkingConfig {
         public ThinkingConfigDisabled() {
             super("disabled");
+        }
+    }
+
+    @Data
+    @EqualsAndHashCode(callSuper = true)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public static class ThinkingConfigAdaptive extends ThinkingConfig {
+        public ThinkingConfigAdaptive() {
+            super("adaptive");
         }
     }
 
