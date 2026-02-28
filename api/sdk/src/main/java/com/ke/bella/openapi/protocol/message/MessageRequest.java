@@ -44,7 +44,7 @@ public class MessageRequest implements IMemoryClearable {
     private Float temperature;
     private ThinkingConfig thinking;
     @JsonProperty("output_config")
-    private Object outputConfig;
+    private OutputConfig outputConfig;
     @JsonProperty("tool_choice")
     private ToolChoice toolChoice;
     private List<Tool> tools;
@@ -301,6 +301,26 @@ public class MessageRequest implements IMemoryClearable {
         private String userId;
     }
 
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public static class OutputConfig {
+        private String effort; // "low", "medium", "high", "max"
+        private JSONOutputFormat format;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public static class JSONOutputFormat {
+        private String type; // "json_schema"
+        private Object schema; // JSON schema object
+    }
+
     // For the 'system' field if it can be List<RequestTextBlock>
     @Data
     @NoArgsConstructor
@@ -534,6 +554,7 @@ public class MessageRequest implements IMemoryClearable {
             this.messages = null;
             this.system = null;
             this.tools = null;
+            this.outputConfig = null;
 
             // 标记为已清理
             this.cleared = true;
