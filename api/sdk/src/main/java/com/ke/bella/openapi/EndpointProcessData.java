@@ -10,6 +10,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ke.bella.openapi.apikey.ApikeyInfo;
 import com.ke.bella.openapi.protocol.OpenapiResponse;
+import com.ke.bella.openapi.protocol.cost.CostDetails;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -85,6 +86,7 @@ public class EndpointProcessData {
     private Integer maxWaitSec;
     private boolean nativeSend;
     private boolean batch;
+    private CostDetails costDetails;
 
     public void setApikeyInfo(ApikeyInfo ak) {
         this.setApikey(ak.getApikey());

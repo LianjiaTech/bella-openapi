@@ -4,6 +4,7 @@ import com.google.common.collect.Maps;
 import com.ke.bella.openapi.EndpointProcessData;
 import com.ke.bella.openapi.protocol.cost.CostCalculator;
 import com.ke.bella.openapi.protocol.cost.CostCounter;
+import com.ke.bella.openapi.protocol.cost.CostDetails;
 import com.ke.bella.openapi.utils.GroovyExecutor;
 import com.ke.bella.openapi.utils.JacksonUtils;
 import com.lmax.disruptor.EventHandler;
@@ -14,7 +15,9 @@ import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class CostLogHandler implements EventHandler<LogEvent> {
 
@@ -32,6 +35,7 @@ public class CostLogHandler implements EventHandler<LogEvent> {
     public void onEvent(LogEvent event, long sequence, boolean endOfBatch) throws Exception {
         EndpointProcessData log = event.getData();
         BigDecimal cost = BigDecimal.ZERO;
+        CostDetails costDetails = null;
         if(log.isInnerLog()) {
             if(log.getPriceInfo() == null) {
                 LOGGER.warn("price Info is null, channelCode:{}, requestId:{}", log.getChannelCode(), log.getRequestId());
@@ -41,11 +45,13 @@ public class CostLogHandler implements EventHandler<LogEvent> {
                 LOGGER.warn("usage is null, endpoint:{}, requestId:{}", log.getEndpoint(), log.getRequestId());
                 return;
             }
-            cost = CostCalculator.calculate(log.getEndpoint(), log.getPriceInfo(), log.getUsage());
+            costDetails = CostCalculator.calculate(log.getEndpoint(), log.getPriceInfo(), log.getUsage());
+            cost = costDetails.getTotalCost();
             if(log.isBatch()) {
                 Map<String, Object> priceInfoMap = JacksonUtils.deserialize(log.getPriceInfo(), Map.class);
                 double batchDiscount = MapUtils.getDoubleValue(priceInfoMap, "batchDiscount", 1.0);
-                cost = cost.multiply(BigDecimal.valueOf(batchDiscount));
+                costDetails = applyDiscount(costDetails, BigDecimal.valueOf(batchDiscount));
+                cost = costDetails.getTotalCost();
             }
         } else {
             String script = costScripFetcher.fetchCosetScript(log.getEndpoint());
@@ -63,6 +69,7 @@ public class CostLogHandler implements EventHandler<LogEvent> {
         }
         boolean valid = cost != null && BigDecimal.ZERO.compareTo(cost) < 0;
         log.setCost(valid ? cost : BigDecimal.ZERO);
+        log.setCostDetails(costDetails);
         if(log.isPrivate()) {
             return;
         }
@@ -79,4 +86,48 @@ public class CostLogHandler implements EventHandler<LogEvent> {
         String fetchCosetScript(String endpoint);
     }
 
+    private static CostDetails applyDiscount(CostDetails costDetails, BigDecimal discount) {
+        if(costDetails == null) {
+            return null;
+        }
+
+        return CostDetails.builder()
+                .totalCost(costDetails.getTotalCost().multiply(discount))
+                .inputDetails(applyDiscountToDetailItems(costDetails.getInputDetails(), discount))
+                .outputDetails(applyDiscountToDetailItems(costDetails.getOutputDetails(), discount))
+                .toolDetails(applyDiscountToToolItems(costDetails.getToolDetails(), discount))
+                .build();
+    }
+
+    private static List<CostDetails.CostDetailItem> applyDiscountToDetailItems(
+            List<CostDetails.CostDetailItem> items, BigDecimal discount) {
+        if(items == null || items.isEmpty()) {
+            return items;
+        }
+
+        return items.stream()
+                .map(item -> CostDetails.CostDetailItem.builder()
+                        .type(item.getType())
+                        .tokens(item.getTokens())
+                        .unitPrice(item.getUnitPrice())
+                        .cost(item.getCost().multiply(discount))
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    private static List<CostDetails.ToolCostDetailItem> applyDiscountToToolItems(
+            List<CostDetails.ToolCostDetailItem> items, BigDecimal discount) {
+        if(items == null || items.isEmpty()) {
+            return items;
+        }
+
+        return items.stream()
+                .map(item -> CostDetails.ToolCostDetailItem.builder()
+                        .toolName(item.getToolName())
+                        .callCount(item.getCallCount())
+                        .unitPrice(item.getUnitPrice())
+                        .cost(item.getCost().multiply(discount))
+                        .build())
+                .collect(Collectors.toList());
+    }
 }

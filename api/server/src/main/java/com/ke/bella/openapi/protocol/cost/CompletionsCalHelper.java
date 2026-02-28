@@ -24,18 +24,19 @@ public class CompletionsCalHelper {
     @Getter
     @AllArgsConstructor
     public enum CompletionsCalElement {
-        CACHE_READ(CompletionPriceInfo.RangePrice::getCachedRead, CompletionResponse.TokensDetail::getCached_tokens),
-        CACHE_CREATION(CompletionPriceInfo.RangePrice::getCachedCreation, CompletionResponse.TokensDetail::getCache_creation_tokens),
-        IMAGE_INPUT(CompletionPriceInfo.RangePrice::getImageInput, CompletionResponse.TokensDetail::getImage_tokens),
-        IMAGE_OUTPUT(CompletionPriceInfo.RangePrice::getImageOutput, CompletionResponse.TokensDetail::getImage_tokens),
+        CACHE_READ(CompletionPriceInfo.RangePrice::getCachedRead, CompletionResponse.TokensDetail::getCached_tokens, "cached_tokens"),
+        CACHE_CREATION(CompletionPriceInfo.RangePrice::getCachedCreation, CompletionResponse.TokensDetail::getCache_creation_tokens, "cache_creation_tokens"),
+        IMAGE_INPUT(CompletionPriceInfo.RangePrice::getImageInput, CompletionResponse.TokensDetail::getImage_tokens, "image_tokens"),
+        IMAGE_OUTPUT(CompletionPriceInfo.RangePrice::getImageOutput, CompletionResponse.TokensDetail::getImage_tokens, "image_tokens"),
         ;
 
         final Function<CompletionPriceInfo.RangePrice, BigDecimal> priceGetter;
         final Function<CompletionResponse.TokensDetail, Integer> tokensGetter;
+        final String typeName;
     }
 
     public static Pair<BigDecimal, Integer> calculateAllElements(List<CompletionsCalElement> elements, CompletionPriceInfo.RangePrice rangePrice,
-            CompletionResponse.TokensDetail tokensDetail) {
+            CompletionResponse.TokensDetail tokensDetail, List<CostDetails.CostDetailItem> details) {
         if(tokensDetail == null) {
             return Pair.of(BigDecimal.ZERO, 0);
         }
@@ -44,9 +45,15 @@ public class CompletionsCalHelper {
         for (CompletionsCalElement element : elements) {
             BigDecimal price = element.getPriceGetter().apply(rangePrice);
             Integer tokens = element.getTokensGetter().apply(tokensDetail);
-            if(price != null && tokens != null) {
+            if(price != null && tokens != null && tokens > 0) {
                 totalTokens += tokens;
-                amount = amount.add(price.multiply(BigDecimal.valueOf(tokens / 1000.0)));
+                BigDecimal cost = price.multiply(BigDecimal.valueOf(tokens / 1000.0));
+                amount = amount.add(cost);
+                if(details != null) {
+                    details.add(CostDetails.CostDetailItem.builder()
+                            .type(element.getTypeName()).tokens(tokens)
+                            .unitPrice(price).cost(cost).build());
+                }
             }
         }
         return Pair.of(amount, totalTokens);

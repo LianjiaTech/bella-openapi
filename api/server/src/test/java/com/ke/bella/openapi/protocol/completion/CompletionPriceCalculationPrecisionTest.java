@@ -46,7 +46,7 @@ public class CompletionPriceCalculationPrecisionTest {
         usage.setCompletion_tokens(50000);   // 5万tokens
 
         // 计算费用
-        BigDecimal cost = CostCalculator.calculate("/v1/chat/completions", priceInfoJson, usage);
+        BigDecimal cost = CostCalculator.calculate("/v1/chat/completions", priceInfoJson, usage).getTotalCost();
 
         // 预期费用 = (100000 / 1000) * 0.00000001 + (50000 / 1000) * 0.00000002
         //          = 100 * 0.00000001 + 50 * 0.00000002
@@ -82,7 +82,7 @@ public class CompletionPriceCalculationPrecisionTest {
         usage.setPrompt_tokens(1234);
         usage.setCompletion_tokens(5678);
 
-        BigDecimal cost = CostCalculator.calculate("/v1/chat/completions", priceInfoJson, usage);
+        BigDecimal cost = CostCalculator.calculate("/v1/chat/completions", priceInfoJson, usage).getTotalCost();
 
         // 预期费用 = (1234 / 1000) * 0.123456789012345 + (5678 / 1000) * 0.987654321098765
         BigDecimal expected = new BigDecimal("0.123456789012345")
@@ -127,7 +127,7 @@ public class CompletionPriceCalculationPrecisionTest {
         promptDetails.setCached_tokens(500);   // 500个缓存命中token
         usage.setPrompt_tokens_details(promptDetails);
 
-        BigDecimal cost = CostCalculator.calculate("/v1/chat/completions", priceInfoJson, usage);
+        BigDecimal cost = CostCalculator.calculate("/v1/chat/completions", priceInfoJson, usage).getTotalCost();
 
         // 验证计算结果不为null且大于0
         assertNotNull("费用不应该为null", cost);
@@ -176,7 +176,7 @@ public class CompletionPriceCalculationPrecisionTest {
         usage.setPrompt_tokens(1000000000);      // 10亿tokens
         usage.setCompletion_tokens(500000000);   // 5亿tokens
 
-        BigDecimal cost = CostCalculator.calculate("/v1/chat/completions", priceInfoJson, usage);
+        BigDecimal cost = CostCalculator.calculate("/v1/chat/completions", priceInfoJson, usage).getTotalCost();
 
         assertNotNull("大量tokens的费用不应该为null", cost);
         assertTrue("费用应该大于0", cost.compareTo(BigDecimal.ZERO) > 0);
@@ -214,7 +214,7 @@ public class CompletionPriceCalculationPrecisionTest {
         usage.setPrompt_tokens(10000);
         usage.setCompletion_tokens(5000);
 
-        BigDecimal cost = CostCalculator.calculate("/v1/chat/completions", priceInfoJson, usage);
+        BigDecimal cost = CostCalculator.calculate("/v1/chat/completions", priceInfoJson, usage).getTotalCost();
 
         assertNotNull("科学计数法价格的费用不应该为null", cost);
         assertTrue("费用应该大于0", cost.compareTo(BigDecimal.ZERO) > 0);
@@ -253,7 +253,7 @@ public class CompletionPriceCalculationPrecisionTest {
         usage.setPrompt_tokens(0);
         usage.setCompletion_tokens(0);
 
-        BigDecimal cost = CostCalculator.calculate("/v1/chat/completions", priceInfoJson, usage);
+        BigDecimal cost = CostCalculator.calculate("/v1/chat/completions", priceInfoJson, usage).getTotalCost();
 
         assertEquals("零tokens的费用应该为0", 0, BigDecimal.ZERO.compareTo(cost));
     }
@@ -294,7 +294,7 @@ public class CompletionPriceCalculationPrecisionTest {
         usage1.setPrompt_tokens(5000);
         usage1.setCompletion_tokens(3000);
 
-        BigDecimal cost1 = CostCalculator.calculate("/v1/chat/completions", priceInfoJson, usage1);
+        BigDecimal cost1 = CostCalculator.calculate("/v1/chat/completions", priceInfoJson, usage1).getTotalCost();
         BigDecimal expected1 = new BigDecimal("5").multiply(new BigDecimal("12.345678"))
                 .add(new BigDecimal("3").multiply(new BigDecimal("23.456789")));
 
@@ -307,7 +307,7 @@ public class CompletionPriceCalculationPrecisionTest {
         usage2.setPrompt_tokens(15000);
         usage2.setCompletion_tokens(8000);
 
-        BigDecimal cost2 = CostCalculator.calculate("/v1/chat/completions", priceInfoJson, usage2);
+        BigDecimal cost2 = CostCalculator.calculate("/v1/chat/completions", priceInfoJson, usage2).getTotalCost();
         BigDecimal expected2 = new BigDecimal("15").multiply(new BigDecimal("8.765432"))
                 .add(new BigDecimal("8").multiply(new BigDecimal("17.654321")));
 
@@ -360,7 +360,7 @@ public class CompletionPriceCalculationPrecisionTest {
         usage1.setPrompt_tokens(8000);
         usage1.setCompletion_tokens(3000);
 
-        BigDecimal cost1 = CostCalculator.calculate("/v1/chat/completions", priceInfoJson, usage1);
+        BigDecimal cost1 = CostCalculator.calculate("/v1/chat/completions", priceInfoJson, usage1).getTotalCost();
         BigDecimal expected1 = new BigDecimal("8").multiply(new BigDecimal("10.123456789"))
                 .add(new BigDecimal("3").multiply(new BigDecimal("30.111111111")));
 
@@ -373,7 +373,7 @@ public class CompletionPriceCalculationPrecisionTest {
         usage2.setPrompt_tokens(8000);
         usage2.setCompletion_tokens(8000);
 
-        BigDecimal cost2 = CostCalculator.calculate("/v1/chat/completions", priceInfoJson, usage2);
+        BigDecimal cost2 = CostCalculator.calculate("/v1/chat/completions", priceInfoJson, usage2).getTotalCost();
         BigDecimal expected2 = new BigDecimal("8").multiply(new BigDecimal("10.123456789"))
                 .add(new BigDecimal("8").multiply(new BigDecimal("25.222222222")));
 

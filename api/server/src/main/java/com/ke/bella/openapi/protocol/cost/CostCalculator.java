@@ -1,7 +1,9 @@
 package com.ke.bella.openapi.protocol.cost;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -45,7 +47,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class CostCalculator {
 
-    public static BigDecimal calculate(String endpoint, String priceInfo, Object usage) {
+    public static CostDetails calculate(String endpoint, String priceInfo, Object usage) {
         EndpointCostCalculator calculator = Arrays.stream(CostCalculators.values()).filter(t -> MatchUtils.matchUrl(t.endpoint, endpoint))
                 .findAny()
                 .map(CostCalculators::getCalculator)
@@ -96,7 +98,7 @@ public class CostCalculator {
 
     static EndpointCostCalculator completion = new EndpointCostCalculator() {
         @Override
-        public BigDecimal calculate(String priceInfo, Object usage) {
+        public CostDetails calculate(String priceInfo, Object usage) {
             CompletionPriceInfo price = JacksonUtils.deserialize(priceInfo, CompletionPriceInfo.class);
             CompletionResponse.TokenUsage tokenUsage;
             if(usage instanceof CompletionResponse.TokenUsage) {
@@ -107,12 +109,14 @@ public class CostCalculator {
             }
             int promptTokens = tokenUsage.getPrompt_tokens();
             int completionsTokens = tokenUsage.getCompletion_tokens();
-
             CompletionPriceInfo.RangePrice rangePrice = price.matchRangePrice(promptTokens, completionsTokens);
+
+            List<CostDetails.CostDetailItem> inputDetails = new ArrayList<>();
+            List<CostDetails.CostDetailItem> outputDetails = new ArrayList<>();
             Pair<BigDecimal, Integer> inputParts = CompletionsCalHelper.calculateAllElements(CompletionsCalHelper.INPUT, rangePrice,
-                    tokenUsage.getPrompt_tokens_details());
+                    tokenUsage.getPrompt_tokens_details(), inputDetails);
             Pair<BigDecimal, Integer> outputParts = CompletionsCalHelper.calculateAllElements(CompletionsCalHelper.OUTPUT, rangePrice,
-                    tokenUsage.getCompletion_tokens_details());
+                    tokenUsage.getCompletion_tokens_details(), outputDetails);
             if(inputParts.getLeft().doubleValue() > 0) {
                 promptTokens -= inputParts.getRight();
             }
@@ -120,9 +124,27 @@ public class CostCalculator {
                 completionsTokens -= outputParts.getRight();
             }
 
-            return rangePrice.getInput().multiply(BigDecimal.valueOf(promptTokens / 1000.0))
-                    .add(rangePrice.getOutput().multiply(BigDecimal.valueOf(completionsTokens / 1000.0)))
-                    .add(inputParts.getLeft()).add(outputParts.getLeft());
+            BigDecimal totalCost = inputParts.getLeft().add(outputParts.getLeft());
+            if(promptTokens > 0) {
+                BigDecimal promptCost = rangePrice.getInput().multiply(BigDecimal.valueOf(promptTokens / 1000.0));
+                totalCost = totalCost.add(promptCost);
+                inputDetails.add(CostDetails.CostDetailItem.builder()
+                        .type("prompt_tokens").tokens(promptTokens).unitPrice(rangePrice.getInput())
+                        .cost(promptCost).build());
+            }
+            if(completionsTokens > 0) {
+                BigDecimal completionCost = rangePrice.getOutput().multiply(BigDecimal.valueOf(completionsTokens / 1000.0));
+                totalCost = totalCost.add(completionCost);
+                outputDetails.add(CostDetails.CostDetailItem.builder()
+                        .type("completion_tokens").tokens(completionsTokens).unitPrice(rangePrice.getOutput())
+                        .cost(completionCost).build());
+            }
+
+            return CostDetails.builder()
+                    .totalCost(totalCost)
+                    .inputDetails(inputDetails.isEmpty() ? null : inputDetails)
+                    .outputDetails(outputDetails.isEmpty() ? null : outputDetails)
+                    .build();
         }
 
         @Override
@@ -137,10 +159,10 @@ public class CostCalculator {
 
     static EndpointCostCalculator embedding = new EndpointCostCalculator() {
         @Override
-        public BigDecimal calculate(String priceInfo, Object usage) {
+        public CostDetails calculate(String priceInfo, Object usage) {
             EmbeddingPriceInfo price = JacksonUtils.deserialize(priceInfo, EmbeddingPriceInfo.class);
             EmbeddingResponse.TokenUsage tokenUsage = (EmbeddingResponse.TokenUsage) usage;
-            return price.getInput().multiply(BigDecimal.valueOf(tokenUsage.getPrompt_tokens() / 1000.0));
+            return CostDetails.builder().totalCost(price.getInput().multiply(BigDecimal.valueOf(tokenUsage.getPrompt_tokens() / 1000.0))).build();
         }
 
         @Override
@@ -152,10 +174,10 @@ public class CostCalculator {
 
     static EndpointCostCalculator tts = new EndpointCostCalculator() {
         @Override
-        public BigDecimal calculate(String priceInfo, Object usage) {
+        public CostDetails calculate(String priceInfo, Object usage) {
             TtsPriceInfo price = JacksonUtils.deserialize(priceInfo, TtsPriceInfo.class);
             int inputLength = (int) usage;
-            return price.getInput().multiply(BigDecimal.valueOf(inputLength / 10000.0));
+            return CostDetails.builder().totalCost(price.getInput().multiply(BigDecimal.valueOf(inputLength / 10000.0))).build();
         }
 
         @Override
@@ -167,9 +189,9 @@ public class CostCalculator {
 
     static EndpointCostCalculator asr_flash = new EndpointCostCalculator() {
         @Override
-        public BigDecimal calculate(String priceInfo, Object usage) {
+        public CostDetails calculate(String priceInfo, Object usage) {
             FlashAsrPriceInfo price = JacksonUtils.deserialize(priceInfo, FlashAsrPriceInfo.class);
-            return price.getPrice();
+            return CostDetails.builder().totalCost(price.getPrice()).build();
         }
 
         @Override
@@ -181,9 +203,10 @@ public class CostCalculator {
 
     static EndpointCostCalculator realtime = new EndpointCostCalculator() {
         @Override
-        public BigDecimal calculate(String priceInfo, Object usage) {
+        public CostDetails calculate(String priceInfo, Object usage) {
             RealTimePriceInfo price = JacksonUtils.deserialize(priceInfo, RealTimePriceInfo.class);
-            return BigDecimal.valueOf((price.getPrice().doubleValue() / 3600 * 100) * Double.valueOf(usage.toString()));
+            return CostDetails.builder()
+                    .totalCost(BigDecimal.valueOf((price.getPrice().doubleValue() / 3600 * 100) * Double.valueOf(usage.toString()))).build();
         }
 
         @Override
@@ -195,10 +218,9 @@ public class CostCalculator {
 
     static EndpointCostCalculator asr_transcriptions = new EndpointCostCalculator() {
         @Override
-        public BigDecimal calculate(String priceInfo, Object usage) {
-            // Assuming usage is the duration in seconds
+        public CostDetails calculate(String priceInfo, Object usage) {
             TranscriptionsAsrPriceInfo price = JacksonUtils.deserialize(priceInfo, TranscriptionsAsrPriceInfo.class);
-            return BigDecimal.valueOf((price.getPrice().doubleValue() / 3600 * 100) * Double.valueOf(usage.toString()));
+            return CostDetails.builder().totalCost(BigDecimal.valueOf((price.getPrice().doubleValue() / 3600 * 100) * Double.valueOf(usage.toString()))).build();
         }
 
         @Override
@@ -210,7 +232,7 @@ public class CostCalculator {
 
     static EndpointCostCalculator images = new EndpointCostCalculator() {
         @Override
-        public BigDecimal calculate(String priceInfo, Object usage) {
+        public CostDetails calculate(String priceInfo, Object usage) {
             ImagesPriceInfo price = JacksonUtils.deserialize(priceInfo, ImagesPriceInfo.class);
             ImagesResponse.Usage imageUsage = (ImagesResponse.Usage) usage;
             BigDecimal imageCost = BigDecimal.ZERO;
@@ -239,7 +261,7 @@ public class CostCalculator {
                     imageCost = imageCost.add(details.getHdPricePerImage().multiply(BigDecimal.valueOf(imageCount)));
                 }
             }
-            return imageCost;
+            return CostDetails.builder().totalCost(imageCost).build();
         }
 
         @Override
@@ -254,7 +276,7 @@ public class CostCalculator {
 
     static EndpointCostCalculator images_edits = new EndpointCostCalculator() {
         @Override
-        public BigDecimal calculate(String priceInfo, Object usage) {
+        public CostDetails calculate(String priceInfo, Object usage) {
             ImagesEditsPriceInfo price = JacksonUtils.deserialize(priceInfo, ImagesEditsPriceInfo.class);
             ImagesResponse.Usage imageEditsUsage = (ImagesResponse.Usage) usage;
             BigDecimal editCost = BigDecimal.ZERO;
@@ -273,7 +295,7 @@ public class CostCalculator {
                 }
             }
 
-            return editCost;
+            return CostDetails.builder().totalCost(editCost).build();
         }
 
         @Override
@@ -286,10 +308,10 @@ public class CostCalculator {
 
     static EndpointCostCalculator speakerEmbedding = new EndpointCostCalculator() {
         @Override
-        public BigDecimal calculate(String priceInfo, Object usage) {
+        public CostDetails calculate(String priceInfo, Object usage) {
             SpeakerEmbeddingPriceInfo priceConfig = JacksonUtils.deserialize(priceInfo, SpeakerEmbeddingPriceInfo.class);
             if(priceConfig.getPrice() == null) {
-                return BigDecimal.ZERO;
+                return CostDetails.builder().totalCost(BigDecimal.ZERO).build();
             }
 
             // usage可能是Double类型(duration秒数)或者SpeakerEmbeddingUsage类型
@@ -304,14 +326,14 @@ public class CostCalculator {
                 try {
                     durationSeconds = Double.valueOf(usage.toString());
                 } catch (NumberFormatException e) {
-                    return BigDecimal.ZERO;
+                    return CostDetails.builder().totalCost(BigDecimal.ZERO).build();
                 }
             }
 
             // 基于时长计算成本：price（元/小时） × duration（小时）
             // 将秒转换为小时：durationSeconds / 3600
             double durationHours = durationSeconds / 3600.0;
-            return priceConfig.getPrice().multiply(BigDecimal.valueOf(durationHours));
+            return CostDetails.builder().totalCost(priceConfig.getPrice().multiply(BigDecimal.valueOf(durationHours))).build();
         }
 
         @Override
@@ -324,10 +346,10 @@ public class CostCalculator {
 
     static EndpointCostCalculator speakerDiarization = new EndpointCostCalculator() {
         @Override
-        public BigDecimal calculate(String priceInfo, Object usage) {
+        public CostDetails calculate(String priceInfo, Object usage) {
             SpeakerDiarizationPriceInfo priceConfig = JacksonUtils.deserialize(priceInfo, SpeakerDiarizationPriceInfo.class);
             if(priceConfig.getPrice() == null) {
-                return BigDecimal.ZERO;
+                return CostDetails.builder().totalCost(BigDecimal.ZERO).build();
             }
 
             // usage 就是 SpeakerDiarizationUsage 类型
@@ -338,10 +360,9 @@ public class CostCalculator {
                 // 基于音频时长计算成本：price（元/小时） × audioDurationHours（小时）
                 // 将秒转换为小时：audioDurationSeconds / 3600.0
                 double audioDurationHours = audioDurationSeconds / 3600.0;
-                return priceConfig.getPrice().multiply(BigDecimal.valueOf(audioDurationHours));
+                return CostDetails.builder().totalCost(priceConfig.getPrice().multiply(BigDecimal.valueOf(audioDurationHours))).build();
             }
-
-            return BigDecimal.ZERO;
+            return CostDetails.builder().totalCost(BigDecimal.ZERO).build();
         }
 
         @Override
@@ -354,7 +375,7 @@ public class CostCalculator {
 
     static EndpointCostCalculator webSearch = new EndpointCostCalculator() {
         @Override
-        public BigDecimal calculate(String priceInfo, Object usage) {
+        public CostDetails calculate(String priceInfo, Object usage) {
             WebSearchPriceInfo price = JacksonUtils.deserialize(priceInfo, WebSearchPriceInfo.class);
             WebSearchUsage searchUsage = (WebSearchUsage) usage;
 
@@ -362,11 +383,8 @@ public class CostCalculator {
             // Basic Search: 1 API credit per request
             // Advanced Search: 2 API credits per request
             String searchDepth = searchUsage.getSearchDepth();
-            if("advanced".equalsIgnoreCase(searchDepth)) {
-                return price.getAdvancedSearchPrice();
-            } else {
-                return price.getBasicSearchPrice();
-            }
+            BigDecimal cost = "advanced".equalsIgnoreCase(searchDepth) ? price.getAdvancedSearchPrice() : price.getBasicSearchPrice();
+            return CostDetails.builder().totalCost(cost).build();
         }
 
         @Override
@@ -378,7 +396,7 @@ public class CostCalculator {
 
     static EndpointCostCalculator webCrawl = new EndpointCostCalculator() {
         @Override
-        public BigDecimal calculate(String priceInfo, Object usage) {
+        public CostDetails calculate(String priceInfo, Object usage) {
             WebCrawlPriceInfo price = JacksonUtils.deserialize(priceInfo, WebCrawlPriceInfo.class);
             WebCrawlUsage crawlUsage = (WebCrawlUsage) usage;
 
@@ -404,7 +422,7 @@ public class CostCalculator {
                 totalCost = totalCost.add(price.getBasicExtractionPrice().multiply(BigDecimal.valueOf(successfulExtractions)));
             }
 
-            return totalCost;
+            return CostDetails.builder().totalCost(totalCost).build();
         }
 
         @Override
@@ -420,7 +438,7 @@ public class CostCalculator {
 
     static EndpointCostCalculator webExtract = new EndpointCostCalculator() {
         @Override
-        public BigDecimal calculate(String priceInfo, Object usage) {
+        public CostDetails calculate(String priceInfo, Object usage) {
             WebExtractPriceInfo price = JacksonUtils.deserialize(priceInfo, WebExtractPriceInfo.class);
             WebExtractUsage extractUsage = (WebExtractUsage) usage;
 
@@ -436,7 +454,7 @@ public class CostCalculator {
                 totalCost = totalCost.add(price.getBasicExtractionPrice().multiply(BigDecimal.valueOf(successfulExtractions)));
             }
 
-            return totalCost;
+            return CostDetails.builder().totalCost(totalCost).build();
         }
 
         @Override
@@ -449,10 +467,10 @@ public class CostCalculator {
     };
     static EndpointCostCalculator ocr = new EndpointCostCalculator() {
         @Override
-        public BigDecimal calculate(String priceInfo, Object usage) {
+        public CostDetails calculate(String priceInfo, Object usage) {
             OcrPriceInfo price = JacksonUtils.deserialize(priceInfo, OcrPriceInfo.class);
             int times = Integer.parseInt(usage.toString());
-            return price.getPricePerRequest().multiply(BigDecimal.valueOf(times));
+            return CostDetails.builder().totalCost(price.getPricePerRequest().multiply(BigDecimal.valueOf(times))).build();
         }
 
         @Override
@@ -464,7 +482,7 @@ public class CostCalculator {
 
     static EndpointCostCalculator video = new EndpointCostCalculator() {
         @Override
-        public BigDecimal calculate(String priceInfo, Object usage) {
+        public CostDetails calculate(String priceInfo, Object usage) {
             VideoPriceInfo price = JacksonUtils.deserialize(priceInfo, VideoPriceInfo.class);
             VideoUsage videoUsage;
             if(usage instanceof VideoUsage) {
@@ -475,7 +493,7 @@ public class CostCalculator {
             }
 
             int completionTokens = videoUsage.getCompletion_tokens() != null ? videoUsage.getCompletion_tokens() : 0;
-            return price.getOutput().multiply(BigDecimal.valueOf(completionTokens / 1000.0));
+            return CostDetails.builder().totalCost(price.getOutput().multiply(BigDecimal.valueOf(completionTokens / 1000.0))).build();
         }
 
         @Override
@@ -487,7 +505,7 @@ public class CostCalculator {
 
     static EndpointCostCalculator responses = new EndpointCostCalculator() {
         @Override
-        public BigDecimal calculate(String priceInfo, Object usage) {
+        public CostDetails calculate(String priceInfo, Object usage) {
             ResponsesPriceInfo price = JacksonUtils.deserialize(priceInfo, ResponsesPriceInfo.class);
 
             ResponsesApiResponse.Usage responsesUsage = null;
@@ -502,72 +520,79 @@ public class CostCalculator {
                 responsesUsage = JacksonUtils.deserialize(usageJson, ResponsesApiResponse.Usage.class);
             }
 
+            List<CostDetails.CostDetailItem> inputDetails = new ArrayList<>();
+            List<CostDetails.CostDetailItem> outputDetails = new ArrayList<>();
+            List<CostDetails.ToolCostDetailItem> toolDetails = new ArrayList<>();
+            BigDecimal totalCost = BigDecimal.ZERO;
+
             int inputTokens = 0;
             int outputTokens = 0;
-            BigDecimal cost = BigDecimal.ZERO;
+            Integer cachedTokens = null;
+            Integer reasoningTokens = null;
+            Map<String, Integer> toolUsage = null;
 
             if(responsesUsage != null) {
                 inputTokens = responsesUsage.getInput_tokens() != null ? responsesUsage.getInput_tokens() : 0;
                 outputTokens = responsesUsage.getOutput_tokens() != null ? responsesUsage.getOutput_tokens() : 0;
-
-                ResponsesPriceInfo.RangePrice rangePrice = price.matchRangePrice(inputTokens, outputTokens);
-
-                if(responsesUsage.getInput_tokens_details() != null
-                        && responsesUsage.getInput_tokens_details().getCached_tokens() != null) {
-                    int cachedTokens = responsesUsage.getInput_tokens_details().getCached_tokens();
-                    if(cachedTokens > 0 && rangePrice.getCachedInput() != null) {
-                        cost = cost.add(rangePrice.getCachedInput().multiply(BigDecimal.valueOf(cachedTokens / 1000.0)));
-                        inputTokens -= cachedTokens;
-                    }
+                if(responsesUsage.getInput_tokens_details() != null) {
+                    cachedTokens = responsesUsage.getInput_tokens_details().getCached_tokens();
                 }
-
-                if(responsesUsage.getOutput_tokens_details() != null
-                        && responsesUsage.getOutput_tokens_details().getReasoning_tokens() != null) {
-                    int reasoningTokens = responsesUsage.getOutput_tokens_details().getReasoning_tokens();
-                    if(reasoningTokens > 0 && rangePrice.getReasoningOutput() != null) {
-                        cost = cost.add(rangePrice.getReasoningOutput().multiply(BigDecimal.valueOf(reasoningTokens / 1000.0)));
-                        outputTokens -= reasoningTokens;
-                    }
+                if(responsesUsage.getOutput_tokens_details() != null) {
+                    reasoningTokens = responsesUsage.getOutput_tokens_details().getReasoning_tokens();
                 }
-
-                cost = cost.add(rangePrice.getInput().multiply(BigDecimal.valueOf(inputTokens / 1000.0)))
-                        .add(rangePrice.getOutput().multiply(BigDecimal.valueOf(outputTokens / 1000.0)));
-
-                if(price.getToolPrices() != null && responsesUsage.getTool_usage() != null) {
-                    cost = cost.add(calculateToolCost(price.getToolPrices(), responsesUsage.getTool_usage()));
-                }
+                toolUsage = responsesUsage.getTool_usage();
             } else if(tokenUsage != null) {
                 inputTokens = tokenUsage.getPrompt_tokens();
                 outputTokens = tokenUsage.getCompletion_tokens();
-
-                ResponsesPriceInfo.RangePrice rangePrice = price.matchRangePrice(inputTokens, outputTokens);
-
                 if(tokenUsage.getPrompt_tokens_details() != null) {
-                    int cachedTokens = tokenUsage.getPrompt_tokens_details().getCached_tokens();
-                    if(cachedTokens > 0 && rangePrice.getCachedInput() != null) {
-                        cost = cost.add(rangePrice.getCachedInput().multiply(BigDecimal.valueOf(cachedTokens / 1000.0)));
-                        inputTokens -= cachedTokens;
-                    }
+                    cachedTokens = tokenUsage.getPrompt_tokens_details().getCached_tokens();
                 }
-
                 if(tokenUsage.getCompletion_tokens_details() != null) {
-                    int reasoningTokens = tokenUsage.getCompletion_tokens_details().getReasoning_tokens();
-                    if(reasoningTokens > 0 && rangePrice.getReasoningOutput() != null) {
-                        cost = cost.add(rangePrice.getReasoningOutput().multiply(BigDecimal.valueOf(reasoningTokens / 1000.0)));
-                        outputTokens -= reasoningTokens;
-                    }
+                    reasoningTokens = tokenUsage.getCompletion_tokens_details().getReasoning_tokens();
                 }
-
-                cost = cost.add(rangePrice.getInput().multiply(BigDecimal.valueOf(inputTokens / 1000.0)))
-                        .add(rangePrice.getOutput().multiply(BigDecimal.valueOf(outputTokens / 1000.0)));
             }
 
+            ResponsesPriceInfo.RangePrice rangePrice = price.matchRangePrice(inputTokens, outputTokens);
+            if(cachedTokens != null && cachedTokens > 0 && rangePrice.getCachedInput() != null) {
+                totalCost = totalCost.add(calculateCost(inputDetails, "cached_tokens", cachedTokens, rangePrice.getCachedInput()));
+                inputTokens -= cachedTokens;
+            }
+
+            if(inputTokens > 0) {
+                totalCost = totalCost.add(calculateCost(inputDetails, "input_tokens", inputTokens, rangePrice.getInput()));
+            }
+
+            if(reasoningTokens != null && reasoningTokens > 0 && rangePrice.getReasoningOutput() != null) {
+                totalCost = totalCost.add(calculateCost(outputDetails, "reasoning_tokens", reasoningTokens, rangePrice.getReasoningOutput()));
+                outputTokens -= reasoningTokens;
+            }
+
+            if(outputTokens > 0) {
+                totalCost = totalCost.add(calculateCost(outputDetails, "output_tokens", outputTokens, rangePrice.getOutput()));
+            }
+
+            if(price.getToolPrices() != null && toolUsage != null) {
+                totalCost = totalCost.add(calculateToolCost(price.getToolPrices(), toolUsage, toolDetails));
+            }
+
+            return CostDetails.builder()
+                    .totalCost(totalCost)
+                    .inputDetails(inputDetails.isEmpty() ? null : inputDetails)
+                    .outputDetails(outputDetails.isEmpty() ? null : outputDetails)
+                    .toolDetails(toolDetails.isEmpty() ? null : toolDetails)
+                    .build();
+        }
+
+        private BigDecimal calculateCost(List<CostDetails.CostDetailItem> details, String type, int tokens, BigDecimal unitPrice) {
+            BigDecimal cost = unitPrice.multiply(BigDecimal.valueOf(tokens / 1000.0));
+            details.add(CostDetails.CostDetailItem.builder().type(type).tokens(tokens).unitPrice(unitPrice).cost(cost).build());
             return cost;
         }
 
         private BigDecimal calculateToolCost(
                 Map<String, BigDecimal> toolPrices,
-                Map<String, Integer> toolUsage) {
+                Map<String, Integer> toolUsage,
+                List<CostDetails.ToolCostDetailItem> toolDetails) {
             BigDecimal toolCost = BigDecimal.ZERO;
 
             if(toolUsage == null || toolUsage.isEmpty()) {
@@ -584,7 +609,11 @@ public class CostCalculator {
 
                 BigDecimal unitPrice = toolPrices.get(toolName);
                 if(unitPrice != null) {
-                    toolCost = toolCost.add(unitPrice.multiply(BigDecimal.valueOf(count)));
+                    BigDecimal cost = unitPrice.multiply(BigDecimal.valueOf(count));
+                    toolCost = toolCost.add(cost);
+                    toolDetails.add(CostDetails.ToolCostDetailItem.builder()
+                            .toolName(toolName).callCount(count).unitPrice(unitPrice)
+                            .cost(cost).build());
                 }
             }
 
@@ -602,7 +631,7 @@ public class CostCalculator {
     };
 
     interface EndpointCostCalculator {
-        BigDecimal calculate(String priceInfo, Object usage);
+        CostDetails calculate(String priceInfo, Object usage);
 
         boolean checkPriceInfo(String priceInfo);
     }
