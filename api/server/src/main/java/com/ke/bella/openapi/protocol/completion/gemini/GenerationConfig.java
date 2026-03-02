@@ -30,10 +30,100 @@ public class GenerationConfig {
     private Integer logprobs;
     private Boolean audioTimestamp;
     private ThinkingConfig thinkingConfig;
+    private Object responseJsonSchema;
+    private String mediaResolution;
+    private SpeechConfig speechConfig;
+    private Boolean enableAffectiveDialog;
+    private ImageConfig imageConfig;
 
     @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class ThinkingConfig {
         private Integer thinkingBudget = -1;
         private boolean includeThoughts = true;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public static class SpeechConfig {
+        private VoiceConfig voiceConfig;
+        private String languageCode;
+        private MultiSpeakerVoiceConfig multiSpeakerVoiceConfig;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public static class VoiceConfig {
+        private PrebuiltVoiceConfig prebuiltVoiceConfig;
+        private ReplicatedVoiceConfig replicatedVoiceConfig;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public static class PrebuiltVoiceConfig {
+        private String voiceName;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public static class ReplicatedVoiceConfig {
+        private String mimeType;
+        private String voiceSampleAudio; // base64-encoded
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public static class MultiSpeakerVoiceConfig {
+        private List<SpeakerVoiceConfig> speakerVoiceConfigs;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public static class SpeakerVoiceConfig {
+        private String speaker;
+        private VoiceConfig voiceConfig;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public static class ImageConfig {
+        private ImageOutputOptions imageOutputOptions;
+        private String aspectRatio;
+        private String personGeneration;
+        private String imageSize;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public static class ImageOutputOptions {
+        private String mimeType;
+        private Integer compressionQuality;
     }
 }
