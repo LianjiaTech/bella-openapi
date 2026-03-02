@@ -40,7 +40,7 @@ public class EndpointLogger {
         LogEvent event = ringBuffer.get(sequence);
         event.setData(log);
         event.setRepositoryCode(logRepo);
-        if(log.isBatch()) {
+        if(log.isOverrideInnerLog() || log.isBatch()) {
             log.setInnerLog(true);
             event.setCostOnly(true);
         }
