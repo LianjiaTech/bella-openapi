@@ -333,54 +333,36 @@ public class MessageRequest implements IMemoryClearable {
         private CacheControl cache_control;
     }
 
-    @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type", defaultImpl = ThinkingConfigEnabled.class) // Default
-                                                                                                                                                // might
-                                                                                                                                                // be
-                                                                                                                                                // tricky;
-                                                                                                                                                // adjust
-                                                                                                                                                // as
-                                                                                                                                                // needed
-    @JsonSubTypes({
-            @JsonSubTypes.Type(value = ThinkingConfigEnabled.class, name = "enabled"),
-            @JsonSubTypes.Type(value = ThinkingConfigDisabled.class, name = "disabled"),
-            @JsonSubTypes.Type(value = ThinkingConfigAdaptive.class, name = "adaptive")
-    })
-    @JsonInclude(JsonInclude.Include.NON_NULL)
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
-    public static abstract class ThinkingConfig {
+    @Builder
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public static class ThinkingConfig {
+        /**
+         * 思考类型：enabled, disabled, adaptive
+         */
         private String type;
-    }
 
-    @Data
-    @EqualsAndHashCode(callSuper = true)
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    @NoArgsConstructor
-    public static class ThinkingConfigEnabled extends ThinkingConfig {
-        private Integer budget_tokens;
+        /**
+         * 思考 token 预算（仅 enabled 模式使用）
+         */
+        @JsonProperty("budget_tokens")
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        private Integer budgetTokens;
 
-        public ThinkingConfigEnabled(Integer budget_tokens) {
-            super("enabled");
-            this.budget_tokens = budget_tokens;
+        // ========== 便捷工厂方法 ==========
+        public static ThinkingConfig enabled(Integer budgetTokens) {
+            return ThinkingConfig.builder()
+                    .type("enabled")
+                    .budgetTokens(budgetTokens)
+                    .build();
         }
-    }
 
-    @Data
-    @EqualsAndHashCode(callSuper = true)
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    public static class ThinkingConfigDisabled extends ThinkingConfig {
-        public ThinkingConfigDisabled() {
-            super("disabled");
-        }
-    }
-
-    @Data
-    @EqualsAndHashCode(callSuper = true)
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    public static class ThinkingConfigAdaptive extends ThinkingConfig {
-        public ThinkingConfigAdaptive() {
-            super("adaptive");
+        // ========== 类型判断方法 ==========
+        @JsonIgnore
+        public boolean isEnabled() {
+            return "enabled".equals(type);
         }
     }
 
