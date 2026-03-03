@@ -1,9 +1,8 @@
 package com.ke.bella.openapi.protocol.cost;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -111,8 +110,8 @@ public class CostCalculator {
             int completionsTokens = tokenUsage.getCompletion_tokens();
             CompletionPriceInfo.RangePrice rangePrice = price.matchRangePrice(promptTokens, completionsTokens);
 
-            List<CostDetails.CostDetailItem> inputDetails = new ArrayList<>();
-            List<CostDetails.CostDetailItem> outputDetails = new ArrayList<>();
+            Map<String, CostDetails.CostDetailItem> inputDetails = new HashMap<>();
+            Map<String, CostDetails.CostDetailItem> outputDetails = new HashMap<>();
             Pair<BigDecimal, Integer> inputParts = CompletionsCalHelper.calculateAllElements(CompletionsCalHelper.INPUT, rangePrice,
                     tokenUsage.getPrompt_tokens_details(), inputDetails);
             Pair<BigDecimal, Integer> outputParts = CompletionsCalHelper.calculateAllElements(CompletionsCalHelper.OUTPUT, rangePrice,
@@ -128,15 +127,15 @@ public class CostCalculator {
             if(promptTokens > 0) {
                 BigDecimal promptCost = rangePrice.getInput().multiply(BigDecimal.valueOf(promptTokens / 1000.0));
                 totalCost = totalCost.add(promptCost);
-                inputDetails.add(CostDetails.CostDetailItem.builder()
-                        .type("prompt_tokens").tokens(promptTokens).unitPrice(rangePrice.getInput())
+                inputDetails.put("prompt_tokens", CostDetails.CostDetailItem.builder()
+                        .tokens(promptTokens).unitPrice(rangePrice.getInput())
                         .cost(promptCost).build());
             }
             if(completionsTokens > 0) {
                 BigDecimal completionCost = rangePrice.getOutput().multiply(BigDecimal.valueOf(completionsTokens / 1000.0));
                 totalCost = totalCost.add(completionCost);
-                outputDetails.add(CostDetails.CostDetailItem.builder()
-                        .type("completion_tokens").tokens(completionsTokens).unitPrice(rangePrice.getOutput())
+                outputDetails.put("completion_tokens", CostDetails.CostDetailItem.builder()
+                        .tokens(completionsTokens).unitPrice(rangePrice.getOutput())
                         .cost(completionCost).build());
             }
 
@@ -520,9 +519,9 @@ public class CostCalculator {
                 responsesUsage = JacksonUtils.deserialize(usageJson, ResponsesApiResponse.Usage.class);
             }
 
-            List<CostDetails.CostDetailItem> inputDetails = new ArrayList<>();
-            List<CostDetails.CostDetailItem> outputDetails = new ArrayList<>();
-            List<CostDetails.ToolCostDetailItem> toolDetails = new ArrayList<>();
+            Map<String, CostDetails.CostDetailItem> inputDetails = new HashMap<>();
+            Map<String, CostDetails.CostDetailItem> outputDetails = new HashMap<>();
+            Map<String, CostDetails.ToolCostDetailItem> toolDetails = new HashMap<>();
             BigDecimal totalCost = BigDecimal.ZERO;
 
             int inputTokens = 0;
@@ -583,16 +582,16 @@ public class CostCalculator {
                     .build();
         }
 
-        private BigDecimal calculateCost(List<CostDetails.CostDetailItem> details, String type, int tokens, BigDecimal unitPrice) {
+        private BigDecimal calculateCost(Map<String, CostDetails.CostDetailItem> details, String type, int tokens, BigDecimal unitPrice) {
             BigDecimal cost = unitPrice.multiply(BigDecimal.valueOf(tokens / 1000.0));
-            details.add(CostDetails.CostDetailItem.builder().type(type).tokens(tokens).unitPrice(unitPrice).cost(cost).build());
+            details.put(type, CostDetails.CostDetailItem.builder().tokens(tokens).unitPrice(unitPrice).cost(cost).build());
             return cost;
         }
 
         private BigDecimal calculateToolCost(
                 Map<String, BigDecimal> toolPrices,
                 Map<String, Integer> toolUsage,
-                List<CostDetails.ToolCostDetailItem> toolDetails) {
+                Map<String, CostDetails.ToolCostDetailItem> toolDetails) {
             BigDecimal toolCost = BigDecimal.ZERO;
 
             if(toolUsage == null || toolUsage.isEmpty()) {
@@ -611,8 +610,8 @@ public class CostCalculator {
                 if(unitPrice != null) {
                     BigDecimal cost = unitPrice.multiply(BigDecimal.valueOf(count));
                     toolCost = toolCost.add(cost);
-                    toolDetails.add(CostDetails.ToolCostDetailItem.builder()
-                            .toolName(toolName).callCount(count).unitPrice(unitPrice)
+                    toolDetails.put(toolName, CostDetails.ToolCostDetailItem.builder()
+                            .callCount(count).unitPrice(unitPrice)
                             .cost(cost).build());
                 }
             }

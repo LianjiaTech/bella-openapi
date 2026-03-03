@@ -15,7 +15,6 @@ import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -99,35 +98,37 @@ public class CostLogHandler implements EventHandler<LogEvent> {
                 .build();
     }
 
-    private static List<CostDetails.CostDetailItem> applyDiscountToDetailItems(
-            List<CostDetails.CostDetailItem> items, BigDecimal discount) {
+    private static Map<String, CostDetails.CostDetailItem> applyDiscountToDetailItems(
+            Map<String, CostDetails.CostDetailItem> items, BigDecimal discount) {
         if(items == null || items.isEmpty()) {
             return items;
         }
 
-        return items.stream()
-                .map(item -> CostDetails.CostDetailItem.builder()
-                        .type(item.getType())
-                        .tokens(item.getTokens())
-                        .unitPrice(item.getUnitPrice())
-                        .cost(item.getCost().multiply(discount))
-                        .build())
-                .collect(Collectors.toList());
+        return items.entrySet().stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry -> CostDetails.CostDetailItem.builder()
+                                .tokens(entry.getValue().getTokens())
+                                .unitPrice(entry.getValue().getUnitPrice())
+                                .cost(entry.getValue().getCost().multiply(discount))
+                                .build()
+                ));
     }
 
-    private static List<CostDetails.ToolCostDetailItem> applyDiscountToToolItems(
-            List<CostDetails.ToolCostDetailItem> items, BigDecimal discount) {
+    private static Map<String, CostDetails.ToolCostDetailItem> applyDiscountToToolItems(
+            Map<String, CostDetails.ToolCostDetailItem> items, BigDecimal discount) {
         if(items == null || items.isEmpty()) {
             return items;
         }
 
-        return items.stream()
-                .map(item -> CostDetails.ToolCostDetailItem.builder()
-                        .toolName(item.getToolName())
-                        .callCount(item.getCallCount())
-                        .unitPrice(item.getUnitPrice())
-                        .cost(item.getCost().multiply(discount))
-                        .build())
-                .collect(Collectors.toList());
+        return items.entrySet().stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry -> CostDetails.ToolCostDetailItem.builder()
+                                .callCount(entry.getValue().getCallCount())
+                                .unitPrice(entry.getValue().getUnitPrice())
+                                .cost(entry.getValue().getCost().multiply(discount))
+                                .build()
+                ));
     }
 }

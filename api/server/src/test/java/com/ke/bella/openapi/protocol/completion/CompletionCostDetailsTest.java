@@ -52,8 +52,8 @@ public class CompletionCostDetailsTest {
         assertNotNull("输入明细不应为null", costDetails.getInputDetails());
         assertEquals("应该有1个输入明细项", 1, costDetails.getInputDetails().size());
 
-        CostDetails.CostDetailItem inputItem = costDetails.getInputDetails().get(0);
-        assertEquals("输入类型应为 prompt_tokens", "prompt_tokens", inputItem.getType());
+        CostDetails.CostDetailItem inputItem = costDetails.getInputDetails().get("prompt_tokens");
+        assertNotNull("应该有 prompt_tokens 明细", inputItem);
         assertEquals("输入token数应为5000", Integer.valueOf(5000), inputItem.getTokens());
         assertEquals("输入单价应为10", new BigDecimal("10"), inputItem.getUnitPrice());
         assertEquals("输入成本应为50", 0, new BigDecimal("50").compareTo(inputItem.getCost()));
@@ -62,8 +62,8 @@ public class CompletionCostDetailsTest {
         assertNotNull("输出明细不应为null", costDetails.getOutputDetails());
         assertEquals("应该有1个输出明细项", 1, costDetails.getOutputDetails().size());
 
-        CostDetails.CostDetailItem outputItem = costDetails.getOutputDetails().get(0);
-        assertEquals("输出类型应为 completion_tokens", "completion_tokens", outputItem.getType());
+        CostDetails.CostDetailItem outputItem = costDetails.getOutputDetails().get("completion_tokens");
+        assertNotNull("应该有 completion_tokens 明细", outputItem);
         assertEquals("输出token数应为3000", Integer.valueOf(3000), outputItem.getTokens());
         assertEquals("输出单价应为20", new BigDecimal("20"), outputItem.getUnitPrice());
         assertEquals("输出成本应为60", 0, new BigDecimal("60").compareTo(outputItem.getCost()));
@@ -115,9 +115,9 @@ public class CompletionCostDetailsTest {
         assertEquals("应该有3个输入明细项", 3, costDetails.getInputDetails().size());
 
         // 查找各类型的明细
-        CostDetails.CostDetailItem cachedItem = findDetailByType(costDetails.getInputDetails(), "cached_tokens");
-        CostDetails.CostDetailItem imageItem = findDetailByType(costDetails.getInputDetails(), "image_tokens");
-        CostDetails.CostDetailItem promptItem = findDetailByType(costDetails.getInputDetails(), "prompt_tokens");
+        CostDetails.CostDetailItem cachedItem = costDetails.getInputDetails().get("cached_tokens");
+        CostDetails.CostDetailItem imageItem = costDetails.getInputDetails().get("image_tokens");
+        CostDetails.CostDetailItem promptItem = costDetails.getInputDetails().get("prompt_tokens");
 
         // 验证缓存token明细
         assertNotNull("应该有缓存token明细", cachedItem);
@@ -143,7 +143,7 @@ public class CompletionCostDetailsTest {
 
         // 验证总和一致性
         BigDecimal inputSum = cachedItem.getCost().add(imageItem.getCost()).add(promptItem.getCost());
-        BigDecimal outputSum = costDetails.getOutputDetails().get(0).getCost();
+        BigDecimal outputSum = costDetails.getOutputDetails().get("completion_tokens").getCost();
         BigDecimal detailsSum = inputSum.add(outputSum);
         assertEquals("明细总和应等于总成本", 0, costDetails.getTotalCost().compareTo(detailsSum));
     }
@@ -183,8 +183,8 @@ public class CompletionCostDetailsTest {
         // 验证输入明细：只有prompt_tokens，没有cached_tokens（因为为0）
         assertNotNull("输入明细不应为null", costDetails.getInputDetails());
         assertEquals("应该只有1个输入明细项（prompt_tokens）", 1, costDetails.getInputDetails().size());
-        assertEquals("唯一的输入明细应为prompt_tokens", "prompt_tokens",
-                costDetails.getInputDetails().get(0).getType());
+        assertTrue("应该包含 prompt_tokens", costDetails.getInputDetails().containsKey("prompt_tokens"));
+        assertFalse("不应该包含 cached_tokens", costDetails.getInputDetails().containsKey("cached_tokens"));
 
         // 验证输出明细：为null（因为completion_tokens为0）
         assertNull("输出明细应为null（零输出token）", costDetails.getOutputDetails());
@@ -227,13 +227,13 @@ public class CompletionCostDetailsTest {
         BigDecimal detailsSum = BigDecimal.ZERO;
 
         if(costDetails.getInputDetails() != null) {
-            for (CostDetails.CostDetailItem item : costDetails.getInputDetails()) {
+            for (CostDetails.CostDetailItem item : costDetails.getInputDetails().values()) {
                 detailsSum = detailsSum.add(item.getCost());
             }
         }
 
         if(costDetails.getOutputDetails() != null) {
-            for (CostDetails.CostDetailItem item : costDetails.getOutputDetails()) {
+            for (CostDetails.CostDetailItem item : costDetails.getOutputDetails().values()) {
                 detailsSum = detailsSum.add(item.getCost());
             }
         }
@@ -281,16 +281,4 @@ public class CompletionCostDetailsTest {
         assertNull("工具明细应为null", costDetails.getToolDetails());
     }
 
-    /**
-     * 辅助方法：根据类型查找明细项
-     */
-    private CostDetails.CostDetailItem findDetailByType(List<CostDetails.CostDetailItem> details, String type) {
-        if(details == null) {
-            return null;
-        }
-        return details.stream()
-                .filter(item -> type.equals(item.getType()))
-                .findFirst()
-                .orElse(null);
-    }
 }

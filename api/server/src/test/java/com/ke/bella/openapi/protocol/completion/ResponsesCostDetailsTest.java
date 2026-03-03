@@ -65,8 +65,8 @@ public class ResponsesCostDetailsTest {
         assertNotNull("输入明细不应为null", costDetails.getInputDetails());
         assertEquals("应该有1个输入明细项", 1, costDetails.getInputDetails().size());
 
-        CostDetails.CostDetailItem inputItem = costDetails.getInputDetails().get(0);
-        assertEquals("输入类型应为 input_tokens", "input_tokens", inputItem.getType());
+        CostDetails.CostDetailItem inputItem = costDetails.getInputDetails().get("input_tokens");
+        assertNotNull("应该有 input_tokens 明细", inputItem);
         assertEquals("输入token数应为1000", Integer.valueOf(1000), inputItem.getTokens());
         assertEquals("输入成本应为1.0", 0, new BigDecimal("1.0").compareTo(inputItem.getCost()));
 
@@ -74,8 +74,8 @@ public class ResponsesCostDetailsTest {
         assertNotNull("输出明细不应为null", costDetails.getOutputDetails());
         assertEquals("应该有1个输出明细项", 1, costDetails.getOutputDetails().size());
 
-        CostDetails.CostDetailItem outputItem = costDetails.getOutputDetails().get(0);
-        assertEquals("输出类型应为 output_tokens", "output_tokens", outputItem.getType());
+        CostDetails.CostDetailItem outputItem = costDetails.getOutputDetails().get("output_tokens");
+        assertNotNull("应该有 output_tokens 明细", outputItem);
         assertEquals("输出token数应为500", Integer.valueOf(500), outputItem.getTokens());
         assertEquals("输出成本应为1.5", 0, new BigDecimal("1.5").compareTo(outputItem.getCost()));
 
@@ -84,10 +84,8 @@ public class ResponsesCostDetailsTest {
         assertEquals("应该有2个工具明细项", 2, costDetails.getToolDetails().size());
 
         // 查找各工具明细
-        CostDetails.ToolCostDetailItem webSearchItem = findToolDetailByName(
-                costDetails.getToolDetails(), "web_search");
-        CostDetails.ToolCostDetailItem codeInterpreterItem = findToolDetailByName(
-                costDetails.getToolDetails(), "code_interpreter");
+        CostDetails.ToolCostDetailItem webSearchItem = costDetails.getToolDetails().get("web_search");
+        CostDetails.ToolCostDetailItem codeInterpreterItem = costDetails.getToolDetails().get("code_interpreter");
 
         // 验证 web_search 明细
         assertNotNull("应该有web_search明细", webSearchItem);
@@ -152,8 +150,8 @@ public class ResponsesCostDetailsTest {
         assertNotNull("输入明细不应为null", costDetails.getInputDetails());
         assertEquals("应该有2个输入明细项", 2, costDetails.getInputDetails().size());
 
-        CostDetails.CostDetailItem cachedItem = findDetailByType(costDetails.getInputDetails(), "cached_tokens");
-        CostDetails.CostDetailItem inputItem = findDetailByType(costDetails.getInputDetails(), "input_tokens");
+        CostDetails.CostDetailItem cachedItem = costDetails.getInputDetails().get("cached_tokens");
+        CostDetails.CostDetailItem inputItem = costDetails.getInputDetails().get("input_tokens");
 
         // 验证缓存token明细
         assertNotNull("应该有cached_tokens明细", cachedItem);
@@ -171,8 +169,8 @@ public class ResponsesCostDetailsTest {
         assertNotNull("输出明细不应为null", costDetails.getOutputDetails());
         assertEquals("应该有2个输出明细项", 2, costDetails.getOutputDetails().size());
 
-        CostDetails.CostDetailItem reasoningItem = findDetailByType(costDetails.getOutputDetails(), "reasoning_tokens");
-        CostDetails.CostDetailItem outputItem = findDetailByType(costDetails.getOutputDetails(), "output_tokens");
+        CostDetails.CostDetailItem reasoningItem = costDetails.getOutputDetails().get("reasoning_tokens");
+        CostDetails.CostDetailItem outputItem = costDetails.getOutputDetails().get("output_tokens");
 
         // 验证推理token明细
         assertNotNull("应该有reasoning_tokens明细", reasoningItem);
@@ -274,8 +272,8 @@ public class ResponsesCostDetailsTest {
         assertEquals("应该只有1个工具明细项（code_interpreter调用0次不应出现）",
                 1, costDetails.getToolDetails().size());
 
-        CostDetails.ToolCostDetailItem item = costDetails.getToolDetails().get(0);
-        assertEquals("唯一的工具明细应为web_search", "web_search", item.getToolName());
+        CostDetails.ToolCostDetailItem item = costDetails.getToolDetails().get("web_search");
+        assertNotNull("应该有 web_search 工具明细", item);
     }
 
     /**
@@ -323,19 +321,19 @@ public class ResponsesCostDetailsTest {
         BigDecimal detailsSum = BigDecimal.ZERO;
 
         if(costDetails.getInputDetails() != null) {
-            for (CostDetails.CostDetailItem item : costDetails.getInputDetails()) {
+            for (CostDetails.CostDetailItem item : costDetails.getInputDetails().values()) {
                 detailsSum = detailsSum.add(item.getCost());
             }
         }
 
         if(costDetails.getOutputDetails() != null) {
-            for (CostDetails.CostDetailItem item : costDetails.getOutputDetails()) {
+            for (CostDetails.CostDetailItem item : costDetails.getOutputDetails().values()) {
                 detailsSum = detailsSum.add(item.getCost());
             }
         }
 
         if(costDetails.getToolDetails() != null) {
-            for (CostDetails.ToolCostDetailItem item : costDetails.getToolDetails()) {
+            for (CostDetails.ToolCostDetailItem item : costDetails.getToolDetails().values()) {
                 detailsSum = detailsSum.add(item.getCost());
             }
         }
@@ -346,30 +344,4 @@ public class ResponsesCostDetailsTest {
                 diff.compareTo(new BigDecimal("0.001")) < 0);
     }
 
-    /**
-     * 辅助方法：根据类型查找成本明细项
-     */
-    private CostDetails.CostDetailItem findDetailByType(List<CostDetails.CostDetailItem> details, String type) {
-        if(details == null) {
-            return null;
-        }
-        return details.stream()
-                .filter(item -> type.equals(item.getType()))
-                .findFirst()
-                .orElse(null);
-    }
-
-    /**
-     * 辅助方法：根据工具名查找工具成本明细项
-     */
-    private CostDetails.ToolCostDetailItem findToolDetailByName(
-            List<CostDetails.ToolCostDetailItem> details, String toolName) {
-        if(details == null) {
-            return null;
-        }
-        return details.stream()
-                .filter(item -> toolName.equals(item.getToolName()))
-                .findFirst()
-                .orElse(null);
-    }
 }

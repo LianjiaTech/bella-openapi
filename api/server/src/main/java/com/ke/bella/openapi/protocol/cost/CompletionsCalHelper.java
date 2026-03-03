@@ -9,6 +9,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 public class CompletionsCalHelper {
@@ -36,7 +37,7 @@ public class CompletionsCalHelper {
     }
 
     public static Pair<BigDecimal, Integer> calculateAllElements(List<CompletionsCalElement> elements, CompletionPriceInfo.RangePrice rangePrice,
-            CompletionResponse.TokensDetail tokensDetail, List<CostDetails.CostDetailItem> details) {
+            CompletionResponse.TokensDetail tokensDetail, Map<String, CostDetails.CostDetailItem> details) {
         if(tokensDetail == null) {
             return Pair.of(BigDecimal.ZERO, 0);
         }
@@ -50,8 +51,8 @@ public class CompletionsCalHelper {
                 BigDecimal cost = price.multiply(BigDecimal.valueOf(tokens / 1000.0));
                 amount = amount.add(cost);
                 if(details != null) {
-                    details.add(CostDetails.CostDetailItem.builder()
-                            .type(element.getTypeName()).tokens(tokens)
+                    details.put(element.getTypeName(), CostDetails.CostDetailItem.builder()
+                            .tokens(tokens)
                             .unitPrice(price).cost(cost).build());
                 }
             }

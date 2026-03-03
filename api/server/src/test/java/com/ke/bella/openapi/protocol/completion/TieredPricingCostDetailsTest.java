@@ -59,7 +59,7 @@ public class TieredPricingCostDetailsTest {
         assertNotNull("输入明细不应为null", details1.getInputDetails());
         assertEquals("应该有1个输入明细项", 1, details1.getInputDetails().size());
 
-        CostDetails.CostDetailItem inputItem1 = details1.getInputDetails().get(0);
+        CostDetails.CostDetailItem inputItem1 = details1.getInputDetails().get("prompt_tokens");
         assertEquals("输入token数应为5000", Integer.valueOf(5000), inputItem1.getTokens());
         assertEquals("输入单价应为15（第一区间）", new BigDecimal("15"), inputItem1.getUnitPrice());
 
@@ -70,7 +70,7 @@ public class TieredPricingCostDetailsTest {
 
         CostDetails details2 = CostCalculator.calculate("/v1/chat/completions", priceInfoJson, usage2);
 
-        CostDetails.CostDetailItem inputItem2 = details2.getInputDetails().get(0);
+        CostDetails.CostDetailItem inputItem2 = details2.getInputDetails().get("prompt_tokens");
         assertEquals("输入token数应为15000", Integer.valueOf(15000), inputItem2.getTokens());
         assertEquals("输入单价应为10（第二区间）", new BigDecimal("10"), inputItem2.getUnitPrice());
 
@@ -135,7 +135,7 @@ public class TieredPricingCostDetailsTest {
         CostDetails details1 = CostCalculator.calculate("/v1/chat/completions", priceInfoJson, usage1);
 
         assertNotNull("输出明细不应为null", details1.getOutputDetails());
-        CostDetails.CostDetailItem outputItem1 = details1.getOutputDetails().get(0);
+        CostDetails.CostDetailItem outputItem1 = details1.getOutputDetails().get("completion_tokens");
         assertEquals("输出单价应为30（第一区间）", new BigDecimal("30"), outputItem1.getUnitPrice());
 
         // 测试：输出在第二个区间
@@ -145,7 +145,7 @@ public class TieredPricingCostDetailsTest {
 
         CostDetails details2 = CostCalculator.calculate("/v1/chat/completions", priceInfoJson, usage2);
 
-        CostDetails.CostDetailItem outputItem2 = details2.getOutputDetails().get(0);
+        CostDetails.CostDetailItem outputItem2 = details2.getOutputDetails().get("completion_tokens");
         assertEquals("输出单价应为25（第二区间）", new BigDecimal("25"), outputItem2.getUnitPrice());
     }
 
@@ -209,8 +209,8 @@ public class TieredPricingCostDetailsTest {
         assertNotNull("输入明细不应为null", details.getInputDetails());
         assertNotNull("输出明细不应为null", details.getOutputDetails());
 
-        CostDetails.CostDetailItem inputItem = details.getInputDetails().get(0);
-        CostDetails.CostDetailItem outputItem = details.getOutputDetails().get(0);
+        CostDetails.CostDetailItem inputItem = details.getInputDetails().get("prompt_tokens");
+        CostDetails.CostDetailItem outputItem = details.getOutputDetails().get("completion_tokens");
 
         assertEquals("输入应使用Tier 2价格", new BigDecimal("8"), inputItem.getUnitPrice());
         assertEquals("输出应使用Tier 2输出区间2价格", new BigDecimal("14"), outputItem.getUnitPrice());
@@ -264,7 +264,7 @@ public class TieredPricingCostDetailsTest {
         CostDetails detailsBoundary = CostCalculator.calculate("/v1/chat/completions", priceInfoJson, usageBoundary);
 
         assertNotNull("边界值应有成本明细", detailsBoundary);
-        CostDetails.CostDetailItem inputItem = detailsBoundary.getInputDetails().get(0);
+        CostDetails.CostDetailItem inputItem = detailsBoundary.getInputDetails().get("prompt_tokens");
 
         // 边界值应该使用第一个区间的价格（<=）
         assertEquals("边界值10000应使用第一区间价格", new BigDecimal("20"), inputItem.getUnitPrice());
@@ -276,7 +276,7 @@ public class TieredPricingCostDetailsTest {
 
         CostDetails detailsJustOver = CostCalculator.calculate("/v1/chat/completions", priceInfoJson, usageJustOver);
 
-        CostDetails.CostDetailItem inputItemJustOver = detailsJustOver.getInputDetails().get(0);
+        CostDetails.CostDetailItem inputItemJustOver = detailsJustOver.getInputDetails().get("prompt_tokens");
 
         // 10001应该使用第二个区间的价格
         assertEquals("10001应使用第二区间价格", new BigDecimal("15"), inputItemJustOver.getUnitPrice());
@@ -320,9 +320,9 @@ public class TieredPricingCostDetailsTest {
         assertEquals("应该有3个输入明细项", 3, details.getInputDetails().size());
 
         // 验证各类型明细的单价
-        CostDetails.CostDetailItem cachedItem = findDetailByType(details.getInputDetails(), "cached_tokens");
-        CostDetails.CostDetailItem imageItem = findDetailByType(details.getInputDetails(), "image_tokens");
-        CostDetails.CostDetailItem promptItem = findDetailByType(details.getInputDetails(), "prompt_tokens");
+        CostDetails.CostDetailItem cachedItem = details.getInputDetails().get("cached_tokens");
+        CostDetails.CostDetailItem imageItem = details.getInputDetails().get("image_tokens");
+        CostDetails.CostDetailItem promptItem = details.getInputDetails().get("prompt_tokens");
 
         assertNotNull("应有缓存token明细", cachedItem);
         assertNotNull("应有图片token明细", imageItem);
@@ -341,20 +341,8 @@ public class TieredPricingCostDetailsTest {
         BigDecimal detailsSum = cachedItem.getCost()
                 .add(imageItem.getCost())
                 .add(promptItem.getCost())
-                .add(details.getOutputDetails().get(0).getCost());
+                .add(details.getOutputDetails().get("completion_tokens").getCost());
         assertEquals("明细总和应等于总成本", 0, details.getTotalCost().compareTo(detailsSum));
     }
 
-    /**
-     * 辅助方法：根据类型查找明细项
-     */
-    private CostDetails.CostDetailItem findDetailByType(List<CostDetails.CostDetailItem> details, String type) {
-        if(details == null) {
-            return null;
-        }
-        return details.stream()
-                .filter(item -> type.equals(item.getType()))
-                .findFirst()
-                .orElse(null);
-    }
 }

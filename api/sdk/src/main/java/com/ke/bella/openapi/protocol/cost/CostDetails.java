@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
-import java.util.List;
+import java.util.Map;
 
 @Data
 @Builder
@@ -20,11 +20,11 @@ public class CostDetails implements Serializable {
 
     private BigDecimal totalCost;
 
-    private List<CostDetailItem> inputDetails;
+    private Map<String, CostDetailItem> inputDetails;
 
-    private List<CostDetailItem> outputDetails;
+    private Map<String, CostDetailItem> outputDetails;
 
-    private List<ToolCostDetailItem> toolDetails;
+    private Map<String, ToolCostDetailItem> toolDetails;
 
     @Data
     @Builder
@@ -33,8 +33,6 @@ public class CostDetails implements Serializable {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class CostDetailItem implements Serializable {
         private static final long serialVersionUID = 1L;
-
-        private String type;
 
         private Integer tokens;
 
@@ -50,8 +48,6 @@ public class CostDetails implements Serializable {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class ToolCostDetailItem implements Serializable {
         private static final long serialVersionUID = 1L;
-
-        private String toolName;
 
         private Integer callCount;
 
