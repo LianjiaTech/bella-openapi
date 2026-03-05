@@ -266,11 +266,11 @@ public class HuoshanStreamTtsCallback implements Callbacks.WebSocketCallback {
     @Data
     public static class AudioParams {
         @JsonProperty("speech_rate")
-        Double speechRete;
+        Double speechRate;
         String format;
 
         public AudioParams(TtsRequest request) {
-            this.speechRete = request.speed;
+            this.speechRate = request.speed;
             this.format = request.responseFormat;
         }
     }
@@ -279,17 +279,34 @@ public class HuoshanStreamTtsCallback implements Callbacks.WebSocketCallback {
     public static class ReqParams {
         String text;
         String speaker;
+        @JsonProperty("text_type")
+        String textType;
         @JsonProperty("audio_params")
         AudioParams audioParams;
 
         public ReqParams(TtsRequest request) {
+            this.audioParams = new AudioParams(request);
+
+            if (request.getExtra_body() != null && request.getExtra_body().containsKey("request")) {
+                Object requestObj = request.getExtra_body().get("request");
+                if (requestObj instanceof Map) {
+                    Map<String, Object> requestMap = (Map<String, Object>) requestObj;
+                    if (requestMap.containsKey("text_type")) {
+                        this.textType = String.valueOf(requestMap.get("text_type"));
+                    }
+                }
+            }
+
             this.text = request.input;
             if(request.voice == null) {
                 this.speaker = "zh_female_shuangkuaisisi_moon_bigtts";
             } else {
                 this.speaker = request.voice;
             }
-            this.audioParams = new AudioParams(request);
+
+            if (this.textType == null) {
+                this.textType = "";
+            }
         }
     }
 
