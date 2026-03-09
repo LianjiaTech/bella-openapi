@@ -19,6 +19,7 @@ import com.ke.bella.openapi.utils.ImageUtils;
 import com.ke.bella.openapi.utils.JacksonUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
@@ -360,6 +361,16 @@ public class VertexConverter {
         if(request.getReasoning_effort() != null && property.isSupportThinkConfig()) {
             builder.thinkingConfig(new GenerationConfig.ThinkingConfig());
         }
+
+        // 从 extra_body["generationConfig"] 中读取额外配置并合并
+        Map<String, Object> extraBody = request.getExtra_body();
+        if(MapUtils.isNotEmpty(extraBody) && extraBody.containsKey("generationConfig")) {
+            GenerationConfig extraConfig = convertExtraGenerationConfig(extraBody.get("generationConfig"));
+            if(extraConfig != null) {
+                mergeGenerationConfig(builder, extraConfig);
+            }
+        }
+
         return builder.build();
     }
 
@@ -627,5 +638,64 @@ public class VertexConverter {
 
         String result = JacksonUtils.serialize(args);
         return StringUtils.hasText(result) ? result : "{}";
+    }
+
+    /**
+     * 从 extra_body["generationConfig"] 转换额外的配置
+     *
+     * @param genConfigObj generationConfig 对象（JSON Map）
+     * @return GenerationConfig 额外配置对象
+     */
+    private static GenerationConfig convertExtraGenerationConfig(Object genConfigObj) {
+        if(genConfigObj == null) {
+            return null;
+        }
+
+        try {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> configMap = (Map<String, Object>) genConfigObj;
+            return JacksonUtils.convertValue(configMap, GenerationConfig.class);
+        } catch (Exception e) {
+            log.warn("Failed to convert extra generationConfig: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * 将额外的 GenerationConfig 配置合并到 builder 中
+     *
+     * @param builder 已有的配置 builder
+     * @param extraConfig 从 extra_body 转换的额外配置
+     */
+    private static void mergeGenerationConfig(GenerationConfig.GenerationConfigBuilder builder, GenerationConfig extraConfig) {
+        // 额外字段：直接设置（这些字段不会从标准 CompletionRequest 字段来）
+        if(extraConfig.getResponseJsonSchema() != null) {
+            builder.responseJsonSchema(extraConfig.getResponseJsonSchema());
+        }
+        if(extraConfig.getMediaResolution() != null) {
+            builder.mediaResolution(extraConfig.getMediaResolution());
+        }
+        if(extraConfig.getEnableAffectiveDialog() != null) {
+            builder.enableAffectiveDialog(extraConfig.getEnableAffectiveDialog());
+        }
+        if(extraConfig.getSpeechConfig() != null) {
+            builder.speechConfig(extraConfig.getSpeechConfig());
+        }
+        if(extraConfig.getImageConfig() != null) {
+            builder.imageConfig(extraConfig.getImageConfig());
+        }
+
+        // 标准字段：只在 extra 中有值时才覆盖
+        // 注意：这些字段通常已经从 CompletionRequest 的标准字段设置了
+        // 如果 extra_body 中也提供了，可以选择是否覆盖
+        if(extraConfig.getResponseSchema() != null) {
+            builder.responseSchema(extraConfig.getResponseSchema());
+        }
+        if(extraConfig.getResponseMimeType() != null) {
+            builder.responseMimeType(extraConfig.getResponseMimeType());
+        }
+        if(extraConfig.getAudioTimestamp() != null) {
+            builder.audioTimestamp(extraConfig.getAudioTimestamp());
+        }
     }
 }

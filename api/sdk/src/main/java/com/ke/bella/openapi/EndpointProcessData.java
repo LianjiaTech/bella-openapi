@@ -87,6 +87,7 @@ public class EndpointProcessData {
     private boolean nativeSend;
     private boolean batch;
     private CostDetails costDetails;
+    private boolean overrideInnerLog;
 
     public void setApikeyInfo(ApikeyInfo ak) {
         this.setApikey(ak.getApikey());

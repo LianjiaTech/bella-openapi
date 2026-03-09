@@ -25,7 +25,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.ke.bella.openapi.BellaContext;
 import com.ke.bella.openapi.EndpointContext;
 import com.ke.bella.openapi.annotations.EndpointAPI;
-import com.ke.bella.openapi.common.exception.ChannelException;
+import com.ke.bella.openapi.common.exception.BizParamCheckException;
 import com.ke.bella.openapi.common.exception.ResourceNotFoundException;
 import com.ke.bella.openapi.protocol.OpenapiListResponse;
 import com.ke.bella.openapi.protocol.video.VideoCreateRequest;
@@ -139,8 +139,7 @@ public class VideoController {
 
         List<ChannelDB> channels = channelService.listActives("model", model);
         if(CollectionUtils.isEmpty(channels)) {
-            throw new ChannelException.OpenAIException(503, "no_channel",
-                    "No channel available for model: " + model);
+            throw new BizParamCheckException("No channel available for model: " + model);
         }
 
         String spaceCode = EndpointContext.getApikey().getOwnerCode();

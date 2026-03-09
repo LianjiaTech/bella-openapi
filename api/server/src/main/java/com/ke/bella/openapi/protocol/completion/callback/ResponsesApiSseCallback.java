@@ -7,7 +7,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import com.ke.bella.openapi.EndpointProcessData;
 import com.ke.bella.openapi.apikey.ApikeyInfo;
-import com.ke.bella.openapi.common.exception.ChannelException;
+import com.ke.bella.openapi.common.exception.BellaException;
 import com.ke.bella.openapi.protocol.Callbacks;
 import com.ke.bella.openapi.protocol.completion.ResponsesApiResponse;
 import com.ke.bella.openapi.protocol.completion.ResponsesApiStreamEvent;
@@ -68,7 +68,7 @@ public class ResponsesApiSseCallback implements Callbacks.ResponsesApiSseCallbac
     }
 
     @Override
-    public void onError(ChannelException exception) {
+    public void onError(BellaException exception) {
         if(completed) {
             return;
         }

@@ -1,7 +1,7 @@
 package com.ke.bella.openapi.safety;
 
 import com.ke.bella.openapi.TaskExecutor;
-import com.ke.bella.openapi.common.exception.ChannelException;
+import com.ke.bella.openapi.common.exception.BellaException;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -54,7 +54,7 @@ public class SafetyCheckDelegator<T extends SafetyCheckRequest> implements ISafe
                 addRiskData(result, request.isRequest());
             }
             return result;
-        } catch (ChannelException.SafetyCheckException e) {
+        } catch (BellaException.SafetyCheckException e) {
             log.warn("异步安全检测发现敏感数据: requestId={}, sensitiveData={}",
                     request.getRequestId(), e.getSensitive());
             if(e.getSensitive() != null) {

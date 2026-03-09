@@ -3,7 +3,7 @@ package com.ke.bella.openapi.protocol;
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 
-import com.ke.bella.openapi.common.exception.ChannelException;
+import com.ke.bella.openapi.common.exception.BellaException;
 
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -32,7 +32,7 @@ public class BellaStreamCallback implements Callback {
     @Override
     public void onFailure(Call call, IOException e) {
         log.error("流式请求失败", e);
-        ChannelException exception = ChannelException.fromException(e);
+        BellaException exception = BellaException.fromException(e);
         if(!connectionInitFuture.isDone()) {
             connectionInitFuture.completeExceptionally(exception);
         } else {
@@ -45,7 +45,7 @@ public class BellaStreamCallback implements Callback {
         if(!response.isSuccessful()) {
             String errorMsg = "流式请求返回错误状态码: " + response.code() + ", message: " + response.message();
             log.error(errorMsg);
-            ChannelException exception = ChannelException.fromResponse(response.code(), response.message());
+            BellaException exception = new BellaException.ChannelException(response.code(), response.message());
             if(connectionInitFuture.isDone()) {
                 callback.finish(exception);
             } else {
@@ -77,7 +77,7 @@ public class BellaStreamCallback implements Callback {
             }
         } catch (IOException e) {
             log.error("读取流式数据失败", e);
-            ChannelException exception = ChannelException.fromException(e);
+            BellaException exception = BellaException.fromException(e);
             callback.finish(exception);
         } finally {
             if(body != null) {
