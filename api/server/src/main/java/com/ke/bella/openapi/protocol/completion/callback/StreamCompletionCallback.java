@@ -11,7 +11,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import com.google.common.collect.Lists;
 import com.ke.bella.openapi.EndpointProcessData;
 import com.ke.bella.openapi.apikey.ApikeyInfo;
-import com.ke.bella.openapi.common.exception.ChannelException;
+import com.ke.bella.openapi.common.exception.BellaException;
 import com.ke.bella.openapi.protocol.Callbacks;
 import com.ke.bella.openapi.protocol.OpenapiResponse;
 import com.ke.bella.openapi.protocol.completion.CompletionResponse;
@@ -122,7 +122,7 @@ public class StreamCompletionCallback implements Callbacks.StreamCompletionCallb
     }
 
     @Override
-    public void finish(ChannelException exception) {
+    public void finish(BellaException exception) {
         OpenapiResponse.OpenapiError openapiError = exception.convertToOpenapiError();
         StreamCompletionResponse response = StreamCompletionResponse.builder()
                 .created(DateTimeUtils.getCurrentSeconds())

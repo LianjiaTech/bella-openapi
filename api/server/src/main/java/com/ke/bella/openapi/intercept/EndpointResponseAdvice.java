@@ -14,7 +14,7 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 
 import com.ke.bella.openapi.EndpointContext;
 import com.ke.bella.openapi.annotations.EndpointAPI;
-import com.ke.bella.openapi.common.exception.ChannelException;
+import com.ke.bella.openapi.common.exception.BellaException;
 import com.ke.bella.openapi.protocol.OpenapiResponse;
 import com.ke.bella.openapi.protocol.log.EndpointLogger;
 
@@ -56,12 +56,12 @@ public class EndpointResponseAdvice implements ResponseBodyAdvice<Object> {
     @ResponseBody
     public OpenapiResponse exceptionHandler(Exception exception) {
         String requestId = EndpointContext.getProcessData().getRequestId();
-        ChannelException e = ChannelException.fromException(exception);
+        BellaException e = BellaException.fromException(exception);
         logError(e.getHttpCode(), requestId, e.getMessage(), e);
         OpenapiResponse.OpenapiError error = e.convertToOpenapiError();
         OpenapiResponse openapiResponse = OpenapiResponse.errorResponse(error);
-        if(e instanceof ChannelException.SafetyCheckException) {
-            openapiResponse.setSensitives(((ChannelException.SafetyCheckException) e).getSensitive());
+        if(e instanceof BellaException.SafetyCheckException) {
+            openapiResponse.setSensitives(((BellaException.SafetyCheckException) e).getSensitive());
         }
         return openapiResponse;
     }

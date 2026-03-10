@@ -42,10 +42,22 @@ export const CompletionPriceEditor = forwardRef<CompletionPriceEditorRef, Comple
             toolPrices: undefined,
         });
 
+        // 用于折扣输入的本地临时状态
+        const [discountInputValue, setDiscountInputValue] = useState<string>('');
+        // 是否启用折扣开关
+        const [isDiscountEnabled, setIsDiscountEnabled] = useState(false);
+
         // 仅在 value 从外部传入时更新内部状态（避免无限循环）
         useEffect(() => {
             if (value && value.tiers && value.tiers.length > 0) {
                 setPriceInfo(value);
+                const hasDiscount = value.batchDiscount < 1;
+                setIsDiscountEnabled(hasDiscount);
+                if (hasDiscount) {
+                    setDiscountInputValue(value.batchDiscount.toString());
+                } else {
+                    setDiscountInputValue('');
+                }
             }
         }, [value]);
 
@@ -167,8 +179,21 @@ export const CompletionPriceEditor = forwardRef<CompletionPriceEditorRef, Comple
             return null;
         };
 
+        const isValidBatchDiscount = (discount: number): boolean => {
+            return discount > 0 && discount <= 1;
+        };
+
         // 完整验证
         const validatePriceInfo = (): boolean => {
+            if (!isValidBatchDiscount(priceInfo.batchDiscount)) {
+                toast({
+                    title: '验证失败',
+                    description: `批量折扣系数必须在 (0, 1] 范围内`,
+                    variant: 'destructive',
+                });
+                return false;
+            }
+
             // tiers 必须存在且不为空
             if (!priceInfo.tiers || priceInfo.tiers.length === 0) {
                 toast({
@@ -455,6 +480,108 @@ export const CompletionPriceEditor = forwardRef<CompletionPriceEditorRef, Comple
 
         return (
             <div className="space-y-4">
+                {/* Batch Discount 配置 */}
+                <Card className="border-l-4 border-l-purple-500">
+                    <CardHeader className="pb-3">
+                        <CardTitle className="text-sm font-medium">批量折扣配置</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                                <Switch
+                                    checked={isDiscountEnabled}
+                                    onCheckedChange={(checked) => {
+                                        setIsDiscountEnabled(checked);
+                                        if (checked) {
+                                            setDiscountInputValue('0.5');
+                                            notifyChange({
+                                                ...priceInfo,
+                                                batchDiscount: 0.5
+                                            });
+                                        } else {
+                                            notifyChange({
+                                                ...priceInfo,
+                                                batchDiscount: 1.0
+                                            });
+                                            setDiscountInputValue('');
+                                        }
+                                    }}
+                                />
+                                <Label className="text-sm">启用批量折扣</Label>
+                            </div>
+                            {isDiscountEnabled && (
+                                <div className="flex items-center space-x-2">
+                                    <Input
+                                        type="number"
+                                        value={discountInputValue}
+                                        onChange={(e) => {
+                                            setDiscountInputValue(e.target.value);
+                                        }}
+                                        onBlur={(e) => {
+                                            const value = e.target.value;
+                                            const val = parseFloat(value);
+
+                                            if (value !== '' && !isNaN(val) && val > 0) {
+                                                // 检查小数位数
+                                                if (value.includes('.')) {
+                                                    const decimalPart = value.split('.')[1];
+                                                    if (decimalPart && decimalPart.length > 2) {
+                                                        toast({
+                                                            title: '输入无效',
+                                                            description: '折扣系数最多只能输入两位小数',
+                                                            variant: 'destructive',
+                                                        });
+                                                        setDiscountInputValue('');
+                                                        return;
+                                                    }
+                                                }
+
+                                                if (isValidBatchDiscount(val)) {
+                                                    // 格式化为两位小数并更新显示
+                                                    const formattedVal = val.toFixed(2);
+                                                    setDiscountInputValue(formattedVal);
+                                                    notifyChange({
+                                                        ...priceInfo,
+                                                        batchDiscount: parseFloat(formattedVal)
+                                                    });
+                                                } else {
+                                                    toast({
+                                                        title: '输入无效',
+                                                        description: '折扣系数必须在 (0, 1] 范围内',
+                                                        variant: 'destructive',
+                                                    });
+                                                    setDiscountInputValue('');
+                                                }
+                                            } else if (value !== '') {
+                                                toast({
+                                                    title: '输入无效',
+                                                    description: '折扣系数必须在 (0, 1] 范围内',
+                                                    variant: 'destructive',
+                                                });
+                                                setDiscountInputValue('');
+                                            }
+                                        }}
+                                        placeholder="如 0.5"
+                                        className="w-24"
+                                        step="any"
+                                        min="0"
+                                        max="1"
+                                    />
+                                    <span className="text-xs text-gray-500 inline-block w-16">
+                                        {(() => {
+                                            const val = parseFloat(discountInputValue.toString());
+                                            if (!isNaN(val) && val > 0 && val < 1) {
+                                                return `(${parseFloat((val * 10).toFixed(2))} 折)`;
+                                            }
+                                            return '';
+                                        })()}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+                    </CardContent>
+                </Card>
+
                 <div className="space-y-3">
                     <div className="flex items-center justify-end">
                         <Button

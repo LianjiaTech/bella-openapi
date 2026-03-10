@@ -2,7 +2,7 @@ package com.ke.bella.openapi.common.exception;
 
 import org.springframework.http.HttpStatus;
 
-public class ResourceNotFoundException extends ChannelException {
+public class ResourceNotFoundException extends BellaException {
 
     public ResourceNotFoundException(String message) {
         super(message);

@@ -3,7 +3,7 @@ package com.ke.bella.openapi.intercept;
 import com.ke.bella.openapi.BellaResponse;
 import com.ke.bella.openapi.annotations.BellaAPI;
 import com.ke.bella.openapi.common.exception.BizParamCheckException;
-import com.ke.bella.openapi.common.exception.ChannelException;
+import com.ke.bella.openapi.common.exception.BellaException;
 import com.ke.bella.openapi.utils.JacksonUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.MethodParameter;
@@ -69,8 +69,8 @@ public class BellaApiResponseAdvice implements ResponseBodyAdvice<Object> {
                 || e instanceof BizParamCheckException) {
             code = 400;
         }
-        if(e instanceof ChannelException) {
-            code = ((ChannelException) e).getHttpCode();
+        if(e instanceof BellaException) {
+            code = ((BellaException) e).getHttpCode();
         }
 
         if(code == 500) {

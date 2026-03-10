@@ -127,7 +127,7 @@ public class AwsCompletionConverter {
             } else if(reasoning_effort.equals("high")) {
                 thinkingToken = 8000;
             }
-            thinking.put("thinking", new MessageRequest.ThinkingConfigEnabled(thinkingToken));
+            thinking.put("thinking", MessageRequest.ThinkingConfig.enabled(thinkingToken));
             return convertObjectToDocument(thinking);
         } else {
             thinking.put("thinking", reasoning_effort);

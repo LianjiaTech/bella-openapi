@@ -6,7 +6,7 @@ import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ke.bella.openapi.EndpointProcessData;
-import com.ke.bella.openapi.common.exception.ChannelException;
+import com.ke.bella.openapi.common.exception.BellaException;
 import com.ke.bella.openapi.protocol.Callbacks;
 import com.ke.bella.openapi.protocol.OpenapiResponse;
 import com.ke.bella.openapi.protocol.log.EndpointLogger;
@@ -106,7 +106,7 @@ public class HuoshanStreamTtsCallback implements Callbacks.WebSocketCallback {
         case EVENT_SessionFailed: {
             String errorStr = response.optional.response_meta_json;
             Map<String, Object> map = JacksonUtils.toMap(errorStr);
-            ChannelException exception = ChannelException.fromResponse(convertCode((Integer) map.get("status_code")), (String) map.get("message"));
+            BellaException exception = new BellaException.ChannelException(convertCode((Integer) map.get("status_code")), (String) map.get("message"));
             onError(exception);
             break;
         }
@@ -154,13 +154,13 @@ public class HuoshanStreamTtsCallback implements Callbacks.WebSocketCallback {
 
     @Override
     public void onFailure(WebSocket webSocket, Throwable t, Response response) {
-        ChannelException exception;
+        BellaException exception;
         if(response != null) {
             int code = response.code();
             String msg = response.message();
-            exception = ChannelException.fromResponse(code, msg);
+            exception = new BellaException.ChannelException(code, msg);
         } else {
-            exception = ChannelException.fromException(t);
+            exception = BellaException.fromException(t);
         }
         onError(exception);
     }
@@ -184,7 +184,7 @@ public class HuoshanStreamTtsCallback implements Callbacks.WebSocketCallback {
         }
     }
 
-    void onError(ChannelException exception) {
+    void onError(BellaException exception) {
         complete();
         processData.setResponse(OpenapiResponse.errorResponse(exception.convertToOpenapiError()));
         log();
@@ -266,11 +266,11 @@ public class HuoshanStreamTtsCallback implements Callbacks.WebSocketCallback {
     @Data
     public static class AudioParams {
         @JsonProperty("speech_rate")
-        Double speechRete;
+        Double speechRate;
         String format;
 
         public AudioParams(TtsRequest request) {
-            this.speechRete = request.speed;
+            this.speechRate = request.speed;
             this.format = request.responseFormat;
         }
     }
@@ -279,17 +279,34 @@ public class HuoshanStreamTtsCallback implements Callbacks.WebSocketCallback {
     public static class ReqParams {
         String text;
         String speaker;
+        @JsonProperty("text_type")
+        String textType;
         @JsonProperty("audio_params")
         AudioParams audioParams;
 
         public ReqParams(TtsRequest request) {
+            this.audioParams = new AudioParams(request);
+
+            if (request.getExtra_body() != null && request.getExtra_body().containsKey("request")) {
+                Object requestObj = request.getExtra_body().get("request");
+                if (requestObj instanceof Map) {
+                    Map<String, Object> requestMap = (Map<String, Object>) requestObj;
+                    if (requestMap.containsKey("text_type")) {
+                        this.textType = String.valueOf(requestMap.get("text_type"));
+                    }
+                }
+            }
+
             this.text = request.input;
             if(request.voice == null) {
                 this.speaker = "zh_female_shuangkuaisisi_moon_bigtts";
             } else {
                 this.speaker = request.voice;
             }
-            this.audioParams = new AudioParams(request);
+
+            if (this.textType == null) {
+                this.textType = "";
+            }
         }
     }
 

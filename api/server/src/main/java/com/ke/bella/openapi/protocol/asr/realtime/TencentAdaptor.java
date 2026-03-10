@@ -1,6 +1,7 @@
 package com.ke.bella.openapi.protocol.asr.realtime;
 
 import com.ke.bella.openapi.EndpointProcessData;
+import com.ke.bella.openapi.common.exception.BizParamCheckException;
 import com.ke.bella.openapi.protocol.Callbacks;
 import com.ke.bella.openapi.protocol.asr.TencentProperty;
 import com.ke.bella.openapi.protocol.asr.TencentRealTimeAsrRequest;

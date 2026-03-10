@@ -4,7 +4,7 @@ import com.ke.bella.openapi.EndpointContext;
 import com.ke.bella.openapi.apikey.ApikeyInfo;
 import com.ke.bella.openapi.common.EntityConstants;
 import com.ke.bella.openapi.common.exception.BizParamCheckException;
-import com.ke.bella.openapi.common.exception.ChannelException;
+import com.ke.bella.openapi.common.exception.BellaException;
 import com.ke.bella.openapi.protocol.limiter.LimiterManager;
 import com.ke.bella.openapi.protocol.metrics.MetricsManager;
 import com.ke.bella.openapi.service.ChannelService;
@@ -124,10 +124,10 @@ public class ChannelRouter {
                         .collect(Collectors.toList());
             }
             if(CollectionUtils.isEmpty(filtered)) {
-                throw new ChannelException.AuthorizationException("未经安全合规审核，没有使用权限");
+                throw new BellaException.AuthorizationException("未经安全合规审核，没有使用权限");
             }
             if(freeAkOverload(EndpointContext.getProcessData().getAkCode(), entityCode)) {
-                throw new ChannelException.RateLimitException("当前使用试用额度,每分钟最多请求" + freeRpm + "次, 且并行请求数不能高于" + freeConcurrent);
+                throw new BellaException.RateLimitException("当前使用试用额度,每分钟最多请求" + freeRpm + "次, 且并行请求数不能高于" + freeConcurrent);
             }
         }
 
@@ -142,7 +142,7 @@ public class ChannelRouter {
                     .collect(Collectors.toList());
         }
         if(CollectionUtils.isEmpty(filtered)) {
-            throw new ChannelException.RateLimitException("渠道当前负载过高，请稍后重试");
+            throw new BellaException.RateLimitException("渠道当前负载过高，请稍后重试");
         }
         return filtered;
     }

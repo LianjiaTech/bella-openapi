@@ -8,20 +8,19 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 
 import javax.servlet.ServletException;
 import java.io.IOException;
-import java.util.concurrent.ExecutionException;
 
-public abstract class ChannelException extends RuntimeException {
+public abstract class BellaException extends RuntimeException {
 
-    protected ChannelException(String message) {
+    protected BellaException(String message) {
         super(message);
     }
 
-    protected ChannelException(String message, Throwable throwable) {
+    protected BellaException(String message, Throwable throwable) {
         super(message, throwable);
     }
 
-    public static ChannelException fromResponse(int httpCode, String message) {
-        return new ChannelException(message) {
+    public static BellaException fromResponse(int httpCode, String message) {
+        return new BellaException(message) {
             @Override
             public Integer getHttpCode() {
                 return httpCode;
@@ -34,14 +33,14 @@ public abstract class ChannelException extends RuntimeException {
         };
     }
 
-    public static ChannelException fromException(Throwable e) {
-        if(e instanceof ChannelException) {
-            return (ChannelException) e;
+    public static BellaException fromException(Throwable e) {
+        if(e instanceof BellaException) {
+            return (BellaException) e;
         }
-        if(e.getCause() instanceof ChannelException) {
-            return (ChannelException) e.getCause();
+        if(e.getCause() instanceof BellaException) {
+            return (BellaException) e.getCause();
         }
-        return new ChannelException(e.getMessage(), e) {
+        return new BellaException(e.getMessage(), e) {
             @Override
             public Integer getHttpCode() {
                 if(e instanceof IllegalArgumentException
@@ -85,9 +84,9 @@ public abstract class ChannelException extends RuntimeException {
     public abstract String getType();
 
     public OpenapiResponse.OpenapiError convertToOpenapiError() {
-        if(this instanceof ChannelException.OpenAIException) {
-            return ((ChannelException.OpenAIException) this).getResponse();
-        } else if(this instanceof ChannelException.SafetyCheckException) {
+        if(this instanceof ChannelException) {
+            return ((ChannelException) this).getResponse();
+        } else if(this instanceof SafetyCheckException) {
             return new OpenapiResponse.OpenapiError(this.getType(), this.getMessage(), this.getHttpCode(),
                     ((SafetyCheckException) this).getSensitive());
         } else {
@@ -95,7 +94,7 @@ public abstract class ChannelException extends RuntimeException {
         }
     }
 
-    public static class RateLimitException extends ChannelException {
+    public static class RateLimitException extends BellaException {
         public RateLimitException(String message) {
             super(message);
         }
@@ -111,7 +110,7 @@ public abstract class ChannelException extends RuntimeException {
         }
     }
 
-    public static class AuthorizationException extends ChannelException {
+    public static class AuthorizationException extends BellaException {
         public AuthorizationException(String message) {
             super(message);
         }
@@ -128,7 +127,7 @@ public abstract class ChannelException extends RuntimeException {
     }
 
     @Getter
-    public static class SafetyCheckException extends ChannelException {
+    public static class SafetyCheckException extends BellaException {
         protected final Integer httpCode;
         protected final String type;
         protected final Object sensitive;
@@ -142,20 +141,24 @@ public abstract class ChannelException extends RuntimeException {
     }
 
     @Getter
-    public static class OpenAIException extends ChannelException {
+    public static class ChannelException extends BellaException {
 
         protected final Integer httpCode;
         protected final String type;
         private final OpenapiResponse.OpenapiError response;
 
-        public OpenAIException(Integer httpCode, String type, String message) {
+        public ChannelException(Integer httpCode, String message) {
+            this(httpCode, "Channel Exception", message);
+        }
+
+        public ChannelException(Integer httpCode, String type, String message) {
             this(httpCode, type, message, new OpenapiResponse.OpenapiError(type, message, httpCode));
         }
 
-        public OpenAIException(Integer httpCode, String type, String message, OpenapiResponse.OpenapiError error) {
+        public ChannelException(Integer httpCode, String type, String message, OpenapiResponse.OpenapiError error) {
             super(message);
             this.httpCode = httpCode >= 500 ? HttpStatus.SERVICE_UNAVAILABLE.value() : httpCode;
-            if(httpCode > 500) {
+            if(httpCode >= 500) {
                 message = "供应商返回：code: " + httpCode + " message: " + message;
             }
             this.type = type;
@@ -169,7 +172,7 @@ public abstract class ChannelException extends RuntimeException {
     }
 
     @Getter
-    public static class ClientNotLoginException extends ChannelException {
+    public static class ClientNotLoginException extends BellaException {
 
         private final String redirectUrl;
 

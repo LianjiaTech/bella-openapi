@@ -381,7 +381,7 @@ public class TransferFromCompletionsUtils {
 
     private static void setThinkingConfig(CompletionRequest.CompletionRequestBuilder<?, ?> builder,
             MessageRequest request, boolean nativeSupport) {
-        if(request.getThinking() != null && request.getThinking() instanceof MessageRequest.ThinkingConfigEnabled) {
+        if(request.getThinking() != null && request.getThinking().isEnabled()) {
             if(nativeSupport) {
                 builder.reasoning_effort(request.getThinking());
             } else {

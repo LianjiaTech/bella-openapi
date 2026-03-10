@@ -15,7 +15,7 @@ import java.util.function.Function;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.ke.bella.openapi.BellaContext;
-import com.ke.bella.openapi.common.exception.ChannelException;
+import com.ke.bella.openapi.common.exception.BellaException;
 import com.ke.bella.openapi.protocol.BellaEventSourceListener;
 import com.ke.bella.openapi.protocol.BellaStreamCallback;
 import com.ke.bella.openapi.protocol.BellaWebSocketListener;
@@ -259,9 +259,9 @@ public class HttpUtils {
                 if(result == null) {
                     if(response.code() > 499 && response.code() < 600) {
                         String message = "供应商返回：code: " + response.code() + " message: " + response.message();
-                        throw ChannelException.fromResponse(503, message);
+                        throw new BellaException.ChannelException(503, message);
                     }
-                    throw ChannelException.fromResponse(response.code(), response.message());
+                    throw new BellaException.ChannelException(response.code(), response.message());
                 } else {
                     if(errorCallback != null) {
                         errorCallback.callback(result, response);
@@ -270,7 +270,7 @@ public class HttpUtils {
             }
             return result;
         } catch (IOException e) {
-            throw ChannelException.fromException(e);
+            throw BellaException.fromException(e);
         }
     }
 

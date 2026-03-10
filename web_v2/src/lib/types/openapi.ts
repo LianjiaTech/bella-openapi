@@ -42,3 +42,47 @@ export interface EndpointDetails {
     priceDetails: PriceDetails;
 }
 export interface Model {}
+
+// Channel 类型用于创建和更新操作
+export interface Channel {
+    channelCode?: string;
+    entityType?: string;
+    entityCode?: string;
+    url?: string;
+    protocol?: string;
+    supplier?: string;
+    dataDestination?: string;
+    channelInfo?: string;
+    priceInfo?: string;
+    priority?: string;
+    trialEnabled?: number;
+    queueMode?: number;
+    queueName?: string;
+    ownerType?: string;
+    ownerCode?: string;
+    ownerName?: string;
+    visibility?: string;
+    status?: string;
+}
+
+export interface ModelDetails {
+    model: Model;
+    channels: ChannelDetails[];
+}
+export interface ChannelDetails {
+}
+export interface Endpoint {
+    endpoint: string;
+    endpointCode: string;
+    endpointName: string;
+    maintainerCode: string;
+    maintainerName: string;
+    status: string;
+    cuid: number;
+    cuName: string;
+    muid: number;
+    muName: string;
+    ctime: string;
+    mtime: string;
+    documentUrl?: string;
+}
