@@ -1,8 +1,7 @@
 package com.ke.bella.openapi.protocol.document.parse;
 
-import com.ke.bella.openapi.TaskExecutor;
 import com.ke.bella.openapi.common.exception.BizParamCheckException;
-import com.ke.bella.openapi.common.exception.ChannelException;
+import com.ke.bella.openapi.common.exception.BellaException;
 import com.ke.bella.openapi.server.OpenAiServiceFactory;
 import com.lark.oapi.Client;
 import com.lark.oapi.service.docx.v1.model.Block;
@@ -62,7 +61,7 @@ public class LarkAdaptor implements DocParseAdaptor<LarkProperty> {
                     .taskId(TaskIdUtils.buildTaskId(channelCode, ticket))
                     .build();
         } catch (Exception e) {
-            throw ChannelException.fromException(e);
+            throw BellaException.fromException(e);
         }
     }
 
@@ -150,7 +149,7 @@ public class LarkAdaptor implements DocParseAdaptor<LarkProperty> {
         try {
             ListDocumentBlockResp resp = client.docx().v1().documentBlock().list(req);
             if(resp.getCode() != 0) {
-                throw ChannelException.fromResponse(502, resp.getMsg());
+                throw new BellaException.ChannelException(502, resp.getMsg());
             }
             ListDocumentBlockRespBody body = resp.getData();
             List<Block> blocks = new ArrayList<>(Arrays.asList(body.getItems()));
@@ -159,7 +158,7 @@ public class LarkAdaptor implements DocParseAdaptor<LarkProperty> {
             }
             return blocks;
         } catch (Exception e) {
-            throw ChannelException.fromException(e);
+            throw BellaException.fromException(e);
         }
     }
 

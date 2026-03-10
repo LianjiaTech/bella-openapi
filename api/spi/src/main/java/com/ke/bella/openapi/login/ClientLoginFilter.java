@@ -1,6 +1,6 @@
 package com.ke.bella.openapi.login;
 
-import com.ke.bella.openapi.common.exception.ChannelException;
+import com.ke.bella.openapi.common.exception.BellaException;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -16,11 +16,11 @@ public class ClientLoginFilter implements Filter {
         HttpServletResponse httpResponse = (HttpServletResponse) response;
         try {
             filterChain.doFilter(request, response);
-        } catch (ChannelException.ClientNotLoginException clientNotLoginException) {
+        } catch (BellaException.ClientNotLoginException clientNotLoginException) {
             httpResponse.setStatus(401);
             httpResponse.setHeader(LoginFilter.REDIRECT_HEADER, clientNotLoginException.getRedirectUrl());
-        } catch (ChannelException channelException) {
-            httpResponse.sendError(channelException.getHttpCode(), channelException.getMessage());
+        } catch (BellaException bellaException) {
+            httpResponse.sendError(bellaException.getHttpCode(), bellaException.getMessage());
         } catch (Exception exception) {
             httpResponse.sendError(500, exception.getMessage());
         }

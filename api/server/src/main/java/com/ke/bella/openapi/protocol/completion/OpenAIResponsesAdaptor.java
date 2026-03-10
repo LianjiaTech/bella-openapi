@@ -4,7 +4,7 @@ import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
-import com.ke.bella.openapi.common.exception.ChannelException;
+import com.ke.bella.openapi.common.exception.BellaException;
 import com.ke.bella.openapi.protocol.BellaEventSourceListener;
 import com.ke.bella.openapi.protocol.Callbacks;
 import com.ke.bella.openapi.utils.HttpUtils;
@@ -147,7 +147,7 @@ public class OpenAIResponsesAdaptor implements ResponsesAdaptor<ResponsesApiProp
                     }
                 } catch (Exception e) {
                     log.error("Error processing SSE event: type={}, data={}", type, data, e);
-                    callback.onError(ChannelException.fromException(e));
+                    callback.onError(BellaException.fromException(e));
                     eventSource.cancel();
                 }
             }
@@ -160,20 +160,20 @@ public class OpenAIResponsesAdaptor implements ResponsesAdaptor<ResponsesApiProp
 
             @Override
             public void onFailure(EventSource eventSource, Throwable t, Response response) {
-                ChannelException exception;
+                BellaException exception;
                 try {
                     if(t == null) {
                         exception = convertToException(response);
                     } else {
-                        if(t instanceof ChannelException) {
-                            exception = (ChannelException) t;
+                        if(t instanceof BellaException) {
+                            exception = (BellaException) t;
                         } else {
-                            exception = ChannelException.fromException(t);
+                            exception = BellaException.fromException(t);
                         }
                     }
                 } catch (Exception e) {
                     log.error("Error converting failure to exception", e);
-                    exception = ChannelException.fromException(e);
+                    exception = BellaException.fromException(e);
                 }
 
                 if(connectionInitFuture != null && connectionInitFuture.isDone()) {
@@ -192,25 +192,25 @@ public class OpenAIResponsesAdaptor implements ResponsesAdaptor<ResponsesApiProp
     /**
      * 将 HTTP 错误响应转换为 ChannelException
      */
-    private ChannelException convertToException(Response response) {
+    private BellaException convertToException(Response response) {
         try {
             if(response.body() == null) {
-                return ChannelException.fromResponse(response.code(), response.message());
+                return new BellaException.ChannelException(response.code(), response.message());
             }
             String msg = response.body().string();
             ResponsesApiResponse errorResponse = JacksonUtils.deserialize(msg, ResponsesApiResponse.class);
             if(errorResponse != null && errorResponse.getError() != null) {
-                return new ChannelException.OpenAIException(
+                return new BellaException.ChannelException(
                         response.code(),
                         errorResponse.getError().getType(),
                         errorResponse.getError().getMessage(),
                         errorResponse.getError());
             } else {
-                return ChannelException.fromResponse(response.code(), msg);
+                return new BellaException.ChannelException(response.code(), msg);
             }
         } catch (Exception e) {
             log.warn("Failed to parse error response", e);
-            return ChannelException.fromResponse(response.code(), response.message());
+            return new BellaException.ChannelException(response.code(), response.message());
         } finally {
             response.close();
         }

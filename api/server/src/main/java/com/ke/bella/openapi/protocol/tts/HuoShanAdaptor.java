@@ -1,15 +1,16 @@
 package com.ke.bella.openapi.protocol.tts;
 
 import java.util.Base64;
+import java.util.Map;
 import java.util.UUID;
 
+import com.ke.bella.openapi.common.exception.BellaException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
 import com.ke.bella.openapi.EndpointContext;
 import com.ke.bella.openapi.EndpointProcessData;
-import com.ke.bella.openapi.common.exception.ChannelException;
 import com.ke.bella.openapi.protocol.BellaWebSocketListener;
 import com.ke.bella.openapi.protocol.Callbacks;
 import com.ke.bella.openapi.protocol.log.EndpointLogger;
@@ -64,20 +65,11 @@ public class HuoShanAdaptor implements TtsAdaptor<HuoShanProperty> {
                 .build();
 
         HuoShanRequest.User user = HuoShanRequest.User.builder()
-                .uid("uid")
+                .uid(ttsRequest.getUser() != null ? ttsRequest.getUser() : "uid")
                 .build();
 
-        HuoShanRequest.Audio audio = HuoShanRequest.Audio.builder()
-                .voiceType(ttsRequest.getVoice() != null ? ttsRequest.getVoice() : "BV001_streaming")
-                .encoding(ttsRequest.getResponseFormat())
-                .speedRatio(ttsRequest.getSpeed() != null ? ttsRequest.getSpeed() : 1.0)
-                .build();
-
-        HuoShanRequest.TextRequest request = HuoShanRequest.TextRequest.builder()
-                .reqId(String.valueOf(UUID.randomUUID()))
-                .text(ttsRequest.getInput())
-                .operation("query")
-                .build();
+        HuoShanRequest.Audio audio = buildAudioFromRequest(ttsRequest);
+        HuoShanRequest.TextRequest request = buildTextRequestFromRequest(ttsRequest);
 
         return HuoShanRequest.builder()
                 .app(app)
@@ -87,12 +79,60 @@ public class HuoShanAdaptor implements TtsAdaptor<HuoShanProperty> {
                 .build();
     }
 
+    private HuoShanRequest.Audio buildAudioFromRequest(TtsRequest ttsRequest) {
+        if (ttsRequest.getExtra_body() != null && ttsRequest.getExtra_body().containsKey("audio")) {
+            Object audioObj = ttsRequest.getExtra_body().get("audio");
+            if (audioObj instanceof Map) {
+                HuoShanRequest.Audio audio = JacksonUtils.convertValue((Map<String, Object>) audioObj, HuoShanRequest.Audio.class);
+                if (ttsRequest.getVoice() != null) {
+                    audio.setVoiceType(ttsRequest.getVoice());
+                }
+                if (ttsRequest.getResponseFormat() != null) {
+                    audio.setEncoding(ttsRequest.getResponseFormat());
+                }
+                if (ttsRequest.getSpeed() != null) {
+                    audio.setSpeedRatio(ttsRequest.getSpeed());
+                }
+                return audio;
+            }
+        }
+
+        return HuoShanRequest.Audio.builder()
+                .voiceType(ttsRequest.getVoice() != null ? ttsRequest.getVoice() : "BV001_streaming")
+                .encoding(ttsRequest.getResponseFormat() != null ? ttsRequest.getResponseFormat() : "wav")
+                .speedRatio(ttsRequest.getSpeed() != null ? ttsRequest.getSpeed() : 1.0)
+                .build();
+    }
+
+    private HuoShanRequest.TextRequest buildTextRequestFromRequest(TtsRequest ttsRequest) {
+        if (ttsRequest.getExtra_body() != null && ttsRequest.getExtra_body().containsKey("request")) {
+            Object requestObj = ttsRequest.getExtra_body().get("request");
+            if (requestObj instanceof Map) {
+                HuoShanRequest.TextRequest request = JacksonUtils.convertValue((Map<String, Object>) requestObj, HuoShanRequest.TextRequest.class);
+                if (ttsRequest.getInput() != null) {
+                    request.setText(ttsRequest.getInput());
+                }
+                if (request.getReqId() == null) {
+                    request.setReqId(String.valueOf(UUID.randomUUID()));
+                }
+                return request;
+            }
+        }
+
+        return HuoShanRequest.TextRequest.builder()
+                .reqId(String.valueOf(UUID.randomUUID()))
+                .text(ttsRequest.getInput())
+                .textType("")
+                .operation("query")
+                .build();
+    }
+
     private byte[] processHuoShanResponse(Request httpRequest) {
         HuoShanResponse huoshanResponse = HttpUtils.httpRequest(httpRequest, HuoShanResponse.class);
         if(huoshanResponse == null || huoshanResponse.getCode() != HuoShanResponseCodeEnum.OK.code || huoshanResponse.getData() == null) {
             HttpStatus status = getHttpStatus(HuoShanAdaptor.HuoShanResponseCodeEnum
                     .getByCode(huoshanResponse == null ? HuoShanResponseCodeEnum.OTHER_ERROR.code : huoshanResponse.getCode()));
-            throw new ChannelException.OpenAIException(status.value(), status.getReasonPhrase(),
+            throw new BellaException.ChannelException(status.value(), status.getReasonPhrase(),
                     huoshanResponse == null ? HuoShanResponseCodeEnum.OTHER_ERROR.message : huoshanResponse.getMessage());
         }
         return BASE64_DECODER.decode(huoshanResponse.getData());

@@ -26,6 +26,7 @@ public class CompletionPriceInfo implements IPriceInfo, Serializable {
     @Override
     public Map<String, String> description() {
         Map<String, String> map = new LinkedHashMap<>();
+        map.put("batchDiscount", "批量折扣");
         map.put("tiers", "区间价格列表");
         return map;
     }
@@ -120,6 +121,11 @@ public class CompletionPriceInfo implements IPriceInfo, Serializable {
     public boolean validate() {
         // tiers必须存在且不为空
         if(tiers == null || tiers.isEmpty()) {
+            return false;
+        }
+
+        // 验证batchDiscount: 必须在(0, 1]范围内
+        if(batchDiscount <= 0 || batchDiscount > 1) {
             return false;
         }
 

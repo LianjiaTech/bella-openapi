@@ -5,14 +5,37 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Textarea } from '@/components/ui/textarea';
-import { PlayIcon, CircleStop, TrashIcon } from 'lucide-react';
+import { PlayIcon, CircleStop, TrashIcon, Upload, X } from 'lucide-react';
 import { api_host } from '@/config';
 import { PCMPlayer } from '@/components/playground/PCMPlayer';
 import { useVoiceSelector } from '@/components/playground/VoiceSelector';
 import { useUser } from '@/lib/context/user-context';
+import { Model } from '@/lib/types/openapi';
+import { getEndpointDetails } from '@/lib/api/meta';
+
+interface AudioItem {
+  id: string;
+  speakerId: 'S1' | 'S2';
+  file?: File;
+  url?: string;
+  preview: string;
+  text: string;
+  dialect?: string;
+  isLoading?: boolean;
+  error?: string;
+}
+
+interface CurrentFormState {
+  file?: File;
+  url?: string;
+  preview?: string;
+  text: string;
+  dialect?: string;
+  isLoading?: boolean;
+  error?: string;
+}
 
 export default function SpeechPlayground() {
-  // 状态管理
   const [model, setModel] = useState('');
   const [inputText, setInputText] = useState('');
   const [isPlaying, setIsPlaying] = useState(false);
@@ -20,24 +43,92 @@ export default function SpeechPlayground() {
   const [isProcessing, setIsProcessing] = useState(false);
   const { userInfo } = useUser();
 
-  // 从 URL 中获取 model 参数
+  const [hasCustomizeSoundColorFeature, setHasCustomizeSoundColorFeature] = useState(false);
+  const [currentModelInfo, setCurrentModelInfo] = useState<Model | null>(null);
+  const [showCustomizeSection, setShowCustomizeSection] = useState(false);
+  const [inputStatePrompt, setInputStatePrompt] = useState<string>('');
+
+  const [speakers, setSpeakers] = useState<{
+    S1?: AudioItem;
+    S2?: AudioItem;
+  }>({});
+
+  const [currentSpeaker, setCurrentSpeaker] = useState<'S1' | 'S2'>('S1');
+  const [showDialectInput, setShowDialectInput] = useState(false);
+  const [audioInputMode, setAudioInputMode] = useState<'file' | 'url' | null>('file');
+  const [currentForm, setCurrentForm] = useState<CurrentFormState>({
+    text: '',
+    dialect: ''
+  });
+
+  const audioInputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const modelParam = params.get('model');
+    const modelDataParam = params.get('modelData');
+
     if (modelParam) {
       setModel(modelParam);
     }
+
+    if (modelDataParam) {
+      try {
+        const modelInfo: Model = JSON.parse(decodeURIComponent(modelDataParam));
+        setCurrentModelInfo(modelInfo);
+
+        if (modelInfo.features) {
+          const features = JSON.parse(modelInfo.features);
+          setHasCustomizeSoundColorFeature(features.customize_sound_color === true);
+        }
+
+        if (modelInfo.properties) {
+          try {
+            const properties = JSON.parse(modelInfo.properties);
+            if (properties.input_state) {
+              setInputStatePrompt(properties.input_state);
+            }
+          } catch (err) {
+            console.error('Failed to parse properties:', err);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to parse model data:', error);
+        if (modelParam) {
+          fetchModelInfoFallback(modelParam);
+        }
+      }
+    } else if (modelParam) {
+      fetchModelInfoFallback(modelParam);
+    }
   }, []);
 
-  // 使用声音选择钩子
+  const fetchModelInfoFallback = async (modelParam: string) => {
+    try {
+      const endpointDetails = await getEndpointDetails('/v1/audio/speech', modelParam, []);
+      const modelInfo = endpointDetails.models.find(
+        m => m.modelName === modelParam || m.terminalModel === modelParam
+      );
+      if (modelInfo) {
+        setCurrentModelInfo(modelInfo);
+
+        const features = JSON.parse(modelInfo.features || '{}');
+        setHasCustomizeSoundColorFeature(features.customize_sound_color === true);
+
+        const properties = JSON.parse(modelInfo.properties || '{}');
+        if (properties.input_state) {
+          setInputStatePrompt(properties.input_state);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch model info:', error);
+    }
+  };
+
   const { voiceTypes, voiceName, setVoiceName, showMoreVoices, toggleMoreVoices } = useVoiceSelector(model !== null && model !== '', model || '/v1/audio/speech');
 
-  // Refs
   const pcmPlayerRef = useRef<PCMPlayer | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const playbackCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  // 初始化 PCM 播放器
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
@@ -54,7 +145,176 @@ export default function SpeechPlayground() {
     };
   }, []);
 
-  // 播放语音
+  const handleAudioUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('audio/')) {
+      setErrorMessage('请选择音频文件');
+      return;
+    }
+
+    const MAX_SIZE = 10 * 1024 * 1024;
+    if (file.size > MAX_SIZE) {
+      setErrorMessage('音频文件不能超过10MB');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      setCurrentForm(prev => ({
+        ...prev,
+        file,
+        url: undefined,
+        preview: dataUrl
+      }));
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const handleUrlInput = (url: string) => {
+    setCurrentForm(prev => ({
+      ...prev,
+      url,
+      file: undefined,
+      preview: undefined
+    }));
+  };
+
+  const fetchAudioFromUrl = async (url: string) => {
+    if (!url.trim()) {
+      setErrorMessage('请输入有效的音频URL');
+      return;
+    }
+
+    setCurrentForm(prev => ({
+      ...prev,
+      isLoading: true,
+      error: undefined
+    }));
+
+    try {
+      const response = await fetch('/api/fetch-audio', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url })
+      });
+
+      if (!response.ok) throw new Error('获取音频失败');
+
+      const data = await response.json();
+
+      if (data.success) {
+        setCurrentForm(prev => ({
+          ...prev,
+          preview: data.audioData,
+          isLoading: false
+        }));
+      } else {
+        throw new Error(data.error || '获取音频失败');
+      }
+    } catch (err) {
+      setCurrentForm(prev => ({
+        ...prev,
+        isLoading: false,
+        error: '获取音频失败'
+      }));
+      setErrorMessage(err instanceof Error ? err.message : '获取音频失败');
+    }
+  };
+
+  const updateText = (text: string) => {
+    setCurrentForm(prev => ({ ...prev, text }));
+  };
+
+  const updateDialect = (dialect: string) => {
+    setCurrentForm(prev => ({ ...prev, dialect }));
+  };
+
+  const toggleDialectInput = () => {
+    setShowDialectInput(prev => !prev);
+    if (showDialectInput) {
+      setCurrentForm(prev => ({ ...prev, dialect: '' }));
+    }
+  };
+
+  const submitCurrentSpeaker = () => {
+    if (!currentForm.text.trim()) {
+      setErrorMessage('请填写音频提示词');
+      return;
+    }
+
+    if (!currentForm.file && !currentForm.url) {
+      setErrorMessage('请上传音频文件或输入URL');
+      return;
+    }
+
+    const newSpeaker = {
+      id: currentSpeaker,
+      speakerId: currentSpeaker,
+      file: currentForm.file,
+      url: currentForm.url,
+      preview: currentForm.preview || '',
+      text: currentForm.text,
+      dialect: currentForm.dialect || ''
+    };
+
+    setSpeakers(prev => ({
+      ...prev,
+      [currentSpeaker]: newSpeaker
+    }));
+
+    setCurrentForm({
+      text: '',
+      dialect: ''
+    });
+    setShowDialectInput(false);
+    setAudioInputMode(null);
+
+    if (currentSpeaker === 'S1') {
+      setCurrentSpeaker('S2');
+    }
+
+    setErrorMessage('');
+  };
+
+  const editSpeaker = (speakerId: 'S1' | 'S2') => {
+    const speaker = speakers[speakerId];
+    if (!speaker) return;
+
+    setCurrentForm({
+      file: speaker.file,
+      url: speaker.url,
+      preview: speaker.preview,
+      text: speaker.text,
+      dialect: speaker.dialect || ''
+    });
+
+    setCurrentSpeaker(speakerId);
+    setShowDialectInput(!!speaker.dialect);
+    setAudioInputMode(speaker.file ? 'file' : speaker.url ? 'url' : null);
+
+    setSpeakers(prev => {
+      const newSpeakers = { ...prev };
+      delete newSpeakers[speakerId];
+      return newSpeakers;
+    });
+  };
+
+  const deleteSpeaker = (speakerId: 'S1' | 'S2') => {
+    setSpeakers(prev => {
+      const newSpeakers = { ...prev };
+      delete newSpeakers[speakerId];
+      return newSpeakers;
+    });
+
+    if (speakerId === 'S2' && currentSpeaker === 'S2' && !currentForm.text && !currentForm.file && !currentForm.url) {
+      setCurrentSpeaker('S1');
+    }
+  };
+
   const playTTS = async () => {
     if (playbackCheckIntervalRef.current) {
       clearInterval(playbackCheckIntervalRef.current);
@@ -70,19 +330,54 @@ export default function SpeechPlayground() {
       setIsProcessing(true);
       setErrorMessage('');
 
-      // 如果有正在进行的请求，取消它
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
 
-      // 创建新的 AbortController
       abortControllerRef.current = new AbortController();
       const signal = abortControllerRef.current.signal;
 
-      // 准备请求参数
       const protocol = typeof window !== 'undefined' ? window.location.protocol : 'http:';
       const host = api_host || window.location.host;
       const url = `${protocol}//${host}/v1/audio/speech`;
+
+      let speakersParam = undefined;
+
+      if (hasCustomizeSoundColorFeature && (speakers.S1 || speakers.S2)) {
+        speakersParam = {} as any;
+
+        if (speakers.S1) {
+          speakersParam.S1 = {
+            text: speakers.S1.text,
+            dialect: speakers.S1.dialect || undefined
+          };
+
+          if (speakers.S1.file && speakers.S1.preview) {
+            const base64Data = speakers.S1.preview.includes(',')
+              ? speakers.S1.preview.split(',')[1]
+              : speakers.S1.preview;
+            speakersParam.S1.base64 = base64Data;
+          } else if (speakers.S1.url) {
+            speakersParam.S1.url = speakers.S1.url;
+          }
+        }
+
+        if (speakers.S2) {
+          speakersParam.S2 = {
+            text: speakers.S2.text,
+            dialect: speakers.S2.dialect || undefined
+          };
+
+          if (speakers.S2.file && speakers.S2.preview) {
+            const base64Data = speakers.S2.preview.includes(',')
+              ? speakers.S2.preview.split(',')[1]
+              : speakers.S2.preview;
+            speakersParam.S2.base64 = base64Data;
+          } else if (speakers.S2.url) {
+            speakersParam.S2.url = speakers.S2.url;
+          }
+        }
+      }
 
       const requestBody = {
         user: userInfo?.userId,
@@ -91,10 +386,9 @@ export default function SpeechPlayground() {
         stream: true,
         voice: voiceTypes[voiceName],
         sample_rate: 24000,
-        response_format: "pcm"
+        response_format: "pcm",
+        ...(speakersParam && { speakers: speakersParam })
       };
-
-      // 发送请求
       const response = await fetch(url, {
         method: 'POST',
         headers: {
@@ -109,17 +403,13 @@ export default function SpeechPlayground() {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      // 处理流式响应
       const reader = response.body?.getReader();
       if (!reader) {
         throw new Error('无法获取响应流');
       }
 
-      // 创建固定大小的数据块
-      const CHUNK_SIZE = 2048; // 固定每次发送 2048 字节
+      const CHUNK_SIZE = 2048;
       let buffer = new Uint8Array(0);
-
-      // 读取和处理音频数据
       while (true) {
         const { done, value } = await reader.read();
         if (done) {
@@ -145,7 +435,7 @@ export default function SpeechPlayground() {
           }
         }
       }
-      // 使用PCMPlayer的isPlaybackEnded方法检查播放是否完成
+
       const checkPlaybackStatus = () => {
         if (pcmPlayerRef.current && pcmPlayerRef.current.isPlaybackEnded()) {
           stopPlayback();
@@ -154,17 +444,14 @@ export default function SpeechPlayground() {
       playbackCheckIntervalRef.current = setInterval(checkPlaybackStatus, 500);
       setIsProcessing(false);
     } catch (error: any) {
-      if (error.name === 'AbortError') {
-        console.log('请求被取消');
-      } else {
-        console.error('TTS 请求错误:', error);
+      if (error.name !== 'AbortError') {
+        console.error('TTS error:', error);
         setErrorMessage(`语音合成失败: ${error.message}`);
       }
       setIsProcessing(false);
     }
   };
 
-  // 停止播放
   const stopPlayback = () => {
     if (pcmPlayerRef.current) {
       pcmPlayerRef.current.stop();
@@ -184,7 +471,6 @@ export default function SpeechPlayground() {
     setIsProcessing(false);
   };
 
-  // 清除文本
   const clearText = () => {
     setInputText('');
     stopPlayback();
@@ -196,11 +482,29 @@ export default function SpeechPlayground() {
         <h1 className="text-2xl font-bold">语音合成</h1>
 
         <div className="mt-2 md:mt-0 flex items-center space-x-2">
-          {/* 声音选择区域 */}
+          {/* 自定义音色按钮 - 只在有该特性时显示 */}
+          {hasCustomizeSoundColorFeature && (
+            <button
+              onClick={() => {
+                setShowCustomizeSection(!showCustomizeSection);
+                if (!showCustomizeSection) {
+                  setAudioInputMode('file');
+                }
+              }}
+              disabled={isPlaying}
+              className={`px-3 py-1 rounded-md text-sm ${
+                showCustomizeSection
+                  ? "bg-blue-500 text-white"
+                  : "bg-gray-100 hover:bg-gray-200 transition-colors"
+              } ${isPlaying ? "opacity-50 cursor-not-allowed" : ""}`}
+            >
+              自定义音色
+            </button>
+          )}
+
           {Object.keys(voiceTypes).length > 0 && (
             <div className="flex items-center space-x-1">
               <span className="text-sm font-medium">声音:</span>
-              {/* 如果声音选项不超过2个，直接显示所有选项 */}
               {Object.keys(voiceTypes).length <= 2 ? (
                 Object.keys(voiceTypes).map((voice) => (
                   <button
@@ -218,7 +522,6 @@ export default function SpeechPlayground() {
                 ))
               ) : (
                 <>
-                  {/* 只显示前两个选项 */}
                   {Object.keys(voiceTypes).slice(0, 2).map((voice) => (
                     <button
                       key={voice}
@@ -234,7 +537,6 @@ export default function SpeechPlayground() {
                     </button>
                   ))}
 
-                  {/* 更多选项按钮 */}
                   <div className="relative">
                     <button
                       disabled={isPlaying}
@@ -243,7 +545,6 @@ export default function SpeechPlayground() {
                     >
                       ...
                     </button>
-                    {/* 下拉菜单 */}
                     {showMoreVoices && (
                       <div className="absolute right-0 top-full mt-1 bg-white shadow-lg rounded-md p-2 w-48 z-10">
                         <p className="text-xs text-gray-500 mb-1 font-medium">更多声音选项:</p>
@@ -279,9 +580,212 @@ export default function SpeechPlayground() {
         </Alert>
       )}
 
+      {inputStatePrompt && (
+        <div className="mb-3 flex-shrink-0 text-sm text-gray-600">
+          {inputStatePrompt}
+        </div>
+      )}
+
       <Card className="flex-grow overflow-hidden flex flex-col">
-        <CardContent className="p-3 flex-grow overflow-hidden">
-          <div className="relative h-full">
+        <CardContent className="p-3 flex-grow overflow-hidden flex flex-col gap-2">
+
+          {hasCustomizeSoundColorFeature && showCustomizeSection && (
+            <div className="flex-[2] border-2 border-gray-300 rounded-lg p-3 overflow-auto">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-xs font-medium">自定义音色</h4>
+                <div className="flex gap-2">
+                  {speakers.S1 && (
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs text-green-600">✓ 音色1完成</span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => editSpeaker('S1')}
+                        className="h-6 px-2 text-xs"
+                        disabled={isPlaying}
+                      >
+                        编辑
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => deleteSpeaker('S1')}
+                        className="h-6 px-2 text-xs text-red-500"
+                        disabled={isPlaying}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  )}
+                  {speakers.S2 && (
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs text-green-600">✓ 音色2完成</span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => editSpeaker('S2')}
+                        className="h-6 px-2 text-xs"
+                        disabled={isPlaying}
+                      >
+                        编辑
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => deleteSpeaker('S2')}
+                        className="h-6 px-2 text-xs text-red-500"
+                        disabled={isPlaying}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <div className="w-1/3 border rounded-lg p-2 bg-white">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Button
+                      variant={audioInputMode === 'file' ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => {
+                        setAudioInputMode('file');
+                        setCurrentForm(prev => ({ ...prev, url: undefined, preview: undefined }));
+                      }}
+                      disabled={isPlaying}
+                      className="h-7 px-3 text-xs"
+                    >
+                      音频文件
+                    </Button>
+                    <Button
+                      variant={audioInputMode === 'url' ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => {
+                        setAudioInputMode('url');
+                        setCurrentForm(prev => ({ ...prev, file: undefined, preview: undefined }));
+                      }}
+                      disabled={isPlaying}
+                      className="h-7 px-3 text-xs"
+                    >
+                      URL
+                    </Button>
+                  </div>
+
+                  <input
+                    ref={audioInputRef}
+                    type="file"
+                    accept="audio/*"
+                    onChange={handleAudioUpload}
+                    className="hidden"
+                  />
+
+                  {audioInputMode === 'file' && (
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg py-1 px-2 cursor-pointer hover:border-gray-400 transition-colors"
+                         onClick={() => audioInputRef.current?.click()}>
+                      <div className="text-center">
+                        <Upload className="h-3 w-3 mx-auto mb-0 text-gray-400" />
+                        <p className="text-xs text-gray-600 leading-tight">上传音色文件</p>
+                        {currentForm.file && (
+                          <p className="text-xs text-green-600 mt-0 leading-tight">✓ {currentForm.file.name}</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {audioInputMode === 'url' && (
+                    <div className="space-y-2">
+                      <div className="flex gap-1">
+                        <input
+                          type="text"
+                          placeholder="上传音色URL"
+                          className="flex-1 px-2 py-1 border rounded text-sm"
+                          value={currentForm.url || ''}
+                          onChange={(e) => handleUrlInput(e.target.value)}
+                          disabled={isPlaying}
+                        />
+                        {currentForm.url && !currentForm.preview && (
+                          <Button
+                            size="sm"
+                            onClick={() => fetchAudioFromUrl(currentForm.url!)}
+                            disabled={isPlaying || currentForm.isLoading}
+                            className="px-2"
+                          >
+                            {currentForm.isLoading ? '...' : '加载'}
+                          </Button>
+                        )}
+                      </div>
+                      {currentForm.url && currentForm.preview && (
+                        <div className="text-xs text-green-600 mt-1">
+                          ✓ URL已设置
+                        </div>
+                      )}
+                      {currentForm.isLoading && (
+                        <div className="text-xs text-blue-600 mt-1">
+                          加载中...
+                        </div>
+                      )}
+                      {currentForm.error && (
+                        <div className="text-xs text-red-600 mt-1">
+                          {currentForm.error}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex-1 space-y-2">
+                  <div>
+                    <label className="text-xs text-gray-600 mb-1 block">
+                      音频提示词 *(必填)
+                    </label>
+                    <input
+                      type="text"
+                      value={currentForm.text}
+                      onChange={(e) => updateText(e.target.value)}
+                      placeholder="音色文件内容：大家好，欢迎来到openai语音合成"
+                      className="text-xs h-7 w-full px-2 py-1 border rounded resize-none leading-tight"
+                      disabled={isPlaying}
+                    />
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between items-center">
+                      <Button
+                        variant={showDialectInput ? "default" : "outline"}
+                        size="sm"
+                        onClick={toggleDialectInput}
+                        disabled={isPlaying}
+                      >
+                        {showDialectInput ? '方言提示词' : '添加方言提示词（可选）'}
+                      </Button>
+                      <Button
+                        onClick={submitCurrentSpeaker}
+                        disabled={isPlaying}
+                        variant="default"
+                        size="sm"
+                      >
+                      上传
+                      </Button>
+                    </div>
+
+                    {showDialectInput && (
+                      <input
+                        type="text"
+                        value={currentForm.dialect || ''}
+                        onChange={(e) => updateDialect(e.target.value)}
+                        placeholder="例：<|Sichuan|>四川话示例..."
+                        className="text-xs h-7 w-full px-2 py-1 border rounded resize-none mt-2 leading-tight"
+                        disabled={isPlaying}
+                      />
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className={`relative ${hasCustomizeSoundColorFeature && showCustomizeSection ? 'flex-[3]' : 'flex-1'}`}>
             <Textarea
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
@@ -336,7 +840,7 @@ export default function SpeechPlayground() {
       <div className="mt-3 text-xs text-gray-500 bg-gray-50 p-3 rounded flex-shrink-0">
         <p className="font-medium mb-1">使用说明:</p>
         <ol className="list-decimal pl-5 space-y-1">
-          <li>输入要转换为语音的文本。注意：Soulx-TTS模型支持双人对话，普通话输入形式为[S1]text[S2]text；方言：粤语为[S1]&lt;|Yue|&gt;text[S2]&lt;|Yue|&gt;text，河南为[S1]&lt;|Henan|&gt;text[S2]&lt;|Henan|&gt;text，四川为[S1]&lt;|Sichuan|&gt;text[S2]&lt;|Sichuan|&gt;text</li>
+          <li>输入要转换为语音的文本</li>
           <li>选择合适的声音类型</li>
           <li>点击播放按钮开始语音合成</li>
           <li>合成完成后会自动播放语音</li>

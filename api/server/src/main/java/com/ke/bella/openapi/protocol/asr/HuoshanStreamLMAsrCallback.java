@@ -2,7 +2,7 @@ package com.ke.bella.openapi.protocol.asr;
 
 import com.ke.bella.openapi.EndpointProcessData;
 import com.ke.bella.openapi.TaskExecutor;
-import com.ke.bella.openapi.common.exception.ChannelException;
+import com.ke.bella.openapi.common.exception.BellaException;
 import com.ke.bella.openapi.protocol.Callbacks;
 import com.ke.bella.openapi.protocol.log.EndpointLogger;
 import com.ke.bella.openapi.utils.DateTimeUtils;
@@ -139,7 +139,7 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
             sendFullClientRequest(webSocket);
         } catch (Exception e) {
             log.error("WebSocket打开时出错", e);
-            onError(ChannelException.fromException(e));
+            onError(BellaException.fromException(e));
         }
     }
 
@@ -154,7 +154,7 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
             parseResponse(bytes.toByteArray(), webSocket);
         } catch (Exception e) {
             log.error("处理WebSocket消息时出错", e);
-            onError(ChannelException.fromException(e));
+            onError(BellaException.fromException(e));
         }
     }
 
@@ -173,7 +173,7 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
     @Override
     public void onFailure(WebSocket webSocket, Throwable t, Response response) {
         log.error("WebSocket连接失败", t);
-        onError(ChannelException.fromException(t));
+        onError(BellaException.fromException(t));
     }
 
     @Override
@@ -183,9 +183,9 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
             return true;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw ChannelException.fromException(e);
+            throw BellaException.fromException(e);
         } catch (ExecutionException | TimeoutException e) {
-            throw ChannelException.fromException(e);
+            throw BellaException.fromException(e);
         }
     }
 
@@ -206,7 +206,7 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
     /**
      * 处理错误
      */
-    private void onError(ChannelException exception) {
+    private void onError(BellaException exception) {
         if(!end) {
             end = true;
             sender.onError(exception);
@@ -216,7 +216,7 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
     /**
      * 处理处理过程中的错误
      */
-    private void onProcessError(ChannelException exception) {
+    private void onProcessError(BellaException exception) {
         if(!end) {
             sender.onError(exception);
         }
@@ -231,7 +231,7 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
             webSocket.send(ByteString.of(payload));
         } catch (Exception e) {
             log.warn("发送完整客户端请求时出错", e);
-            onError(ChannelException.fromException(e));
+            onError(BellaException.fromException(e));
         }
     }
 
@@ -357,7 +357,7 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
 
             webSocket.send(ByteString.of(audioOnlyRequest));
         } catch (Exception e) {
-            onProcessError(ChannelException.fromException(e));
+            onProcessError(BellaException.fromException(e));
         }
     }
 
@@ -385,7 +385,7 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
                 }
             } catch (Exception e) {
                 log.error("分块发送音频数据时出错", e);
-                onProcessError(ChannelException.fromException(e));
+                onProcessError(BellaException.fromException(e));
             }
         });
     }
@@ -567,7 +567,7 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
             complete();
         } catch (Exception e) {
             log.error("处理最终响应时出错", e);
-            onError(ChannelException.fromException(e));
+            onError(BellaException.fromException(e));
         }
     }
 
@@ -575,7 +575,7 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
      * 处理转录失败事件
      */
     private void handleTranscriptionFailed(int code, String errorMsg) {
-        onError(ChannelException.fromResponse(code, errorMsg));
+        onError(new BellaException.ChannelException(code, errorMsg));
     }
 
     /**
