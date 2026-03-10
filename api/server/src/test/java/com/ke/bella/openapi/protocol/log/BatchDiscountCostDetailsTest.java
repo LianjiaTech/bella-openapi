@@ -23,31 +23,51 @@ import static org.junit.Assert.*;
  */
 public class BatchDiscountCostDetailsTest {
 
+    private static final String PROMPT_TOKENS_KEY = "prompt_tokens";
+    private static final String CACHED_TOKENS_KEY = "cached_tokens";
+    private static final String COMPLETION_TOKENS_KEY = "completion_tokens";
+    private static final String INPUT_TOKENS_KEY = "input_tokens";
+    private static final String OUTPUT_TOKENS_KEY = "output_tokens";
+    private static final String WEB_SEARCH_TOOL_KEY = "web_search";
+
+    private String buildCompletionPriceJson(String input, String output) {
+        return buildCompletionPriceJsonWithCache(input, output, null);
+    }
+
+    private String buildCompletionPriceJsonWithCache(String input, String output, String cachedRead) {
+        CompletionPriceInfo priceInfo = new CompletionPriceInfo();
+        List<CompletionPriceInfo.Tier> tiers = new ArrayList<>();
+        CompletionPriceInfo.Tier tier = new CompletionPriceInfo.Tier();
+        CompletionPriceInfo.RangePrice range = new CompletionPriceInfo.RangePrice();
+        range.setMinToken(0);
+        range.setMaxToken(Integer.MAX_VALUE);
+        range.setInput(new BigDecimal(input));
+        range.setOutput(new BigDecimal(output));
+        if(cachedRead != null) {
+            range.setCachedRead(new BigDecimal(cachedRead));
+        }
+        tier.setInputRangePrice(range);
+        tiers.add(tier);
+        priceInfo.setTiers(tiers);
+        return JacksonUtils.serialize(priceInfo);
+    }
+
+    private CompletionResponse.TokenUsage buildTokenUsage(int promptTokens, int completionTokens) {
+        CompletionResponse.TokenUsage usage = new CompletionResponse.TokenUsage();
+        usage.setPrompt_tokens(promptTokens);
+        usage.setCompletion_tokens(completionTokens);
+        return usage;
+    }
+
     /**
      * 测试场景1: 批量折扣应用到所有成本明细
      */
     @Test
     public void testBatchDiscountAppliedToAllDetails() {
-        // 准备价格信息
-        CompletionPriceInfo priceInfo = new CompletionPriceInfo();
-        List<CompletionPriceInfo.Tier> tiers = new ArrayList<>();
-
-        CompletionPriceInfo.Tier tier = new CompletionPriceInfo.Tier();
-        CompletionPriceInfo.RangePrice range = new CompletionPriceInfo.RangePrice();
-        range.setMinToken(0);
-        range.setMaxToken(Integer.MAX_VALUE);
-        range.setInput(new BigDecimal("10"));
-        range.setOutput(new BigDecimal("20"));
-        tier.setInputRangePrice(range);
-        tiers.add(tier);
-        priceInfo.setTiers(tiers);
-
-        String priceInfoJson = JacksonUtils.serialize(priceInfo);
+        String priceInfoJson = buildCompletionPriceJson("10", "20");
 
         // 准备使用信息
-        CompletionResponse.TokenUsage usage = new CompletionResponse.TokenUsage();
-        usage.setPrompt_tokens(5000);      // 5k tokens
-        usage.setCompletion_tokens(3000);  // 3k tokens
+        CompletionResponse.TokenUsage usage = buildTokenUsage(5000, 3000);
 
         // 计算原始成本
         CostDetails originalDetails = CostCalculator.calculate("/v1/chat/completions", priceInfoJson, usage);
@@ -65,10 +85,11 @@ public class BatchDiscountCostDetailsTest {
         assertEquals("输入明细数量应相同", originalDetails.getInputDetails().size(),
                 discountedDetails.getInputDetails().size());
 
-        CostDetails.CostDetailItem originalInput = originalDetails.getInputDetails().get(0);
-        CostDetails.CostDetailItem discountedInput = discountedDetails.getInputDetails().get(0);
+        CostDetails.CostDetailItem originalInput = originalDetails.getInputDetails().get(PROMPT_TOKENS_KEY);
+        CostDetails.CostDetailItem discountedInput = discountedDetails.getInputDetails().get(PROMPT_TOKENS_KEY);
 
-        assertEquals("输入类型应相同", originalInput.getType(), discountedInput.getType());
+        assertNotNull("原始输入明细不应为null", originalInput);
+        assertNotNull("折扣后输入明细不应为null", discountedInput);
         assertEquals("输入token数应相同", originalInput.getTokens(), discountedInput.getTokens());
         assertEquals("输入单价应相同", originalInput.getUnitPrice(), discountedInput.getUnitPrice());
         assertEquals("输入成本应应用折扣", 0,
@@ -76,10 +97,11 @@ public class BatchDiscountCostDetailsTest {
 
         // 验证输出明细应用了折扣
         assertNotNull("输出明细不应为null", discountedDetails.getOutputDetails());
-        CostDetails.CostDetailItem originalOutput = originalDetails.getOutputDetails().get(0);
-        CostDetails.CostDetailItem discountedOutput = discountedDetails.getOutputDetails().get(0);
+        CostDetails.CostDetailItem originalOutput = originalDetails.getOutputDetails().get(COMPLETION_TOKENS_KEY);
+        CostDetails.CostDetailItem discountedOutput = discountedDetails.getOutputDetails().get(COMPLETION_TOKENS_KEY);
 
-        assertEquals("输出类型应相同", originalOutput.getType(), discountedOutput.getType());
+        assertNotNull("原始输出明细不应为null", originalOutput);
+        assertNotNull("折扣后输出明细不应为null", discountedOutput);
         assertEquals("输出token数应相同", originalOutput.getTokens(), discountedOutput.getTokens());
         assertEquals("输出单价应相同", originalOutput.getUnitPrice(), discountedOutput.getUnitPrice());
         assertEquals("输出成本应应用折扣", 0,
@@ -113,7 +135,7 @@ public class BatchDiscountCostDetailsTest {
         priceInfo.setTiers(tiers);
 
         Map<String, BigDecimal> toolPrices = new HashMap<>();
-        toolPrices.put("web_search", new BigDecimal("0.5"));
+        toolPrices.put(WEB_SEARCH_TOOL_KEY, new BigDecimal("0.5"));
         priceInfo.setToolPrices(toolPrices);
 
         String priceInfoJson = JacksonUtils.serialize(priceInfo);
@@ -124,7 +146,7 @@ public class BatchDiscountCostDetailsTest {
         usage.setOutput_tokens(500);
 
         Map<String, Integer> toolUsage = new HashMap<>();
-        toolUsage.put("web_search", 2);
+        toolUsage.put(WEB_SEARCH_TOOL_KEY, 2);
         usage.setTool_usage(toolUsage);
 
         // 计算原始成本
@@ -139,18 +161,19 @@ public class BatchDiscountCostDetailsTest {
         assertEquals("工具明细数量应相同", originalDetails.getToolDetails().size(),
                 discountedDetails.getToolDetails().size());
 
-        CostDetails.ToolCostDetailItem originalTool = originalDetails.getToolDetails().get(0);
-        CostDetails.ToolCostDetailItem discountedTool = discountedDetails.getToolDetails().get(0);
+        CostDetails.ToolCostDetailItem originalTool = originalDetails.getToolDetails().get(WEB_SEARCH_TOOL_KEY);
+        CostDetails.ToolCostDetailItem discountedTool = discountedDetails.getToolDetails().get(WEB_SEARCH_TOOL_KEY);
 
-        assertEquals("工具名应相同", originalTool.getToolName(), discountedTool.getToolName());
+        assertNotNull("原始工具明细不应为null", originalTool);
+        assertNotNull("折扣后工具明细不应为null", discountedTool);
         assertEquals("工具调用次数应相同", originalTool.getCallCount(), discountedTool.getCallCount());
         assertEquals("工具单价应相同", originalTool.getUnitPrice(), discountedTool.getUnitPrice());
         assertEquals("工具成本应应用折扣", 0,
                 originalTool.getCost().multiply(discount).compareTo(discountedTool.getCost()));
 
         // 验证折扣后所有明细总和等于总成本
-        BigDecimal tokenSum = discountedDetails.getInputDetails().get(0).getCost()
-                .add(discountedDetails.getOutputDetails().get(0).getCost());
+        BigDecimal tokenSum = discountedDetails.getInputDetails().get(INPUT_TOKENS_KEY).getCost()
+                .add(discountedDetails.getOutputDetails().get(OUTPUT_TOKENS_KEY).getCost());
         BigDecimal toolSum = discountedTool.getCost();
         BigDecimal detailsSum = tokenSum.add(toolSum);
 
@@ -163,26 +186,10 @@ public class BatchDiscountCostDetailsTest {
      */
     @Test
     public void testDiscountMathematicalEquivalence() {
-        // 准备测试数据
-        CompletionPriceInfo priceInfo = new CompletionPriceInfo();
-        List<CompletionPriceInfo.Tier> tiers = new ArrayList<>();
+        // 准备测试数据（含 cachedRead，需单独构建）
+        String priceInfoJson = buildCompletionPriceJsonWithCache("10.123", "20.456", "2.789");
 
-        CompletionPriceInfo.Tier tier = new CompletionPriceInfo.Tier();
-        CompletionPriceInfo.RangePrice range = new CompletionPriceInfo.RangePrice();
-        range.setMinToken(0);
-        range.setMaxToken(Integer.MAX_VALUE);
-        range.setInput(new BigDecimal("10.123"));
-        range.setOutput(new BigDecimal("20.456"));
-        range.setCachedRead(new BigDecimal("2.789"));
-        tier.setInputRangePrice(range);
-        tiers.add(tier);
-        priceInfo.setTiers(tiers);
-
-        String priceInfoJson = JacksonUtils.serialize(priceInfo);
-
-        CompletionResponse.TokenUsage usage = new CompletionResponse.TokenUsage();
-        usage.setPrompt_tokens(8000);
-        usage.setCompletion_tokens(4000);
+        CompletionResponse.TokenUsage usage = buildTokenUsage(8000, 4000);
 
         CompletionResponse.TokensDetail promptDetail = new CompletionResponse.TokensDetail();
         promptDetail.setCached_tokens(1000);
@@ -201,12 +208,12 @@ public class BatchDiscountCostDetailsTest {
         // 方法2：每项明细折扣后求和
         BigDecimal method2 = BigDecimal.ZERO;
         if(discountedDetails.getInputDetails() != null) {
-            for (CostDetails.CostDetailItem item : discountedDetails.getInputDetails()) {
+            for (CostDetails.CostDetailItem item : discountedDetails.getInputDetails().values()) {
                 method2 = method2.add(item.getCost());
             }
         }
         if(discountedDetails.getOutputDetails() != null) {
-            for (CostDetails.CostDetailItem item : discountedDetails.getOutputDetails()) {
+            for (CostDetails.CostDetailItem item : discountedDetails.getOutputDetails().values()) {
                 method2 = method2.add(item.getCost());
             }
         }
@@ -214,6 +221,16 @@ public class BatchDiscountCostDetailsTest {
         // 验证两种方法结果一致
         assertEquals("先求和再折扣 应等于 先折扣再求和", 0, method1.compareTo(method2));
         assertEquals("折扣后总成本应等于明细总和", 0, discountedDetails.getTotalCost().compareTo(method2));
+
+        // 验证 cached_tokens 明细折扣正确
+        CostDetails.CostDetailItem originalCached = originalDetails.getInputDetails().get(CACHED_TOKENS_KEY);
+        CostDetails.CostDetailItem discountedCached = discountedDetails.getInputDetails().get(CACHED_TOKENS_KEY);
+        assertNotNull("原始cached_tokens明细不应为null", originalCached);
+        assertNotNull("折扣后cached_tokens明细不应为null", discountedCached);
+        assertEquals("cached_tokens token数应不变", originalCached.getTokens(), discountedCached.getTokens());
+        assertEquals("cached_tokens单价应不变", originalCached.getUnitPrice(), discountedCached.getUnitPrice());
+        assertEquals("cached_tokens成本应应用折扣", 0,
+                originalCached.getCost().multiply(discount).compareTo(discountedCached.getCost()));
     }
 
     /**
@@ -221,24 +238,8 @@ public class BatchDiscountCostDetailsTest {
      */
     @Test
     public void testDifferentDiscountRates() {
-        CompletionPriceInfo priceInfo = new CompletionPriceInfo();
-        List<CompletionPriceInfo.Tier> tiers = new ArrayList<>();
-
-        CompletionPriceInfo.Tier tier = new CompletionPriceInfo.Tier();
-        CompletionPriceInfo.RangePrice range = new CompletionPriceInfo.RangePrice();
-        range.setMinToken(0);
-        range.setMaxToken(Integer.MAX_VALUE);
-        range.setInput(new BigDecimal("100"));
-        range.setOutput(new BigDecimal("200"));
-        tier.setInputRangePrice(range);
-        tiers.add(tier);
-        priceInfo.setTiers(tiers);
-
-        String priceInfoJson = JacksonUtils.serialize(priceInfo);
-
-        CompletionResponse.TokenUsage usage = new CompletionResponse.TokenUsage();
-        usage.setPrompt_tokens(1000);
-        usage.setCompletion_tokens(500);
+        String priceInfoJson = buildCompletionPriceJson("100", "200");
+        CompletionResponse.TokenUsage usage = buildTokenUsage(1000, 500);
 
         CostDetails originalDetails = CostCalculator.calculate("/v1/chat/completions", priceInfoJson, usage);
         BigDecimal originalTotal = originalDetails.getTotalCost();
@@ -262,10 +263,10 @@ public class BatchDiscountCostDetailsTest {
 
             // 验证明细总和
             BigDecimal detailsSum = BigDecimal.ZERO;
-            for (CostDetails.CostDetailItem item : discountedDetails.getInputDetails()) {
+            for (CostDetails.CostDetailItem item : discountedDetails.getInputDetails().values()) {
                 detailsSum = detailsSum.add(item.getCost());
             }
-            for (CostDetails.CostDetailItem item : discountedDetails.getOutputDetails()) {
+            for (CostDetails.CostDetailItem item : discountedDetails.getOutputDetails().values()) {
                 detailsSum = detailsSum.add(item.getCost());
             }
 
@@ -279,54 +280,43 @@ public class BatchDiscountCostDetailsTest {
      */
     @Test
     public void testDiscountDoesNotChangeUnitPriceAndCounts() {
-        CompletionPriceInfo priceInfo = new CompletionPriceInfo();
-        List<CompletionPriceInfo.Tier> tiers = new ArrayList<>();
-
-        CompletionPriceInfo.Tier tier = new CompletionPriceInfo.Tier();
-        CompletionPriceInfo.RangePrice range = new CompletionPriceInfo.RangePrice();
-        range.setMinToken(0);
-        range.setMaxToken(Integer.MAX_VALUE);
-        range.setInput(new BigDecimal("10"));
-        range.setOutput(new BigDecimal("20"));
-        tier.setInputRangePrice(range);
-        tiers.add(tier);
-        priceInfo.setTiers(tiers);
-
-        String priceInfoJson = JacksonUtils.serialize(priceInfo);
-
-        CompletionResponse.TokenUsage usage = new CompletionResponse.TokenUsage();
-        usage.setPrompt_tokens(5000);
-        usage.setCompletion_tokens(3000);
+        String priceInfoJson = buildCompletionPriceJson("10", "20");
+        CompletionResponse.TokenUsage usage = buildTokenUsage(5000, 3000);
 
         CostDetails originalDetails = CostCalculator.calculate("/v1/chat/completions", priceInfoJson, usage);
         CostDetails discountedDetails = applyDiscount(originalDetails, new BigDecimal("0.8"));
 
+        CostDetails.CostDetailItem originalInput = originalDetails.getInputDetails().get(PROMPT_TOKENS_KEY);
+        CostDetails.CostDetailItem discountedInput = discountedDetails.getInputDetails().get(PROMPT_TOKENS_KEY);
+        CostDetails.CostDetailItem originalOutput = originalDetails.getOutputDetails().get(COMPLETION_TOKENS_KEY);
+        CostDetails.CostDetailItem discountedOutput = discountedDetails.getOutputDetails().get(COMPLETION_TOKENS_KEY);
+
         // 验证 unitPrice 不变
         assertEquals("输入单价应保持不变",
-                originalDetails.getInputDetails().get(0).getUnitPrice(),
-                discountedDetails.getInputDetails().get(0).getUnitPrice());
+                originalInput.getUnitPrice(),
+                discountedInput.getUnitPrice());
 
         assertEquals("输出单价应保持不变",
-                originalDetails.getOutputDetails().get(0).getUnitPrice(),
-                discountedDetails.getOutputDetails().get(0).getUnitPrice());
+                originalOutput.getUnitPrice(),
+                discountedOutput.getUnitPrice());
 
         // 验证 tokens 不变
         assertEquals("输入token数应保持不变",
-                originalDetails.getInputDetails().get(0).getTokens(),
-                discountedDetails.getInputDetails().get(0).getTokens());
+                originalInput.getTokens(),
+                discountedInput.getTokens());
 
         assertEquals("输出token数应保持不变",
-                originalDetails.getOutputDetails().get(0).getTokens(),
-                discountedDetails.getOutputDetails().get(0).getTokens());
+                originalOutput.getTokens(),
+                discountedOutput.getTokens());
 
         // 验证只有 cost 改变
         assertNotEquals("输入成本应改变",
-                originalDetails.getInputDetails().get(0).getCost(),
-                discountedDetails.getInputDetails().get(0).getCost());
+                originalInput.getCost(),
+                discountedInput.getCost());
 
         assertNotEquals("输出成本应改变",
-                originalDetails.getOutputDetails().get(0).getCost(),
-                discountedDetails.getOutputDetails().get(0).getCost());
+                originalOutput.getCost(),
+                discountedOutput.getCost());
     }
 
     /**
@@ -345,35 +335,33 @@ public class BatchDiscountCostDetailsTest {
                 .build();
     }
 
-    private List<CostDetails.CostDetailItem> applyDiscountToDetailItems(
-            List<CostDetails.CostDetailItem> items, BigDecimal discountFactor) {
+    private Map<String, CostDetails.CostDetailItem> applyDiscountToDetailItems(
+            Map<String, CostDetails.CostDetailItem> items, BigDecimal discountFactor) {
         if(items == null || items.isEmpty()) {
             return items;
         }
 
-        return items.stream()
-                .map(item -> CostDetails.CostDetailItem.builder()
-                        .type(item.getType())
-                        .tokens(item.getTokens())
-                        .unitPrice(item.getUnitPrice())
-                        .cost(item.getCost().multiply(discountFactor))
-                        .build())
-                .collect(java.util.stream.Collectors.toList());
+        Map<String, CostDetails.CostDetailItem> result = new HashMap<>();
+        items.forEach((key, item) -> result.put(key, CostDetails.CostDetailItem.builder()
+                .tokens(item.getTokens())
+                .unitPrice(item.getUnitPrice())
+                .cost(item.getCost().multiply(discountFactor))
+                .build()));
+        return result;
     }
 
-    private List<CostDetails.ToolCostDetailItem> applyDiscountToToolItems(
-            List<CostDetails.ToolCostDetailItem> items, BigDecimal discount) {
+    private Map<String, CostDetails.ToolCostDetailItem> applyDiscountToToolItems(
+            Map<String, CostDetails.ToolCostDetailItem> items, BigDecimal discount) {
         if(items == null || items.isEmpty()) {
             return items;
         }
 
-        return items.stream()
-                .map(item -> CostDetails.ToolCostDetailItem.builder()
-                        .toolName(item.getToolName())
-                        .callCount(item.getCallCount())
-                        .unitPrice(item.getUnitPrice())
-                        .cost(item.getCost().multiply(discount))
-                        .build())
-                .collect(java.util.stream.Collectors.toList());
+        Map<String, CostDetails.ToolCostDetailItem> result = new HashMap<>();
+        items.forEach((key, item) -> result.put(key, CostDetails.ToolCostDetailItem.builder()
+                .callCount(item.getCallCount())
+                .unitPrice(item.getUnitPrice())
+                .cost(item.getCost().multiply(discount))
+                .build()));
+        return result;
     }
 }
