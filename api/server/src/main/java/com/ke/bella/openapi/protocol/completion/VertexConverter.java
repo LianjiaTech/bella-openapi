@@ -359,7 +359,10 @@ public class VertexConverter {
 //            builder.logprobs(request.getTop_logprobs());
 //        }
         if(request.getReasoning_effort() != null && property.isSupportThinkConfig()) {
-            builder.thinkingConfig(new GenerationConfig.ThinkingConfig());
+            builder.thinkingConfig(GenerationConfig.ThinkingConfig.builder()
+                    .thinkingBudget(-1)
+                    .includeThoughts(true)
+                    .build());
         }
 
         // 从 extra_body["generationConfig"] 中读取额外配置并合并
@@ -669,6 +672,9 @@ public class VertexConverter {
      */
     private static void mergeGenerationConfig(GenerationConfig.GenerationConfigBuilder builder, GenerationConfig extraConfig) {
         // 额外字段：直接设置（这些字段不会从标准 CompletionRequest 字段来）
+        if(extraConfig.getThinkingConfig() != null) {
+            builder.thinkingConfig(extraConfig.getThinkingConfig());
+        }
         if(extraConfig.getResponseJsonSchema() != null) {
             builder.responseJsonSchema(extraConfig.getResponseJsonSchema());
         }
