@@ -530,7 +530,7 @@ public class CompletionPriceInfoMatchTest {
         assertEquals(new BigDecimal("2"), result.getCachedRead());
         // 验证 getCachedCreation() 返回计算值 10 * 1.25 = 12.5
         assertEquals("cachedCreation未设置时应返回input*1.25",
-                BigDecimal.valueOf(12.5), result.getCachedCreation());
+                0, BigDecimal.valueOf(12.5).compareTo(result.getCachedCreation()));
     }
 
     /**
@@ -606,14 +606,14 @@ public class CompletionPriceInfoMatchTest {
         assertNotNull(result1);
         assertEquals(new BigDecimal("30"), result1.getOutput());
         assertEquals("输出区间的cachedCreation应为input*1.25",
-                BigDecimal.valueOf(12.5), result1.getCachedCreation());
+                0, BigDecimal.valueOf(12.5).compareTo(result1.getCachedCreation()));
 
         // 测试第二个输出区间
         CompletionPriceInfo.RangePrice result2 = priceInfo.matchRangePrice(5000, 5000);
         assertNotNull(result2);
         assertEquals(new BigDecimal("25"), result2.getOutput());
         assertEquals("输出区间的cachedCreation应为input*1.25",
-                BigDecimal.valueOf(12.5), result2.getCachedCreation());
+                0, BigDecimal.valueOf(12.5).compareTo(result2.getCachedCreation()));
     }
 
     /**

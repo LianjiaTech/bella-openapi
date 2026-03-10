@@ -83,7 +83,7 @@ public class ResponsesToolCostCalculationTest {
         toolUsage.put("web_search", 1);
         usage.setTool_usage(toolUsage);
 
-        BigDecimal cost = CostCalculator.calculate("/v1/responses", priceInfoJson, usage);
+        BigDecimal cost = CostCalculator.calculate("/v1/responses", priceInfoJson, usage).getTotalCost();
 
         assertNotNull("Cost should not be null", cost);
 
@@ -135,7 +135,7 @@ public class ResponsesToolCostCalculationTest {
         toolUsage.put("code_interpreter", 2);
         usage.setTool_usage(toolUsage);
 
-        BigDecimal cost = CostCalculator.calculate("/v1/responses", priceInfoJson, usage);
+        BigDecimal cost = CostCalculator.calculate("/v1/responses", priceInfoJson, usage).getTotalCost();
 
         assertNotNull("Cost should not be null", cost);
 
@@ -183,7 +183,7 @@ public class ResponsesToolCostCalculationTest {
         toolUsage.put("web_search", 1);
         usage.setTool_usage(toolUsage);
 
-        BigDecimal cost = CostCalculator.calculate("/v1/responses", priceInfoJson, usage);
+        BigDecimal cost = CostCalculator.calculate("/v1/responses", priceInfoJson, usage).getTotalCost();
 
         assertNotNull("Cost should not be null", cost);
 
@@ -223,7 +223,7 @@ public class ResponsesToolCostCalculationTest {
         usage.setInput_tokens(3000);
         usage.setOutput_tokens(1000);
 
-        BigDecimal cost = CostCalculator.calculate("/v1/responses", priceInfoJson, usage);
+        BigDecimal cost = CostCalculator.calculate("/v1/responses", priceInfoJson, usage).getTotalCost();
 
         assertNotNull("Cost should not be null", cost);
 

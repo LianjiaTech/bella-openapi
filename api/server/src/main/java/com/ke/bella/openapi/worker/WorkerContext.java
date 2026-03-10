@@ -89,8 +89,8 @@ public class WorkerContext {
         /**
          * Worker主循环，实现自适应退避策略：
          * 1. 有任务且容量充足时：使用最小间隔(5ms)进行快速轮询，最大化吞吐量
-         * 2. 无任务但容量充足时：采用指数退避策略，从5秒开始按1.5倍递增至最大5分钟，减少CPU消耗
-         * 3. 容量不足时：固定等待60秒，避免无效轮询
+         * 2. 无任务但容量充足时：采用指数退避策略，从1秒开始按2倍递增至最大5秒，减少CPU消耗
+         * 3. 容量不足时：固定等待5秒，避免无效轮询和频繁容量检查
          * 4. 异常情况时：同样采用指数退避，防止错误传播和资源浪费
          */
         @Override
@@ -109,7 +109,7 @@ public class WorkerContext {
                             waitTime = backoff.getNextInterval();
                         }
                     } else {
-                        waitTime = 60 * 1000;
+                        waitTime = 5 * 1000;
                     }
 
                     Thread.sleep(waitTime);
@@ -180,13 +180,13 @@ public class WorkerContext {
          * 指数退避状态管理器，实现动态间隔调整策略：
          * - 成功时：立即重置为起始间隔，保持高响应性
          * - 失败时：按指数增长间隔，最大化系统稳定性
-         * - 边界控制：最小5ms保证响应性，最大5分钟防止长时间阻塞
+         * - 边界控制：最小5ms保证响应性，最大5秒防止长时间阻塞
          */
         private class BackoffState {
             private final long MIN_INTERVAL = 5; // 最小间隔5ms
-            private final long BACKOFF_START = 5000; // 退避起始间隔5秒
-            private final long MAX_BACKOFF = 5 * 60 * 1000; // 最大退避间隔5分钟
-            private final double BACKOFF_FACTOR = 1.5; // 退避倍数因子
+            private final long BACKOFF_START = 1000; // 退避起始间隔1秒
+            private final long MAX_BACKOFF = 5000; // 最大退避间隔5秒
+            private final double BACKOFF_FACTOR = 2.0; // 退避倍数因子
 
             private long backoffInterval = BACKOFF_START;
             private long lastFailure = 0;
