@@ -103,6 +103,7 @@ public class ApikeyOps {
         private String name;
         private String serviceId;
         private String searchParam; // name / serviceId的模糊搜索
+        private String ownerSearch; // ownerName / ownerCode的模糊搜索
         private String outEntityCode;
         private boolean includeChild;
         private String status;

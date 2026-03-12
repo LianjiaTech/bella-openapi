@@ -56,6 +56,8 @@ springdoc:
 
 
 bella:
+  console:
+    quota-admin-only: true
   limiter:
     qps:
       default-limit: 200

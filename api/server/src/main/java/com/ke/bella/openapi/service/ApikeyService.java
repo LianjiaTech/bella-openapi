@@ -390,10 +390,13 @@ public class ApikeyService {
             if(op == null || CollectionUtils.isNotEmpty(condition.getOrgCodes())) {
                 throw new BellaException.AuthorizationException("没有操作权限");
             }
-            if(StringUtils.isNotEmpty(condition.getPersonalCode())) {
-                Assert.isTrue(op.getUserId().toString().equals(condition.getPersonalCode()), "没有操作权限");
-            } else {
-                condition.setPersonalCode(op.getUserId().toString());
+            boolean isManager = apikeyInfo != null && apikeyInfo.hasAllocatedPermission();
+            if(!isManager) {
+                if(StringUtils.isNotEmpty(condition.getPersonalCode())) {
+                    Assert.isTrue(op.getUserId().toString().equals(condition.getPersonalCode()), "没有操作权限");
+                } else {
+                    condition.setPersonalCode(op.getUserId().toString());
+                }
             }
             return;
         }
