@@ -3,16 +3,10 @@
  */
 package com.ke.bella.openapi.tables;
 
-
 import com.ke.bella.openapi.DefaultSchema;
 import com.ke.bella.openapi.Indexes;
 import com.ke.bella.openapi.Keys;
 import com.ke.bella.openapi.tables.records.VideoJobRecord;
-
-import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.List;
-
 import org.jooq.Field;
 import org.jooq.ForeignKey;
 import org.jooq.Identity;
@@ -27,6 +21,10 @@ import org.jooq.UniqueKey;
 import org.jooq.impl.DSL;
 import org.jooq.impl.SQLDataType;
 import org.jooq.impl.TableImpl;
+
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
 
 
 /**

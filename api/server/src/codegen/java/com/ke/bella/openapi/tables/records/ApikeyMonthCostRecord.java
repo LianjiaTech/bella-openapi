@@ -3,18 +3,16 @@
  */
 package com.ke.bella.openapi.tables.records;
 
-
 import com.ke.bella.openapi.db.repo.Timed;
 import com.ke.bella.openapi.tables.ApikeyMonthCost;
-
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-
 import org.jooq.Field;
 import org.jooq.Record1;
 import org.jooq.Record6;
 import org.jooq.Row6;
 import org.jooq.impl.UpdatableRecordImpl;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 
 /**

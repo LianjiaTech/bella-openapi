@@ -22,7 +22,6 @@ import com.ke.bella.openapi.tables.SpaceRole;
 import com.ke.bella.openapi.tables.User;
 import com.ke.bella.openapi.tables.VideoJob;
 
-
 /**
  * Convenience access to all tables in the default schema.
  */

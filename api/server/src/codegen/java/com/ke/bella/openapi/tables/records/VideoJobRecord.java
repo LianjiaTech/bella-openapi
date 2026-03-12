@@ -3,14 +3,12 @@
  */
 package com.ke.bella.openapi.tables.records;
 
-
 import com.ke.bella.openapi.db.repo.Operator;
 import com.ke.bella.openapi.tables.VideoJob;
-
-import java.time.LocalDateTime;
-
 import org.jooq.Record1;
 import org.jooq.impl.UpdatableRecordImpl;
+
+import java.time.LocalDateTime;
 
 
 /**

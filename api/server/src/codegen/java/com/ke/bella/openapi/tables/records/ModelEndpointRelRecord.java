@@ -3,17 +3,15 @@
  */
 package com.ke.bella.openapi.tables.records;
 
-
 import com.ke.bella.openapi.db.repo.Operator;
 import com.ke.bella.openapi.tables.ModelEndpointRel;
-
-import java.time.LocalDateTime;
-
 import org.jooq.Field;
 import org.jooq.Record1;
 import org.jooq.Record9;
 import org.jooq.Row9;
 import org.jooq.impl.UpdatableRecordImpl;
+
+import java.time.LocalDateTime;
 
 
 /**

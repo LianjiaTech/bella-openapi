@@ -3,7 +3,6 @@
  */
 package com.ke.bella.openapi;
 
-
 import com.ke.bella.openapi.tables.Apikey;
 import com.ke.bella.openapi.tables.ApikeyMonthCost;
 import com.ke.bella.openapi.tables.ApikeyRole;
@@ -38,7 +37,6 @@ import com.ke.bella.openapi.tables.records.SpaceRecord;
 import com.ke.bella.openapi.tables.records.SpaceRoleRecord;
 import com.ke.bella.openapi.tables.records.UserRecord;
 import com.ke.bella.openapi.tables.records.VideoJobRecord;
-
 import org.jooq.TableField;
 import org.jooq.UniqueKey;
 import org.jooq.impl.DSL;

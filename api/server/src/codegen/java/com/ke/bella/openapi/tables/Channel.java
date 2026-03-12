@@ -3,16 +3,10 @@
  */
 package com.ke.bella.openapi.tables;
 
-
 import com.ke.bella.openapi.DefaultSchema;
 import com.ke.bella.openapi.Indexes;
 import com.ke.bella.openapi.Keys;
 import com.ke.bella.openapi.tables.records.ChannelRecord;
-
-import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.List;
-
 import org.jooq.Field;
 import org.jooq.ForeignKey;
 import org.jooq.Identity;
@@ -27,6 +21,10 @@ import org.jooq.UniqueKey;
 import org.jooq.impl.DSL;
 import org.jooq.impl.SQLDataType;
 import org.jooq.impl.TableImpl;
+
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
 
 
 /**
@@ -133,7 +131,12 @@ public class Channel extends TableImpl<ChannelRecord> {
     /**
      * The column <code>channel.price_info</code>. 单价
      */
-    public final TableField<ChannelRecord, String> PRICE_INFO = createField(DSL.name("price_info"), SQLDataType.VARCHAR(256).nullable(false).defaultValue(DSL.inline("{}", SQLDataType.VARCHAR)), this, "单价");
+    public final TableField<ChannelRecord, String> PRICE_INFO = createField(DSL.name("price_info"), SQLDataType.VARCHAR(8192).nullable(false).defaultValue(DSL.inline("{}", SQLDataType.VARCHAR)), this, "单价");
+
+    /**
+     * The column <code>channel.worker_mode</code>.
+     */
+    public final TableField<ChannelRecord, Byte> WORKER_MODE = createField(DSL.name("worker_mode"), SQLDataType.TINYINT.nullable(false).defaultValue(DSL.inline("0", SQLDataType.TINYINT)), this, "");
 
     /**
      * The column <code>channel.queue_mode</code>. 队列模式(0:无队列;1:pull模式;2:route模式;3:pull+route模式)

@@ -3,7 +3,6 @@
  */
 package com.ke.bella.openapi;
 
-
 import com.ke.bella.openapi.tables.Apikey;
 import com.ke.bella.openapi.tables.ApikeyMonthCost;
 import com.ke.bella.openapi.tables.ApikeyRole;
@@ -21,13 +20,12 @@ import com.ke.bella.openapi.tables.SpaceMember;
 import com.ke.bella.openapi.tables.SpaceRole;
 import com.ke.bella.openapi.tables.User;
 import com.ke.bella.openapi.tables.VideoJob;
-
-import java.util.Arrays;
-import java.util.List;
-
 import org.jooq.Catalog;
 import org.jooq.Table;
 import org.jooq.impl.SchemaImpl;
+
+import java.util.Arrays;
+import java.util.List;
 
 
 /**

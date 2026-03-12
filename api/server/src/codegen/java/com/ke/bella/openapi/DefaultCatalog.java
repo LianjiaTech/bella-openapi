@@ -3,12 +3,11 @@
  */
 package com.ke.bella.openapi;
 
+import org.jooq.Schema;
+import org.jooq.impl.CatalogImpl;
 
 import java.util.Arrays;
 import java.util.List;
-
-import org.jooq.Schema;
-import org.jooq.impl.CatalogImpl;
 
 
 /**
