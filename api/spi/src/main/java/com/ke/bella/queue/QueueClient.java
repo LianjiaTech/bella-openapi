@@ -18,6 +18,8 @@ public class QueueClient {
 
     private static volatile QueueClient INSTANCE;
 
+    private static final int DEFAULT_TIMEOUT_SECONDS = 300;
+
     public static QueueClient getInstance(String url) {
         if(INSTANCE == null) {
             synchronized(QueueClient.class) {
@@ -47,7 +49,10 @@ public class QueueClient {
         put.setResponseMode("streaming");
         String putUrl = url + "/v1/queue/put";
         Request request = buildRequest(putUrl, ak, JacksonUtils.serialize(put));
-        HttpUtils.streamRequest(request, listener, put.getTimeout(), put.getTimeout());
+        int timeout = (put.getTimeout() != null && put.getTimeout() > 0)
+                ? put.getTimeout()
+                : DEFAULT_TIMEOUT_SECONDS;
+        HttpUtils.streamRequest(request, listener, timeout, timeout);
     }
 
     public Request buildRequest(String url, String apikey, String json) {
