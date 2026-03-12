@@ -33,8 +33,8 @@ const ApikeyPage: React.FC = () => {
     const {toast} = useToast()
 
     const isAdmin = useMemo(() => hasPermission(userInfo, '/console/apikey/**'), [userInfo])
-    // userInfo 未加载时保持 true，避免配置为 false 时按钮出现闪烁
-    const quotaAdminOnly = useMemo(() => !userInfo || userInfo.optionalInfo?.['quotaAdminOnly'] !== false, [userInfo])
+    // userInfo 未加载时保持 false，避免配置为 true 时按钮出现闪烁
+    const userQuotaEditEnabled = useMemo(() => !!userInfo?.optionalInfo?.['userQuotaEditEnabled'], [userInfo])
 
     // 局部更新函数
     const updateApiKeyInPlace = useCallback((code: string, updates: Partial<ApikeyInfo>) => {
@@ -165,7 +165,7 @@ const ApikeyPage: React.FC = () => {
         setShowSubApikeyTipsDialog(true)
     }
 
-    const columns = useMemo(() => ApikeyColumns(refresh, showApikey, { updateApiKeyInPlace, isAdminView, quotaAdminOnly }), [refresh, showApikey, updateApiKeyInPlace, isAdminView, quotaAdminOnly])
+    const columns = useMemo(() => ApikeyColumns(refresh, showApikey, { updateApiKeyInPlace, isAdminView, userQuotaEditEnabled }), [refresh, showApikey, updateApiKeyInPlace, isAdminView, userQuotaEditEnabled])
 
     return (
         <div className="min-h-screen bg-gray-50">

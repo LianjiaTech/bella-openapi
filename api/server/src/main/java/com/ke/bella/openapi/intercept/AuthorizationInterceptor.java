@@ -23,8 +23,8 @@ public class AuthorizationInterceptor extends com.ke.bella.openapi.server.interc
     @Autowired
     private ApikeyService apikeyService;
 
-    @Value("${bella.console.quota-admin-only:true}")
-    private boolean quotaAdminOnly;
+    @Value("${bella.console.user-quota-edit-enabled:false}")
+    private boolean userQuotaEditEnabled;
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
@@ -42,7 +42,7 @@ public class AuthorizationInterceptor extends com.ke.bella.openapi.server.interc
             }
             op.getOptionalInfo().put("roles", apikeyInfo.getRolePath().getIncluded());
             op.getOptionalInfo().put("excludes", apikeyInfo.getRolePath().getExcluded());
-            op.getOptionalInfo().put("quotaAdminOnly", quotaAdminOnly);
+            op.getOptionalInfo().put("userQuotaEditEnabled", userQuotaEditEnabled);
             EndpointContext.setApikey(apikeyInfo);
             hasPermission = apikeyInfo.hasPermission(url);
         } else {
