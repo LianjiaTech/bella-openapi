@@ -177,11 +177,11 @@ const ActionCell = ({code, name, displayAk, refresh, showApikey, isAdminView}: {
 export interface ApikeyColumnsOptions {
     updateApiKeyInPlace?: (code: string, updates: Partial<ApikeyInfo>) => void;
     isAdminView?: boolean;
-    quotaAdminOnly?: boolean;
+    userQuotaEditEnabled?: boolean;
 }
 
 export const ApikeyColumns = (refresh: () => void, showApikey: (apikey: string) => void, options: ApikeyColumnsOptions = {}): ColumnDef<ApikeyInfo>[] => {
-    const { updateApiKeyInPlace, isAdminView, quotaAdminOnly } = options;
+    const { updateApiKeyInPlace, isAdminView, userQuotaEditEnabled } = options;
     return [
     {
         accessorKey: "akDisplay",
@@ -286,7 +286,7 @@ export const ApikeyColumns = (refresh: () => void, showApikey: (apikey: string) 
                 currency: "CNY",
             }).format(row.original.monthQuota);
 
-            const showQuotaButton = !quotaAdminOnly || isAdminView;
+            const showQuotaButton = userQuotaEditEnabled || isAdminView;
             return showQuotaButton ? (
                 <EditableCell
                     content={formatted}
