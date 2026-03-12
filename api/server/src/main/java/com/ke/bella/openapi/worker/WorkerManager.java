@@ -9,6 +9,7 @@ import com.ke.bella.openapi.server.OpenAiServiceFactory;
 import com.ke.bella.openapi.server.OpenapiProperties;
 import com.ke.bella.openapi.service.ChannelService;
 import com.ke.bella.openapi.tables.pojos.ChannelDB;
+import com.ke.bella.queue.WorkerMode;
 import com.theokanning.openai.service.OpenAiService;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +23,9 @@ import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Component
@@ -53,7 +56,9 @@ public class WorkerManager {
 
     private OpenAiService openAiService;
 
-    private final Map<String, WorkerContext> runningWorkers = new ConcurrentHashMap<>();
+    private final Map<String, WorkerService> runningWorkers = new ConcurrentHashMap<>();
+
+    private PollBatchStatusWorker pollBatchStatusWorker;
 
     @PostConstruct
     public void init() {
@@ -64,57 +69,115 @@ public class WorkerManager {
             } catch (Exception e) {
                 log.error("Failed to refresh workers", e);
             }
-        }, 60 * 10);
+        }, 3 * 10);
+
+        pollBatchStatusWorker = PollBatchStatusWorker.builder()
+                .openAiService(openAiService)
+                .adaptorManager(adaptorManager)
+                .build();
+        pollBatchStatusWorker.start();
+        log.info("Started PollBatchStatusWorker");
     }
 
     private void refreshWorkers() {
         List<ChannelDB> channels = channelService.listAllWorkerChannels();
-        Map<String, String> channelMap = channels.stream()
-                .collect(Collectors.toMap(ChannelDB::getChannelCode, ChannelDB::getQueueName));
+        Map<String, ChannelDB> channelMap = channels.stream()
+                .collect(Collectors.toMap(
+                        channel -> buildWorkerKey(channel, WorkerMode.of(channel.getWorkerMode())),
+                        Function.identity()
+                ));
 
         synchronized(runningWorkers) {
             runningWorkers.keySet().removeIf(channelCode -> {
-                WorkerContext context = runningWorkers.get(channelCode);
-                String queueName = channelMap.get(channelCode);
+                WorkerService worker = runningWorkers.get(channelCode);
+                ChannelDB channel = channelMap.get(channelCode);
 
-                if(queueName == null || !context.isSameQueue(queueName)) {
-                    context.stop();
+                if(channel == null) {
+                    log.info("Channel removed from database, stopping worker: {}", channelCode);
+                    worker.stop();
                     return true;
-                } else {
-                    return false;
                 }
+
+                boolean queueChanged = !Objects.equals(worker.queueName(), channel.getQueueName());
+                boolean modeChanged = !Objects.equals(worker.workerMode().getCode(), channel.getWorkerMode().intValue());
+                if(queueChanged || modeChanged) {
+                    log.info("Configuration changed for worker: {}, stopping and will restart", channelCode);
+                    worker.stop();
+                    return true;
+                }
+                return false;
             });
 
             for (ChannelDB channel : channels) {
-                if(!runningWorkers.containsKey(channel.getChannelCode())) {
-                    WorkerContext workerContext = WorkerContext.builder()
-                            .channel(channel)
-                            .redissonClient(redissonClient)
-                            .openAiService(openAiService)
-                            .openapiClient(openapiClient)
-                            .adaptorManager(adaptorManager)
-                            .luaScriptExecutor(luaScriptExecutor)
-                            .limiterManager(limiterManager)
-                            .workerManager(this)
-                            .build();
-                    workerContext.start();
-                    runningWorkers.put(channel.getChannelCode(), workerContext);
+                WorkerMode mode = WorkerMode.of(channel.getWorkerMode());
+
+                if(mode.supportsSingle()) {
+                    startWorker(channel, WorkerMode.SINGLE);
+                }
+
+                if(mode.supportsBatch()) {
+                    startWorker(channel, WorkerMode.BATCH);
                 }
             }
         }
     }
 
+    private void startWorker(ChannelDB channel, WorkerMode mode) {
+        String workerKey = buildWorkerKey(channel, mode);
+        if(runningWorkers.containsKey(workerKey)) {
+            return;
+        }
+
+        WorkerService worker = null;
+        if(mode == WorkerMode.SINGLE) {
+            worker = SingleWorker.builder()
+                    .channel(channel)
+                    .redissonClient(redissonClient)
+                    .openAiService(openAiService)
+                    .openapiClient(openapiClient)
+                    .adaptorManager(adaptorManager)
+                    .luaScriptExecutor(luaScriptExecutor)
+                    .limiterManager(limiterManager)
+                    .workerManager(this)
+                    .build();
+        } else if(mode == WorkerMode.BATCH) {
+            worker = BatchWorker.builder()
+                    .channel(channel)
+                    .openAiService(openAiService)
+                    .adaptorManager(adaptorManager)
+                    .build();
+        }
+
+        if(worker != null) {
+            worker.start();
+            runningWorkers.put(workerKey, worker);
+            log.info("Started {} worker for channel: {}", mode, channel.getChannelCode());
+        }
+    }
+
+    private String buildWorkerKey(ChannelDB channel, WorkerMode mode) {
+        return channel.getChannelCode() + "_" + mode.getCode();
+    }
+
     @PreDestroy
     public void destroy() {
+        if(pollBatchStatusWorker != null) {
+            pollBatchStatusWorker.stop();
+            log.info("Stopped PollBatchStatusWorker");
+        }
+
         if(runningWorkers.isEmpty()) {
             return;
         }
 
         log.info("Stopping {} workers...", runningWorkers.size());
-        runningWorkers.values().forEach(WorkerContext::stop);
+        runningWorkers.values().forEach(WorkerService::stop);
 
         for (int i = 0; i < 30; i++) {
-            if(runningWorkers.values().stream().allMatch(WorkerContext::isStopped)) {
+            boolean allStopped = runningWorkers.values().stream().allMatch(WorkerService::isStopped);
+            boolean pollWorkerStopped = pollBatchStatusWorker == null || pollBatchStatusWorker.isStopped();
+
+            if(allStopped && pollWorkerStopped) {
                 break;
             }
 
