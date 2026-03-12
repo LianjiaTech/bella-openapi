@@ -17,6 +17,34 @@ export function getSafetyLevel(level: number) : string {
     }
 }
 
+export interface AdminApikeyQueryOptions {
+    searchParam?: string | null;
+    ownerSearch?: string | null;
+    ownerType?: string;
+    ownerCode?: string;
+    parentCode?: string;
+}
+
+export async function getAdminApikeyInfos(
+    page: number,
+    options: AdminApikeyQueryOptions = {},
+): Promise<Page<ApikeyInfo> | null> {
+    const { searchParam, ownerSearch, ownerType, ownerCode, parentCode } = options;
+    const response = await openapi.get<Page<ApikeyInfo>>(`/console/apikey/page`, {
+        params: {
+            status: 'active',
+            searchParam: searchParam || undefined,
+            ownerSearch: ownerSearch || undefined,
+            ownerType,
+            ownerCode,
+            parentCode,
+            includeChild: !!parentCode,
+            page,
+        }
+    });
+    return response.data;
+}
+
 export async function getApikeyInfos(page: number, ownerCode: number | null, search: string | null, parentCode?: string): Promise<Page<ApikeyInfo> | null> {
     try {
         const response = await openapi.get<Page<ApikeyInfo>>(`/console/apikey/page`, {
