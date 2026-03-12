@@ -78,6 +78,7 @@ public class Condition {
         private String ownerCode;
         private String queueName;
         private HashSet<Integer> queueModes;
+        private HashSet<Integer> workerModes;
     }
 
     @NoArgsConstructor

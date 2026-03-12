@@ -3,15 +3,12 @@
  */
 package com.ke.bella.openapi.tables.records;
 
-
 import com.ke.bella.openapi.db.repo.Operator;
 import com.ke.bella.openapi.tables.Channel;
-
-import java.time.LocalDateTime;
-
 import org.jooq.Record1;
 import org.jooq.impl.UpdatableRecordImpl;
 
+import java.time.LocalDateTime;
 
 /**
  * 通道
@@ -260,115 +257,129 @@ public class ChannelRecord extends UpdatableRecordImpl<ChannelRecord> implements
     }
 
     /**
+     * Setter for <code>channel.worker_mode</code>.
+     */
+    public void setWorkerMode(Byte value) {
+        set(17, value);
+    }
+
+    /**
+     * Getter for <code>channel.worker_mode</code>.
+     */
+    public Byte getWorkerMode() {
+        return (Byte) get(17);
+    }
+
+    /**
      * Setter for <code>channel.queue_mode</code>. 队列模式(0:无队列;1:pull模式;2:route模式;3:pull+route模式)
      */
     public void setQueueMode(Byte value) {
-        set(17, value);
+        set(18, value);
     }
 
     /**
      * Getter for <code>channel.queue_mode</code>. 队列模式(0:无队列;1:pull模式;2:route模式;3:pull+route模式)
      */
     public Byte getQueueMode() {
-        return (Byte) get(17);
+        return (Byte) get(18);
     }
 
     /**
      * Setter for <code>channel.queue_name</code>. 队列名称
      */
     public void setQueueName(String value) {
-        set(18, value);
+        set(19, value);
     }
 
     /**
      * Getter for <code>channel.queue_name</code>. 队列名称
      */
     public String getQueueName() {
-        return (String) get(18);
+        return (String) get(19);
     }
 
     /**
      * Setter for <code>channel.cuid</code>. 创建人id
      */
     public void setCuid(Long value) {
-        set(19, value);
+        set(20, value);
     }
 
     /**
      * Getter for <code>channel.cuid</code>. 创建人id
      */
     public Long getCuid() {
-        return (Long) get(19);
+        return (Long) get(20);
     }
 
     /**
      * Setter for <code>channel.cu_name</code>. 创建人姓名
      */
     public void setCuName(String value) {
-        set(20, value);
+        set(21, value);
     }
 
     /**
      * Getter for <code>channel.cu_name</code>. 创建人姓名
      */
     public String getCuName() {
-        return (String) get(20);
+        return (String) get(21);
     }
 
     /**
      * Setter for <code>channel.muid</code>. 编辑人id
      */
     public void setMuid(Long value) {
-        set(21, value);
+        set(22, value);
     }
 
     /**
      * Getter for <code>channel.muid</code>. 编辑人id
      */
     public Long getMuid() {
-        return (Long) get(21);
+        return (Long) get(22);
     }
 
     /**
      * Setter for <code>channel.mu_name</code>. 编辑人姓名
      */
     public void setMuName(String value) {
-        set(22, value);
+        set(23, value);
     }
 
     /**
      * Getter for <code>channel.mu_name</code>. 编辑人姓名
      */
     public String getMuName() {
-        return (String) get(22);
+        return (String) get(23);
     }
 
     /**
      * Setter for <code>channel.ctime</code>.
      */
     public void setCtime(LocalDateTime value) {
-        set(23, value);
+        set(24, value);
     }
 
     /**
      * Getter for <code>channel.ctime</code>.
      */
     public LocalDateTime getCtime() {
-        return (LocalDateTime) get(23);
+        return (LocalDateTime) get(24);
     }
 
     /**
      * Setter for <code>channel.mtime</code>.
      */
     public void setMtime(LocalDateTime value) {
-        set(24, value);
+        set(25, value);
     }
 
     /**
      * Getter for <code>channel.mtime</code>.
      */
     public LocalDateTime getMtime() {
-        return (LocalDateTime) get(24);
+        return (LocalDateTime) get(25);
     }
 
     // -------------------------------------------------------------------------
@@ -394,7 +405,7 @@ public class ChannelRecord extends UpdatableRecordImpl<ChannelRecord> implements
     /**
      * Create a detached, initialised ChannelRecord
      */
-    public ChannelRecord(Long id, String entityType, String entityCode, String channelCode, String status, String ownerType, String ownerCode, String ownerName, String visibility, Byte trialEnabled, String dataDestination, String priority, String protocol, String supplier, String url, String channelInfo, String priceInfo, Byte queueMode, String queueName, Long cuid, String cuName, Long muid, String muName, LocalDateTime ctime, LocalDateTime mtime) {
+    public ChannelRecord(Long id, String entityType, String entityCode, String channelCode, String status, String ownerType, String ownerCode, String ownerName, String visibility, Byte trialEnabled, String dataDestination, String priority, String protocol, String supplier, String url, String channelInfo, String priceInfo, Byte workerMode, Byte queueMode, String queueName, Long cuid, String cuName, Long muid, String muName, LocalDateTime ctime, LocalDateTime mtime) {
         super(Channel.CHANNEL);
 
         setId(id);
@@ -414,6 +425,7 @@ public class ChannelRecord extends UpdatableRecordImpl<ChannelRecord> implements
         setUrl(url);
         setChannelInfo(channelInfo);
         setPriceInfo(priceInfo);
+        setWorkerMode(workerMode);
         setQueueMode(queueMode);
         setQueueName(queueName);
         setCuid(cuid);

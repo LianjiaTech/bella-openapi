@@ -20,6 +20,7 @@ import com.ke.bella.openapi.tables.pojos.EndpointDB;
 import com.ke.bella.openapi.tables.pojos.ModelDB;
 import com.ke.bella.openapi.utils.JacksonUtils;
 import com.ke.bella.queue.QueueMode;
+import com.ke.bella.queue.WorkerMode;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -185,7 +186,8 @@ public class ChannelService {
     public List<ChannelDB> listAllWorkerChannels() {
         return listByCondition(Condition.ChannelCondition.builder()
                 .status(ACTIVE)
-                .queueModes(Sets.newHashSet(QueueMode.PULL.getCode(), QueueMode.BOTH.getCode()))
+                .workerModes(Sets.newHashSet(WorkerMode.SINGLE.getCode()
+                        , WorkerMode.BATCH.getCode()))
                 .build());
     }
 
