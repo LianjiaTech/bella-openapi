@@ -42,6 +42,7 @@ public class AuthorizationInterceptor extends com.ke.bella.openapi.server.interc
             }
             op.getOptionalInfo().put("roles", apikeyInfo.getRolePath().getIncluded());
             op.getOptionalInfo().put("excludes", apikeyInfo.getRolePath().getExcluded());
+            op.getOptionalInfo().put("roleCode", apikeyInfo.getRoleCode());
             op.getOptionalInfo().put("userQuotaEditEnabled", userQuotaEditEnabled);
             EndpointContext.setApikey(apikeyInfo);
             hasPermission = apikeyInfo.hasPermission(url);

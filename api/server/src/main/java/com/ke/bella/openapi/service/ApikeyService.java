@@ -357,6 +357,10 @@ public class ApikeyService {
     private void checkPermission(String code) {
         ApikeyDB db = apikeyRepo.queryByUniqueKey(code);
         ApikeyInfo apikeyInfo = EndpointContext.getApikeyIgnoreNull();
+        // all roleCode 的超级管理员可以操作任意 AK
+        if(apikeyInfo != null && EntityConstants.ALL.equals(apikeyInfo.getRoleCode())) {
+            return;
+        }
         if(apikeyInfo == null) {
             Operator op = BellaContext.getOperator();
             Assert.isTrue(
@@ -475,8 +479,10 @@ public class ApikeyService {
             throw new BellaException.AuthorizationException("只有个人类型的API Key才能转移");
         }
 
-        // 2. 验证当前用户权限 (只有当前所有者可以转移)
-        if(!apikeyInfo.getOwnerCode().equals(currentOperator.getUserId().toString())) {
+        // 2. 验证当前用户权限：所有者可以转移，all roleCode 的超级管理员也可以代为转移
+        ApikeyInfo operatorApikeyInfo = EndpointContext.getApikeyIgnoreNull();
+        boolean isSuperAdmin = operatorApikeyInfo != null && EntityConstants.ALL.equals(operatorApikeyInfo.getRoleCode());
+        if(!isSuperAdmin && !apikeyInfo.getOwnerCode().equals(currentOperator.getUserId().toString())) {
             throw new BellaException.AuthorizationException("只有API Key所有者才能执行转移操作");
         }
 
@@ -493,7 +499,7 @@ public class ApikeyService {
             newOwnerCode = targetUser.getId().toString();
         }
 
-        Assert.isTrue(!currentOperator.getUserId().toString().equals(newOwnerCode), "不能将ak转交给自己");
+        Assert.isTrue(!apikeyInfo.getOwnerCode().equals(newOwnerCode), "不能将ak转交给原所有者");
 
         // 5. 记录转移前的状态用于审计
         String fromOwnerType = apikeyInfo.getOwnerType();
@@ -556,7 +562,8 @@ public class ApikeyService {
         }
 
         ApikeyInfo currentApikey = EndpointContext.getApikey();
-        if(!apikeyInfo.getOwnerCode().equals(currentApikey.getOwnerCode())
+        boolean isSuperAdmin = EntityConstants.ALL.equals(currentApikey.getRoleCode());
+        if(!isSuperAdmin && !apikeyInfo.getOwnerCode().equals(currentApikey.getOwnerCode())
                 && !SYSTEM.equals(currentApikey.getOwnerType())) {
             throw new BellaException.AuthorizationException("没有权限查看转移历史");
         }
