@@ -30,7 +30,8 @@ const SubApikeyPage: React.FC = () => {
     const [showSubApikeyDialog, setShowSubApikeyDialog] = useState<boolean>(false)
     const {userInfo} = useUser()
     const {toast} = useToast()
-    const isAdmin = useMemo(() => hasPermission(userInfo, '/console/apikey/**'), [userInfo])
+    // hasPermission('/console/**') 等价于 roleCode ∈ {console, all}，即管理员角色
+    const isAdmin = useMemo(() => hasPermission(userInfo, '/console/**'), [userInfo])
     const [newApiKey, setNewApiKey] = useState<string | null>(null)
     const [showCopyDialog, setShowCopyDialog] = useState<boolean>(false)
     const [copied, setCopied] = useState<boolean>(false)

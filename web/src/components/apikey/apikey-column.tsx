@@ -124,7 +124,7 @@ const ActionCell = ({code, name, displayAk, refresh, showApikey, isAdminView}: {
                     </Tooltip>
                 </TooltipProvider>
             </Button>
-            <Button
+            {!isAdminView && <Button
                 onClick={handleTransfer}
                 variant="ghost"
                 size="icon"
@@ -141,7 +141,7 @@ const ActionCell = ({code, name, displayAk, refresh, showApikey, isAdminView}: {
                         <TooltipContent>转交</TooltipContent>
                     </Tooltip>
                 </TooltipProvider>
-            </Button>
+            </Button>}
             <Button
                 onClick={() => setShowBalance(true)}
                 variant="ghost"
@@ -161,15 +161,15 @@ const ActionCell = ({code, name, displayAk, refresh, showApikey, isAdminView}: {
                 </TooltipProvider>
             </Button>
             {!isAdminView && <ResetDialog code={code} showApikey={showApikey}/>}
-            <DeleteDialog code={code} refresh={refresh}/>
+            {!isAdminView && <DeleteDialog code={code} refresh={refresh}/>}
             <ApiKeyBalanceDialog code={code} isOpen={showBalance} onClose={() => setShowBalance(false)} />
-            <TransferDialog
+            {!isAdminView && <TransferDialog
                 isOpen={showTransferDialog}
                 onClose={() => setShowTransferDialog(false)}
                 akCode={code}
                 displayName={displayAk}
                 onTransferSuccess={refresh}
-            />
+            />}
         </div>
     )
 }
