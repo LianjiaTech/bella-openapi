@@ -67,7 +67,7 @@ const RemarkCell = ({ value }: { value: string }) => {
     )
 }
 
-const ActionCell = ({code, name, displayAk, refresh, showApikey, isAdminView}: { code: string, name: string, displayAk: string, refresh: () => void, showApikey: (apikey: string) => void, isAdminView?: boolean }) => {
+const ActionCell = ({code, name, displayAk, refresh, showApikey, isAdminView, isSuperAdmin}: { code: string, name: string, displayAk: string, refresh: () => void, showApikey: (apikey: string) => void, isAdminView?: boolean, isSuperAdmin?: boolean }) => {
     const router = useRouter()
     const { toast } = useToast();
     const [showBalance, setShowBalance] = useState(false);
@@ -124,7 +124,7 @@ const ActionCell = ({code, name, displayAk, refresh, showApikey, isAdminView}: {
                     </Tooltip>
                 </TooltipProvider>
             </Button>
-            {!isAdminView && <Button
+            {(!isAdminView || isSuperAdmin) && <Button
                 onClick={handleTransfer}
                 variant="ghost"
                 size="icon"
@@ -161,14 +161,15 @@ const ActionCell = ({code, name, displayAk, refresh, showApikey, isAdminView}: {
                 </TooltipProvider>
             </Button>
             {!isAdminView && <ResetDialog code={code} showApikey={showApikey}/>}
-            {!isAdminView && <DeleteDialog code={code} refresh={refresh}/>}
+            {(!isAdminView || isSuperAdmin) && <DeleteDialog code={code} refresh={refresh}/>}
             <ApiKeyBalanceDialog code={code} isOpen={showBalance} onClose={() => setShowBalance(false)} />
-            {!isAdminView && <TransferDialog
+            {(!isAdminView || isSuperAdmin) && <TransferDialog
                 isOpen={showTransferDialog}
                 onClose={() => setShowTransferDialog(false)}
                 akCode={code}
                 displayName={displayAk}
                 onTransferSuccess={refresh}
+                excludeSelf={!(isSuperAdmin && isAdminView)}
             />}
         </div>
     )
@@ -177,11 +178,12 @@ const ActionCell = ({code, name, displayAk, refresh, showApikey, isAdminView}: {
 export interface ApikeyColumnsOptions {
     updateApiKeyInPlace?: (code: string, updates: Partial<ApikeyInfo>) => void;
     isAdminView?: boolean;
+    isSuperAdmin?: boolean;
     userQuotaEditEnabled?: boolean;
 }
 
 export const ApikeyColumns = (refresh: () => void, showApikey: (apikey: string) => void, options: ApikeyColumnsOptions = {}): ColumnDef<ApikeyInfo>[] => {
-    const { updateApiKeyInPlace, isAdminView, userQuotaEditEnabled } = options;
+    const { updateApiKeyInPlace, isAdminView, isSuperAdmin, userQuotaEditEnabled } = options;
     return [
     {
         accessorKey: "akDisplay",
@@ -329,6 +331,7 @@ export const ApikeyColumns = (refresh: () => void, showApikey: (apikey: string) 
                 refresh={refresh}
                 showApikey={showApikey}
                 isAdminView={isAdminView}
+                isSuperAdmin={isSuperAdmin}
             />
         ),
     },
