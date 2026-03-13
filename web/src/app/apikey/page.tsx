@@ -32,7 +32,8 @@ const ApikeyPage: React.FC = () => {
     const {userInfo} = useUser()
     const {toast} = useToast()
 
-    const isAdmin = useMemo(() => hasPermission(userInfo, '/console/apikey/**'), [userInfo])
+    // hasPermission('/console/**') 等价于 roleCode ∈ {console, all}，即管理员角色
+    const isAdmin = useMemo(() => hasPermission(userInfo, '/console/**'), [userInfo])
     // userInfo 未加载时保持 false，避免配置为 true 时按钮出现闪烁
     const userQuotaEditEnabled = useMemo(() => !!userInfo?.optionalInfo?.['userQuotaEditEnabled'], [userInfo])
 
