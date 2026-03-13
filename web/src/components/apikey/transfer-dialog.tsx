@@ -28,6 +28,7 @@ interface TransferDialogProps {
     akCode: string
     displayName: string
     onTransferSuccess: () => void
+    excludeSelf?: boolean
 }
 
 export const TransferDialog: React.FC<TransferDialogProps> = ({
@@ -35,7 +36,8 @@ export const TransferDialog: React.FC<TransferDialogProps> = ({
     onClose,
     akCode,
     displayName,
-    onTransferSuccess
+    onTransferSuccess,
+    excludeSelf = true
 }) => {
     const [searchKeyword, setSearchKeyword] = useState('')
     const [searchResults, setSearchResults] = useState<UserSearchResult[]>([])
@@ -64,7 +66,7 @@ export const TransferDialog: React.FC<TransferDialogProps> = ({
         setSearchError('')
         
         try {
-            const results = await searchUsers(keyword, 20, true) // excludeSelf=true 排除自己
+            const results = await searchUsers(keyword, 20, excludeSelf)
             setSearchResults(results)
             setSearchError('') // 搜索成功时清除错误信息
         } catch (error) {
