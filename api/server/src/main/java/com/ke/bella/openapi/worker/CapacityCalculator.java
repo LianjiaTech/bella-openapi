@@ -56,9 +56,6 @@ public class CapacityCalculator {
     public double getRemainingCapacity() {
         double capacity = getCapacity();
         if(capacity == 0) {
-            capacity = 0.7 * getCurrentMaxRpm();
-        }
-        if(capacity == 0) {
             return 1.0;
         }
 
