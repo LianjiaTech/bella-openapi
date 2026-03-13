@@ -18,6 +18,7 @@ import com.ke.bella.openapi.apikey.ApikeyOps;
 import com.ke.bella.openapi.apikey.ApikeyTransferLog;
 import com.ke.bella.openapi.apikey.SubApikeyUpdateOp;
 import com.ke.bella.openapi.apikey.TransferApikeyOwnerOp;
+import com.ke.bella.openapi.common.EntityConstants;
 import com.ke.bella.openapi.event.ApiKeyTransferEvent;
 import com.ke.bella.openapi.common.exception.BellaException;
 import com.ke.bella.openapi.db.repo.ApikeyCostRepo;
@@ -390,7 +391,9 @@ public class ApikeyService {
             if(op == null || CollectionUtils.isNotEmpty(condition.getOrgCodes())) {
                 throw new BellaException.AuthorizationException("没有操作权限");
             }
-            boolean isManager = apikeyInfo != null && apikeyInfo.hasAllocatedPermission();
+            // 管理员判断：roleCode ∈ {console, all}，与前端 hasPermission('/console/**') 等价
+            boolean isManager = apikeyInfo != null &&
+                    (EntityConstants.CONSOLE.equals(apikeyInfo.getRoleCode()) || EntityConstants.ALL.equals(apikeyInfo.getRoleCode()));
             if(!isManager) {
                 if(StringUtils.isNotEmpty(condition.getPersonalCode())) {
                     Assert.isTrue(op.getUserId().toString().equals(condition.getPersonalCode()), "没有操作权限");
