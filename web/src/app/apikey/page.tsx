@@ -34,6 +34,7 @@ const ApikeyPage: React.FC = () => {
 
     // hasPermission('/console/**') 等价于 roleCode ∈ {console, all}，即管理员角色
     const isAdmin = useMemo(() => hasPermission(userInfo, '/console/**'), [userInfo])
+    const isSuperAdmin = useMemo(() => userInfo?.optionalInfo?.['roleCode'] === 'all', [userInfo])
     // userInfo 未加载时保持 false，避免配置为 true 时按钮出现闪烁
     const userQuotaEditEnabled = useMemo(() => !!userInfo?.optionalInfo?.['userQuotaEditEnabled'], [userInfo])
 
@@ -100,6 +101,7 @@ const ApikeyPage: React.FC = () => {
 
     const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
         setSearchTerm(event.target.value)
+        setPage(1)
     }
 
     const handleSearchSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -166,7 +168,7 @@ const ApikeyPage: React.FC = () => {
         setShowSubApikeyTipsDialog(true)
     }
 
-    const columns = useMemo(() => ApikeyColumns(refresh, showApikey, { updateApiKeyInPlace, isAdminView, userQuotaEditEnabled }), [refresh, showApikey, updateApiKeyInPlace, isAdminView, userQuotaEditEnabled])
+    const columns = useMemo(() => ApikeyColumns(refresh, showApikey, { updateApiKeyInPlace, isAdminView, isSuperAdmin, userQuotaEditEnabled }), [refresh, showApikey, updateApiKeyInPlace, isAdminView, isSuperAdmin, userQuotaEditEnabled])
 
     return (
         <div className="min-h-screen bg-gray-50">
