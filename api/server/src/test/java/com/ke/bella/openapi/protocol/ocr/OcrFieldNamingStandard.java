@@ -43,6 +43,21 @@ public class OcrFieldNamingStandard {
         ALLOWED_FIELD_NAMES.add("eep_number");          // 通行证号
 		ALLOWED_FIELD_NAMES.add("issue_times");         // 签发次数，港澳台居民居住证、台胞证、返乡证
 
+        // 营业执照字段
+        ALLOWED_FIELD_NAMES.add("unified_social_credit_code"); // 统一社会信用代码
+        ALLOWED_FIELD_NAMES.add("license_number");      // 证照编号
+        ALLOWED_FIELD_NAMES.add("entity_type");         // 企业类型
+        ALLOWED_FIELD_NAMES.add("legal_representative"); // 法定代表人
+        ALLOWED_FIELD_NAMES.add("business_scope");      // 经营范围
+        ALLOWED_FIELD_NAMES.add("registered_capital");  // 注册资本
+        ALLOWED_FIELD_NAMES.add("paid_in_capital");     // 实收资本
+        ALLOWED_FIELD_NAMES.add("establishment_date");  // 成立日期
+        ALLOWED_FIELD_NAMES.add("business_term_start"); // 营业期限开始日期
+        ALLOWED_FIELD_NAMES.add("business_term_end");   // 营业期限结束日期
+        ALLOWED_FIELD_NAMES.add("issue_date");          // 颁发日期/核准日期
+        ALLOWED_FIELD_NAMES.add("taxpayer_id");         // 税务登记号
+        ALLOWED_FIELD_NAMES.add("composition_form");    // 组成形式
+
         // 通用OCR字段
         ALLOWED_FIELD_NAMES.add("words");               // 识别出的文字列表
 
