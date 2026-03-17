@@ -4,6 +4,8 @@ import com.ke.bella.openapi.TaskExecutor;
 import com.ke.bella.openapi.client.OpenapiClient;
 import com.ke.bella.openapi.protocol.AdaptorManager;
 import com.ke.bella.openapi.protocol.limiter.LimiterManager;
+import com.ke.bella.openapi.safety.ISafetyCheckService;
+import com.ke.bella.openapi.safety.SafetyCheckRequest;
 import com.ke.bella.openapi.script.LuaScriptExecutor;
 import com.ke.bella.openapi.server.OpenAiServiceFactory;
 import com.ke.bella.openapi.server.OpenapiProperties;
@@ -46,6 +48,8 @@ public class WorkerManager {
     private LuaScriptExecutor luaScriptExecutor;
     @Resource
     private LimiterManager limiterManager;
+    @Resource
+    private ISafetyCheckService<SafetyCheckRequest.Chat> chatSafetyCheckService;
 
     @Value("${bella.openapi.as-worker.remaining-capacity-threshold:0.7}")
     @Getter
@@ -96,6 +100,7 @@ public class WorkerManager {
                             .luaScriptExecutor(luaScriptExecutor)
                             .limiterManager(limiterManager)
                             .workerManager(this)
+                            .chatSafetyCheckService(chatSafetyCheckService)
                             .build();
                     workerContext.start();
                     runningWorkers.put(channel.getChannelCode(), workerContext);

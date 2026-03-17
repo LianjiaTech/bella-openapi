@@ -131,7 +131,9 @@ public class StreamCompletionCallback implements Callbacks.StreamCompletionCallb
         try {
             callback(response);
         } finally {
-            sse.completeWithError(exception);
+            if(sse != null) {
+                sse.completeWithError(exception);
+            }
             log();
         }
     }

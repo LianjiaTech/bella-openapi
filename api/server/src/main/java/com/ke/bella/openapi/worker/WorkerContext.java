@@ -4,6 +4,8 @@ import com.ke.bella.openapi.TaskExecutor;
 import com.ke.bella.openapi.client.OpenapiClient;
 import com.ke.bella.openapi.protocol.AdaptorManager;
 import com.ke.bella.openapi.protocol.limiter.LimiterManager;
+import com.ke.bella.openapi.safety.ISafetyCheckService;
+import com.ke.bella.openapi.safety.SafetyCheckRequest;
 import com.ke.bella.openapi.script.LuaScriptExecutor;
 import com.ke.bella.openapi.tables.pojos.ChannelDB;
 import com.ke.bella.queue.worker.Worker;
@@ -32,6 +34,7 @@ public class WorkerContext {
     private final LuaScriptExecutor luaScriptExecutor;
     private final LimiterManager limiterManager;
     private final WorkerManager workerManager;
+    private final ISafetyCheckService<SafetyCheckRequest.Chat> chatSafetyCheckService;
 
     private volatile BackoffTask backoffTask;
 
@@ -40,6 +43,7 @@ public class WorkerContext {
                 .channel(channel)
                 .adaptorManager(adaptorManager)
                 .openapiClient(openapiClient)
+                .chatSafetyCheckService(chatSafetyCheckService)
                 .build();
         Worker worker = new Worker(taskProcessor::executeTask, openAiService);
         CapacityCalculator capacityCalculator = new CapacityCalculator(channel, redissonClient, luaScriptExecutor, limiterManager);
