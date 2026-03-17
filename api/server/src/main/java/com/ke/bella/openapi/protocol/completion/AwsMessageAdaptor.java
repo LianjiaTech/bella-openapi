@@ -28,7 +28,7 @@ public class AwsMessageAdaptor implements CompletionAdaptor<AwsMessageProperty> 
     @Override
     public CompletionResponse completion(CompletionRequest request, String url, AwsMessageProperty property) {
         MessageRequest messageRequest = TransferToCompletionsUtils.convertRequest(request);
-        request.clearLargeData();
+        clearLargeData(request);
         delegator.createMessages(messageRequest, url, property);
         return (CompletionResponse) EndpointContext.getProcessData().getResponse();
     }
@@ -36,7 +36,7 @@ public class AwsMessageAdaptor implements CompletionAdaptor<AwsMessageProperty> 
     @Override
     public void streamCompletion(CompletionRequest request, String url, AwsMessageProperty property, Callbacks.StreamCompletionCallback callback) {
         MessageRequest messageRequest = TransferToCompletionsUtils.convertRequest(request);
-        request.clearLargeData();
+        clearLargeData(request);
         delegator.streamMessages(messageRequest, url, property, callback);
     }
 }
