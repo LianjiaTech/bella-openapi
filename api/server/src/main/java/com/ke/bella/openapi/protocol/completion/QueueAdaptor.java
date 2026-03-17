@@ -5,7 +5,6 @@ import com.ke.bella.openapi.protocol.Callbacks;
 import com.ke.bella.openapi.utils.JacksonUtils;
 import com.ke.bella.queue.QueueClient;
 import com.theokanning.openai.queue.Put;
-import org.apache.commons.lang3.StringUtils;
 
 public class QueueAdaptor<T extends CompletionProperty> implements CompletionAdaptor<T> {
     private final CompletionAdaptorDelegator<T> delegator;
@@ -47,17 +46,11 @@ public class QueueAdaptor<T extends CompletionProperty> implements CompletionAda
 
     @Override
     public CompletionResponse completion(CompletionRequest request, String url, T property) {
-        if(StringUtils.isNotBlank(property.getDeployName())) {
-            request.setModel(property.getDeployName());
-        }
         return delegator.completion(request, url, property, httpDelegator());
     }
 
     @Override
     public void streamCompletion(CompletionRequest request, String url, T property, Callbacks.StreamCompletionCallback callback) {
-        if(StringUtils.isNotBlank(property.getDeployName())) {
-            request.setModel(property.getDeployName());
-        }
         delegator.streamCompletion(request, url, property, callback, streamDelegator());
     }
 
