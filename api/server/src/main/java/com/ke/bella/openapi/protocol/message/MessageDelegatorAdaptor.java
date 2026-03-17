@@ -51,7 +51,7 @@ public interface MessageDelegatorAdaptor<T extends CompletionProperty> extends M
         // 原有的委托逻辑
         CompletionAdaptor<T> delegator = decorateAdaptor(delegator(), property, EndpointContext.getProcessData());
         CompletionRequest completionRequest = TransferFromCompletionsUtils.convertRequest(request, isNativeSupport());
-        request.clearLargeData();
+        clearLargeData(request);
         CompletionResponse completionResponse = delegator.completion(completionRequest, url, property);
         EndpointContext.getProcessData().setResponse(completionResponse);
         return TransferFromCompletionsUtils.convertResponse(completionResponse, request.getModel());
@@ -74,7 +74,7 @@ public interface MessageDelegatorAdaptor<T extends CompletionProperty> extends M
         // 原有的委托逻辑
         CompletionAdaptor<T> delegator = decorateAdaptor(delegator(), property, EndpointContext.getProcessData());
         CompletionRequest completionRequest = TransferFromCompletionsUtils.convertRequest(request, isNativeSupport());
-        request.clearLargeData();
+        clearLargeData(request);
         delegator.streamCompletion(completionRequest, url, property, callback);
     }
 
