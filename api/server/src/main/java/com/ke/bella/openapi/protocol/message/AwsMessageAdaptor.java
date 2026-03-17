@@ -42,6 +42,7 @@ public class AwsMessageAdaptor implements MessageAdaptor<AwsMessageProperty> {
     @Override
     public MessageResponse createMessages(MessageRequest request, String url, AwsMessageProperty property) {
         String model = request.getModel();
+        Boolean stream = request.getStream();
         request.setModel(null);
         request.setStream(null);
         if(request.getMaxTokens() == null) {
@@ -51,6 +52,8 @@ public class AwsMessageAdaptor implements MessageAdaptor<AwsMessageProperty> {
 
         // 序列化请求并立即清理大型数据以释放内存
         byte[] requestBytes = JacksonUtils.toByte(request);
+        request.setModel(model);
+        request.setStream(stream);
         clearLargeData(request);
 
         BedrockRuntimeClient client = AwsClientManager.client(property.getRegion(), url, property.getAuth().getApiKey(),
@@ -72,6 +75,7 @@ public class AwsMessageAdaptor implements MessageAdaptor<AwsMessageProperty> {
     @Override
     public void streamMessages(MessageRequest request, String url, AwsMessageProperty property, Callbacks.StreamCompletionCallback callback) {
         String model = request.getModel();
+        Boolean stream = request.getStream();
         request.setModel(null);
         request.setStream(null);
         if(request.getMaxTokens() == null) {
@@ -82,7 +86,8 @@ public class AwsMessageAdaptor implements MessageAdaptor<AwsMessageProperty> {
         // 序列化请求并立即清理大型数据以释放内存
         byte[] requestBytes = JacksonUtils.toByte(request);
         clearLargeData(request);
-
+        request.setModel(model);
+        request.setStream(stream);
         BedrockRuntimeAsyncClient client = AwsClientManager.asyncClient(property.getRegion(), url, property.getAuth().getApiKey(),
                 property.getAuth().getSecret());
         InvokeModelWithResponseStreamRequest streamRequest = InvokeModelWithResponseStreamRequest.builder()
