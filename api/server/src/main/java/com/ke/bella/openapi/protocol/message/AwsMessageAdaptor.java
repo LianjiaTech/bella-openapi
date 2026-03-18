@@ -170,12 +170,14 @@ public class AwsMessageAdaptor implements MessageAdaptor<AwsMessageProperty> {
         @Override
         public void accept(Throwable throwable) {
             log.warn(throwable.getMessage(), throwable);
-            if(throwable instanceof BedrockRuntimeException) {
-                BedrockRuntimeException bedrockException = (BedrockRuntimeException) throwable;
+            Throwable cause = throwable instanceof java.util.concurrent.CompletionException && throwable.getCause() != null
+                    ? throwable.getCause() : throwable;
+            if(cause instanceof BedrockRuntimeException) {
+                BedrockRuntimeException bedrockException = (BedrockRuntimeException) cause;
                 callback.finish(new BellaException.ChannelException(bedrockException.statusCode(), bedrockException.getMessage()));
                 return;
             }
-            callback.finish(BellaException.fromException(throwable));
+            callback.finish(BellaException.fromException(cause));
         }
     }
 }
