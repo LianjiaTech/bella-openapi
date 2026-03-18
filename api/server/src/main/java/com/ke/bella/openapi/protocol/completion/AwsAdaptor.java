@@ -16,6 +16,7 @@ import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamMetada
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamRequest;
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamResponseHandler;
 
+import java.util.concurrent.CompletionException;
 import java.util.function.Consumer;
 
 @Slf4j
@@ -118,12 +119,13 @@ public class AwsAdaptor implements CompletionAdaptor<AwsProperty> {
         @Override
         public void accept(Throwable throwable) {
             log.warn(throwable.getMessage(), throwable);
-            if(throwable instanceof BedrockRuntimeException) {
-                BedrockRuntimeException bedrockException = (BedrockRuntimeException) throwable;
+            Throwable cause = throwable instanceof CompletionException && throwable.getCause() != null ? throwable.getCause() : throwable;
+            if(cause instanceof BedrockRuntimeException) {
+                BedrockRuntimeException bedrockException = (BedrockRuntimeException) cause;
                 callback.finish(new BellaException.ChannelException(bedrockException.statusCode(), bedrockException.getMessage()));
                 return;
             }
-            callback.finish(BellaException.fromException(throwable));
+            callback.finish(BellaException.fromException(cause));
         }
     }
 }

@@ -22,6 +22,7 @@ import software.amazon.awssdk.services.bedrockruntime.model.InvokeModelWithRespo
 import software.amazon.awssdk.services.bedrockruntime.model.PayloadPart;
 
 import java.util.UUID;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
@@ -170,12 +171,13 @@ public class AwsMessageAdaptor implements MessageAdaptor<AwsMessageProperty> {
         @Override
         public void accept(Throwable throwable) {
             log.warn(throwable.getMessage(), throwable);
-            if(throwable instanceof BedrockRuntimeException) {
-                BedrockRuntimeException bedrockException = (BedrockRuntimeException) throwable;
+            Throwable cause = throwable instanceof CompletionException && throwable.getCause() != null ? throwable.getCause() : throwable;
+            if(cause instanceof BedrockRuntimeException) {
+                BedrockRuntimeException bedrockException = (BedrockRuntimeException) cause;
                 callback.finish(new BellaException.ChannelException(bedrockException.statusCode(), bedrockException.getMessage()));
                 return;
             }
-            callback.finish(BellaException.fromException(throwable));
+            callback.finish(BellaException.fromException(cause));
         }
     }
 }
