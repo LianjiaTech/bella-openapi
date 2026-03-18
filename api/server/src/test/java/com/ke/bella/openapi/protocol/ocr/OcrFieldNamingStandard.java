@@ -40,8 +40,12 @@ public class OcrFieldNamingStandard {
         ALLOWED_FIELD_NAMES.add("valid_date");          // 有效期
 
         // 特殊字段
-        ALLOWED_FIELD_NAMES.add("eep_number");          // 通行证号
-		ALLOWED_FIELD_NAMES.add("issue_times");         // 签发次数，港澳台居民居住证、台胞证、返乡证
+        ALLOWED_FIELD_NAMES.add("eep_number");          // 通行证号（港澳台居民居住证）
+        ALLOWED_FIELD_NAMES.add("issue_times");         // 签发次数，港澳台居民居住证、台胞证、返乡证
+        ALLOWED_FIELD_NAMES.add("permit_number");       // 证件号码（港澳台居民往来大陆/内地通行证）
+        ALLOWED_FIELD_NAMES.add("name_en");             // 英文姓名
+        ALLOWED_FIELD_NAMES.add("idcard_name");         // 身份证姓名（港澳台居民往来大陆/内地通行证）
+        ALLOWED_FIELD_NAMES.add("mrz");                 // MRZ码
 
         // 通用OCR字段
         ALLOWED_FIELD_NAMES.add("words");               // 识别出的文字列表
