@@ -1,4 +1,4 @@
-import {ApikeyInfo, CreateSubApikeyRequest, Page, UpdateSubApikeyRequest, TransferApikeyRequest, ApikeyTransferLog} from "@/lib/types/openapi";
+import {ApikeyInfo, CreateSubApikeyRequest, Page, UpdateSubApikeyRequest, TransferApikeyRequest, ApikeyTransferLog, UpdateManagerRequest} from "@/lib/types/openapi";
 import { openapi } from '@/lib/api/openapi';
 import { ApiKeyBalance } from "@/lib/types/openapi";
 
@@ -104,6 +104,17 @@ export async function getApiKeyBalance(akCode: string): Promise<ApiKeyBalance | 
     } catch (error) {
         console.error('Error fetching API key balance:', error);
         return null;
+    }
+}
+
+// 更新管理人
+export async function updateManager(request: UpdateManagerRequest): Promise<boolean> {
+    try {
+        const response = await openapi.post<boolean>('/console/apikey/manager/update', request);
+        return response.data ?? false;
+    } catch (error) {
+        console.error('Error updating manager:', error);
+        throw error;
     }
 }
 

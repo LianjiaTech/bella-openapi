@@ -105,13 +105,34 @@ public class ApikeyRepo extends StatusRepo<ApikeyDB, ApikeyRecord, String> imple
      */
     @Transactional
     public int batchUpdateByParentCode(ApikeyDB updateDB, String parentCode) {
-        return db.update(APIKEY)
-                .set(APIKEY.OWNER_TYPE, updateDB.getOwnerType())
-                .set(APIKEY.OWNER_CODE, updateDB.getOwnerCode())
-                .set(APIKEY.OWNER_NAME, updateDB.getOwnerName())
-                .set(APIKEY.MUID, updateDB.getMuid())
-                .set(APIKEY.MU_NAME, updateDB.getMuName())
-                .where(APIKEY.PARENT_CODE.eq(parentCode))
-                .execute();
+        if(updateDB.getOwnerType() != null && updateDB.getManagerCode() != null) {
+            return db.update(APIKEY)
+                    .set(APIKEY.OWNER_TYPE, updateDB.getOwnerType())
+                    .set(APIKEY.OWNER_CODE, updateDB.getOwnerCode())
+                    .set(APIKEY.OWNER_NAME, updateDB.getOwnerName())
+                    .set(APIKEY.MANAGER_CODE, updateDB.getManagerCode())
+                    .set(APIKEY.MANAGER_NAME, updateDB.getManagerName())
+                    .set(APIKEY.MUID, updateDB.getMuid())
+                    .set(APIKEY.MU_NAME, updateDB.getMuName())
+                    .where(APIKEY.PARENT_CODE.eq(parentCode))
+                    .execute();
+        } else if(updateDB.getManagerCode() != null) {
+            return db.update(APIKEY)
+                    .set(APIKEY.MANAGER_CODE, updateDB.getManagerCode())
+                    .set(APIKEY.MANAGER_NAME, updateDB.getManagerName())
+                    .set(APIKEY.MUID, updateDB.getMuid())
+                    .set(APIKEY.MU_NAME, updateDB.getMuName())
+                    .where(APIKEY.PARENT_CODE.eq(parentCode))
+                    .execute();
+        } else {
+            return db.update(APIKEY)
+                    .set(APIKEY.OWNER_TYPE, updateDB.getOwnerType())
+                    .set(APIKEY.OWNER_CODE, updateDB.getOwnerCode())
+                    .set(APIKEY.OWNER_NAME, updateDB.getOwnerName())
+                    .set(APIKEY.MUID, updateDB.getMuid())
+                    .set(APIKEY.MU_NAME, updateDB.getMuName())
+                    .where(APIKEY.PARENT_CODE.eq(parentCode))
+                    .execute();
+        }
     }
 }

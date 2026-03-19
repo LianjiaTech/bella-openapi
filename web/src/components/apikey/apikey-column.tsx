@@ -9,11 +9,12 @@ import {CertifyDialog, DeleteDialog, QuotaDialog, RenameDialog, ResetDialog, Ser
 import {HoverContext} from "@/components/ui/data-table";
 import {Badge} from "@/components/ui/badge"
 import {Button} from "@/components/ui/button"
-import {Copy, Wallet, Users, ArrowRightLeft} from 'lucide-react'
+import {Copy, Wallet, Users, ArrowRightLeft, UserCog} from 'lucide-react'
 import {useToast} from "@/hooks/use-toast";
 import {safety_apply_url} from "@/config";
 import {ApiKeyBalanceDialog, ApiKeyBalanceIndicator} from "./apikey-balance";
 import {TransferDialog} from "./transfer-dialog";
+import {ManagerDialog} from "./manager-dialog";
 import {getSafetyLevel} from "@/lib/api/apikey";
 
 interface EditableCellProps {
@@ -67,11 +68,12 @@ const RemarkCell = ({ value }: { value: string }) => {
     )
 }
 
-const ActionCell = ({code, name, displayAk, refresh, showApikey}: { code: string, name: string, displayAk: string, refresh: () => void, showApikey: (apikey: string) => void }) => {
+const ActionCell = ({code, name, displayAk, managerName, refresh, showApikey, updateApiKeyInPlace}: { code: string, name: string, displayAk: string, managerName: string, refresh: () => void, showApikey: (apikey: string) => void, updateApiKeyInPlace?: (code: string, updates: Partial<ApikeyInfo>) => void }) => {
     const router = useRouter()
     const { toast } = useToast();
     const [showBalance, setShowBalance] = useState(false);
     const [showTransferDialog, setShowTransferDialog] = useState(false);
+    const [showManagerDialog, setShowManagerDialog] = useState(false);
 
 
     const copyToClipboard = () => {
@@ -86,6 +88,10 @@ const ActionCell = ({code, name, displayAk, refresh, showApikey}: { code: string
 
     const handleTransfer = () => {
         setShowTransferDialog(true)
+    }
+
+    const handleSetManager = () => {
+        setShowManagerDialog(true)
     }
 
 
@@ -143,6 +149,24 @@ const ActionCell = ({code, name, displayAk, refresh, showApikey}: { code: string
                 </TooltipProvider>
             </Button>
             <Button
+                onClick={handleSetManager}
+                variant="ghost"
+                size="icon"
+                className="p-0 focus:ring-0"
+            >
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <div>
+                                <UserCog className="h-4 w-4" />
+                                <span className="sr-only">设置管理人</span>
+                            </div>
+                        </TooltipTrigger>
+                        <TooltipContent>设置管理人{managerName ? `（${managerName}）` : ''}</TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+            </Button>
+            <Button
                 onClick={() => setShowBalance(true)}
                 variant="ghost"
                 size="icon"
@@ -169,6 +193,17 @@ const ActionCell = ({code, name, displayAk, refresh, showApikey}: { code: string
                 akCode={code}
                 displayName={displayAk}
                 onTransferSuccess={refresh}
+            />
+            <ManagerDialog
+                isOpen={showManagerDialog}
+                onClose={() => setShowManagerDialog(false)}
+                akCode={code}
+                currentManagerName={managerName}
+                onSuccess={(managerCode, managerName) => {
+                    if (updateApiKeyInPlace) {
+                        updateApiKeyInPlace(code, { managerCode, managerName })
+                    }
+                }}
             />
         </div>
     )
@@ -298,15 +333,24 @@ export const ApikeyColumns = (refresh: () => void, showApikey: (apikey : string)
         cell: ({row}) => <RemarkCell value={row.original.remark}/>,
     },
     {
+        accessorKey: "managerName",
+        header: "管理人",
+        cell: ({row}) => (
+            <span className="text-sm text-gray-600">{row.original.managerName || '/'}</span>
+        ),
+    },
+    {
         id: "actions",
         header: "",
         cell: ({row}) => (
-            <ActionCell 
-                code={row.original.code} 
-                name={row.original.name} 
+            <ActionCell
+                code={row.original.code}
+                name={row.original.name}
                 displayAk={row.original.akDisplay}
-                refresh={refresh} 
+                managerName={row.original.managerName || ''}
+                refresh={refresh}
                 showApikey={showApikey}
+                updateApiKeyInPlace={updateApiKeyInPlace}
             />
         ),
     },

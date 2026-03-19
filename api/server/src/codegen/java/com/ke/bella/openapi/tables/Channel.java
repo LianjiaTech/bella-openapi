@@ -215,7 +215,7 @@ public class Channel extends TableImpl<ChannelRecord> {
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.<Index>asList(Indexes.CHANNEL_IDX_ENTITY_TYPE_CODE, Indexes.CHANNEL_IDX_PROTOCOL, Indexes.CHANNEL_IDX_SUPPLIER);
+        return Arrays.<Index>asList(Indexes.CHANNEL_IDX_ENTITY_TYPE_CODE, Indexes.CHANNEL_IDX_PROTOCOL, Indexes.CHANNEL_IDX_QUEUE_NAME, Indexes.CHANNEL_IDX_SUPPLIER);
     }
 
     @Override

@@ -58,6 +58,7 @@ import static com.ke.bella.openapi.common.EntityConstants.CONSOLE;
 import static com.ke.bella.openapi.common.EntityConstants.INACTIVE;
 import static com.ke.bella.openapi.common.EntityConstants.ORG;
 import static com.ke.bella.openapi.common.EntityConstants.PERSON;
+import static com.ke.bella.openapi.common.EntityConstants.PROJECT;
 import static com.ke.bella.openapi.common.EntityConstants.SYSTEM;
 
 @Slf4j
@@ -129,6 +130,17 @@ public class ApikeyService {
         db.setOwnerType(op.getOwnerType());
         db.setOwnerCode(op.getOwnerCode());
         db.setOwnerName(op.getOwnerName());
+        // 管理人：若未指定，person 类型默认为自身 owner
+        if (StringUtils.isNotEmpty(op.getManagerCode())) {
+            db.setManagerCode(op.getManagerCode());
+            db.setManagerName(op.getManagerName());
+        } else if (PERSON.equals(op.getOwnerType())) {
+            db.setManagerCode(op.getOwnerCode());
+            db.setManagerName(op.getOwnerName());
+        } else {
+            db.setManagerCode("");
+            db.setManagerName("");
+        }
         db.setRoleCode(StringUtils.isEmpty(op.getRoleCode()) ? basicRoleCode : op.getRoleCode());
         db.setSafetyLevel(basicSafetyLevel);
         db.setMonthQuota(op.getMonthQuota() == null ? BigDecimal.valueOf(basicMonthQuota) : op.getMonthQuota());
@@ -353,14 +365,39 @@ public class ApikeyService {
         return apikeyCostRepo.queryByAkCode(akCode);
     }
 
+    @Transactional
+    public void updateManager(ApikeyOps.ManagerOp op) {
+        apikeyRepo.checkExist(op.getCode(), true);
+        // 只有 owner 或 admin 可以设置管理人
+        checkOwnerPermission(op.getCode());
+        ApikeyDB existing = apikeyRepo.queryByUniqueKey(op.getCode());
+        ApikeyDB db = new ApikeyDB();
+        db.setManagerCode(StringUtils.defaultString(op.getManagerCode(), ""));
+        db.setManagerName(StringUtils.defaultString(op.getManagerName(), ""));
+        apikeyRepo.fillUpdatorInfo(db);
+        apikeyRepo.update(db, op.getCode());
+        // 同步更新子 ak 的管理人（含操作人审计信息）
+        apikeyRepo.batchUpdateByParentCode(db, op.getCode());
+        // 清除主 ak 及所有子 ak 的缓存（manager 变更影响权限校验）
+        ApikeyService self = applicationContext.getBean(ApikeyService.class);
+        self.clearApikeyCache(existing.getAkSha());
+        ApikeyOps.ApikeyCondition childCondition = new ApikeyOps.ApikeyCondition();
+        childCondition.setParentCode(op.getCode());
+        List<ApikeyDB> children = apikeyRepo.listAccessKeys(childCondition);
+        children.forEach(child -> self.clearApikeyCache(child.getAkSha()));
+    }
+
     private void checkPermission(String code) {
         ApikeyDB db = apikeyRepo.queryByUniqueKey(code);
         ApikeyInfo apikeyInfo = EndpointContext.getApikeyIgnoreNull();
         if(apikeyInfo == null) {
             Operator op = BellaContext.getOperator();
-            Assert.isTrue(
-                    (db.getOwnerType().equals(PERSON) || db.getOwnerType().equals(CONSOLE)) && db.getOwnerCode().equals(op.getUserId().toString()),
-                    "没有操作权限");
+            String userId = op.getUserId().toString();
+            // owner 或 manager 均有操作权限
+            boolean isOwner = (db.getOwnerType().equals(PERSON) || db.getOwnerType().equals(CONSOLE))
+                    && db.getOwnerCode().equals(userId);
+            boolean isManager = StringUtils.isNotEmpty(db.getManagerCode()) && db.getManagerCode().equals(userId);
+            Assert.isTrue(isOwner || isManager, "没有操作权限");
             return;
         }
         if(apikeyInfo.getOwnerType().equals(SYSTEM)) {
@@ -371,7 +408,46 @@ public class ApikeyService {
         if(db.getOwnerType().equals(SYSTEM)) {
             throw new BellaException.AuthorizationException("没有操作权限");
         }
-        if(db.getOwnerType().equals(ORG)) {
+        if(db.getOwnerType().equals(ORG) || db.getOwnerType().equals(PROJECT)) {
+            // org/project 类型：manager 使用 person apikey 操作时，ownerCode 即为用户身份标识
+            boolean isManager = StringUtils.isNotEmpty(db.getManagerCode())
+                    && (PERSON.equals(apikeyInfo.getOwnerType()) || CONSOLE.equals(apikeyInfo.getOwnerType()))
+                    && db.getManagerCode().equals(apikeyInfo.getOwnerCode());
+            if(!isManager) {
+                validateOrgPermission(apikeyInfo, Sets.newHashSet(db.getOwnerCode()), orgCodes);
+            }
+        } else {
+            // person 类型：owner 或 manager
+            boolean isManager = StringUtils.isNotEmpty(db.getManagerCode())
+                    && db.getManagerCode().equals(apikeyInfo.getOwnerCode());
+            if(!isManager) {
+                validateUserPermission(apikeyInfo, db.getOwnerCode());
+            }
+        }
+    }
+
+    /**
+     * 仅允许 owner（非 manager）执行的操作权限校验，如设置管理人
+     */
+    private void checkOwnerPermission(String code) {
+        ApikeyDB db = apikeyRepo.queryByUniqueKey(code);
+        ApikeyInfo apikeyInfo = EndpointContext.getApikeyIgnoreNull();
+        if(apikeyInfo == null) {
+            Operator op = BellaContext.getOperator();
+            Assert.isTrue(
+                    (db.getOwnerType().equals(PERSON) || db.getOwnerType().equals(CONSOLE))
+                            && db.getOwnerCode().equals(op.getUserId().toString()),
+                    "没有操作权限");
+            return;
+        }
+        if(apikeyInfo.getOwnerType().equals(SYSTEM)) {
+            return;
+        }
+        Set<String> orgCodes = new HashSet<>();
+        if(db.getOwnerType().equals(SYSTEM)) {
+            throw new BellaException.AuthorizationException("没有操作权限");
+        }
+        if(db.getOwnerType().equals(ORG) || db.getOwnerType().equals(PROJECT)) {
             validateOrgPermission(apikeyInfo, Sets.newHashSet(db.getOwnerCode()), orgCodes);
         } else {
             validateUserPermission(apikeyInfo, db.getOwnerCode());

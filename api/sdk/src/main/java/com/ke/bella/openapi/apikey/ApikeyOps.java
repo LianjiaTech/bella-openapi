@@ -24,6 +24,18 @@ public class ApikeyOps {
         private String roleCode;
         private BigDecimal monthQuota;
         private String remark;
+        private String managerCode;
+        private String managerName;
+    }
+
+    @Data
+    @SuperBuilder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class ManagerOp extends Operator {
+        private String code;
+        private String managerCode;
+        private String managerName;
     }
 
     @Data

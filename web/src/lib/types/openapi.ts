@@ -33,6 +33,8 @@ export interface ApikeyInfo {
     ownerType: string;
     ownerCode: string;
     ownerName: string;
+    managerCode: string;
+    managerName: string;
     roleCode: string;
     safetyLevel: number;
     monthQuota: number;
@@ -40,6 +42,12 @@ export interface ApikeyInfo {
     status: string;
     remark: string;
     userId: number;
+}
+
+export interface UpdateManagerRequest {
+    code: string;
+    managerCode: string;
+    managerName: string;
 }
 
 export interface RolePath {
