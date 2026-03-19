@@ -1,4 +1,4 @@
-import {ApikeyInfo, CreateSubApikeyRequest, Page, UpdateSubApikeyRequest, TransferApikeyRequest, ApikeyTransferLog} from "@/lib/types/openapi";
+import {ApikeyInfo, CreateSubApikeyRequest, Page, UpdateSubApikeyRequest, TransferApikeyRequest, ApikeyTransferLog, UpdateManagerRequest} from "@/lib/types/openapi";
 import { openapi } from '@/lib/api/openapi';
 import { ApiKeyBalance } from "@/lib/types/openapi";
 
@@ -20,6 +20,7 @@ export function getSafetyLevel(level: number) : string {
 export interface AdminApikeyQueryOptions {
     searchParam?: string | null;
     ownerSearch?: string | null;
+    managerSearch?: string | null;
     ownerType?: string;
     ownerCode?: string;
     parentCode?: string;
@@ -29,18 +30,26 @@ export async function getAdminApikeyInfos(
     page: number,
     options: AdminApikeyQueryOptions = {},
 ): Promise<Page<ApikeyInfo> | null> {
-    const { searchParam, ownerSearch, ownerType, ownerCode, parentCode } = options;
+    const { searchParam, ownerSearch, managerSearch, ownerType, ownerCode, parentCode } = options;
     const response = await openapi.get<Page<ApikeyInfo>>(`/console/apikey/page`, {
         params: {
             status: 'active',
             searchParam: searchParam || undefined,
             ownerSearch: ownerSearch || undefined,
+            managerSearch: managerSearch || undefined,
             ownerType,
             ownerCode,
             parentCode,
             includeChild: !!parentCode,
             page,
         }
+    });
+    return response.data;
+}
+
+export async function getManagerApikeyInfos(page: number, managerCode: string, search: string | null): Promise<Page<ApikeyInfo> | null> {
+    const response = await openapi.get<Page<ApikeyInfo>>(`/console/apikey/page`, {
+        params: { status: 'active', managerCode, searchParam: search || undefined, page }
     });
     return response.data;
 }
@@ -57,9 +66,22 @@ export async function getApikeyInfos(page: number, ownerCode: number | null, sea
     }
 }
 
-export async function applyApikey(ownerCode: string, ownerName: string): Promise<string> {
-    const response = await openapi.post<string>(`/console/apikey/apply`,
-        {ownerType:'person', ownerCode: ownerCode, ownerName: ownerName, monthQuota: 50});
+export interface ApplyApikeyOp {
+    ownerType: string;
+    ownerUserId?: number;  // person 类型时推荐使用，后端按 source 规则自动计算 ownerCode
+    ownerCode?: string;
+    ownerName?: string;
+    managerCode?: string;
+    managerName?: string;
+    monthQuota?: number;
+    roleCode?: string;
+}
+
+export async function applyApikey(op: ApplyApikeyOp): Promise<string> {
+    const response = await openapi.post<string>(`/console/apikey/apply`, {
+        ...op,
+        monthQuota: op.monthQuota ?? 50,
+    });
     return response.data;
 }
 
@@ -132,6 +154,17 @@ export async function getApiKeyBalance(akCode: string): Promise<ApiKeyBalance | 
     } catch (error) {
         console.error('Error fetching API key balance:', error);
         return null;
+    }
+}
+
+// 更新管理人
+export async function updateManager(request: UpdateManagerRequest): Promise<boolean> {
+    try {
+        const response = await openapi.post<boolean>('/console/apikey/manager/update', request);
+        return response.data ?? false;
+    } catch (error) {
+        console.error('Error updating manager:', error);
+        throw error;
     }
 }
 

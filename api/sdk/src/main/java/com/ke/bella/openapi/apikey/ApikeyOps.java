@@ -19,11 +19,25 @@ public class ApikeyOps {
     public static class ApplyOp extends Operator {
         private String name;
         private String ownerType;
+        private Long ownerUserId;  // 通过 userId 查用户，后端自动计算正确的 ownerCode（person 类型时使用）
         private String ownerCode;
         private String ownerName;
         private String roleCode;
         private BigDecimal monthQuota;
         private String remark;
+        private String managerCode;
+        private String managerName;
+    }
+
+    @Data
+    @SuperBuilder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class ManagerOp extends Operator {
+        private String code;
+        private Long managerUserId;  // 通过 userId 查用户，后端自动计算正确的 managerCode
+        private String managerCode;
+        private String managerName;
     }
 
     @Data
@@ -104,6 +118,8 @@ public class ApikeyOps {
         private String serviceId;
         private String searchParam; // name / serviceId的模糊搜索
         private String ownerSearch; // ownerName / ownerCode的模糊搜索
+        private String managerCode; // 精确匹配管理人
+        private String managerSearch; // managerName / managerCode的模糊搜索
         private String outEntityCode;
         private boolean includeChild;
         private String status;

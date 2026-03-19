@@ -30,6 +30,8 @@ public class ApikeyDB implements Operator, Serializable {
     private String        ownerType;
     private String        ownerCode;
     private String        ownerName;
+    private String        managerCode;
+    private String        managerName;
     private String        roleCode;
     private String        certifyCode;
     private String        safetySceneCode;
@@ -58,6 +60,8 @@ public class ApikeyDB implements Operator, Serializable {
         this.ownerType = value.ownerType;
         this.ownerCode = value.ownerCode;
         this.ownerName = value.ownerName;
+        this.managerCode = value.managerCode;
+        this.managerName = value.managerName;
         this.roleCode = value.roleCode;
         this.certifyCode = value.certifyCode;
         this.safetySceneCode = value.safetySceneCode;
@@ -85,6 +89,8 @@ public class ApikeyDB implements Operator, Serializable {
         String        ownerType,
         String        ownerCode,
         String        ownerName,
+        String        managerCode,
+        String        managerName,
         String        roleCode,
         String        certifyCode,
         String        safetySceneCode,
@@ -110,6 +116,8 @@ public class ApikeyDB implements Operator, Serializable {
         this.ownerType = ownerType;
         this.ownerCode = ownerCode;
         this.ownerName = ownerName;
+        this.managerCode = managerCode;
+        this.managerName = managerName;
         this.roleCode = roleCode;
         this.certifyCode = certifyCode;
         this.safetySceneCode = safetySceneCode;
@@ -277,6 +285,34 @@ public class ApikeyDB implements Operator, Serializable {
      */
     public void setOwnerName(String ownerName) {
         this.ownerName = ownerName;
+    }
+
+    /**
+     * Getter for <code>apikey.manager_code</code>. 管理人编码
+     */
+    public String getManagerCode() {
+        return this.managerCode;
+    }
+
+    /**
+     * Setter for <code>apikey.manager_code</code>. 管理人编码
+     */
+    public void setManagerCode(String managerCode) {
+        this.managerCode = managerCode;
+    }
+
+    /**
+     * Getter for <code>apikey.manager_name</code>. 管理人姓名
+     */
+    public String getManagerName() {
+        return this.managerName;
+    }
+
+    /**
+     * Setter for <code>apikey.manager_name</code>. 管理人姓名
+     */
+    public void setManagerName(String managerName) {
+        this.managerName = managerName;
     }
 
     /**
@@ -476,6 +512,8 @@ public class ApikeyDB implements Operator, Serializable {
         sb.append(", ").append(ownerType);
         sb.append(", ").append(ownerCode);
         sb.append(", ").append(ownerName);
+        sb.append(", ").append(managerCode);
+        sb.append(", ").append(managerName);
         sb.append(", ").append(roleCode);
         sb.append(", ").append(certifyCode);
         sb.append(", ").append(safetySceneCode);
