@@ -3,7 +3,7 @@
 import React, {useEffect, useState, useMemo, useCallback} from "react"
 import {useParams, useRouter} from "next/navigation"
 import {DataTable} from "@/components/ui/data-table"
-import {getApikeyInfos, getApikeyByCode, getSafetyLevel} from "@/lib/api/apikey"
+import {getApikeyInfos, getAdminApikeyInfos, getApikeyByCode, getSafetyLevel} from "@/lib/api/apikey"
 import {SubApikeyColumns} from "@/components/apikey/sub-apikey-column"
 import {ApikeyInfo} from "@/lib/types/openapi"
 import {ClientHeader} from "@/components/user/client-header"
@@ -12,6 +12,7 @@ import {Input} from "@/components/ui/input"
 import {ArrowLeft, ChevronLeft, ChevronRight, Plus, Search} from "lucide-react"
 import {useUser} from "@/lib/context/user-context"
 import {useToast} from "@/hooks/use-toast"
+import {hasPermission} from "@/lib/api/userInfo"
 import {SubApikeyDialog} from "@/components/apikey/sub-apikey-dialog"
 import {CopyApikeyDialog} from "@/components/apikey/copy-apikey-dialog";
 
@@ -29,6 +30,8 @@ const SubApikeyPage: React.FC = () => {
     const [showSubApikeyDialog, setShowSubApikeyDialog] = useState<boolean>(false)
     const {userInfo} = useUser()
     const {toast} = useToast()
+    // hasPermission('/console/**') 等价于 roleCode ∈ {console, all}，即管理员角色
+    const isAdmin = useMemo(() => hasPermission(userInfo, '/console/**'), [userInfo])
     const [newApiKey, setNewApiKey] = useState<string | null>(null)
     const [showCopyDialog, setShowCopyDialog] = useState<boolean>(false)
     const [copied, setCopied] = useState<boolean>(false)
@@ -68,8 +71,10 @@ const SubApikeyPage: React.FC = () => {
         setIsLoading(true)
         if (userInfo) {
             try {
-                // 获取子API Key列表
-                const res = await getApikeyInfos(page, userInfo?.userId || null, searchTerm || null, akCode)
+                // 管理员使用不带 ownerCode 限制的接口，普通用户使用带 ownerCode 的接口
+                const res = isAdmin
+                    ? await getAdminApikeyInfos(page, { searchParam: searchTerm || null, parentCode: akCode })
+                    : await getApikeyInfos(page, userInfo?.userId || null, searchTerm || null, akCode)
                 setData(res?.data || null)
                 if (res) {
                     setTotalPages(Math.ceil(res.total / 10))
@@ -83,7 +88,7 @@ const SubApikeyPage: React.FC = () => {
                 setIsLoading(false)
             }
         }
-    }, [page, userInfo, searchTerm, akCode])
+    }, [page, userInfo, searchTerm, akCode, isAdmin])
 
     const loadParentApikey = useCallback(async () => {
         try {

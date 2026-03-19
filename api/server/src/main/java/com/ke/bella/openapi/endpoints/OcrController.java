@@ -17,6 +17,7 @@ import com.ke.bella.openapi.protocol.ocr.OcrContext;
 import com.ke.bella.openapi.protocol.ocr.OcrProperty;
 import com.ke.bella.openapi.protocol.ocr.OcrRequest;
 import com.ke.bella.openapi.protocol.ocr.bankcard.BankcardAdaptor;
+import com.ke.bella.openapi.protocol.ocr.businesslicense.BusinessLicenseAdaptor;
 import com.ke.bella.openapi.protocol.ocr.general.GeneralAdaptor;
 import com.ke.bella.openapi.protocol.ocr.idcard.IdcardAdaptor;
 import com.ke.bella.openapi.protocol.ocr.residence_permit.ResidencePermitAdaptor;
@@ -98,6 +99,18 @@ public class OcrController {
         EndpointContext.setEncodingType(property.getEncodingType());
 
         return adaptor.general(request, ctx.getUrl(), property);
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @PostMapping("/business-license")
+    public Object businessLicense(@RequestBody @Valid OcrRequest request) {
+        OcrContext ctx = OcrContext.initialize(request, endpointDataService, router, limiterManager);
+
+        BusinessLicenseAdaptor adaptor = adaptorManager.getProtocolAdaptor(ctx.getEndpoint(), ctx.getProtocol(), BusinessLicenseAdaptor.class);
+        OcrProperty property = (OcrProperty) JacksonUtils.deserialize(ctx.getChannelInfo(), adaptor.getPropertyClass());
+        EndpointContext.setEncodingType(property.getEncodingType());
+
+        return adaptor.businessLicense(request, ctx.getUrl(), property);
     }
 
 }
