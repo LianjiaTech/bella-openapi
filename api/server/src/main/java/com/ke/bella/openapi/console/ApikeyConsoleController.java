@@ -8,7 +8,7 @@ import com.ke.bella.openapi.apikey.ApikeyOps;
 import com.ke.bella.openapi.apikey.ApikeyTransferLog;
 import com.ke.bella.openapi.apikey.TransferApikeyOwnerOp;
 import com.ke.bella.openapi.db.repo.Page;
-import com.ke.bella.openapi.protocol.limiter.QpsLimiterManager;
+import com.ke.bella.openapi.protocol.limiter.manager.QpsLimiterManager;
 import com.ke.bella.openapi.protocol.limiter.QpsRankEntry;
 import com.ke.bella.openapi.service.ApikeyService;
 import com.ke.bella.openapi.tables.pojos.ApikeyDB;
