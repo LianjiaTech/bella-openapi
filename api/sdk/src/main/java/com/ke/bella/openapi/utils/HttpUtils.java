@@ -265,6 +265,9 @@ public class HttpUtils {
                 } else {
                     if(errorCallback != null) {
                         errorCallback.callback(result, response);
+                    } else {
+                        String message = "供应商返回：code: " + response.code() + " message: " + response.message();
+                        throw new BellaException.ChannelException(response.code(), message);
                     }
                 }
             }
