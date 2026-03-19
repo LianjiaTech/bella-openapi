@@ -69,8 +69,23 @@ public class VertexConverter {
     }
 
     public static CompletionResponse convertToOpenAIResponse(GeminiResponse vertexResponse) {
-        if(vertexResponse == null || CollectionUtils.isEmpty(vertexResponse.getCandidates())) {
+        if(vertexResponse == null) {
             return CompletionResponse.builder().build();
+        }
+        if(CollectionUtils.isEmpty(vertexResponse.getCandidates())) {
+            String content = vertexResponse.getPromptFeedback() != null
+                    ? JacksonUtils.serialize(vertexResponse.getPromptFeedback()) : "";
+            return CompletionResponse.builder()
+                    .id(vertexResponse.getResponseId())
+                    .object("chat.completion")
+                    .created(DateTimeUtils.getCurrentSeconds())
+                    .model(vertexResponse.getModelVersion())
+                    .choices(Collections.singletonList(CompletionResponse.Choice.builder()
+                            .index(0)
+                            .message(Message.builder().role("assistant").content(content).build())
+                            .finish_reason("content_filter")
+                            .build()))
+                    .build();
         }
 
         List<CompletionResponse.Choice> choices = new ArrayList<>();
@@ -102,6 +117,16 @@ public class VertexConverter {
                 .model(geminiResponse.getModelVersion());
 
         boolean isFinal = false;
+        // candidates 为空说明被安全策略拦截，将 promptFeedback 作为 content 输出
+        if(CollectionUtils.isEmpty(geminiResponse.getCandidates()) && geminiResponse.getPromptFeedback() != null) {
+            String content = JacksonUtils.serialize(geminiResponse.getPromptFeedback());
+            builder.choices(Collections.singletonList(StreamCompletionResponse.Choice.builder()
+                    .index(0)
+                    .delta(Message.builder().role("assistant").content(content).build())
+                    .finish_reason("content_filter")
+                    .build()));
+            return builder.build();
+        }
         // 处理第一个候选项（通常 Gemini 只返回一个候选）
         if(CollectionUtils.isNotEmpty(geminiResponse.getCandidates())) {
             isFinal = geminiResponse.getCandidates().get(0).getFinishReason() != null;
