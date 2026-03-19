@@ -391,9 +391,9 @@ public class ApikeyService {
         ApikeyDB db = apikeyRepo.queryByUniqueKey(code);
         ApikeyInfo apikeyInfo = EndpointContext.getApikeyIgnoreNull();
         if(apikeyInfo == null) {
+            // Console 登录态：以 userId 作为用户身份标识
             Operator op = BellaContext.getOperator();
             String userId = op.getUserId().toString();
-            // owner 或 manager 均有操作权限
             boolean isOwner = (db.getOwnerType().equals(PERSON) || db.getOwnerType().equals(CONSOLE))
                     && db.getOwnerCode().equals(userId);
             boolean isManager = StringUtils.isNotEmpty(db.getManagerCode()) && db.getManagerCode().equals(userId);
@@ -403,26 +403,24 @@ public class ApikeyService {
         if(apikeyInfo.getOwnerType().equals(SYSTEM)) {
             return;
         }
-        // todo: 获取所有 org
-        Set<String> orgCodes = new HashSet<>();
         if(db.getOwnerType().equals(SYSTEM)) {
             throw new BellaException.AuthorizationException("没有操作权限");
         }
+        // manager_code 存储的是人的身份标识，只有 person/console 类型的 apikey 才能代表某个人的身份。
+        // 若请求方为 org/project/system 类型，不允许通过 manager 身份绕过 owner 权限校验。
+        boolean callerIsPersonal = PERSON.equals(apikeyInfo.getOwnerType()) || CONSOLE.equals(apikeyInfo.getOwnerType());
+        boolean isManager = callerIsPersonal
+                && StringUtils.isNotEmpty(db.getManagerCode())
+                && db.getManagerCode().equals(apikeyInfo.getOwnerCode());
+        if(isManager) {
+            return;
+        }
+        // todo: 获取所有 org
+        Set<String> orgCodes = new HashSet<>();
         if(db.getOwnerType().equals(ORG) || db.getOwnerType().equals(PROJECT)) {
-            // org/project 类型：manager 使用 person apikey 操作时，ownerCode 即为用户身份标识
-            boolean isManager = StringUtils.isNotEmpty(db.getManagerCode())
-                    && (PERSON.equals(apikeyInfo.getOwnerType()) || CONSOLE.equals(apikeyInfo.getOwnerType()))
-                    && db.getManagerCode().equals(apikeyInfo.getOwnerCode());
-            if(!isManager) {
-                validateOrgPermission(apikeyInfo, Sets.newHashSet(db.getOwnerCode()), orgCodes);
-            }
+            validateOrgPermission(apikeyInfo, Sets.newHashSet(db.getOwnerCode()), orgCodes);
         } else {
-            // person 类型：owner 或 manager
-            boolean isManager = StringUtils.isNotEmpty(db.getManagerCode())
-                    && db.getManagerCode().equals(apikeyInfo.getOwnerCode());
-            if(!isManager) {
-                validateUserPermission(apikeyInfo, db.getOwnerCode());
-            }
+            validateUserPermission(apikeyInfo, db.getOwnerCode());
         }
     }
 
