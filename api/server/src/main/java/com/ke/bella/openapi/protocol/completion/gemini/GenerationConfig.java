@@ -42,8 +42,17 @@ public class GenerationConfig {
     @Builder
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class ThinkingConfig {
-        private Integer thinkingBudget = -1;
-        private boolean includeThoughts = true;
+        private Integer thinkingBudget;
+        private Boolean includeThoughts;
+        private ThinkingLevel thinkingLevel;
+    }
+
+	public enum ThinkingLevel {
+		THINKING_LEVEL_UNSPECIFIED,
+		LOW,
+		MEDIUM,
+		HIGH,
+		MINIMAL
     }
 
     @Data

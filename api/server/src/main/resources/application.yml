@@ -56,6 +56,8 @@ springdoc:
 
 
 bella:
+  console:
+    user-quota-edit-enabled: false
   limiter:
     qps:
       default-limit: 200

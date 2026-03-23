@@ -21,6 +21,10 @@ public abstract class OcrLogHandler implements EndpointLogHandler {
         metrics.put("ttlt", ttlt);
 
         processData.setMetrics(metrics);
-        processData.setUsage(1);
+        if(processData.getResponse() != null && processData.getResponse().getError() == null) {
+            processData.setUsage(1);
+        } else {
+            processData.setUsage(0);
+        }
     }
 }

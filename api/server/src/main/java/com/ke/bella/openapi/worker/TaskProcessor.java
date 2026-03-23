@@ -39,13 +39,16 @@ public class TaskProcessor {
     private final ISafetyCheckService<SafetyCheckRequest.Chat> chatSafetyCheckService;
 
     public void executeTask(TaskWrapper taskWrapper) {
+        String taskId = taskWrapper.getTask().getTaskId();
+        log.info("Task started, taskId: {}, channel: {}", taskId, channel.getChannelCode());
         try {
             OpenapiResponse response = processRequest(taskWrapper.getTask().getData(), taskWrapper);
             if(response != null) {
                 taskWrapper.markComplete(createResult(response));
+                log.info("Task completed, taskId: {}, channel: {}", taskId, channel.getChannelCode());
             }
         } catch (Exception e) {
-            log.error("Task execution failed for channel: {}", channel.getChannelCode(), e);
+            log.error("Task execution failed, taskId: {}, channel: {}", taskId, channel.getChannelCode(), e);
             OpenapiResponse errorResponse = OpenapiResponse.errorResponse(
                     OpenapiResponse.OpenapiError.builder().httpCode(500).message(e.getMessage()).build());
             taskWrapper.markComplete(createResult(errorResponse));

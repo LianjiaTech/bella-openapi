@@ -280,7 +280,7 @@ public class CostCalculator {
             ImagesResponse.Usage imageEditsUsage = (ImagesResponse.Usage) usage;
             BigDecimal editCost = BigDecimal.ZERO;
 
-            if(price != null) {
+            if(price != null && (price.getPricePerEdit() != null || price.getImageTokenPrice() != null)) {
 
                 int editCount = imageEditsUsage.getNum();
                 if(price.getPricePerEdit() != null) {
@@ -291,6 +291,17 @@ public class CostCalculator {
                     BigDecimal imageTokenCost = price.getImageTokenPrice()
                             .multiply(BigDecimal.valueOf(imageEditsUsage.getTotal_tokens() / 1000.0));
                     editCost = editCost.add(imageTokenCost);
+                }
+            } else if(imageEditsUsage.getTotal_tokens() != null) {
+                // 临时补丁：priceInfo 格式不兼容时，尝试直接读取 imageOutput 字段兜底计算
+                com.fasterxml.jackson.databind.JsonNode node = JacksonUtils.deserialize(priceInfo);
+                if(node != null) {
+                    com.fasterxml.jackson.databind.JsonNode imageOutputNode = node.path("tiers").path(0).path("inputRangePrice").path("imageOutput");
+                    if(!imageOutputNode.isMissingNode() && !imageOutputNode.isNull()) {
+                        log.warn("images_edits price format mismatch, fallback to imageOutput calculation, priceInfo={}", priceInfo);
+                        BigDecimal imageOutput = imageOutputNode.decimalValue();
+                        editCost = imageOutput.multiply(BigDecimal.valueOf(imageEditsUsage.getTotal_tokens() / 1000.0));
+                    }
                 }
             }
 

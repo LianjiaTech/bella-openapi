@@ -42,6 +42,7 @@ public class WorkerStreamingCallback extends StreamCompletionCallback {
         result.put("status_code", 200);
         result.put("stream", true);
         taskWrapper.markComplete(result);
+        log.info("Stream task completed, taskId: {}", taskWrapper.getTask().getTaskId());
     }
 
     @Override
@@ -51,6 +52,8 @@ public class WorkerStreamingCallback extends StreamCompletionCallback {
         result.put("status_code", Optional.ofNullable(openapiError.getHttpCode()).orElse(500));
         result.put("error", openapiError.getMessage());
         taskWrapper.markComplete(result);
+        log.error("Stream task failed, taskId: {}, httpCode: {}, error: {}",
+                taskWrapper.getTask().getTaskId(), openapiError.getHttpCode(), openapiError.getMessage());
     }
 
 }
