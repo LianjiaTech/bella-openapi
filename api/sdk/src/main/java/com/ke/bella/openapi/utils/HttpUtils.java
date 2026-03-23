@@ -256,22 +256,36 @@ public class HttpUtils {
                 result = responseConvert.apply(response.body().bytes());
             }
             if(response.code() > 299) {
-                if(result == null) {
+                if(errorCallback != null && !isEmptyResult(result)) {
+                    errorCallback.callback(result, response);
+                } else {
                     if(response.code() > 499 && response.code() < 600) {
                         String message = "供应商返回：code: " + response.code() + " message: " + response.message();
                         throw new BellaException.ChannelException(503, message);
                     }
                     throw new BellaException.ChannelException(response.code(), response.message());
-                } else {
-                    if(errorCallback != null) {
-                        errorCallback.callback(result, response);
-                    }
                 }
             }
             return result;
         } catch (IOException e) {
             throw BellaException.fromException(e);
         }
+    }
+
+    private static boolean isEmptyResult(Object result) {
+        if(result == null) {
+            return true;
+        }
+        for(java.lang.reflect.Field field : result.getClass().getDeclaredFields()) {
+            field.setAccessible(true);
+            try {
+                if(field.get(result) != null) {
+                    return false;
+                }
+            } catch (IllegalAccessException ignored) {
+            }
+        }
+        return true;
     }
 
     public static byte[] doHttpRequest(Request request) {
