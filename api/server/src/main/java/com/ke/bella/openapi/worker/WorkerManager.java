@@ -55,6 +55,14 @@ public class WorkerManager {
     @Getter
     private double remainingCapacityThreshold;
 
+    @Value("${bella.openapi.as-worker.min-age-seconds:1}")
+    @Getter
+    private long minAgeSeconds;
+
+    @Value("${bella.openapi.as-worker.max-concurrency:100}")
+    @Getter
+    private int maxConcurrency;
+
     private OpenAiService openAiService;
 
     private final Map<String, WorkerContext> runningWorkers = new ConcurrentHashMap<>();
@@ -68,7 +76,7 @@ public class WorkerManager {
             } catch (Exception e) {
                 log.error("Failed to refresh workers", e);
             }
-        }, 60 * 10);
+        }, 60 * 2);
     }
 
     private void refreshWorkers() {
