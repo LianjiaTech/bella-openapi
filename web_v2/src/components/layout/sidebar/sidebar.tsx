@@ -32,7 +32,8 @@ import {
 import { useLanguage } from "../../providers/language-provider"
 import { cn } from "@/lib/utils"
 import { SettingsDialog } from "./settings-dialog"
-
+import { logout } from '@/lib/api/auth';
+import { useRouter } from 'next/navigation';
 
 interface NavItem {
   label: string;
@@ -73,6 +74,7 @@ export default function Sidebar() {
   const { t } = useLanguage();
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const router = useRouter();
 
   const toggleExpanded = (label: string) => {
     setExpandedItems(prev => {
@@ -212,8 +214,11 @@ export default function Sidebar() {
         </button>
 
         {/* 登出按钮 - 保持原有 Link 行为 */}
-        <Link
-          href="/logout"
+        <button
+          onClick={() => {
+            logout();
+            window.location.href = '/login';
+          }}
           className={cn(
             "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
             pathname === "/logout"
@@ -223,7 +228,7 @@ export default function Sidebar() {
         >
           <LogOut className="h-5 w-5" />
           {t("logout")}
-        </Link>
+        </button>
       </div>
 
       {/* 设置弹窗 */}

@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import "../globals.css";
 import { LanguageProvider } from "@/components/providers/language-provider";
 import { ThemeProvider } from "@/components/providers/theme-provider";
+import { AuthProvider } from "@/components/providers/auth-provider";
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
+import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
   title: "Bella OpenAPI",
@@ -26,7 +28,10 @@ export default async function RootLayout({
         <NextIntlClientProvider messages={messages}>
           <ThemeProvider>
             <LanguageProvider>
-              {children}
+              <AuthProvider>
+                {children}
+                <Toaster />
+              </AuthProvider>
             </LanguageProvider>
           </ThemeProvider>
         </NextIntlClientProvider>

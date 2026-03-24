@@ -1,6 +1,6 @@
 "use client"
 
-import React, { createContext, useState, useEffect, useContext, useRef } from "react"
+import React, { createContext, useState, useEffect, useContext, useCallback, useRef } from "react"
 import { getUserInfo, login as apiLogin, logout as apiLogout, getOAuthConfig as apiGetOAuthConfig } from "@/lib/api/auth"
 import type { UserInfo, OAuthConfig } from "@/lib/types/auth"
 
@@ -63,7 +63,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
    * - client.ts自动处理跳转到企业登录页
    * - 不需要前端显式重定向到/login
    */
-  const initAuth = async () => {
+  const initAuth = useCallback(async () => {
     try {
       setIsLoading(true)
       const userInfo = await getUserInfo()
@@ -82,7 +82,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setIsLoading(false)
       setIsInitialized(true)
     }
-  }
+  }, [])
 
   /**
    * 密钥登录
@@ -100,7 +100,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
    * }
    * ```
    */
-  const login = async (secret: string) => {
+  const login = useCallback(async (secret: string) => {
     try {
       setIsLoading(true)
       setError(null)
@@ -113,7 +113,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [])
 
   /**
    * 登出
@@ -125,7 +125,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
    * router.push('/login')
    * ```
    */
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
       setIsLoading(true)
       await apiLogout()
@@ -142,7 +142,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         sessionStorage.clear()
       }
     }
-  }
+  }, [])
 
   /**
    * 刷新用户信息
@@ -155,7 +155,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
    * await refreshUser()
    * ```
    */
-  const refreshUser = async () => {
+  const refreshUser = useCallback(async () => {
     try {
       setIsLoading(true)
       const userInfo = await getUserInfo()
@@ -168,7 +168,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [])
 
   /**
    * 获取OAuth配置
@@ -185,9 +185,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
    * })
    * ```
    */
-  const getOAuthConfig = async (redirect?: string) => {
+  const getOAuthConfig = useCallback(async (redirect?: string) => {
     return apiGetOAuthConfig(redirect)
-  }
+  }, [])
 
   return (
     <AuthContext.Provider
