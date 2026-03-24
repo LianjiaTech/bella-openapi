@@ -13,10 +13,15 @@ import com.theokanning.openai.queue.Take;
 import com.theokanning.openai.service.OpenAiService;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.MapUtils;
 import org.redisson.api.RedissonClient;
 
+import com.ke.bella.openapi.utils.JacksonUtils;
+
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.Semaphore;
 
 @Slf4j
 @Builder
@@ -45,7 +50,23 @@ public class WorkerContext {
                 .openapiClient(openapiClient)
                 .chatSafetyCheckService(chatSafetyCheckService)
                 .build();
-        Worker worker = new Worker(taskProcessor::executeTask, openAiService);
+        Map<String, Object> channelInfoMap = JacksonUtils.toMap(channel.getChannelInfo());
+        int channelMaxConcurrency = MapUtils.getInteger(channelInfoMap, "maxWorkerConcurrency", 0);
+        int maxConcurrency = channelMaxConcurrency > 0 ? channelMaxConcurrency : workerManager.getMaxConcurrency();
+        Semaphore semaphore = new Semaphore(maxConcurrency);
+        com.ke.bella.queue.worker.TaskExecutor parallelExecutor = new com.ke.bella.queue.worker.TaskExecutor() {
+            @Override
+            public void submit(com.ke.bella.queue.TaskWrapper task) {
+                semaphore.acquireUninterruptibly();
+                TaskExecutor.submit(() -> taskProcessor.executeTask(task, semaphore::release));
+            }
+
+            @Override
+            public Integer remainingCapacity() {
+                return semaphore.availablePermits();
+            }
+        };
+        Worker worker = new Worker(parallelExecutor, openAiService);
         CapacityCalculator capacityCalculator = new CapacityCalculator(channel, redissonClient, luaScriptExecutor, limiterManager);
         backoffTask = new BackoffTask(worker, capacityCalculator, channel, redissonClient, workerManager);
         TaskExecutor.submit(backoffTask);
@@ -91,11 +112,8 @@ public class WorkerContext {
         }
 
         /**
-         * Worker主循环，实现自适应退避策略：
-         * 1. 有任务且容量充足时：使用最小间隔(5ms)进行快速轮询，最大化吞吐量
-         * 2. 无任务但容量充足时：采用指数退避策略，从1秒开始按2倍递增至最大5秒，减少CPU消耗
-         * 3. 容量不足时：固定等待5秒，避免无效轮询和频繁容量检查
-         * 4. 异常情况时：同样采用指数退避，防止错误传播和资源浪费
+         * Worker主循环，实现自适应退避策略： 1. 有任务且容量充足时：使用最小间隔(5ms)进行快速轮询，最大化吞吐量 2. 无任务但容量充足时：采用指数退避策略，从1秒开始按2倍递增至最大5秒，减少CPU消耗 3. 容量不足时：固定等待5秒，避免无效轮询和频繁容量检查 4.
+         * 异常情况时：同样采用指数退避，防止错误传播和资源浪费
          */
         @Override
         public void run() {
@@ -141,23 +159,21 @@ public class WorkerContext {
             if(!hasCapacity) {
                 return new ProcessResult(false, false);
             }
-
             String level0Queue = String.format(QUEUE_NAME_LEVEL0_TEMPLATE, channel.getQueueName());
             String level1Queue = String.format(QUEUE_NAME_LEVEL1_TEMPLATE, channel.getQueueName());
             Take take = Take.builder()
                     .queues(Arrays.asList(level0Queue, level1Queue))
                     .size(1)
                     .strategy("active_passive")
+                    .minAgeSeconds(workerManager.getMinAgeSeconds())
                     .build();
 
-            boolean hasWork = false;
-            int takedSize;
-            do {
-                takedSize = worker.takeAndRun(take);
-                if(takedSize > 0) {
-                    hasWork = true;
-                }
-            } while (takedSize > 0);
+            if(worker.remainingCapacity() == 0) {
+                log.warn("Thread pool full for channel: {}, waiting 5s", channel.getChannelCode());
+                return new ProcessResult(false, false);
+            }
+            int takedSize = worker.takeAndRun(take);
+            boolean hasWork = takedSize > 0;
 
             return new ProcessResult(hasCapacity, hasWork);
         }
@@ -181,10 +197,7 @@ public class WorkerContext {
         }
 
         /**
-         * 指数退避状态管理器，实现动态间隔调整策略：
-         * - 成功时：立即重置为起始间隔，保持高响应性
-         * - 失败时：按指数增长间隔，最大化系统稳定性
-         * - 边界控制：最小5ms保证响应性，最大5秒防止长时间阻塞
+         * 指数退避状态管理器，实现动态间隔调整策略： - 成功时：立即重置为起始间隔，保持高响应性 - 失败时：按指数增长间隔，最大化系统稳定性 - 边界控制：最小5ms保证响应性，最大5秒防止长时间阻塞
          */
         private class BackoffState {
             private final long MIN_INTERVAL = 5; // 最小间隔5ms

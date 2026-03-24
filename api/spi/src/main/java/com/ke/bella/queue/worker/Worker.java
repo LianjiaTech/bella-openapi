@@ -139,7 +139,7 @@ public class Worker {
 
     private void sendMessage(String instanceId, TaskWrapper.Event<?> event) {
         String streamKey = eventbus.getTopic() + instanceId;
-        long minIdTimestamp = System.currentTimeMillis() - 60_000;
+        long minIdTimestamp = System.currentTimeMillis() - 60_000 * 30;
 
         try (Jedis jedis = jedisPool.getResource()) {
             jedis.xadd(streamKey,
