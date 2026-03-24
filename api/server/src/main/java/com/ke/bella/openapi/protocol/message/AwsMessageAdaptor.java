@@ -9,7 +9,6 @@ import com.ke.bella.openapi.protocol.completion.AwsMessageProperty;
 import com.ke.bella.openapi.protocol.completion.StreamCompletionResponse;
 import com.ke.bella.openapi.utils.JacksonUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient;
@@ -134,31 +133,25 @@ public class AwsMessageAdaptor implements MessageAdaptor<AwsMessageProperty> {
             if(response == null) {
                 return;
             }
-            if(nativeSend) {
-                if("message_delta".equals(response.getType())) {
-                    StreamMessageResponse copy = new StreamMessageResponse();
-                    BeanUtils.copyProperties(response, copy);
-                    StreamMessageResponse.StreamUsage streamUsage = new StreamMessageResponse.StreamUsage();
-                    BeanUtils.copyProperties(copy.getUsage(), streamUsage);
-                    streamUsage.setInputTokens(usage.inputTokens());
-                    streamUsage.setOutputTokens(streamUsage.getOutputTokens() + usage.getOutputTokens());
-                    streamUsage.setCacheReadInputTokens(usage.getCacheReadInputTokens());
-                    streamUsage.setCacheCreationInputTokens(usage.getCacheCreationInputTokens());
-                    copy.setUsage(streamUsage);
-                    callback.send(copy);
-                } else {
-                    callback.send(response);
-                }
-            }
             if("message_start".equals(response.getType()) && response.getMessage() != null) {
                 model = response.getMessage().getModel();
                 id = response.getMessage().getId();
                 usage = response.getMessage().getUsage();
+                if(nativeSend) {
+                    callback.send(response);
+                }
                 return;
             }
             if("message_stop".equals(response.getType())) {
+                if(nativeSend) {
+                    callback.send(response);
+                }
                 callback.done();
                 return;
+            }
+            // nativeSend 和 callback 两条路并行：nativeSend 透传原始 SSE，callback 填充 buffer 用于日志计费
+            if(nativeSend) {
+                callback.send(response);
             }
             StreamCompletionResponse openaiResponse = TransferToCompletionsUtils.convertStreamResponse(response, model, id, toolNum, usage);
             if(openaiResponse == null) {
