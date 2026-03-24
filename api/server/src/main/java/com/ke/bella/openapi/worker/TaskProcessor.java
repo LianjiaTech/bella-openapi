@@ -38,14 +38,19 @@ public class TaskProcessor {
     private final OpenapiClient openapiClient;
     private final ISafetyCheckService<SafetyCheckRequest.Chat> chatSafetyCheckService;
 
-    public void executeTask(TaskWrapper taskWrapper) {
+    public void executeTask(TaskWrapper taskWrapper, Runnable releaseSlot) {
         String taskId = taskWrapper.getTask().getTaskId();
-        log.info("Task started, taskId: {}, channel: {}", taskId, channel.getChannelCode());
+        log.info("Task started, taskId: {}, channel: {}, task: {}", taskId
+                , channel.getChannelCode(), JacksonUtils.serialize(taskWrapper.getTask()));
+        boolean streaming = false;
+        String responseMode = taskWrapper.getTask().getResponseMode();
         try {
-            OpenapiResponse response = processRequest(taskWrapper.getTask().getData(), taskWrapper);
+            OpenapiResponse response = processRequest(taskWrapper.getTask().getData(), taskWrapper, releaseSlot);
             if(response != null) {
                 taskWrapper.markComplete(createResult(response));
                 log.info("Task completed, taskId: {}, channel: {}", taskId, channel.getChannelCode());
+            } else {
+                log.info("Task submitted in stream mode, taskId: {}, channel: {}", taskId, channel.getChannelCode());
             }
         } catch (Exception e) {
             log.error("Task execution failed, taskId: {}, channel: {}", taskId, channel.getChannelCode(), e);
@@ -54,19 +59,22 @@ public class TaskProcessor {
             taskWrapper.markComplete(createResult(errorResponse));
         } finally {
             EndpointContext.clearAll();
+            if(!"streaming".equals(responseMode)) {
+                releaseSlot.run();
+            }
         }
     }
 
-    private OpenapiResponse processRequest(Map<String, Object> requestData, TaskWrapper taskWrapper) {
+    private OpenapiResponse processRequest(Map<String, Object> requestData, TaskWrapper taskWrapper, Runnable releaseSlot) {
         // todo:: support more entity types
         if(EntityConstants.MODEL.equals(channel.getEntityType())) {
-            return processCompletionRequest(requestData, taskWrapper);
+            return processCompletionRequest(requestData, taskWrapper, releaseSlot);
         } else {
             throw new UnsupportedOperationException("Unsupported entity type: " + channel.getEntityType());
         }
     }
 
-    private CompletionResponse processCompletionRequest(Map<String, Object> requestData, TaskWrapper taskWrapper) {
+    private CompletionResponse processCompletionRequest(Map<String, Object> requestData, TaskWrapper taskWrapper, Runnable releaseSlot) {
         CompletionRequest request = JacksonUtils.deserialize(JacksonUtils.serialize(requestData), CompletionRequest.class);
 
         EndpointContext.setEndpointData(CHAT_COMPLETIONS_ENDPOINT, channel.getEntityCode(), request);
@@ -82,7 +90,7 @@ public class TaskProcessor {
             Callbacks.StreamCompletionCallbackNode root = new SplitReasoningCallback(property);
             root.addLast(new ToolCallSimulatorCallback(processData));
             root.addLast(new MergeReasoningCallback(property));
-            root.addLast(new WorkerStreamingCallback(taskWrapper, processData, apikeyInfo, chatSafetyCheckService));
+            root.addLast(new WorkerStreamingCallback(taskWrapper, processData, apikeyInfo, chatSafetyCheckService, releaseSlot));
             adaptor.streamCompletion(request, processData.getForwardUrl(), property, root);
             return null;
         }

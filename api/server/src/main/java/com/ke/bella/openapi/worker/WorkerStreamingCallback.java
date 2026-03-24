@@ -13,18 +13,40 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 public class WorkerStreamingCallback extends StreamCompletionCallback {
 
+    private static final ScheduledExecutorService TIMEOUT_SCHEDULER =
+            Executors.newScheduledThreadPool(1, r -> {
+                Thread t = new Thread(r, "stream-timeout");
+                t.setDaemon(true);
+                return t;
+            });
+    private static final long STREAM_TIMEOUT_MINUTES = 5;
+
     private final TaskWrapper taskWrapper;
     private final AtomicInteger seq = new AtomicInteger(0);
+    private final AtomicBoolean released = new AtomicBoolean(false);
+    private final Runnable releaseSlot;
 
     public WorkerStreamingCallback(TaskWrapper taskWrapper, EndpointProcessData processData, ApikeyInfo apikeyInfo,
-            ISafetyCheckService<SafetyCheckRequest.Chat> safetyService) {
+            ISafetyCheckService<SafetyCheckRequest.Chat> safetyService, Runnable releaseSlot) {
         super(null, processData, apikeyInfo, null, safetyService);
         this.taskWrapper = taskWrapper;
+        this.releaseSlot = releaseSlot;
+        TIMEOUT_SCHEDULER.schedule(() -> {
+            if(released.compareAndSet(false, true)) {
+                log.warn("Stream task timeout after {}min, auto releasing slot, taskId: {}",
+                        STREAM_TIMEOUT_MINUTES, taskWrapper.getTask().getTaskId());
+                releaseSlot.run();
+            }
+        }, STREAM_TIMEOUT_MINUTES, TimeUnit.MINUTES);
     }
 
     @Override
@@ -38,22 +60,34 @@ public class WorkerStreamingCallback extends StreamCompletionCallback {
 
     @Override
     public void finish() {
+        log.info("Stream task completed, taskId: {}", taskWrapper.getTask().getTaskId());
         Map<String, Object> result = new HashMap<>();
         result.put("status_code", 200);
         result.put("stream", true);
-        taskWrapper.markComplete(result);
-        log.info("Stream task completed, taskId: {}", taskWrapper.getTask().getTaskId());
+        try {
+            taskWrapper.markComplete(result);
+        } finally {
+            if(released.compareAndSet(false, true)) {
+                releaseSlot.run();
+            }
+        }
     }
 
     @Override
     public void finish(BellaException exception) {
         OpenapiResponse.OpenapiError openapiError = exception.convertToOpenapiError();
+        log.error("Stream task failed, taskId: {}, httpCode: {}, error: {}",
+                taskWrapper.getTask().getTaskId(), openapiError.getHttpCode(), openapiError.getMessage());
         Map<String, Object> result = new HashMap<>();
         result.put("status_code", Optional.ofNullable(openapiError.getHttpCode()).orElse(500));
         result.put("error", openapiError.getMessage());
-        taskWrapper.markComplete(result);
-        log.error("Stream task failed, taskId: {}, httpCode: {}, error: {}",
-                taskWrapper.getTask().getTaskId(), openapiError.getHttpCode(), openapiError.getMessage());
+        try {
+            taskWrapper.markComplete(result);
+        } finally {
+            if(released.compareAndSet(false, true)) {
+                releaseSlot.run();
+            }
+        }
     }
 
 }
