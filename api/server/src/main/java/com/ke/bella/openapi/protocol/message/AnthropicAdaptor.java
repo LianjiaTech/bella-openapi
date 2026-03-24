@@ -167,12 +167,11 @@ public class AnthropicAdaptor implements MessageAdaptor<AnthropicProperty> {
 
             if(nativeSend) {
                 callback.send(response);
-            } else {
-                StreamCompletionResponse openaiResponse = TransferToCompletionsUtils.convertStreamResponse(
-                        response, originalModel, id, toolNum, usage);
-                if(openaiResponse != null) {
-                    callback.callback(openaiResponse);
-                }
+            }
+            StreamCompletionResponse openaiResponse = TransferToCompletionsUtils.convertStreamResponse(
+                    response, originalModel, id, toolNum, usage);
+            if(openaiResponse != null) {
+                callback.callback(openaiResponse);
             }
         }
 
