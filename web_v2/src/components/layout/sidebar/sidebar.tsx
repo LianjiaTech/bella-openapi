@@ -28,10 +28,14 @@ import {
   LogIn,
   type LucideIcon,
   LogOut,
+  Wand2,
+  MessageCircle,
 } from "lucide-react"
 import { useLanguage } from "../../providers/language-provider"
 import { cn } from "@/lib/utils"
 import { SettingsDialog } from "./settings-dialog"
+import { Button } from '@/components/common/button';
+import { logout } from '@/lib/api/auth';
 
 
 interface NavItem {
@@ -48,22 +52,22 @@ const navItems: NavItem[] = [
     label: 'playground',
     icon: Sparkles,
     children: [
-      { label: 'chat', href: '/playground/chat', icon: MessageSquare },
-      { label: 'embedding', href: '/playground/embedding', icon: Brain },
-      { label: 'audio', href: '/playground/audio', icon: Mic },
-      { label: 'tts', href: '/playground/tts', icon: Volume2 },
-      { label: 'realtime', href: '/playground/realtime', icon: Radio },
-      { label: 'images', href: '/playground/images', icon: ImageIcon },
-      { label: 'knowledge', href: '/playground/knowledge', icon: Database },
-      { label: 'rag', href: '/playground/rag', icon: Network },
-      { label: 'docparse', href: '/playground/docparse', icon: FileText },
-      { label: 'workflow', href: '/playground/workflow', icon: WorkflowIcon },
-      { label: 'search', href: '/playground/search', icon: Search },
+      { label: 'intelligentQA', href: '/playground/chat', icon: MessageSquare },
+      { label: 'vectorization', href: '/playground/embedding', icon: Brain },
+      { label: 'speechSynthesis', href: '/playground/audio/tts', icon: Mic },
+      { label: 'speechRecognition', href: '/playground/audio/asr/flash', icon: Volume2 },
+      { label: 'realtimeRecognition', href: '/playground/audio/asr/realtime/transcription', icon: Radio },
+      { label: 'realtimeConversation', href: '/playground/audio/asr/realtime/chat', icon: MessageCircle },
+      { label: 'textToImage', href: '/playground/images/generations', icon: ImageIcon },
+      { label: 'imageToImage', href: '/playground/images/edits', icon: Wand2 },
+      { label: 'documentParsing', href: '/playground/docparse', icon: FileText },
+      { label: 'aiWorkflow', href: '/playground/workflow', icon: WorkflowIcon },
+      // { label: 'search', href: '/playground/search', icon: Search },
       { label: 'ocr', href: '/playground/ocr', icon: ScanText },
     ]
   },
   { label: 'apiKeys', href: '/api-keys', icon: Key },
-  { label: 'logs', href: '/analytics', icon: ScrollText },
+  { label: 'logs', href: '/logs', icon: ScrollText },
   { label: 'modelStatus', href: '/status', icon: HelpCircle },
   { label: 'metadata', href: '/metadata', icon: FolderTree },
 ];
@@ -102,7 +106,7 @@ export default function Sidebar() {
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
             <Sparkles className="h-5 w-5 text-primary-foreground" />
           </div>
-          <span className="text-lg font-semibold text-sidebar-foreground">Bella</span>
+          <span className="text-lg font-semibold text-sidebar-foreground">OpenAPI 服务平台</span>
         </Link>
       </div>
 
@@ -212,8 +216,11 @@ export default function Sidebar() {
         </button>
 
         {/* 登出按钮 - 保持原有 Link 行为 */}
-        <Link
-          href="/logout"
+        <button
+          onClick={() => {
+            logout();
+            window.location.href = '/login';
+          }}
           className={cn(
             "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
             pathname === "/logout"
@@ -223,7 +230,7 @@ export default function Sidebar() {
         >
           <LogOut className="h-5 w-5" />
           {t("logout")}
-        </Link>
+        </button>
       </div>
 
       {/* 设置弹窗 */}

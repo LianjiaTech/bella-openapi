@@ -69,6 +69,7 @@ const ModelsPage = () => {
    * 处理能力分类变化
    */
   const handleCapabilityChange = useCallback((endpoint: string) => {
+    console.log('endpoint', endpoint);
     setSelectedCapability(endpoint)
     setSelectedTags([])
   }, [])
@@ -166,7 +167,7 @@ const ModelsPage = () => {
               overscan={5}
               getItemKey={(model) => model.modelName}
               renderItem={(model) => (
-                <ModelCard model={model} onAddChannel={handleAddChannel} />
+                <ModelCard model={model} onAddChannel={handleAddChannel} selectedCapability={selectedCapability}/>
               )}
               emptyElement={
                 <div className="flex items-center justify-center h-full text-muted-foreground">

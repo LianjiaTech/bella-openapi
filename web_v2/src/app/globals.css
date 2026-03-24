@@ -135,3 +135,34 @@
     display: none; /* Chrome, Safari, Opera */
   }
 }
+@layer components {
+  /* 基础白底卡片 - 适用于所有 dashboard 卡片 */
+  .dashboard-card {
+    @apply rounded-lg bg-card border border-border/50 shadow-sm p-6 transition-all hover:shadow-md;
+  }
+
+  /* 指标统计卡片 - 用于显示数值指标（平均请求数、总限流次数等） */
+  .metric-card {
+    @apply rounded-lg bg-card border border-border/50 shadow-sm p-6 transition-all hover:shadow-md flex items-center justify-between;
+  }
+
+  /* 筛选条件容器 - 用于顶部筛选区域 */
+  .filter-card {
+    @apply rounded-lg bg-card border border-border/50 shadow-sm p-6 transition-all hover:shadow-md space-y-4;
+  }
+
+  /* 渠道状态卡片 - 用于显示渠道状态信息 */
+  .status-card {
+    @apply rounded-lg bg-card border border-border/50 shadow-sm p-6 transition-all hover:shadow-md flex items-center gap-3;
+  }
+
+  /* 小号 padding 变体 */
+  .dashboard-card-sm {
+    @apply rounded-lg bg-card border border-border/50 shadow-sm p-4 transition-all hover:shadow-md;
+  }
+
+  /* 大号 padding 变体 */
+  .dashboard-card-lg {
+    @apply rounded-lg bg-card border border-border/50 shadow-sm p-8 transition-all hover:shadow-md;
+  }
+}

@@ -5,13 +5,17 @@ import { Model, ModelProperties } from "@/lib/types/openapi"
 import { formatPriceInfo } from "@/lib/utils/price"
 import { BaseModelCard, InfoRow } from "@/components/ui/baseModelCard"
 import { useLanguage } from "@/components/providers/language-provider"
+import { getPlaygroundPath } from "@/lib/utils"
+import { useMemo } from "react"
 
 interface ModelCardProps {
   model: Model
   onAddChannel?: (model: Model) => void
+  selectedCapability: string
 }
 
-export function ModelCard({ model, onAddChannel }: ModelCardProps) {
+export function ModelCard({ model, onAddChannel, selectedCapability }: ModelCardProps) {
+  console.log(model,'模型信息》〉》')
   const { t } = useLanguage()
   // 使用工具函数格式化价格信息
   const priceInfo = formatPriceInfo(model.priceDetails)
@@ -26,6 +30,13 @@ export function ModelCard({ model, onAddChannel }: ModelCardProps) {
       return {}
     }
   })()
+
+  // 动态计算 playground 路径
+  // 使用 useMemo 缓存计算结果，避免不必要的重新计算
+  // 只有当 model.endpoints 变化时才重新计算
+  const playgroundPath = useMemo(() => {
+    return getPlaygroundPath(selectedCapability)
+  }, [selectedCapability])
 
   return (
     <BaseModelCard
@@ -65,10 +76,10 @@ export function ModelCard({ model, onAddChannel }: ModelCardProps) {
       actionSection={
         <>
           <Button size="sm" className="flex-1" asChild>
-            <Link href={`/playground/chat?model=${model.modelName}`}>{t("tryNow")}</Link>
+            <Link href={`${playgroundPath}?model=${model.modelName}&ocrType=${selectedCapability}`}>{t("tryNow")}</Link>
           </Button>
           <Button size="sm" variant="outline" asChild>
-            <Link href={`/docs/api/${model.modelName}`}>
+            <Link href={`${model.documentUrl}`} target="_blank">
               <ExternalLink className="h-4 w-4" />
             </Link>
           </Button>
