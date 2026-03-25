@@ -6,7 +6,7 @@ import { useAuth } from "@/components/providers/auth-provider"
 import { Button } from "@/components/common/button"
 import { Input } from "@/components/common/input"
 import { Label } from "@/components/common/label"
-import { useToast } from "@/hooks/use-toast"
+import { toast } from "sonner"
 
 interface LoginFormProps {
   redirect?: string
@@ -21,34 +21,27 @@ export function LoginForm({ redirect = '/overview' }: LoginFormProps) {
   const [isLoading, setIsLoading] = useState(false)
   const { login } = useAuth()
   const router = useRouter()
-  const { toast } = useToast()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (!secret.trim()) {
-      toast({
-        title: '错误',
-        description: '请输入密钥',
-        variant: 'destructive'
-      })
+      toast.error('请输入密钥')
+
       return
     }
 
     setIsLoading(true)
     try {
       await login(secret)
-      toast({
-        title: '登录成功',
-        description: '欢迎回来！'
-      })
+      toast.success('登录成功')
       router.push(redirect)
     } catch (error) {
-      toast({
-        title: '登录失败',
-        description: error instanceof Error ? error.message : '密钥无效',
-        variant: 'destructive'
-      })
+      const errorMessage = error instanceof Error
+        ? error.message
+        : '登录失败，请检查密钥是否正确';
+      toast.error(errorMessage);
+
     } finally {
       setIsLoading(false)
     }

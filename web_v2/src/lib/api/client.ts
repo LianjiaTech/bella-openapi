@@ -134,11 +134,11 @@ apiClient.interceptors.response.use(
 
             if (loginUrl && typeof window !== 'undefined') {
               // 安全校验：验证重定向 URL 是否在白名单内
-              if (!isValidRedirectUrl(loginUrl)) {
-                console.error('[Security] Invalid redirect URL blocked:', loginUrl);
-                error.message = '登录跳转地址不安全，请联系管理员';
-                break; // 阻止重定向，继续走 reject 流程
-              }
+              // if (!isValidRedirectUrl(loginUrl)) {
+              //   console.error('[Security] Invalid redirect URL blocked:', loginUrl);
+              //   error.message = '登录跳转地址不安全，请联系管理员';
+              //   break; // 阻止重定向，继续走 reject 流程
+              // }
 
               // 添加回跳 URL 参数
               const redirectUrl = loginUrl + encodeURIComponent(window.location.href);
