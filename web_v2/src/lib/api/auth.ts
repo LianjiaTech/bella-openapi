@@ -5,8 +5,19 @@
  */
 
 import { get, post } from './client'
-import { AxiosError } from 'axios';
-import type { UserInfo, OAuthConfig, LoginResponse } from '@/lib/types/auth'
+import type { UserInfo, OAuthConfig, LoginRequest, LoginResponse } from '@/lib/types/auth'
+
+/**
+ * 获取API路径前缀
+ * Mock模式下使用 /api 前缀（Next.js API Routes）
+ * 真实后端模式下直接使用原路径（通过 rewrites 转发）
+ */
+function getApiPath(path: string): string {
+  const useMock = typeof window !== 'undefined' &&
+    process.env.NEXT_PUBLIC_USE_MOCK === 'true'
+
+  return useMock ? `/api${path}` : path
+}
 
 /**
  * 获取当前用户信息
@@ -21,7 +32,7 @@ import type { UserInfo, OAuthConfig, LoginResponse } from '@/lib/types/auth'
  */
 export async function getUserInfo(): Promise<UserInfo | null> {
   try {
-    const data = await get<UserInfo>('/console/userInfo')
+    const data = await get<UserInfo>(getApiPath('/console/userInfo'))
 
     // 验证返回数据是否包含userId
     if (data?.userId) {
@@ -29,10 +40,9 @@ export async function getUserInfo(): Promise<UserInfo | null> {
     }
 
     return null
-  } catch (error: unknown) {
-    const axiosError = error as AxiosError;
+  } catch (error: any) {
     // 401错误表示未登录，不抛出错误
-    if (axiosError?.response?.status === 401) {
+    if (error?.response?.status === 401) {
       return null
     }
 
@@ -55,9 +65,8 @@ export async function getUserInfo(): Promise<UserInfo | null> {
  */
 export async function login(secret: string): Promise<UserInfo> {
   const response = await post<LoginResponse>(
-    '/openapi/login',
-    { secret },
-    { timeout: 10000 } // 10秒超时
+    getApiPath('/openapi/login'),
+    { secret } as LoginRequest
   )
 
   // 验证响应数据
@@ -79,7 +88,7 @@ export async function login(secret: string): Promise<UserInfo> {
  * - 用户点击登出按钮
  */
 export async function logout(): Promise<void> {
-  await post('/openapi/logout')
+  await post(getApiPath('/openapi/logout'))
 }
 
 /**
@@ -95,7 +104,7 @@ export async function logout(): Promise<void> {
  */
 export async function getOAuthConfig(redirect?: string): Promise<OAuthConfig> {
   const params = redirect ? { redirect } : {}
-  const data = await get<OAuthConfig>('/openapi/oauth/config', params)
+  const data = await get<OAuthConfig>(getApiPath('/openapi/oauth/config'), params)
 
   return data
 }

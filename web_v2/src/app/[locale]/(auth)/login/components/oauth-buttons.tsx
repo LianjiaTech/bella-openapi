@@ -4,7 +4,6 @@
 import { useEffect, useState } from "react"
 import { useAuth } from "@/components/providers/auth-provider"
 import { Button } from "@/components/common/button"
-// import { useToast } from "@/hooks/use-toast"
 import { Github } from "lucide-react"
 import type { OAuthProvider } from "@/lib/types/auth"
 
@@ -20,7 +19,6 @@ export function OAuthButtons({ redirect = '/overview' }: OAuthButtonsProps) {
   const [providers, setProviders] = useState<OAuthProvider[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const { getOAuthConfig } = useAuth()
-//   const { toast } = useToast()
 
   useEffect(() => {
     loadOAuthProviders()
@@ -32,11 +30,7 @@ export function OAuthButtons({ redirect = '/overview' }: OAuthButtonsProps) {
       setProviders(config.providers)
     } catch (error) {
       console.error('Failed to load OAuth config:', error)
-      // toast({
-      //   title: '错误',
-      //   description: '无法加载登录选项',
-      //   variant: 'destructive'
-      // })
+      
       setProviders([])
     } finally {
       setIsLoading(false)
