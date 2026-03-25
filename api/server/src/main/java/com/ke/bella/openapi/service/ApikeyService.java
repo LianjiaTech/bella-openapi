@@ -523,18 +523,14 @@ public class ApikeyService {
             return;
         }
         // Console 登录态：普通用户只能查自己为管理人的 AK
-        if(op != null) {
-            boolean isAdmin = apikeyInfo != null &&
-                    (EntityConstants.CONSOLE.equals(apikeyInfo.getRoleCode()) || EntityConstants.ALL.equals(apikeyInfo.getRoleCode()));
-            if(!isAdmin) {
-                String userId = op.getUserId().toString();
-                if(StringUtils.isNotEmpty(condition.getManagerCode())) {
-                    Assert.isTrue(userId.equals(condition.getManagerCode()), "没有操作权限");
-                }
-                // 普通用户不允许使用 managerSearch 模糊查询
-                if(StringUtils.isNotEmpty(condition.getManagerSearch())) {
-                    throw new BellaException.AuthorizationException("没有操作权限");
-                }
+        if(op != null && !isAdminOperator()) {
+            String userId = op.getUserId().toString();
+            if(StringUtils.isNotEmpty(condition.getManagerCode())) {
+                Assert.isTrue(userId.equals(condition.getManagerCode()), "没有操作权限");
+            }
+            // 普通用户不允许使用 managerSearch 模糊查询
+            if(StringUtils.isNotEmpty(condition.getManagerSearch())) {
+                throw new BellaException.AuthorizationException("没有操作权限");
             }
         }
     }
@@ -546,13 +542,18 @@ public class ApikeyService {
             if(op == null || CollectionUtils.isNotEmpty(condition.getOrgCodes())) {
                 throw new BellaException.AuthorizationException("没有操作权限");
             }
-            // 管理员判断：roleCode ∈ {console, all}，与前端 hasPermission('/console/**') 等价
-            boolean isManager = apikeyInfo != null &&
-                    (EntityConstants.CONSOLE.equals(apikeyInfo.getRoleCode()) || EntityConstants.ALL.equals(apikeyInfo.getRoleCode()));
-            if(!isManager) {
+            if(!isAdminOperator()) {
                 if(StringUtils.isNotEmpty(condition.getPersonalCode())) {
                     Assert.isTrue(op.getUserId().toString().equals(condition.getPersonalCode()), "没有操作权限");
+                } else if(condition instanceof ApikeyOps.ApikeyCondition
+                        && StringUtils.isNotEmpty(((ApikeyOps.ApikeyCondition) condition).getParentCode())) {
+                    // 查子AK：校验当前用户对父AK有权限（owner或manager），子AK ownerType 不受限，不叠加 personalCode
+                    checkPermission(((ApikeyOps.ApikeyCondition) condition).getParentCode());
+                } else if(condition instanceof ApikeyOps.ApikeyCondition
+                        && StringUtils.isNotEmpty(((ApikeyOps.ApikeyCondition) condition).getManagerCode())) {
+                    // 按 managerCode 筛选：由 fillManagerCode 负责校验，不叠加 personalCode
                 } else {
+                    // 默认只查自己 own 的 AK
                     condition.setPersonalCode(op.getUserId().toString());
                 }
             }

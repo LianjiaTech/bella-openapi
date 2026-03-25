@@ -57,7 +57,7 @@ export async function getManagerApikeyInfos(page: number, managerCode: string, s
 export async function getApikeyInfos(page: number, ownerCode: number | null, search: string | null, parentCode?: string): Promise<Page<ApikeyInfo> | null> {
     try {
         const response = await openapi.get<Page<ApikeyInfo>>(`/console/apikey/page`, {
-            params: { status: 'active', ownerType:'person', ownerCode: ownerCode, searchParam: search, page, parentCode: parentCode, includeChild: !!parentCode }
+            params: { status: 'active', ownerType: parentCode ? undefined : 'person', ownerCode: parentCode ? undefined : ownerCode, searchParam: search, page, parentCode: parentCode, includeChild: !!parentCode }
         });
         return response.data;
     } catch (error) {
