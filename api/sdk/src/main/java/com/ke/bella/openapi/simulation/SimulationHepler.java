@@ -96,6 +96,7 @@ public class SimulationHepler {
                 .content(prompt)
                 .build();
         return CompletionRequest.builder()
+                .model(req.getModel())
                 .user(req.getUser())
                 .temperature(req.getTemperature())
                 .top_p(req.getTop_p())
