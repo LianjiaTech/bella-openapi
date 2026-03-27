@@ -1,13 +1,10 @@
 package com.ke.bella.openapi.protocol.asr.flash;
 
 import com.ke.bella.openapi.EndpointProcessData;
-import com.ke.bella.openapi.server.OpenAiServiceFactory;
-import com.theokanning.openai.file.FileUrl;
-import com.theokanning.openai.service.OpenAiService;
+import com.ke.bella.openapi.service.AudioFileService;
 import com.ke.bella.openapi.common.exception.BellaException;
 import com.ke.bella.openapi.protocol.asr.QwenProperty;
 import com.ke.bella.openapi.protocol.asr.AsrRequest;
-import com.theokanning.openai.file.File;
 import com.ke.bella.openapi.utils.HttpUtils;
 import com.ke.bella.openapi.utils.JacksonUtils;
 import okhttp3.MediaType;
@@ -21,13 +18,12 @@ import org.springframework.util.StringUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.UUID;
 
 @Component("QwenFlashAsr")
 public class QwenAdaptor implements FlashAsrAdaptor<QwenProperty> {
 
     @Autowired
-    private OpenAiServiceFactory openAiServiceFactory;
+    private AudioFileService audioFileService;
 
     @Override
     public FlashAsrResponse asr(AsrRequest request, String url, QwenProperty property, EndpointProcessData processData) {
@@ -51,17 +47,8 @@ public class QwenAdaptor implements FlashAsrAdaptor<QwenProperty> {
     }
 
     private String uploadAudioAndGetUrl(AsrRequest request) {
-        OpenAiService openAiService = openAiServiceFactory.create();
-
-        // Upload file with proper filename based on format
-        String filename = UUID.randomUUID().toString() + "_audio." + (request.getFormat() != null ? request.getFormat() : "wav");
-
-        // Create file upload request
-        File openAiFile = openAiService.uploadFile("temp", request.getContent(), filename);
-
-        FileUrl fileUrlResponse = openAiService.retrieveFileUrl(openAiFile.getId());
-
-        return fileUrlResponse.getUrl();
+        String filename = "audio." + (request.getFormat() != null ? request.getFormat() : "wav");
+        return audioFileService.uploadAndGetUrl(request.getContent(), filename);
     }
 
     private QwenFlashAsrRequest buildAliRequest(AsrRequest request, String audioUrl, QwenProperty property) {

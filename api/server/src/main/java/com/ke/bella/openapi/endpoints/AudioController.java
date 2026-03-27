@@ -34,6 +34,7 @@ import com.ke.bella.openapi.protocol.speaker.SpeakerEmbeddingResponse;
 import com.ke.bella.openapi.protocol.tts.TtsAdaptor;
 import com.ke.bella.openapi.protocol.tts.TtsProperty;
 import com.ke.bella.openapi.protocol.tts.TtsRequest;
+import com.ke.bella.openapi.service.AudioFileService;
 import com.ke.bella.openapi.service.EndpointDataService;
 import com.ke.bella.openapi.tables.pojos.ChannelDB;
 import com.ke.bella.openapi.utils.JacksonUtils;
@@ -90,6 +91,8 @@ public class AudioController {
     private JobQueueProperties jobQueueProperties;
     @Autowired
     private EndpointDataService endpointDataService;
+    @Autowired
+    private AudioFileService audioFileService;
 
     /**
      * 实时语音识别WebSocket接口
@@ -212,6 +215,15 @@ public class AudioController {
         return TranscriptionsConverter.convertFlashAsrToOpenAI(flashResponse, request.getResponseFormat());
     }
 
+    @PostMapping(value = "/transcriptions/file/upload", consumes = "multipart/form-data")
+    public Map<String, String> uploadAudioFile(@RequestPart("file") MultipartFile file) throws IOException {
+        String filename = file.getOriginalFilename() != null ? file.getOriginalFilename() : "audio.wav";
+        String url = audioFileService.uploadAndGetUrl(file.getBytes(), filename);
+        Map<String, String> result = new HashMap<>();
+        result.put("url", url);
+        return result;
+    }
+
     @PostMapping("/transcriptions/file")
     public AudioTranscriptionResp transcribeAudio(@RequestBody AudioTranscriptionReq audioTranscriptionReq) {
         validateRequestParams(audioTranscriptionReq);
@@ -272,8 +284,8 @@ public class AudioController {
         if(audioTranscriptionReq.getModel() == null || audioTranscriptionReq.getModel().isEmpty()) {
             throw new IllegalArgumentException("Model is required");
         }
-        if(audioTranscriptionReq.getCallbackUrl() == null || audioTranscriptionReq.getCallbackUrl().isEmpty()) {
-            throw new IllegalArgumentException("Callback url is required");
+        if(audioTranscriptionReq.getCallbackUrl() == null) {
+            audioTranscriptionReq.setCallbackUrl("");
         }
         if(audioTranscriptionReq.getUrl() == null || audioTranscriptionReq.getUrl().isEmpty()) {
             throw new IllegalArgumentException("Url is required");
