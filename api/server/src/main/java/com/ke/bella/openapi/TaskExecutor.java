@@ -12,6 +12,20 @@ public class TaskExecutor {
     static ThreadFactory tf = new NamedThreadFactory("bella-worker-", true);
     static ScheduledExecutorService executor = Executors.newScheduledThreadPool(1000, tf);
 
+    static {
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            executor.shutdown();
+            try {
+                if(!executor.awaitTermination(60, TimeUnit.SECONDS)) {
+                    executor.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                executor.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+        }, "bella-worker-shutdown"));
+    }
+
     public static CompletableFuture<Void> submit(Runnable r) {
         return CompletableFuture.runAsync(r, executor);
     }
