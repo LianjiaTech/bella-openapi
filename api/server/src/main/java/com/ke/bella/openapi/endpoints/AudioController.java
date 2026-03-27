@@ -272,8 +272,8 @@ public class AudioController {
         if(audioTranscriptionReq.getModel() == null || audioTranscriptionReq.getModel().isEmpty()) {
             throw new IllegalArgumentException("Model is required");
         }
-        if(audioTranscriptionReq.getCallbackUrl() == null || audioTranscriptionReq.getCallbackUrl().isEmpty()) {
-            throw new IllegalArgumentException("Callback url is required");
+        if(audioTranscriptionReq.getCallbackUrl() == null) {
+            audioTranscriptionReq.setCallbackUrl("");
         }
         if(audioTranscriptionReq.getUrl() == null || audioTranscriptionReq.getUrl().isEmpty()) {
             throw new IllegalArgumentException("Url is required");
