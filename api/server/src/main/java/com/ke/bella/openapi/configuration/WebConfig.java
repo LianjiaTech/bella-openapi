@@ -15,7 +15,7 @@ import org.springframework.web.socket.server.standard.ServletServerContainerFact
 
 import com.ke.bella.openapi.common.EntityConstants;
 import com.ke.bella.openapi.intercept.MonthQuotaInterceptor;
-import com.ke.bella.openapi.intercept.QpsRateLimitInterceptor;
+import com.ke.bella.openapi.protocol.limiter.QpsRateLimitInterceptor;
 
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
