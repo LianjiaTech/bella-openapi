@@ -535,9 +535,9 @@ public class TransferToCompletionsUtils {
                 tokensDetail.setCache_creation_tokens(usage.getCache_creation_tokens());
                 usage.setPrompt_tokens_details(tokensDetail);
             }
-            usage.setPrompt_tokens(messageResponse.getUsage().getInputTokens());
+            usage.setPrompt_tokens(messageResponse.getUsage().getTotalInputTokens());
             usage.setCompletion_tokens(messageResponse.getUsage().getOutputTokens());
-            usage.setTotal_tokens(messageResponse.getUsage().getInputTokens() + messageResponse.getUsage().getOutputTokens());
+            usage.setTotal_tokens(messageResponse.getUsage().getTotalInputTokens() + messageResponse.getUsage().getOutputTokens());
             responseBuilder.usage(usage);
         }
 
@@ -640,21 +640,27 @@ public class TransferToCompletionsUtils {
                 responseBuilder.choices(Collections.singletonList(choice));
             }
             if(streamMessageResponse.getUsage() != null) {
+                StreamMessageResponse.StreamUsage streamUsage = streamMessageResponse.getUsage();
                 CompletionResponse.TokenUsage usage = new CompletionResponse.TokenUsage();
-                usage.setPrompt_tokens(streamMessageResponse.getUsage().getInputTokens());
-                usage.setCompletion_tokens(streamMessageResponse.getUsage().getOutputTokens());
-                usage.setCache_creation_tokens(streamMessageResponse.getUsage().getCacheCreationInputTokens());
-                usage.setCache_read_tokens(streamMessageResponse.getUsage().getCacheReadInputTokens());
-                if(tokenUsage != null) {
-                    usage.setCache_creation_tokens(tokenUsage.getCacheCreationInputTokens() + usage.getCache_creation_tokens());
-                    usage.setCache_read_tokens(tokenUsage.getCacheReadInputTokens() + usage.getCache_read_tokens());
-                    usage.setPrompt_tokens(tokenUsage.getInputTokens() + usage.getPrompt_tokens());
-                    usage.setCompletion_tokens(tokenUsage.getOutputTokens() + usage.getCompletion_tokens());
-                }
-                if(usage.getCache_creation_tokens() > 0 || usage.getCache_read_tokens() > 0) {
+                // message_delta.usage 是累计值，直接用
+                // 但普通对话场景下 message_delta 只含 output_tokens，input_tokens 为 0，需从 message_start 的 tokenUsage 补充
+                int promptTokens = streamUsage.getTotalInputTokens() > 0
+                        ? streamUsage.getTotalInputTokens()
+                        : (tokenUsage != null ? tokenUsage.getTotalInputTokens() : 0);
+                int cacheCreationTokens = streamUsage.getCacheCreationInputTokens() > 0
+                        ? streamUsage.getCacheCreationInputTokens()
+                        : (tokenUsage != null ? tokenUsage.getCacheCreationInputTokens() : 0);
+                int cacheReadTokens = streamUsage.getCacheReadInputTokens() > 0
+                        ? streamUsage.getCacheReadInputTokens()
+                        : (tokenUsage != null ? tokenUsage.getCacheReadInputTokens() : 0);
+                usage.setPrompt_tokens(promptTokens);
+                usage.setCompletion_tokens(streamUsage.getOutputTokens());
+                usage.setCache_creation_tokens(cacheCreationTokens);
+                usage.setCache_read_tokens(cacheReadTokens);
+                if(cacheCreationTokens > 0 || cacheReadTokens > 0) {
                     CompletionResponse.TokensDetail tokensDetail = new CompletionResponse.TokensDetail();
-                    tokensDetail.setCached_tokens(usage.getCache_read_tokens());
-                    tokensDetail.setCache_creation_tokens(usage.getCache_creation_tokens());
+                    tokensDetail.setCached_tokens(cacheReadTokens);
+                    tokensDetail.setCache_creation_tokens(cacheCreationTokens);
                     usage.setPrompt_tokens_details(tokensDetail);
                 }
                 usage.setTotal_tokens(usage.getPrompt_tokens() + usage.getCompletion_tokens());
