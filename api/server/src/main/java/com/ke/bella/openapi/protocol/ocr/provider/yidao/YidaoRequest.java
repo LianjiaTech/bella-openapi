@@ -38,9 +38,4 @@ public class YidaoRequest implements IMemoryClearable, ITransfer {
             this.cleared = true;
         }
     }
-
-    @Override
-    public boolean isCleared() {
-        return cleared;
-    }
 }
