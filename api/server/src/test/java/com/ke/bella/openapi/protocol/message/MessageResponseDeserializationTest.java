@@ -8,8 +8,18 @@ import java.util.List;
 import static org.junit.Assert.*;
 
 /**
- * 测试 MessageResponse 反序列化
- * 核心修复：MessageResponse.Usage.inputTokens 字段缺少 @JsonProperty("input_tokens") 导致反序列化失败
+ * 测试 MessageResponse / StreamMessageResponse 的序列化与反序列化
+ *
+ * 覆盖场景：
+ * 1. MessageResponse 基本反序列化（input_tokens 字段映射）
+ * 2. 含 tool_use 的 MessageResponse 反序列化
+ * 3. getTotalInputTokens 计算（含 cache tokens）
+ * 4. MessageResponse.Usage 序列化字段名验证
+ * 5. StreamUsage 普通场景反序列化（message_delta 仅含 output_tokens，缺失字段默认为 0）
+ * 6. StreamUsage 普通场景序列化（int 字段 0 值会被输出）
+ * 7. StreamUsage tool_use 场景反序列化（message_delta 含完整 usage）
+ * 8. AwsMessageAdaptor 补齐逻辑验证：inputTokens==0 时从 message_start 补入
+ * 9. AwsMessageAdaptor 补齐逻辑验证：tool_use 场景 inputTokens>0 直接透传
  */
 public class MessageResponseDeserializationTest {
 
@@ -151,5 +161,171 @@ public class MessageResponseDeserializationTest {
         String json = JacksonUtils.serialize(usage);
         assertTrue("序列化后应包含 input_tokens 字段", json.contains("\"input_tokens\":100"));
         assertTrue("序列化后应包含 output_tokens 字段", json.contains("\"output_tokens\":50"));
+    }
+
+    // ==================== StreamUsage 序列化/反序列化测试 ====================
+
+    /**
+     * 场景5: 普通对话的 message_delta 反序列化
+     * 原生协议中 message_delta 的 usage 仅含 output_tokens，其余字段不存在。
+     * StreamUsage 字段为 int 类型，缺失字段反序列化为默认值 0。
+     * AwsMessageAdaptor 以 inputTokens==0 作为"需要补齐"的判断依据。
+     */
+    @Test
+    public void testStreamUsage_normalScenario_missingFieldsDefaultToZero() {
+        // 原生 Anthropic message_delta 的 usage：只有 output_tokens
+        String json = "{\"type\":\"message_delta\","
+                + "\"delta\":{\"stop_reason\":\"end_turn\",\"stop_sequence\":null},"
+                + "\"usage\":{\"output_tokens\":15}}";
+
+        StreamMessageResponse response = JacksonUtils.deserialize(json, StreamMessageResponse.class);
+
+        assertNotNull(response);
+        assertNotNull(response.getUsage());
+        StreamMessageResponse.StreamUsage usage = response.getUsage();
+
+        assertEquals("output_tokens 应正确反序列化", 15, usage.getOutputTokens());
+        // int 类型缺失字段默认为 0，AwsMessageAdaptor 用 inputTokens==0 判断需要补齐
+        assertEquals("input_tokens 缺失时默认为 0，触发补齐逻辑", 0, usage.getInputTokens());
+        assertEquals("cache_creation_input_tokens 缺失时默认为 0", 0, usage.getCacheCreationInputTokens());
+        assertEquals("cache_read_input_tokens 缺失时默认为 0", 0, usage.getCacheReadInputTokens());
+    }
+
+    /**
+     * 场景6: 补齐后的 StreamUsage 序列化
+     * 补齐了 input_tokens 后，序列化应正确输出所有字段。
+     */
+    @Test
+    public void testStreamUsage_patchedUsage_serialization() {
+        StreamMessageResponse.StreamUsage patchedUsage = StreamMessageResponse.StreamUsage.builder()
+                .inputTokens(25)
+                .outputTokens(15)
+                .cacheCreationInputTokens(0)
+                .cacheReadInputTokens(0)
+                .build();
+
+        String json = JacksonUtils.serialize(patchedUsage);
+
+        assertTrue("应包含补齐后的 input_tokens", json.contains("\"input_tokens\":25"));
+        assertTrue("应包含 output_tokens", json.contains("\"output_tokens\":15"));
+    }
+
+    /**
+     * 场景7: tool_use 场景的 message_delta 反序列化
+     * 使用 web_search 等 server tool 时，上游会在 message_delta 中提供完整 usage，
+     * input_tokens > 0，AwsMessageAdaptor 直接透传不补齐。
+     */
+    @Test
+    public void testStreamUsage_toolUseScenario_deserializesFullUsage() {
+        // tool_use 场景下上游给出的完整 message_delta
+        String json = "{\"type\":\"message_delta\","
+                + "\"delta\":{\"stop_reason\":\"end_turn\",\"stop_sequence\":null},"
+                + "\"usage\":{"
+                + "  \"input_tokens\":10682,"
+                + "  \"cache_creation_input_tokens\":0,"
+                + "  \"cache_read_input_tokens\":0,"
+                + "  \"output_tokens\":510"
+                + "}}";
+
+        StreamMessageResponse response = JacksonUtils.deserialize(json, StreamMessageResponse.class);
+
+        assertNotNull(response);
+        StreamMessageResponse.StreamUsage usage = response.getUsage();
+        assertNotNull(usage);
+
+        assertEquals("input_tokens 应正确反序列化", 10682, usage.getInputTokens());
+        assertEquals("output_tokens 应正确反序列化", 510, usage.getOutputTokens());
+        // input_tokens > 0，不会触发补齐逻辑
+        assertTrue("input_tokens > 0 时不应触发补齐", usage.getInputTokens() > 0);
+    }
+
+    // ==================== AwsMessageAdaptor 补齐逻辑验证 ====================
+
+    /**
+     * 场景8: 普通场景补齐逻辑验证
+     * message_delta.usage.inputTokens == 0 时，应从 message_start 缓存的 usage 中补入。
+     */
+    @Test
+    public void testPatchLogic_normalScenario_inputTokensPatched() {
+        // message_start 缓存的 usage
+        MessageResponse.Usage messageStartUsage = MessageResponse.Usage.builder()
+                .inputTokens(25)
+                .outputTokens(1)
+                .cacheCreationInputTokens(100)
+                .cacheReadInputTokens(200)
+                .build();
+
+        // 上游 message_delta：只有 output_tokens，int 默认 inputTokens=0
+        StreamMessageResponse.StreamUsage deltaUsage = StreamMessageResponse.StreamUsage.builder()
+                .outputTokens(15)
+                .build();
+
+        // 模拟 AwsMessageAdaptor 的补齐判断：inputTokens == 0 时补入
+        boolean shouldPatch = deltaUsage.getInputTokens() == 0;
+        assertTrue("inputTokens==0 时应触发补齐", shouldPatch);
+
+        StreamMessageResponse.StreamUsage patchedUsage = StreamMessageResponse.StreamUsage.builder()
+                .inputTokens(messageStartUsage.getInputTokens())
+                .outputTokens(deltaUsage.getOutputTokens())
+                .cacheCreationInputTokens(messageStartUsage.getCacheCreationInputTokens())
+                .cacheReadInputTokens(messageStartUsage.getCacheReadInputTokens())
+                .build();
+
+        assertEquals("补齐后 input_tokens 应来自 message_start", 25, patchedUsage.getInputTokens());
+        assertEquals("补齐后 output_tokens 应来自 message_delta", 15, patchedUsage.getOutputTokens());
+        assertEquals("补齐后 cache_creation_input_tokens 应来自 message_start", 100, patchedUsage.getCacheCreationInputTokens());
+        assertEquals("补齐后 cache_read_input_tokens 应来自 message_start", 200, patchedUsage.getCacheReadInputTokens());
+
+        String json = JacksonUtils.serialize(patchedUsage);
+        assertFalse("补齐后 input_tokens 应为真实值，不应为 0", json.contains("\"input_tokens\":0"));
+        assertTrue("补齐后应输出真实 input_tokens", json.contains("\"input_tokens\":25"));
+    }
+
+    /**
+     * 场景9: tool_use 场景透传逻辑验证
+     * message_delta.usage.inputTokens > 0 时，说明上游已提供完整 token 信息，
+     * 直接透传，不应用 message_start 的旧值覆盖。
+     */
+    @Test
+    public void testPatchLogic_toolUseScenario_noOverwrite() {
+        // 上游 message_delta：已含完整 usage（web search 后 input_tokens 有更新）
+        StreamMessageResponse.StreamUsage deltaUsage = StreamMessageResponse.StreamUsage.builder()
+                .inputTokens(10682)
+                .outputTokens(510)
+                .cacheCreationInputTokens(0)
+                .cacheReadInputTokens(0)
+                .build();
+
+        // 模拟 AwsMessageAdaptor 的判断逻辑：inputTokens > 0 时不补齐，直接透传
+        boolean shouldPatch = deltaUsage.getInputTokens() == 0;
+        assertFalse("上游已提供 input_tokens（>0），不应触发补齐", shouldPatch);
+
+        // 直接透传，input_tokens 保留上游的值
+        assertEquals("透传时 input_tokens 应保留上游值 10682", 10682, deltaUsage.getInputTokens());
+        assertEquals("透传时 output_tokens 应保留上游值 510", 510, deltaUsage.getOutputTokens());
+    }
+
+    /**
+     * 场景10: StreamUsage.getTotalInputTokens 计算验证
+     */
+    @Test
+    public void testStreamUsage_getTotalInputTokens() {
+        // 普通场景补齐后：有真实值
+        StreamMessageResponse.StreamUsage usage = StreamMessageResponse.StreamUsage.builder()
+                .inputTokens(25)
+                .outputTokens(15)
+                .cacheCreationInputTokens(100)
+                .cacheReadInputTokens(200)
+                .build();
+
+        assertEquals("totalInputTokens 应为 input + cache_creation + cache_read = 325",
+                325, usage.getTotalInputTokens());
+
+        // 未补齐时：全为 0
+        StreamMessageResponse.StreamUsage emptyUsage = StreamMessageResponse.StreamUsage.builder()
+                .outputTokens(15)
+                .build();
+
+        assertEquals("未补齐时 totalInputTokens 应为 0", 0, emptyUsage.getTotalInputTokens());
     }
 }

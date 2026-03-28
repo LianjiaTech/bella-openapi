@@ -14,10 +14,14 @@ import static org.junit.Assert.*;
  * 测试 TransferToCompletionsUtils 中 message 协议转换逻辑
  * 核心场景：message_delta.usage 的 input_tokens 处理
  *
- * 标准协议规定 message_delta.usage 是累计值，但有两种情况：
- * 1. 普通对话：message_delta 只含 output_tokens，input_tokens=0，需从 message_start 补充
- * 2. 含 server tool（如 web search）：message_delta 含完整累计 input_tokens，直接用
- * 3. 非标协议（如 glm）：message_start 全 0，message_delta 含完整 usage，直接用
+ * StreamUsage.inputTokens 为 int 类型，反序列化缺失字段默认为 0。
+ * AwsMessageAdaptor 在 nativeSend 模式下以 inputTokens==0 判断是否需要补齐：
+ * 1. 普通对话：message_delta 只含 output_tokens，inputTokens 反序列化为 0，由 Adaptor 补齐后再透传
+ * 2. 含 server tool（如 web search）：message_delta 含完整累计 inputTokens（>0），Adaptor 直接透传
+ * 3. 非标协议（如 glm）：message_start 全 0，message_delta 含完整 usage，TransferToCompletionsUtils 直接用
+ *
+ * 注：本测试验证 TransferToCompletionsUtils 的转换逻辑，
+ * 入参已经是 Adaptor 处理后的数据（普通场景 inputTokens 已被补齐）。
  */
 public class TransferToCompletionsUtilsMessageTest {
 
