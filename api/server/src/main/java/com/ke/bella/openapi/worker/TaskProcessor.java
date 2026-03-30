@@ -42,14 +42,14 @@ public class TaskProcessor {
         String taskId = taskWrapper.getTask().getTaskId();
         log.info("Task started, taskId: {}, channel: {}, task: {}", taskId
                 , channel.getChannelCode(), JacksonUtils.serialize(taskWrapper.getTask()));
-        boolean streaming = false;
-        String responseMode = taskWrapper.getTask().getResponseMode();
+        boolean streamingStarted = false;
         try {
             OpenapiResponse response = processRequest(taskWrapper.getTask().getData(), taskWrapper, releaseSlot);
             if(response != null) {
                 taskWrapper.markComplete(createResult(response));
                 log.info("Task completed, taskId: {}, channel: {}", taskId, channel.getChannelCode());
             } else {
+                streamingStarted = true;
                 log.info("Task submitted in stream mode, taskId: {}, channel: {}", taskId, channel.getChannelCode());
             }
         } catch (Exception e) {
@@ -59,7 +59,7 @@ public class TaskProcessor {
             taskWrapper.markComplete(createResult(errorResponse));
         } finally {
             EndpointContext.clearAll();
-            if(!"streaming".equals(responseMode)) {
+            if(!streamingStarted) {
                 releaseSlot.run();
             }
         }
