@@ -20,6 +20,7 @@ import { copyToClipboard } from "@/lib/utils/clipboard";
 import { toast } from "sonner";
 import { useAuth } from "@/components/providers/auth-provider";
 import { Alert, AlertTitle } from "@/components/common/alert";
+import config from "@/config";
 
 // 对话框状态类型
 type DialogState = {
@@ -389,10 +390,11 @@ export default function ApiKeysPage() {
     <div>
       <TopBar title="API Key管理" description="管理您的API密钥,设置额度和安全等级" />
       <div className="p-8">
-      {/* <div className="text-sm text-red-500 mb-4">新版不支持用户安全等级以及月额度配置修改，如果需要修改可以联系管理员：黄利（huangli090@ke.com）</div> */}
-      <Alert variant="destructive" className="mb-4">
-      <AlertTitle className="text-sm font-normal">已启用强配额制度，暂停用户自行提升月度配额，如有调整请联系 蔡美薇（26715197）</AlertTitle>
-      </Alert>
+      {config.tips.apiKeyPageTip && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertTitle className="text-sm font-normal">{config.tips.apiKeyPageTip}</AlertTitle>
+        </Alert>
+      )}
 
         {/* 顶部操作栏 */}
         <div className="flex items-center justify-between mb-4">
