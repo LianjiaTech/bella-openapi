@@ -66,6 +66,10 @@ public class ApikeyRepo extends StatusRepo<ApikeyDB, ApikeyRecord, String> imple
                 .and(StringUtils.isEmpty(op.getOwnerSearch()) ? DSL.noCondition()
                         : APIKEY.OWNER_NAME.like(op.getOwnerSearch() + "%")
                                 .or(APIKEY.OWNER_CODE.like(op.getOwnerSearch() + "%")))
+                .and(StringUtils.isEmpty(op.getManagerCode()) ? DSL.noCondition() : APIKEY.MANAGER_CODE.eq(op.getManagerCode()))
+                .and(StringUtils.isEmpty(op.getManagerSearch()) ? DSL.noCondition()
+                        : APIKEY.MANAGER_NAME.like(op.getManagerSearch() + "%")
+                                .or(APIKEY.MANAGER_CODE.like(op.getManagerSearch() + "%")))
                 .and(op.isIncludeChild() || StringUtils.isNotEmpty(op.getParentCode()) ? DSL.noCondition() : APIKEY.PARENT_CODE.eq(StringUtils.EMPTY))
                 .and(StringUtils.isEmpty(op.getStatus()) ? DSL.noCondition() : APIKEY.STATUS.eq(op.getStatus()))
                 .and(StringUtils.isEmpty(op.getPersonalCode()) ? DSL.noCondition()
@@ -108,13 +112,34 @@ public class ApikeyRepo extends StatusRepo<ApikeyDB, ApikeyRecord, String> imple
      */
     @Transactional
     public int batchUpdateByParentCode(ApikeyDB updateDB, String parentCode) {
-        return db.update(APIKEY)
-                .set(APIKEY.OWNER_TYPE, updateDB.getOwnerType())
-                .set(APIKEY.OWNER_CODE, updateDB.getOwnerCode())
-                .set(APIKEY.OWNER_NAME, updateDB.getOwnerName())
-                .set(APIKEY.MUID, updateDB.getMuid())
-                .set(APIKEY.MU_NAME, updateDB.getMuName())
-                .where(APIKEY.PARENT_CODE.eq(parentCode))
-                .execute();
+        if(updateDB.getOwnerType() != null && updateDB.getManagerCode() != null) {
+            return db.update(APIKEY)
+                    .set(APIKEY.OWNER_TYPE, updateDB.getOwnerType())
+                    .set(APIKEY.OWNER_CODE, updateDB.getOwnerCode())
+                    .set(APIKEY.OWNER_NAME, updateDB.getOwnerName())
+                    .set(APIKEY.MANAGER_CODE, updateDB.getManagerCode())
+                    .set(APIKEY.MANAGER_NAME, updateDB.getManagerName())
+                    .set(APIKEY.MUID, updateDB.getMuid())
+                    .set(APIKEY.MU_NAME, updateDB.getMuName())
+                    .where(APIKEY.PARENT_CODE.eq(parentCode))
+                    .execute();
+        } else if(updateDB.getManagerCode() != null) {
+            return db.update(APIKEY)
+                    .set(APIKEY.MANAGER_CODE, updateDB.getManagerCode())
+                    .set(APIKEY.MANAGER_NAME, updateDB.getManagerName())
+                    .set(APIKEY.MUID, updateDB.getMuid())
+                    .set(APIKEY.MU_NAME, updateDB.getMuName())
+                    .where(APIKEY.PARENT_CODE.eq(parentCode))
+                    .execute();
+        } else {
+            return db.update(APIKEY)
+                    .set(APIKEY.OWNER_TYPE, updateDB.getOwnerType())
+                    .set(APIKEY.OWNER_CODE, updateDB.getOwnerCode())
+                    .set(APIKEY.OWNER_NAME, updateDB.getOwnerName())
+                    .set(APIKEY.MUID, updateDB.getMuid())
+                    .set(APIKEY.MU_NAME, updateDB.getMuName())
+                    .where(APIKEY.PARENT_CODE.eq(parentCode))
+                    .execute();
+        }
     }
 }

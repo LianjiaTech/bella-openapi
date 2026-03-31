@@ -42,6 +42,7 @@ public class Indexes {
     public static final Index APIKEY_TRANSFER_LOG_IDX_CTIME = Internal.createIndex(DSL.name("idx_ctime"), ApikeyTransferLog.APIKEY_TRANSFER_LOG, new OrderField[] { ApikeyTransferLog.APIKEY_TRANSFER_LOG.CTIME }, false);
     public static final Index CHANNEL_IDX_ENTITY_TYPE_CODE = Internal.createIndex(DSL.name("idx_entity_type_code"), Channel.CHANNEL, new OrderField[] { Channel.CHANNEL.ENTITY_TYPE, Channel.CHANNEL.ENTITY_CODE }, false);
     public static final Index APIKEY_TRANSFER_LOG_IDX_FROM_OWNER = Internal.createIndex(DSL.name("idx_from_owner"), ApikeyTransferLog.APIKEY_TRANSFER_LOG, new OrderField[] { ApikeyTransferLog.APIKEY_TRANSFER_LOG.FROM_OWNER_TYPE, ApikeyTransferLog.APIKEY_TRANSFER_LOG.FROM_OWNER_CODE }, false);
+    public static final Index APIKEY_IDX_MANAGER_CODE = Internal.createIndex(DSL.name("idx_manager_code"), Apikey.APIKEY, new OrderField[] { Apikey.APIKEY.MANAGER_CODE }, false);
     public static final Index SPACE_MEMBER_IDX_MEMBER_UID = Internal.createIndex(DSL.name("idx_member_uid"), SpaceMember.SPACE_MEMBER, new OrderField[] { SpaceMember.SPACE_MEMBER.MEMBER_UID }, false);
     public static final Index VIDEO_JOB_IDX_MODEL = Internal.createIndex(DSL.name("idx_model"), VideoJob.VIDEO_JOB, new OrderField[] { VideoJob.VIDEO_JOB.MODEL }, false);
     public static final Index MODEL_ENDPOINT_REL_IDX_MODEL_NAME = Internal.createIndex(DSL.name("idx_model_name"), ModelEndpointRel.MODEL_ENDPOINT_REL, new OrderField[] { ModelEndpointRel.MODEL_ENDPOINT_REL.MODEL_NAME }, false);
@@ -51,6 +52,7 @@ public class Indexes {
     public static final Index MODEL_IDX_OWNER_TYPE_CODE = Internal.createIndex(DSL.name("idx_owner_type_code"), Model.MODEL, new OrderField[] { Model.MODEL.OWNER_TYPE, Model.MODEL.OWNER_CODE }, false);
     public static final Index APIKEY_IDX_PARENT_OUT_ENTITY_CODE = Internal.createIndex(DSL.name("idx_parent_out_entity_code"), Apikey.APIKEY, new OrderField[] { Apikey.APIKEY.PARENT_CODE, Apikey.APIKEY.OUT_ENTITY_CODE }, false);
     public static final Index CHANNEL_IDX_PROTOCOL = Internal.createIndex(DSL.name("idx_protocol"), Channel.CHANNEL, new OrderField[] { Channel.CHANNEL.PROTOCOL }, false);
+    public static final Index CHANNEL_IDX_QUEUE_NAME = Internal.createIndex(DSL.name("idx_queue_name"), Channel.CHANNEL, new OrderField[] { Channel.CHANNEL.QUEUE_NAME }, false);
     public static final Index ENDPOINT_CATEGORY_REL_IDX_SORT = Internal.createIndex(DSL.name("idx_sort"), EndpointCategoryRel.ENDPOINT_CATEGORY_REL, new OrderField[] { EndpointCategoryRel.ENDPOINT_CATEGORY_REL.SORT }, false);
     public static final Index VIDEO_JOB_IDX_SPACE_CODE = Internal.createIndex(DSL.name("idx_space_code"), VideoJob.VIDEO_JOB, new OrderField[] { VideoJob.VIDEO_JOB.SPACE_CODE }, false);
     public static final Index VIDEO_JOB_IDX_STATUS = Internal.createIndex(DSL.name("idx_status"), VideoJob.VIDEO_JOB, new OrderField[] { VideoJob.VIDEO_JOB.STATUS }, false);
