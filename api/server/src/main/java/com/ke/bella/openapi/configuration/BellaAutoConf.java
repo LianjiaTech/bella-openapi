@@ -11,6 +11,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import com.ke.bella.openapi.TaskExecutor;
 import com.ke.bella.openapi.db.IDGenerator;
 import com.ke.bella.openapi.db.log.LogRepo;
 import com.ke.bella.openapi.db.repo.InstanceRepo;
@@ -95,7 +96,8 @@ public class BellaAutoConf {
     }
 
     @PreDestroy
-    public void shutdownDisruptors() {
+    public void gracefulShutdown() {
+        TaskExecutor.shutdown();
         if(logDisruptor != null) {
             logDisruptor.shutdown();
         }
