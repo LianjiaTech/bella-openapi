@@ -85,3 +85,4 @@ web/.env
 *.tsbuildinfo
 
 private-loggers.xml
+api/server/src/main/resources/application-local.yml
