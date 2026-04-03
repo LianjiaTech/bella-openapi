@@ -1,5 +1,6 @@
 package com.ke.bella.openapi.protocol.message;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
@@ -155,6 +156,11 @@ public class StreamMessageResponse {
         private int cacheCreationInputTokens;
         @JsonProperty("cache_read_input_tokens")
         private int cacheReadInputTokens;
+
+        @JsonIgnore
+        public int getTotalInputTokens() {
+            return inputTokens + cacheCreationInputTokens + cacheReadInputTokens;
+        }
     }
 
     @Data

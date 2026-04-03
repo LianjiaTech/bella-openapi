@@ -283,6 +283,13 @@ public class RealTimeMessage extends OpenapiResponse {
          */
         @JsonProperty("hot_words_table_id")
         private String hotWordsTableId;
+
+        /**
+         * 事件级别
+         * 控制返回的事件级别，event_level >= 2 时返回 VAD 事件
+         */
+        @JsonProperty("event_level")
+        private Integer eventLevel;
     }
 
     /**

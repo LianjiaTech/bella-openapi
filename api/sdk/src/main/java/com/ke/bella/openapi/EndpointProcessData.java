@@ -88,6 +88,7 @@ public class EndpointProcessData {
     private boolean batch;
     private CostDetails costDetails;
     private boolean overrideInnerLog;
+    private String clientIp;
 
     public void setApikeyInfo(ApikeyInfo ak) {
         this.setApikey(ak.getApikey());
