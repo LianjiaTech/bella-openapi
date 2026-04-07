@@ -11,6 +11,7 @@ import com.ke.bella.openapi.common.exception.BellaException;
 import com.ke.bella.openapi.tables.pojos.ApikeyDB;
 import org.springframework.stereotype.Component;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
@@ -115,9 +116,19 @@ public class AkPermissionChecker {
         return AkRelation.UNRELATED;
     }
 
+    private static final Set<String> PERSONAL_OWNER_TYPES = Collections.unmodifiableSet(
+            new HashSet<>(Arrays.asList(PERSON, CONSOLE)));
+
     private boolean isOwner(ApikeyInfo caller, ApikeyDB target) {
-        return caller.getOwnerCode().equals(target.getOwnerCode())
-                && caller.getOwnerType().equals(target.getOwnerType());
+        if (!caller.getOwnerCode().equals(target.getOwnerCode())) {
+            return false;
+        }
+        // person 和 console 同属一个自然人，ownerType 可以互通
+        if (PERSONAL_OWNER_TYPES.contains(caller.getOwnerType())
+                && PERSONAL_OWNER_TYPES.contains(target.getOwnerType())) {
+            return true;
+        }
+        return caller.getOwnerType().equals(target.getOwnerType());
     }
 
     /**

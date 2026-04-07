@@ -42,7 +42,8 @@ public final class AkPermissionMatrix {
         // high
         Set<AkOperation> highOwner = Collections.unmodifiableSet(EnumSet.of(
                 AkOperation.QUERY, AkOperation.RESET, AkOperation.RENAME,
-                AkOperation.CHANGE_STATUS, AkOperation.CREATE_CHILD));
+                AkOperation.CHANGE_STATUS, AkOperation.CREATE_CHILD, AkOperation.TRANSFER,
+                AkOperation.VIEW_TRANSFER_HISTORY));
         Map<AkRelation, Set<AkOperation>> highMap = new EnumMap<>(AkRelation.class);
         highMap.put(AkRelation.OWNER,     highOwner);
         highMap.put(AkRelation.MANAGER,   ALL_OPS);
@@ -53,7 +54,8 @@ public final class AkPermissionMatrix {
         // low
         Set<AkOperation> lowOwner = Collections.unmodifiableSet(EnumSet.of(
                 AkOperation.QUERY, AkOperation.RESET, AkOperation.RENAME,
-                AkOperation.CHANGE_STATUS));
+                AkOperation.CHANGE_STATUS, AkOperation.CREATE_CHILD, AkOperation.TRANSFER,
+                AkOperation.VIEW_TRANSFER_HISTORY));
         Map<AkRelation, Set<AkOperation>> lowMap = new EnumMap<>(AkRelation.class);
         lowMap.put(AkRelation.OWNER,     lowOwner);
         lowMap.put(AkRelation.MANAGER,   ALL_OPS);
