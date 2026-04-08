@@ -20,8 +20,9 @@ import com.ke.bella.openapi.protocol.ocr.bankcard.BankcardAdaptor;
 import com.ke.bella.openapi.protocol.ocr.businesslicense.BusinessLicenseAdaptor;
 import com.ke.bella.openapi.protocol.ocr.general.GeneralAdaptor;
 import com.ke.bella.openapi.protocol.ocr.idcard.IdcardAdaptor;
+import com.ke.bella.openapi.protocol.ocr.overseaspassport.OverseasPassportAdaptor;
 import com.ke.bella.openapi.protocol.ocr.residence_permit.ResidencePermitAdaptor;
-import com.ke.bella.openapi.protocol.ocr.tmp_idcard.TmpIdcardAdaptor;
+import com.ke.bella.openapi.protocol.ocr.tmpidcard.TmpIdcardAdaptor;
 import com.ke.bella.openapi.service.EndpointDataService;
 import com.ke.bella.openapi.utils.JacksonUtils;
 
@@ -87,6 +88,18 @@ public class OcrController {
         EndpointContext.setEncodingType(property.getEncodingType());
 
         return adaptor.tmpIdcard(request, ctx.getUrl(), property);
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @PostMapping("/overseas-passport")
+    public Object overseasPassport(@RequestBody @Valid OcrRequest request) {
+        OcrContext ctx = OcrContext.initialize(request, endpointDataService, router, limiterManager);
+
+        OverseasPassportAdaptor adaptor = adaptorManager.getProtocolAdaptor(ctx.getEndpoint(), ctx.getProtocol(), OverseasPassportAdaptor.class);
+        OcrProperty property = (OcrProperty) JacksonUtils.deserialize(ctx.getChannelInfo(), adaptor.getPropertyClass());
+        EndpointContext.setEncodingType(property.getEncodingType());
+
+        return adaptor.overseasPassport(request, ctx.getUrl(), property);
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
