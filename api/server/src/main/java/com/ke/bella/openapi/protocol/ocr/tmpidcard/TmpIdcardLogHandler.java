@@ -1,4 +1,4 @@
-package com.ke.bella.openapi.protocol.ocr.tmp_idcard;
+package com.ke.bella.openapi.protocol.ocr.tmpidcard;
 
 import com.ke.bella.openapi.protocol.ocr.OcrLogHandler;
 import org.springframework.stereotype.Component;

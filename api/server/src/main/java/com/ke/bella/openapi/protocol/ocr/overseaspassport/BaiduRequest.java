@@ -1,4 +1,4 @@
-package com.ke.bella.openapi.protocol.ocr.overseas_passport;
+package com.ke.bella.openapi.protocol.ocr.overseaspassport;
 
 import com.ke.bella.openapi.protocol.ocr.provider.baidu.BaiduBaseRequest;
 

@@ -1,4 +1,4 @@
-package com.ke.bella.openapi.protocol.ocr.overseas_passport;
+package com.ke.bella.openapi.protocol.ocr.overseaspassport;
 
 import java.util.List;
 import java.util.Map;

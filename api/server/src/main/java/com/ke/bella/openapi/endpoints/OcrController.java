@@ -20,9 +20,9 @@ import com.ke.bella.openapi.protocol.ocr.bankcard.BankcardAdaptor;
 import com.ke.bella.openapi.protocol.ocr.businesslicense.BusinessLicenseAdaptor;
 import com.ke.bella.openapi.protocol.ocr.general.GeneralAdaptor;
 import com.ke.bella.openapi.protocol.ocr.idcard.IdcardAdaptor;
-import com.ke.bella.openapi.protocol.ocr.overseas_passport.OverseasPassportAdaptor;
+import com.ke.bella.openapi.protocol.ocr.overseaspassport.OverseasPassportAdaptor;
 import com.ke.bella.openapi.protocol.ocr.residence_permit.ResidencePermitAdaptor;
-import com.ke.bella.openapi.protocol.ocr.tmp_idcard.TmpIdcardAdaptor;
+import com.ke.bella.openapi.protocol.ocr.tmpidcard.TmpIdcardAdaptor;
 import com.ke.bella.openapi.service.EndpointDataService;
 import com.ke.bella.openapi.utils.JacksonUtils;
 
