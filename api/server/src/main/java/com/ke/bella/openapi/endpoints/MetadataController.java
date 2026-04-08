@@ -61,7 +61,7 @@ public class MetadataController {
     public EndpointDetails listEndpointDetails(Condition.EndpointDetailsCondition condition) {
         Assert.notNull(condition.getEndpoint(), "能力点不可为空");
         String identity = BellaContext.getOperatorIgnoreNull() != null ? BellaContext.getOperator().getUserId().toString()
-                : EndpointContext.getApikey().getCode();
+                : EndpointContext.getApikey().getOwnerCode();
         return endpointService.getEndpointDetails(condition, identity);
     }
 
