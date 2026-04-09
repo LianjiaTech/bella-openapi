@@ -81,6 +81,8 @@ public class TaskProcessor {
         EndpointContext.setEndpointData(channel);
 
         EndpointProcessData processData = EndpointContext.getProcessData();
+        processData.setRequestId(taskWrapper.getTask().getTaskId());
+
         CompletionAdaptor adaptor = adaptorManager.getProtocolAdaptor(CHAT_COMPLETIONS_ENDPOINT, processData.getProtocol(), CompletionAdaptor.class);
         CompletionProperty property = (CompletionProperty) JacksonUtils.deserialize(channel.getChannelInfo(), adaptor.getPropertyClass());
 
