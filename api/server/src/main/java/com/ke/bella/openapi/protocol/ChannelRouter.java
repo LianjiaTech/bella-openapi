@@ -144,20 +144,6 @@ public class ChannelRouter {
         if(CollectionUtils.isEmpty(filtered)) {
             throw new BellaException.RateLimitException("渠道当前负载过高，请稍后重试");
         }
-
-        // 个人 apikey 两阶段路由：
-        // 阶段1：优先使用私有通道 + owner_type='person' 的公共通道
-        // 阶段2：无匹配时回退全部可用公共通道
-        if(EntityConstants.PERSON.equals(apikeyInfo.getOwnerType())) {
-            List<ChannelDB> personPreferred = filtered.stream()
-                    .filter(c -> EntityConstants.PRIVATE.equals(c.getVisibility())
-                            || EntityConstants.PERSON.equals(c.getOwnerType()))
-                    .collect(Collectors.toList());
-            if(!CollectionUtils.isEmpty(personPreferred)) {
-                return personPreferred;
-            }
-        }
-
         return filtered;
     }
 
@@ -277,17 +263,6 @@ public class ChannelRouter {
 
         if(CollectionUtils.isEmpty(filteredChannels)) {
             throw new BizParamCheckException("没有可用通道");
-        }
-
-        // 个人 apikey 两阶段路由（队列模式）
-        if(EntityConstants.PERSON.equals(apikey.getOwnerType())) {
-            List<ChannelDB> personPreferred = filteredChannels.stream()
-                    .filter(c -> EntityConstants.PRIVATE.equals(c.getVisibility())
-                            || EntityConstants.PERSON.equals(c.getOwnerType()))
-                    .collect(Collectors.toList());
-            if(!CollectionUtils.isEmpty(personPreferred)) {
-                filteredChannels = personPreferred;
-            }
         }
 
         return pickMaxPriority(filteredChannels).get(0);

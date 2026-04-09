@@ -119,62 +119,92 @@ public class ApikeyService {
 
     @Transactional
     public String apply(ApikeyOps.ApplyOp op) {
-        String ak = UUID.randomUUID().toString();
-        String sha = EncryptUtils.sha256(ak);
-        String display = EncryptUtils.desensitize(ak);
-        if(StringUtils.isNotEmpty(op.getRoleCode())) {
-            Assert.isTrue(childRoleCodes.contains(op.getRoleCode()), "role code不可使用");
+        if(PERSON.equals(op.getOwnerType())) {
+            return applyForPerson(op);
         }
+        return applyForNonPerson(op);
+    }
+
+    @Transactional
+    public String applyForPerson(ApikeyOps.ApplyOp op) {
+        Assert.isTrue(PERSON.equals(op.getOwnerType()), "ownerType必须为person");
         // 若传入 ownerUserId，通过 userId 查用户并按 source 规则计算 ownerCode（规则同 updateManager，见注释）
-        if(op.getOwnerUserId() != null && PERSON.equals(op.getOwnerType())) {
+        if(op.getOwnerUserId() != null) {
             UserDB ownerUser = userRepo.queryById(op.getOwnerUserId());
             Assert.notNull(ownerUser, "所有者用户不存在");
-            Operator currentOperator = BellaContext.getOperator();
-            String ownerCode;
-            if(StringUtils.equals(currentOperator.getSourceId(), String.valueOf(currentOperator.getUserId()))) {
-                ownerCode = ownerUser.getSourceId();
-            } else {
-                ownerCode = ownerUser.getId().toString();
-            }
+            String ownerCode = resolveUserCode(BellaContext.getOperator(), ownerUser);
             op.setOwnerCode(ownerCode);
             op.setOwnerName(ownerUser.getUserName());
         }
+        if(StringUtils.isNotEmpty(op.getRoleCode())) {
+            Assert.isTrue(childRoleCodes.contains(op.getRoleCode()), "role code不可使用");
+        }
+        String ak = UUID.randomUUID().toString();
+        ApikeyDB db = buildApikeyDB(ak, op);
+        // person 类型：若未指定管理人，默认为 owner 本人
+        if(StringUtils.isNotEmpty(op.getManagerCode())) {
+            db.setManagerCode(op.getManagerCode());
+            db.setManagerName(op.getManagerName());
+        } else {
+            db.setManagerCode(op.getOwnerCode());
+            db.setManagerName(op.getOwnerName());
+        }
+        apikeyRepo.insert(db);
+        return ak;
+    }
+
+    @Transactional
+    public String applyForNonPerson(ApikeyOps.ApplyOp op) {
+        Assert.isTrue(!PERSON.equals(op.getOwnerType()), "ownerType不可为person");
+        // 仅管理员（console/all）或 SYSTEM 类型 AK 可创建非个人 AK
+        ApikeyInfo caller = EndpointContext.getApikeyIgnoreNull();
+        boolean isSystemAk = caller != null && SYSTEM.equals(caller.getOwnerType());
+        Assert.isTrue(isAdminOperator() || isSystemAk, "无权创建非个人类型AK");
+        if(StringUtils.isNotEmpty(op.getRoleCode())) {
+            Assert.isTrue(childRoleCodes.contains(op.getRoleCode()), "role code不可使用");
+        }
+        String ak = UUID.randomUUID().toString();
+        ApikeyDB db = buildApikeyDB(ak, op);
+        // 若未指定管理人，默认为创建人
+        if(StringUtils.isNotEmpty(op.getManagerCode())) {
+            db.setManagerCode(op.getManagerCode());
+            db.setManagerName(op.getManagerName());
+        } else {
+            Operator creator = BellaContext.getOperator();
+            db.setManagerCode(creator.getUserId().toString());
+            db.setManagerName(creator.getUserName());
+        }
+        apikeyRepo.insert(db);
+        return ak;
+    }
+
+    private ApikeyDB buildApikeyDB(String ak, ApikeyOps.ApplyOp op) {
+        String sha = EncryptUtils.sha256(ak);
+        String display = EncryptUtils.desensitize(ak);
         ApikeyDB db = new ApikeyDB();
         db.setAkSha(sha);
         db.setAkDisplay(display);
         db.setOwnerType(op.getOwnerType());
         db.setOwnerCode(op.getOwnerCode());
         db.setOwnerName(op.getOwnerName());
-        // 管理人：若未指定，person 类型默认为自身 owner
-        if (StringUtils.isNotEmpty(op.getManagerCode())) {
-            db.setManagerCode(op.getManagerCode());
-            db.setManagerName(op.getManagerName());
-        } else if (PERSON.equals(op.getOwnerType())) {
-            db.setManagerCode(op.getOwnerCode());
-            db.setManagerName(op.getOwnerName());
-        } else {
-            db.setManagerCode("");
-            db.setManagerName("");
-        }
         db.setRoleCode(StringUtils.isEmpty(op.getRoleCode()) ? basicRoleCode : op.getRoleCode());
         db.setSafetyLevel(basicSafetyLevel);
         db.setMonthQuota(op.getMonthQuota() == null ? BigDecimal.valueOf(basicMonthQuota) : op.getMonthQuota());
         db.setName(op.getName());
         db.setRemark(op.getRemark());
-        apikeyRepo.insert(db);
-        return ak;
+        return db;
     }
 
     @Transactional
     public String createByParentCode(ApikeyCreateOp op) {
         ApikeyInfo cur = EndpointContext.getApikey();
         ApikeyInfo apikey = queryByCode(op.getParentCode(), true);
+        Assert.notNull(apikey, "父AK不存在或已停用");
         boolean isOwner = apikey.getOwnerCode().equals(cur.getOwnerCode());
         boolean isManager = StringUtils.isNotEmpty(apikey.getManagerCode()) && apikey.getManagerCode().equals(cur.getOwnerCode());
         if(!isOwner && !isManager) {
             throw new BellaException.AuthorizationException("请求使用AK和父AK必须属于同一个人或其管理人");
         }
-        Assert.notNull(apikey, "父AK不存在或已停用");
         Assert.isTrue(StringUtils.isEmpty(apikey.getParentCode()), "当前AK无创建子AK权限");
         if(StringUtils.isNotEmpty(op.getRoleCode())) {
             apikeyRoleRepo.checkExist(op.getRoleCode(), true);
@@ -236,9 +266,7 @@ public class ApikeyService {
     @Transactional
     public String reset(ApikeyOps.CodeOp op) {
         apikeyRepo.checkExist(op.getCode(), true);
-        if(!isAdminOperator()) {
-            checkPermission(op.getCode());
-        }
+        checkPermission(op.getCode());
         String ak = UUID.randomUUID().toString();
         String sha = EncryptUtils.sha256(ak);
         String display = EncryptUtils.desensitize(ak);
@@ -386,12 +414,12 @@ public class ApikeyService {
 
     @Transactional
     public void updateManager(ApikeyOps.ManagerOp op) {
-        apikeyRepo.checkExist(op.getCode(), true);
+        ApikeyDB existing = apikeyRepo.queryByUniqueKey(op.getCode());
+        Assert.notNull(existing, "AK不存在");
         // 管理员视图用户可直接操作；普通用户只有 owner 可以设置管理人
         if(!isAdminOperator()) {
-            checkOwnerPermission(op.getCode());
+            checkOwnerPermission(existing);
         }
-        ApikeyDB existing = apikeyRepo.queryByUniqueKey(op.getCode());
         ApikeyDB db = new ApikeyDB();
         // 若传入 managerUserId，通过 userId 查用户并按 source 规则计算 managerCode。
         // 【注意】owner_code / manager_code 存储的身份标识存在双轨制：
@@ -402,13 +430,7 @@ public class ApikeyService {
         if(op.getManagerUserId() != null) {
             UserDB managerUser = userRepo.queryById(op.getManagerUserId());
             Assert.notNull(managerUser, "管理人用户不存在");
-            Operator currentOperator = BellaContext.getOperator();
-            String managerCode;
-            if(StringUtils.equals(currentOperator.getSourceId(), String.valueOf(currentOperator.getUserId()))) {
-                managerCode = managerUser.getSourceId();
-            } else {
-                managerCode = managerUser.getId().toString();
-            }
+            String managerCode = resolveUserCode(BellaContext.getOperator(), managerUser);
             db.setManagerCode(managerCode);
             db.setManagerName(StringUtils.defaultIfEmpty(managerUser.getUserName(), "用户" + managerUser.getId()));
         } else {
@@ -418,7 +440,7 @@ public class ApikeyService {
         apikeyRepo.fillUpdatorInfo(db);
         apikeyRepo.update(db, op.getCode());
         // 同步更新子 ak 的管理人（含操作人审计信息）
-        apikeyRepo.batchUpdateByParentCode(db, op.getCode());
+        apikeyRepo.syncManagerToChildren(op.getCode(), db);
         // 清除主 ak 及所有子 ak 的缓存（manager 变更影响权限校验）
         ApikeyService self = applicationContext.getBean(ApikeyService.class);
         self.clearApikeyCache(existing.getAkSha());
@@ -430,11 +452,14 @@ public class ApikeyService {
 
     private void checkPermission(String code) {
         ApikeyDB db = apikeyRepo.queryByUniqueKey(code);
-        ApikeyInfo apikeyInfo = EndpointContext.getApikeyIgnoreNull();
-        // all roleCode 的超级管理员可以操作任意 AK
-        if(apikeyInfo != null && EntityConstants.ALL.equals(apikeyInfo.getRoleCode())) {
+        checkPermission(db);
+    }
+
+    private void checkPermission(ApikeyDB db) {
+        if(isAdminOperator()) {
             return;
         }
+        ApikeyInfo apikeyInfo = EndpointContext.getApikeyIgnoreNull();
         if(apikeyInfo == null) {
             // Console 登录态：以 userId 作为用户身份标识
             Operator op = BellaContext.getOperator();
@@ -460,7 +485,8 @@ public class ApikeyService {
         if(isManager) {
             return;
         }
-        // todo: 获取所有 org
+        // TODO: 当前 orgCodes 恒为空集
+        //   后续需实现获取当前请求方所属的所有 orgCode，填充后才能真正校验组织权限。
         Set<String> orgCodes = new HashSet<>();
         if(db.getOwnerType().equals(ORG) || db.getOwnerType().equals(PROJECT)) {
             validateOrgPermission(apikeyInfo, Sets.newHashSet(db.getOwnerCode()), orgCodes);
@@ -472,13 +498,11 @@ public class ApikeyService {
     /**
      * 仅允许 owner（非 manager）执行的操作权限校验，如设置管理人
      */
-    private void checkOwnerPermission(String code) {
-        ApikeyDB db = apikeyRepo.queryByUniqueKey(code);
-        ApikeyInfo apikeyInfo = EndpointContext.getApikeyIgnoreNull();
-        // all roleCode 的超级管理员可以操作任意 AK
-        if(apikeyInfo != null && EntityConstants.ALL.equals(apikeyInfo.getRoleCode())) {
+    private void checkOwnerPermission(ApikeyDB db) {
+        if(isAdminOperator()) {
             return;
         }
+        ApikeyInfo apikeyInfo = EndpointContext.getApikeyIgnoreNull();
         if(apikeyInfo == null) {
             Operator op = BellaContext.getOperator();
             Assert.isTrue(
@@ -490,11 +514,11 @@ public class ApikeyService {
         if(apikeyInfo.getOwnerType().equals(SYSTEM)) {
             return;
         }
-        Set<String> orgCodes = new HashSet<>();
         if(db.getOwnerType().equals(SYSTEM)) {
             throw new BellaException.AuthorizationException("没有操作权限");
         }
         if(db.getOwnerType().equals(ORG) || db.getOwnerType().equals(PROJECT)) {
+            Set<String> orgCodes = new HashSet<>();
             validateOrgPermission(apikeyInfo, Sets.newHashSet(db.getOwnerCode()), orgCodes);
         } else {
             validateUserPermission(apikeyInfo, db.getOwnerCode());
@@ -559,7 +583,8 @@ public class ApikeyService {
             }
             return;
         }
-        // TODO: 获取所有组织代码并填充到 orgCodes
+        // TODO: 当前 orgCodes 恒为空集
+        //   后续需实现获取当前请求方所属的所有 orgCode，填充后才能真正校验组织权限。
         Set<String> orgCodes = new HashSet<>();
 
         if(StringUtils.isEmpty(condition.getPersonalCode())) {
@@ -604,10 +629,10 @@ public class ApikeyService {
     /**
      * 转移API Key所有者
      * 注意：缓存清理操作在事务外执行，避免影响事务
-     * 
+     *
      * @param op              转移操作参数
      * @param currentOperator 当前操作者
-     * 
+     *
      * @return 是否成功
      */
     @Transactional
@@ -668,7 +693,7 @@ public class ApikeyService {
         apikeyRepo.update(updateDB, op.getAkCode());
 
         // 批量更新所有子API Key
-        apikeyRepo.batchUpdateByParentCode(updateDB, op.getAkCode());
+        apikeyRepo.syncOwnerToChildren(op.getAkCode(), updateDB);
 
         // 7. 记录转移日志
         ApikeyTransferLog transferLog = ApikeyTransferLog.builder()
@@ -701,7 +726,7 @@ public class ApikeyService {
      * 获取API Key转移历史
      *
      * @param akCode API Key编码
-     * 
+     *
      * @return 转移历史列表
      */
     public List<ApikeyTransferLog> getTransferHistory(String akCode) {
@@ -733,7 +758,7 @@ public class ApikeyService {
      * 查找并验证目标用户
      *
      * @param op 转移操作请求
-     * 
+     *
      * @return 目标用户信息
      */
     private UserDB findAndValidateTargetUser(TransferApikeyOwnerOp op) {
@@ -772,6 +797,18 @@ public class ApikeyService {
         }
         Object roleCode = op.getOptionalInfo().get("roleCode");
         return EntityConstants.CONSOLE.equals(roleCode) || EntityConstants.ALL.equals(roleCode);
+    }
+
+    /**
+     * 根据当前操作者的登录场景（CAS/OAuth）将目标用户解析为对应的 userCode。
+     * CAS 场景（sourceId == userId）存 sourceId；OAuth 场景存 userId。
+     * TODO: 后续应统一规范为只存 sourceId，消除双轨制，届期需做历史数据迁移。
+     */
+    private String resolveUserCode(Operator currentOperator, UserDB targetUser) {
+        if(StringUtils.equals(currentOperator.getSourceId(), String.valueOf(currentOperator.getUserId()))) {
+            return targetUser.getSourceId();
+        }
+        return targetUser.getId().toString();
     }
 
 }

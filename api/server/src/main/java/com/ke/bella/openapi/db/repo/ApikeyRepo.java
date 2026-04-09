@@ -102,44 +102,26 @@ public class ApikeyRepo extends StatusRepo<ApikeyDB, ApikeyRecord, String> imple
         return APIKEY.CODE;
     }
 
-    /**
-     * 批量更新子API Key的所有者信息
-     * 
-     * @param updateDB   更新的字段信息
-     * @param parentCode 父API Key的code
-     * 
-     * @return 更新的记录数
-     */
     @Transactional
-    public int batchUpdateByParentCode(ApikeyDB updateDB, String parentCode) {
-        if(updateDB.getOwnerType() != null && updateDB.getManagerCode() != null) {
-            return db.update(APIKEY)
-                    .set(APIKEY.OWNER_TYPE, updateDB.getOwnerType())
-                    .set(APIKEY.OWNER_CODE, updateDB.getOwnerCode())
-                    .set(APIKEY.OWNER_NAME, updateDB.getOwnerName())
-                    .set(APIKEY.MANAGER_CODE, updateDB.getManagerCode())
-                    .set(APIKEY.MANAGER_NAME, updateDB.getManagerName())
-                    .set(APIKEY.MUID, updateDB.getMuid())
-                    .set(APIKEY.MU_NAME, updateDB.getMuName())
-                    .where(APIKEY.PARENT_CODE.eq(parentCode))
-                    .execute();
-        } else if(updateDB.getManagerCode() != null) {
-            return db.update(APIKEY)
-                    .set(APIKEY.MANAGER_CODE, updateDB.getManagerCode())
-                    .set(APIKEY.MANAGER_NAME, updateDB.getManagerName())
-                    .set(APIKEY.MUID, updateDB.getMuid())
-                    .set(APIKEY.MU_NAME, updateDB.getMuName())
-                    .where(APIKEY.PARENT_CODE.eq(parentCode))
-                    .execute();
-        } else {
-            return db.update(APIKEY)
-                    .set(APIKEY.OWNER_TYPE, updateDB.getOwnerType())
-                    .set(APIKEY.OWNER_CODE, updateDB.getOwnerCode())
-                    .set(APIKEY.OWNER_NAME, updateDB.getOwnerName())
-                    .set(APIKEY.MUID, updateDB.getMuid())
-                    .set(APIKEY.MU_NAME, updateDB.getMuName())
-                    .where(APIKEY.PARENT_CODE.eq(parentCode))
-                    .execute();
-        }
+    public int syncOwnerToChildren(String parentCode, ApikeyDB updateDB) {
+        return db.update(APIKEY)
+                .set(APIKEY.OWNER_TYPE, updateDB.getOwnerType())
+                .set(APIKEY.OWNER_CODE, updateDB.getOwnerCode())
+                .set(APIKEY.OWNER_NAME, updateDB.getOwnerName())
+                .set(APIKEY.MUID, updateDB.getMuid())
+                .set(APIKEY.MU_NAME, updateDB.getMuName())
+                .where(APIKEY.PARENT_CODE.eq(parentCode))
+                .execute();
+    }
+
+    @Transactional
+    public int syncManagerToChildren(String parentCode, ApikeyDB updateDB) {
+        return db.update(APIKEY)
+                .set(APIKEY.MANAGER_CODE, updateDB.getManagerCode())
+                .set(APIKEY.MANAGER_NAME, updateDB.getManagerName())
+                .set(APIKEY.MUID, updateDB.getMuid())
+                .set(APIKEY.MU_NAME, updateDB.getMuName())
+                .where(APIKEY.PARENT_CODE.eq(parentCode))
+                .execute();
     }
 }
