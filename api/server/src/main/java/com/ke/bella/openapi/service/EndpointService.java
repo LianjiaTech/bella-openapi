@@ -150,7 +150,7 @@ public class EndpointService {
                 .endpoint(condition.getEndpoint())
                 .features(features)
                 .build();
-        List<Model> models = searchModels(condition);
+        List<Model> models = searchModels(condition, identity);
         endpoint.setModels(models);
         Class<? extends IPriceInfo> priceType = IPriceInfo.EndpointPriceInfoType.fetchType(endpoint.getEndpoint());
         if(priceType != null) {
@@ -194,11 +194,12 @@ public class EndpointService {
         }
     }
 
-    private List<Model> searchModels(Condition.EndpointDetailsCondition condition) {
+    private List<Model> searchModels(Condition.EndpointDetailsCondition condition, String identity) {
         Condition.ModelCondition modelCondition = new Condition.ModelCondition();
         modelCondition.setEndpoint(condition.getEndpoint());
         modelCondition.setModelName(condition.getModelName());
         modelCondition.setStatus(ACTIVE);
+        modelCondition.setPersonalCode(identity);
         if(CollectionUtils.isNotEmpty(condition.getFeatures())) {
             modelCondition.setFeatures(new ArrayList<>());
             if(!MetadataFeatures.validate(condition.getFeatures())) {

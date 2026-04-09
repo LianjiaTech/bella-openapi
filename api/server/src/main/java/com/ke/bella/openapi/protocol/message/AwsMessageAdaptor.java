@@ -9,7 +9,6 @@ import com.ke.bella.openapi.protocol.completion.AwsMessageProperty;
 import com.ke.bella.openapi.protocol.completion.StreamCompletionResponse;
 import com.ke.bella.openapi.utils.JacksonUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient;
@@ -134,31 +133,44 @@ public class AwsMessageAdaptor implements MessageAdaptor<AwsMessageProperty> {
             if(response == null) {
                 return;
             }
-            if(nativeSend) {
-                if("message_delta".equals(response.getType())) {
-                    StreamMessageResponse copy = new StreamMessageResponse();
-                    BeanUtils.copyProperties(response, copy);
-                    StreamMessageResponse.StreamUsage streamUsage = new StreamMessageResponse.StreamUsage();
-                    BeanUtils.copyProperties(copy.getUsage(), streamUsage);
-                    streamUsage.setInputTokens(usage.inputTokens());
-                    streamUsage.setOutputTokens(streamUsage.getOutputTokens() + usage.getOutputTokens());
-                    streamUsage.setCacheReadInputTokens(usage.getCacheReadInputTokens());
-                    streamUsage.setCacheCreationInputTokens(usage.getCacheCreationInputTokens());
-                    copy.setUsage(streamUsage);
-                    callback.send(copy);
-                } else {
-                    callback.send(response);
-                }
-            }
             if("message_start".equals(response.getType()) && response.getMessage() != null) {
                 model = response.getMessage().getModel();
                 id = response.getMessage().getId();
                 usage = response.getMessage().getUsage();
+                if(nativeSend) {
+                    callback.send(response);
+                }
                 return;
             }
             if("message_stop".equals(response.getType())) {
+                if(nativeSend) {
+                    callback.send(response);
+                }
                 callback.done();
                 return;
+            }
+            // nativeSend 和 callback 两条路并行：nativeSend 透传原始 SSE，callback 填充 buffer 用于日志计费
+            if(nativeSend) {
+                // message_delta 事件的 usage 处理：
+                // - 普通场景：上游 usage 仅含 output_tokens（inputTokens 反序列化为 0），
+                //   需从 message_start 缓存中补入 input_tokens 及 cache_* 信息，
+                //   使客户端可从最后一个 usage 事件获取完整 token 统计。
+                // - tool_use 场景（如 web_search）：上游已在 usage 中提供完整 input_tokens（> 0），
+                //   直接透传，避免用 message_start 的旧值覆盖最新的 token 计数。
+                if("message_delta".equals(response.getType()) && response.getUsage() != null
+                        && usage != null && response.getUsage().getInputTokens() == 0) {
+                    // TODO: 适配 usage 中的 server_tool_use 信息（如 web_search_requests），
+                    //       当前 StreamUsage 尚未定义该字段，补齐时也未携带，需后续扩展。
+                    StreamMessageResponse.StreamUsage patchedUsage = StreamMessageResponse.StreamUsage.builder()
+                            .inputTokens(usage.getInputTokens())
+                            .outputTokens(response.getUsage().getOutputTokens())
+                            .cacheCreationInputTokens(usage.getCacheCreationInputTokens())
+                            .cacheReadInputTokens(usage.getCacheReadInputTokens())
+                            .build();
+                    callback.send(response.toBuilder().usage(patchedUsage).build());
+                } else {
+                    callback.send(response);
+                }
             }
             StreamCompletionResponse openaiResponse = TransferToCompletionsUtils.convertStreamResponse(response, model, id, toolNum, usage);
             if(openaiResponse == null) {
