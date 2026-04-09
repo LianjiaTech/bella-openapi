@@ -5,7 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component("QwenCompletion")
-public class QwenAdaptor implements CompletionAdaptor<OpenAIProperty> {
+public class QwenAdaptor implements CompletionAdaptorDelegator<OpenAIProperty> {
 
     @Autowired
     private OpenAIAdaptor openAIAdaptor;
@@ -20,6 +20,18 @@ public class QwenAdaptor implements CompletionAdaptor<OpenAIProperty> {
     public void streamCompletion(CompletionRequest request, String url, OpenAIProperty property, Callbacks.StreamCompletionCallback callback) {
         fillExtraBody(request);
         openAIAdaptor.streamCompletion(request, url, property, callback);
+    }
+
+    @Override
+    public CompletionResponse completion(CompletionRequest request, String url, OpenAIProperty property, Callbacks.HttpDelegator delegator) {
+        fillExtraBody(request);
+        return openAIAdaptor.completion(request, url, property, delegator);
+    }
+
+    @Override
+    public void streamCompletion(CompletionRequest request, String url, OpenAIProperty property, Callbacks.StreamCompletionCallback callback, Callbacks.StreamDelegator delegator) {
+        fillExtraBody(request);
+        openAIAdaptor.streamCompletion(request, url, property, callback, delegator);
     }
 
     @Override
