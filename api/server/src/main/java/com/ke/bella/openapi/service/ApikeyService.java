@@ -7,11 +7,11 @@ import com.alicp.jetcache.anno.CacheType;
 import com.alicp.jetcache.anno.CacheUpdate;
 import com.alicp.jetcache.anno.Cached;
 import com.alicp.jetcache.template.QuickConfig;
-import com.google.common.collect.Sets;
 import com.ke.bella.openapi.BellaContext;
 import com.ke.bella.openapi.EndpointContext;
 import com.ke.bella.openapi.Operator;
 import com.ke.bella.openapi.PermissionCondition;
+import com.ke.bella.openapi.apikey.AkOperation;
 import com.ke.bella.openapi.apikey.ApikeyCreateOp;
 import com.ke.bella.openapi.apikey.ApikeyInfo;
 import com.ke.bella.openapi.apikey.ApikeyOps;
@@ -100,6 +100,8 @@ public class ApikeyService {
     private ApplicationEventPublisher eventPublisher;
     @Autowired
     private ISafetyAuditService safetyAuditService;
+    @Autowired
+    private AkPermissionChecker akPermissionChecker;
     private static final String apikeyCacheKey = "apikey:sha:";
 
     @PostConstruct
@@ -141,12 +143,9 @@ public class ApikeyService {
 
     @Transactional
     public String createByParentCode(ApikeyCreateOp op) {
-        ApikeyInfo cur = EndpointContext.getApikey();
         ApikeyInfo apikey = queryByCode(op.getParentCode(), true);
-        if(!apikey.getOwnerCode().equals(cur.getOwnerCode())) {
-            throw new BellaException.AuthorizationException("请求使用AK和父AK必须属于同一个人");
-        }
         Assert.notNull(apikey, "父AK不存在或已停用");
+        checkPermission(op.getParentCode(), AkOperation.CREATE_CHILD);
         Assert.isTrue(StringUtils.isEmpty(apikey.getParentCode()), "当前AK无创建子AK权限");
         if(StringUtils.isNotEmpty(op.getRoleCode())) {
             apikeyRoleRepo.checkExist(op.getRoleCode(), true);
@@ -182,13 +181,10 @@ public class ApikeyService {
 
     @Transactional
     public boolean updateSubApikey(SubApikeyUpdateOp op) {
-        ApikeyInfo cur = EndpointContext.getApikey();
         ApikeyInfo subApikey = apikeyRepo.queryByCode(op.getCode());
         ApikeyInfo apikey = queryByCode(subApikey.getParentCode(), false);
         Assert.notNull(apikey, "只可以修改子ak");
-        if(!apikey.getOwnerCode().equals(cur.getOwnerCode())) {
-            throw new BellaException.AuthorizationException("只能修改自己的apikey");
-        }
+        checkPermission(subApikey.getParentCode(), AkOperation.CREATE_CHILD);
         if(StringUtils.isNotEmpty(op.getRoleCode())) {
             apikeyRoleRepo.checkExist(op.getRoleCode(), true);
         }
@@ -208,7 +204,7 @@ public class ApikeyService {
     @Transactional
     public String reset(ApikeyOps.CodeOp op) {
         apikeyRepo.checkExist(op.getCode(), true);
-        checkPermission(op.getCode());
+        checkPermission(op.getCode(), AkOperation.RESET);
         String ak = UUID.randomUUID().toString();
         String sha = EncryptUtils.sha256(ak);
         String display = EncryptUtils.desensitize(ak);
@@ -232,7 +228,7 @@ public class ApikeyService {
     @Transactional
     public void updateRole(ApikeyOps.RoleOp op) {
         apikeyRepo.checkExist(op.getCode(), true);
-        checkPermission(op.getCode());
+        checkPermission(op.getCode(), AkOperation.UPDATE_ROLE);
         if(StringUtils.isNotEmpty(op.getRoleCode())) {
             apikeyRoleRepo.checkExist(op.getRoleCode(), true);
         } else {
@@ -249,7 +245,7 @@ public class ApikeyService {
     @Transactional
     public void certify(ApikeyOps.CertifyOp op) {
         apikeyRepo.checkExist(op.getCode(), true);
-        checkPermission(op.getCode());
+        checkPermission(op.getCode(), AkOperation.CERTIFY);
         Byte level = safetyAuditService.fetchLevelByCertifyCode(op.getCertifyCode());
         ApikeyDB db = new ApikeyDB();
         db.setCertifyCode(op.getCertifyCode());
@@ -260,21 +256,21 @@ public class ApikeyService {
     @Transactional
     public void updateQuota(ApikeyOps.QuotaOp op) {
         apikeyRepo.checkExist(op.getCode(), true);
-        checkPermission(op.getCode());
+        checkPermission(op.getCode(), AkOperation.UPDATE_QUOTA);
         apikeyRepo.update(op, op.getCode());
     }
 
     @Transactional
     public void updateQpsLimit(ApikeyOps.QpsLimitOp op) {
         apikeyRepo.checkExist(op.getCode(), true);
-        checkPermission(op.getCode());
+        checkPermission(op.getCode(), AkOperation.UPDATE_QPS);
         apikeyRepo.update(op, op.getCode());
     }
 
     @Transactional
     public void changeStatus(ApikeyOps.CodeOp op, boolean active) {
         apikeyRepo.checkExist(op.getCode(), true);
-        checkPermission(op.getCode());
+        checkPermission(op.getCode(), AkOperation.CHANGE_STATUS);
         String status = active ? ACTIVE : INACTIVE;
         apikeyRepo.updateStatus(op.getCode(), status);
     }
@@ -354,33 +350,9 @@ public class ApikeyService {
         return apikeyCostRepo.queryByAkCode(akCode);
     }
 
-    private void checkPermission(String code) {
+    private void checkPermission(String code, AkOperation operation) {
         ApikeyDB db = apikeyRepo.queryByUniqueKey(code);
-        ApikeyInfo apikeyInfo = EndpointContext.getApikeyIgnoreNull();
-        // all roleCode 的超级管理员可以操作任意 AK
-        if(apikeyInfo != null && EntityConstants.ALL.equals(apikeyInfo.getRoleCode())) {
-            return;
-        }
-        if(apikeyInfo == null) {
-            Operator op = BellaContext.getOperator();
-            Assert.isTrue(
-                    (db.getOwnerType().equals(PERSON) || db.getOwnerType().equals(CONSOLE)) && db.getOwnerCode().equals(op.getUserId().toString()),
-                    "没有操作权限");
-            return;
-        }
-        if(apikeyInfo.getOwnerType().equals(SYSTEM)) {
-            return;
-        }
-        // todo: 获取所有 org
-        Set<String> orgCodes = new HashSet<>();
-        if(db.getOwnerType().equals(SYSTEM)) {
-            throw new BellaException.AuthorizationException("没有操作权限");
-        }
-        if(db.getOwnerType().equals(ORG)) {
-            validateOrgPermission(apikeyInfo, Sets.newHashSet(db.getOwnerCode()), orgCodes);
-        } else {
-            validateUserPermission(apikeyInfo, db.getOwnerCode());
-        }
+        akPermissionChecker.check(db, operation);
     }
 
     public Page<ApikeyDB> pageApikey(ApikeyOps.ApikeyCondition condition) {
@@ -479,12 +451,8 @@ public class ApikeyService {
             throw new BellaException.AuthorizationException("只有个人类型的API Key才能转移");
         }
 
-        // 2. 验证当前用户权限：所有者可以转移，all roleCode 的超级管理员也可以代为转移
-        ApikeyInfo operatorApikeyInfo = EndpointContext.getApikeyIgnoreNull();
-        boolean isSuperAdmin = operatorApikeyInfo != null && EntityConstants.ALL.equals(operatorApikeyInfo.getRoleCode());
-        if(!isSuperAdmin && !apikeyInfo.getOwnerCode().equals(currentOperator.getUserId().toString())) {
-            throw new BellaException.AuthorizationException("只有API Key所有者才能执行转移操作");
-        }
+        // 2. 统一权限检查
+        akPermissionChecker.check(apikeyInfo, AkOperation.TRANSFER);
 
         // 3. 查找并验证目标用户
         UserDB targetUser = findAndValidateTargetUser(op);
@@ -561,12 +529,7 @@ public class ApikeyService {
             throw new BellaException.AuthorizationException("API Key不存在");
         }
 
-        ApikeyInfo currentApikey = EndpointContext.getApikey();
-        boolean isSuperAdmin = EntityConstants.ALL.equals(currentApikey.getRoleCode());
-        if(!isSuperAdmin && !apikeyInfo.getOwnerCode().equals(currentApikey.getOwnerCode())
-                && !SYSTEM.equals(currentApikey.getOwnerType())) {
-            throw new BellaException.AuthorizationException("没有权限查看转移历史");
-        }
+        akPermissionChecker.check(apikeyInfo, AkOperation.VIEW_TRANSFER_HISTORY);
 
         return apikeyTransferLogRepo.queryByAkCode(akCode);
     }
