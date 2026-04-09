@@ -167,6 +167,9 @@ public class AudioTranscriptionRequest {
 
         @JsonProperty("context")
         private String context;
+
+        @JsonProperty("ssd_version")
+        private String ssdVersion;
     }
 
     @Data

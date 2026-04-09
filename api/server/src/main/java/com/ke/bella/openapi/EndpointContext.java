@@ -48,6 +48,18 @@ public class EndpointContext {
         if(contentLength > 0) {
             requestSize.set(contentLength);
         }
+
+        // 提取客户端IP
+        String ip = request.getHeader("X-Forwarded-For");
+        if(StringUtils.isNotBlank(ip) && !"unknown".equalsIgnoreCase(ip)) {
+            ip = ip.split(",")[0].trim();
+        } else {
+            ip = request.getHeader("X-Real-IP");
+            if(StringUtils.isBlank(ip) || "unknown".equalsIgnoreCase(ip)) {
+                ip = request.getRemoteAddr();
+            }
+        }
+        getProcessData().setClientIp(ip);
     }
 
     public static ApikeyInfo getApikey() {

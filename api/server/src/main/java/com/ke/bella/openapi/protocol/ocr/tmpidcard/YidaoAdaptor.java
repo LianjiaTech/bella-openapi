@@ -1,4 +1,4 @@
-package com.ke.bella.openapi.protocol.ocr.tmp_idcard;
+package com.ke.bella.openapi.protocol.ocr.tmpidcard;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;

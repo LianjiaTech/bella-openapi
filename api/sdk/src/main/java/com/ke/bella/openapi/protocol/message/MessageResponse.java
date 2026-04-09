@@ -246,6 +246,7 @@ public class MessageResponse extends OpenapiResponse {
     @SuperBuilder
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class Usage {
+        @JsonProperty("input_tokens")
         private int inputTokens;
         @JsonProperty("output_tokens")
         private int outputTokens;
@@ -261,13 +262,8 @@ public class MessageResponse extends OpenapiResponse {
         private String serviceTier; // Nullable
 
         @JsonIgnore
-        public int getInputTokens() {
+        public int getTotalInputTokens() {
             return inputTokens + cacheCreationInputTokens + cacheReadInputTokens;
-        }
-
-        @JsonProperty("input_tokens")
-        public int inputTokens() {
-            return inputTokens;
         }
     }
 

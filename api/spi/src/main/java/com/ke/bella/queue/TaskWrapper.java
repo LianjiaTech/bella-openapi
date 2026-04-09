@@ -71,9 +71,10 @@ public class TaskWrapper {
         String from;
         T payload;
         String context;
+        long timestamp;
 
         public static <T> Event<T> of(String name, T payload) {
-            return new Event<>(name, StringUtils.EMPTY, payload, StringUtils.EMPTY);
+            return new Event<>(name, StringUtils.EMPTY, payload, StringUtils.EMPTY, System.currentTimeMillis());
         }
 
         public Map<String, String> toMap() {
@@ -82,6 +83,7 @@ public class TaskWrapper {
             map.put("from", getFrom());
             map.put("payload", JacksonUtils.serialize(getPayload()));
             map.put("context", getContext());
+            map.put("timestamp", String.valueOf(getTimestamp()));
             return map;
         }
     }

@@ -1,12 +1,12 @@
-package com.ke.bella.openapi.protocol.ocr.tmp_idcard;
+package com.ke.bella.openapi.protocol.ocr.overseaspassport;
 
 import com.ke.bella.openapi.protocol.ocr.OcrLogHandler;
 import org.springframework.stereotype.Component;
 
 @Component
-public class TmpIdcardLogHandler extends OcrLogHandler {
+public class OverseasPassportLogHandler extends OcrLogHandler {
     @Override
     public String endpoint() {
-        return "/v1/ocr/tmp-idcard";
+        return "/v1/ocr/overseas-passport";
     }
 }

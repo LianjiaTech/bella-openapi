@@ -19,17 +19,23 @@ public class OcrFieldNamingStandard {
         // 个人信息字段
         ALLOWED_FIELD_NAMES.add("name");                // 姓名
         ALLOWED_FIELD_NAMES.add("sex");                 // 性别
-        ALLOWED_FIELD_NAMES.add("nationality");         // 民族
+        ALLOWED_FIELD_NAMES.add("nationality");         // 民族/国籍
+        ALLOWED_FIELD_NAMES.add("nationality_code");    // 国家码
         ALLOWED_FIELD_NAMES.add("birth_date");          // 出生日期
+        ALLOWED_FIELD_NAMES.add("birth_place");         // 出生地
 
         // 地址信息字段
         ALLOWED_FIELD_NAMES.add("address");             // 地址/住址
 
         // 证件信息字段
         ALLOWED_FIELD_NAMES.add("idcard_number");       // 证件号/身份证号/公民身份号码
+        ALLOWED_FIELD_NAMES.add("passport_type");       // 护照类型
+        ALLOWED_FIELD_NAMES.add("passport_no");         // 护照编号
+        ALLOWED_FIELD_NAMES.add("mrz");                 // MRZ码
 
         // 签发信息字段
         ALLOWED_FIELD_NAMES.add("issue_authority");     // 签发机关
+        ALLOWED_FIELD_NAMES.add("issue_country");       // 签发国家
         ALLOWED_FIELD_NAMES.add("valid_date_start");    // 有效期开始
         ALLOWED_FIELD_NAMES.add("valid_date_end");      // 有效期结束
 
