@@ -18,7 +18,7 @@ public class QueueClient {
 
     private static volatile QueueClient INSTANCE;
 
-    private static final int DEFAULT_TIMEOUT_SECONDS = 300;
+    private static final int DEFAULT_TIMEOUT_SECONDS = 600;
 
     public static QueueClient getInstance(String url) {
         if(INSTANCE == null) {
