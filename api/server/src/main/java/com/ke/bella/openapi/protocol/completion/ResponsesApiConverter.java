@@ -1,6 +1,5 @@
 package com.ke.bella.openapi.protocol.completion;
 
-import com.ke.bella.openapi.utils.JacksonUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -17,10 +16,10 @@ public class ResponsesApiConverter {
 
     /**
      * 将 Chat Completion 请求转换为 Responses API 请求
-     * 
+     *
      * @return Responses API 请求
      */
-    public static ResponsesApiRequest convertChatCompletionToResponses(CompletionRequest chatRequest, String akCode) {
+    public static ResponsesApiRequest convertChatCompletionToResponses(CompletionRequest chatRequest, String akCode, ResponsesApiProperty property) {
         ResponsesApiRequest.ResponsesApiRequestBuilder builder = ResponsesApiRequest.builder();
 
         // 基本参数映射
@@ -34,7 +33,7 @@ public class ResponsesApiConverter {
                 .previous_response_id(null);
 
         // 转换消息列表为 input 数组
-        List<ResponsesApiRequest.InputItem> inputItems = convertMessagesToInput(chatRequest.getMessages());
+        List<ResponsesApiRequest.InputItem> inputItems = convertMessagesToInput(chatRequest.getMessages(), property.isConvertSystemToDeveloper());
         builder.input(inputItems);
 
         // 转换工具定义
@@ -63,7 +62,7 @@ public class ResponsesApiConverter {
     /**
      * 将消息列表转换为 Responses API 的 input 格式
      */
-    private static List<ResponsesApiRequest.InputItem> convertMessagesToInput(List<Message> messages) {
+    private static List<ResponsesApiRequest.InputItem> convertMessagesToInput(List<Message> messages, boolean convertSystemToDeveloper) {
         if(CollectionUtils.isEmpty(messages)) {
             return Collections.emptyList();
         }
@@ -93,10 +92,10 @@ public class ResponsesApiConverter {
                     inputItems.add(callItem);
                 }
             } else {
-                // 普通消息转换
+                String role = convertSystemToDeveloper && "system".equals(message.getRole()) ? "developer" : message.getRole();
                 ResponsesApiRequest.InputItem messageItem = ResponsesApiRequest.InputItem.builder()
                         .type("message")
-                        .role(message.getRole())
+                        .role(role)
                         .content(convertMessageContent(message))
                         .build();
                 if(messageItem.getContent() != null) {
@@ -180,9 +179,9 @@ public class ResponsesApiConverter {
 
     /**
      * 将 Responses API 响应转换为 Chat Completion 响应
-     * 
+     *
      * @param responsesResponse Responses API 响应
-     * 
+     *
      * @return Chat Completion 响应
      */
     public static CompletionResponse convertResponsesToChatCompletion(ResponsesApiResponse responsesResponse) {

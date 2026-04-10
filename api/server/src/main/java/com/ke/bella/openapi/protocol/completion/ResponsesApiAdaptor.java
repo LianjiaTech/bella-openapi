@@ -37,7 +37,7 @@ public class ResponsesApiAdaptor implements CompletionAdaptor<ResponsesApiProper
 
         // 转换请求格式
         ResponsesApiRequest responsesRequest = ResponsesApiConverter.convertChatCompletionToResponses(request,
-                EndpointContext.getProcessData().getAkCode());
+                EndpointContext.getProcessData().getAkCode(), property);
 
         // 构建HTTP请求
         Request httpRequest = buildResponsesApiRequest(responsesRequest, url, property);
@@ -64,7 +64,7 @@ public class ResponsesApiAdaptor implements CompletionAdaptor<ResponsesApiProper
 
         // 转换请求格式
         ResponsesApiRequest responsesRequest = ResponsesApiConverter.convertChatCompletionToResponses(request,
-                EndpointContext.getProcessData().getAkCode());
+                EndpointContext.getProcessData().getAkCode(), property);
         responsesRequest.setStream(true);  // 确保启用流式
 
         // 创建 SSE 转换器和监听器
