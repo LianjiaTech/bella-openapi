@@ -122,6 +122,7 @@ public class ApikeyOps {
         private String managerSearch; // managerName / managerCode的模糊搜索
         private String outEntityCode;
         private boolean includeChild;
+        private boolean onlyChild; // true：仅返回子AK（parent_code != ''），用于管理者视角分页查询子AK
         private String status;
     }
 }
