@@ -30,6 +30,11 @@
     <ke-infrastructure.version>2.1.28</ke-infrastructure.version>
     <jooq.version>3.14.15</jooq.version>
     <redisson.version>3.9.1</redisson.version>
+    <redisson-spring-data.version>3.17.7</redisson-spring-data.version>
+    <jedis.version>5.1.5</jedis.version>
+    <cas-client.version>3.6.4</cas-client.version>
+    <guava-retrying.version>2.0.0</guava-retrying.version>
+    <commons-io.version>2.11.0</commons-io.version>
     <apollo.version>2.1.0</apollo.version>
     <awssdk.version>2.31.65</awssdk.version>
     <bella-openai.version>0.24.5</bella-openai.version>
@@ -120,16 +125,31 @@
         <artifactId>openai-service</artifactId>
         <version>${bella-openai.version}</version>
       </dependency>
-        <dependency>
-            <groupId>redis.clients</groupId>
-            <artifactId>jedis</artifactId>
-            <version>5.1.5</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-pool2</artifactId>
-            <version>2.12.0</version>
-        </dependency>
+      <dependency>
+        <groupId>org.redisson</groupId>
+        <artifactId>redisson-spring-data-23</artifactId>
+        <version>${redisson-spring-data.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>redis.clients</groupId>
+        <artifactId>jedis</artifactId>
+        <version>${jedis.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.jasig.cas.client</groupId>
+        <artifactId>cas-client-core</artifactId>
+        <version>${cas-client.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.github.rholder</groupId>
+        <artifactId>guava-retrying</artifactId>
+        <version>${guava-retrying.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>commons-io</groupId>
+        <artifactId>commons-io</artifactId>
+        <version>${commons-io.version}</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
