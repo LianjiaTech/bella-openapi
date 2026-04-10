@@ -35,6 +35,7 @@ public class ChannelDB implements Operator, Serializable {
     private String        url;
     private String        channelInfo;
     private String        priceInfo;
+    private Byte          workerMode;
     private Byte          queueMode;
     private String        queueName;
     private Long          cuid;
@@ -64,6 +65,7 @@ public class ChannelDB implements Operator, Serializable {
         this.url = value.url;
         this.channelInfo = value.channelInfo;
         this.priceInfo = value.priceInfo;
+        this.workerMode = value.workerMode;
         this.queueMode = value.queueMode;
         this.queueName = value.queueName;
         this.cuid = value.cuid;
@@ -75,31 +77,32 @@ public class ChannelDB implements Operator, Serializable {
     }
 
     public ChannelDB(
-        Long          id,
-        String        entityType,
-        String        entityCode,
-        String        channelCode,
-        String        status,
-        String        ownerType,
-        String        ownerCode,
-        String        ownerName,
-        String        visibility,
-        Byte          trialEnabled,
-        String        dataDestination,
-        String        priority,
-        String        protocol,
-        String        supplier,
-        String        url,
-        String        channelInfo,
-        String        priceInfo,
-        Byte          queueMode,
-        String        queueName,
-        Long          cuid,
-        String        cuName,
-        Long          muid,
-        String        muName,
-        LocalDateTime ctime,
-        LocalDateTime mtime
+            Long          id,
+            String        entityType,
+            String        entityCode,
+            String        channelCode,
+            String        status,
+            String        ownerType,
+            String        ownerCode,
+            String        ownerName,
+            String        visibility,
+            Byte          trialEnabled,
+            String        dataDestination,
+            String        priority,
+            String        protocol,
+            String        supplier,
+            String        url,
+            String        channelInfo,
+            String        priceInfo,
+            Byte          workerMode,
+            Byte          queueMode,
+            String        queueName,
+            Long          cuid,
+            String        cuName,
+            Long          muid,
+            String        muName,
+            LocalDateTime ctime,
+            LocalDateTime mtime
     ) {
         this.id = id;
         this.entityType = entityType;
@@ -118,6 +121,7 @@ public class ChannelDB implements Operator, Serializable {
         this.url = url;
         this.channelInfo = channelInfo;
         this.priceInfo = priceInfo;
+        this.workerMode = workerMode;
         this.queueMode = queueMode;
         this.queueName = queueName;
         this.cuid = cuid;
@@ -367,14 +371,28 @@ public class ChannelDB implements Operator, Serializable {
     }
 
     /**
-     * Getter for <code>channel.queue_mode</code>. 队列模式(0:无队列;1:pull模式;2:route模式;3:pull+route模式)
+     * Getter for <code>channel.worker_mode</code>.
+     */
+    public Byte getWorkerMode() {
+        return this.workerMode;
+    }
+
+    /**
+     * Setter for <code>channel.worker_mode</code>.
+     */
+    public void setWorkerMode(Byte workerMode) {
+        this.workerMode = workerMode;
+    }
+
+    /**
+     * Getter for <code>channel.queue_mode</code>. 队列模式(0:无队列;1:pull模式;2:route模式)
      */
     public Byte getQueueMode() {
         return this.queueMode;
     }
 
     /**
-     * Setter for <code>channel.queue_mode</code>. 队列模式(0:无队列;1:pull模式;2:route模式;3:pull+route模式)
+     * Setter for <code>channel.queue_mode</code>. 队列模式(0:无队列;1:pull模式;2:route模式)
      */
     public void setQueueMode(Byte queueMode) {
         this.queueMode = queueMode;
@@ -499,6 +517,7 @@ public class ChannelDB implements Operator, Serializable {
         sb.append(", ").append(url);
         sb.append(", ").append(channelInfo);
         sb.append(", ").append(priceInfo);
+        sb.append(", ").append(workerMode);
         sb.append(", ").append(queueMode);
         sb.append(", ").append(queueName);
         sb.append(", ").append(cuid);

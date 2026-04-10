@@ -133,12 +133,17 @@ public class Channel extends TableImpl<ChannelRecord> {
     /**
      * The column <code>channel.price_info</code>. 单价
      */
-    public final TableField<ChannelRecord, String> PRICE_INFO = createField(DSL.name("price_info"), SQLDataType.VARCHAR(256).nullable(false).defaultValue(DSL.inline("{}", SQLDataType.VARCHAR)), this, "单价");
+    public final TableField<ChannelRecord, String> PRICE_INFO = createField(DSL.name("price_info"), SQLDataType.VARCHAR(8192).nullable(false).defaultValue(DSL.inline("{}", SQLDataType.VARCHAR)), this, "单价");
 
     /**
-     * The column <code>channel.queue_mode</code>. 队列模式(0:无队列;1:pull模式;2:route模式;3:pull+route模式)
+     * The column <code>channel.worker_mode</code>.
      */
-    public final TableField<ChannelRecord, Byte> QUEUE_MODE = createField(DSL.name("queue_mode"), SQLDataType.TINYINT.nullable(false).defaultValue(DSL.inline("0", SQLDataType.TINYINT)), this, "队列模式(0:无队列;1:pull模式;2:route模式;3:pull+route模式)");
+    public final TableField<ChannelRecord, Byte> WORKER_MODE = createField(DSL.name("worker_mode"), SQLDataType.TINYINT.nullable(false).defaultValue(DSL.inline("0", SQLDataType.TINYINT)), this, "");
+
+    /**
+     * The column <code>channel.queue_mode</code>. 队列模式(0:无队列;1:pull模式;2:route模式)
+     */
+    public final TableField<ChannelRecord, Byte> QUEUE_MODE = createField(DSL.name("queue_mode"), SQLDataType.TINYINT.nullable(false).defaultValue(DSL.inline("0", SQLDataType.TINYINT)), this, "队列模式(0:无队列;1:pull模式;2:route模式)");
 
     /**
      * The column <code>channel.queue_name</code>. 队列名称
