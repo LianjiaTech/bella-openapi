@@ -450,9 +450,35 @@ public class ApikeyService {
     }
 
     public Page<ApikeyDB> pageApikey(ApikeyOps.ApikeyCondition condition) {
-        fillPermissionCode(condition, false);
+        if (!fillApikeyPermission(condition)) {
+            fillPermissionCode(condition, false);
+        }
         fillManagerCode(condition);
         return apikeyRepo.pageAccessKeys(condition);
+    }
+
+    /**
+     * ApikeyCondition 专属权限填充，处理 parentCode / managerCode 两种无需叠加 personalCode 的场景。
+     *
+     * @return true 表示权限已由本方法完整处理，调用方无需再调 fillPermissionCode；
+     *         false 表示本方法未处理，调用方继续走 fillPermissionCode 通用逻辑。
+     */
+    private boolean fillApikeyPermission(ApikeyOps.ApikeyCondition condition) {
+        Operator op = BellaContext.getOperatorIgnoreNull();
+
+        if (StringUtils.isNotEmpty(condition.getParentCode())) {
+            // 查子AK：校验当前用户对父AK有 QUERY 权限，子AK ownerType 不受限，不叠加 personalCode
+            // Operator 路径：显式校验；AK 路径：fillPermissionCode 内会通过 personalCode/ownerCode 隐式校验
+            if (op != null && !isAdminOperator()) {
+                checkPermission(condition.getParentCode(), AkOperation.QUERY);
+            }
+            return true;
+        }
+        if (StringUtils.isNotEmpty(condition.getManagerCode())) {
+            // 按 managerCode 筛选：由 fillManagerCode 负责校验，不叠加 personalCode（否则会过滤掉他人/组织的AK）
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -497,13 +523,6 @@ public class ApikeyService {
             if(!isAdminOp) {
                 if(StringUtils.isNotEmpty(condition.getPersonalCode())) {
                     Assert.isTrue(op.getUserId().toString().equals(condition.getPersonalCode()), "没有操作权限");
-                } else if(condition instanceof ApikeyOps.ApikeyCondition
-                        && StringUtils.isNotEmpty(((ApikeyOps.ApikeyCondition) condition).getParentCode())) {
-                    // 查子AK：校验当前用户对父AK有权限，子AK ownerType 不受限，不叠加 personalCode
-                    checkPermission(((ApikeyOps.ApikeyCondition) condition).getParentCode(), AkOperation.QUERY);
-                } else if(condition instanceof ApikeyOps.ApikeyCondition
-                        && StringUtils.isNotEmpty(((ApikeyOps.ApikeyCondition) condition).getManagerCode())) {
-                    // 按 managerCode 筛选：由 fillManagerCode 负责校验，不叠加 personalCode（否则会过滤掉他人的AK）
                 } else {
                     // 默认只查自己 own 的 AK
                     condition.setPersonalCode(op.getUserId().toString());
