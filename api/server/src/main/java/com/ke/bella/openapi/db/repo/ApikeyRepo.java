@@ -66,7 +66,12 @@ public class ApikeyRepo extends StatusRepo<ApikeyDB, ApikeyRecord, String> imple
                 .and(StringUtils.isEmpty(op.getOwnerSearch()) ? DSL.noCondition()
                         : APIKEY.OWNER_NAME.like(op.getOwnerSearch() + "%")
                                 .or(APIKEY.OWNER_CODE.like(op.getOwnerSearch() + "%")))
-                .and(op.isIncludeChild() || StringUtils.isNotEmpty(op.getParentCode()) ? DSL.noCondition() : APIKEY.PARENT_CODE.eq(StringUtils.EMPTY))
+                .and(StringUtils.isEmpty(op.getManagerCode()) ? DSL.noCondition() : APIKEY.MANAGER_CODE.eq(op.getManagerCode()))
+                .and(StringUtils.isEmpty(op.getManagerSearch()) ? DSL.noCondition()
+                        : APIKEY.MANAGER_NAME.like(op.getManagerSearch() + "%")
+                                .or(APIKEY.MANAGER_CODE.like(op.getManagerSearch() + "%")))
+                .and(op.isIncludeChild() || op.isOnlyChild() || StringUtils.isNotEmpty(op.getParentCode()) ? DSL.noCondition() : APIKEY.PARENT_CODE.eq(StringUtils.EMPTY))
+                .and(op.isOnlyChild() ? APIKEY.PARENT_CODE.ne(StringUtils.EMPTY) : DSL.noCondition())
                 .and(StringUtils.isEmpty(op.getStatus()) ? DSL.noCondition() : APIKEY.STATUS.eq(op.getStatus()))
                 .and(StringUtils.isEmpty(op.getPersonalCode()) ? DSL.noCondition()
                         : APIKEY.OWNER_TYPE.eq(EntityConstants.PERSON).and(APIKEY.OWNER_CODE.eq(op.getPersonalCode())))
@@ -100,10 +105,10 @@ public class ApikeyRepo extends StatusRepo<ApikeyDB, ApikeyRecord, String> imple
 
     /**
      * 批量更新子API Key的所有者信息
-     * 
+     *
      * @param updateDB   更新的字段信息
      * @param parentCode 父API Key的code
-     * 
+     *
      * @return 更新的记录数
      */
     @Transactional
@@ -112,6 +117,17 @@ public class ApikeyRepo extends StatusRepo<ApikeyDB, ApikeyRecord, String> imple
                 .set(APIKEY.OWNER_TYPE, updateDB.getOwnerType())
                 .set(APIKEY.OWNER_CODE, updateDB.getOwnerCode())
                 .set(APIKEY.OWNER_NAME, updateDB.getOwnerName())
+                .set(APIKEY.MUID, updateDB.getMuid())
+                .set(APIKEY.MU_NAME, updateDB.getMuName())
+                .where(APIKEY.PARENT_CODE.eq(parentCode))
+                .execute();
+    }
+
+    @Transactional
+    public int syncManagerToChildren(String parentCode, ApikeyDB updateDB) {
+        return db.update(APIKEY)
+                .set(APIKEY.MANAGER_CODE, updateDB.getManagerCode())
+                .set(APIKEY.MANAGER_NAME, updateDB.getManagerName())
                 .set(APIKEY.MUID, updateDB.getMuid())
                 .set(APIKEY.MU_NAME, updateDB.getMuName())
                 .where(APIKEY.PARENT_CODE.eq(parentCode))
