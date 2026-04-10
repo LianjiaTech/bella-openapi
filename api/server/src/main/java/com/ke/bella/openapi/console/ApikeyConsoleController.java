@@ -6,6 +6,7 @@ import com.ke.bella.openapi.annotations.BellaAPI;
 import com.ke.bella.openapi.apikey.ApikeyInfo;
 import com.ke.bella.openapi.apikey.ApikeyOps;
 import com.ke.bella.openapi.apikey.ApikeyTransferLog;
+import com.ke.bella.openapi.apikey.ApikeyWithBalance;
 import com.ke.bella.openapi.apikey.TransferApikeyOwnerOp;
 import com.ke.bella.openapi.db.repo.Page;
 import com.ke.bella.openapi.protocol.limiter.QpsLimiterManager;
@@ -152,6 +153,16 @@ public class ApikeyConsoleController {
     @GetMapping("/page")
     public Page<ApikeyDB> pageApikey(ApikeyOps.ApikeyCondition condition) {
         return apikeyService.pageApikey(condition);
+    }
+
+    /**
+     * 分页查询 API Key 列表并附带余额信息（优化版接口）
+     * @param condition 查询条件（支持状态、所有者类型、分页等参数）
+     * @return 带余额信息的 API Key 分页结果
+     */
+    @GetMapping("/pageWithBalance")
+    public Page<ApikeyWithBalance> pageApikeysWithBalance(ApikeyOps.ApikeyCondition condition) {
+        return apikeyService.pageApikeysWithBalance(condition);
     }
 
     @PostMapping("/owner/transfer")
