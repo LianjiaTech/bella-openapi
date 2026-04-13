@@ -516,11 +516,7 @@ public class ApikeyService {
             if(op == null || CollectionUtils.isNotEmpty(condition.getOrgCodes())) {
                 throw new BellaException.AuthorizationException("没有操作权限");
             }
-            // 管理员判断：roleCode ∈ {console, all}，与前端 hasPermission('/console/**') 等价
-            boolean isAdminOp = op.getOptionalInfo() != null &&
-                    (EntityConstants.CONSOLE.equals(op.getOptionalInfo().get("roleCode"))
-                            || EntityConstants.ALL.equals(op.getOptionalInfo().get("roleCode")));
-            if(!isAdminOp) {
+            if(!isAdminOperator()) {
                 if(StringUtils.isNotEmpty(condition.getPersonalCode())) {
                     Assert.isTrue(op.getUserId().toString().equals(condition.getPersonalCode()), "没有操作权限");
                 } else {

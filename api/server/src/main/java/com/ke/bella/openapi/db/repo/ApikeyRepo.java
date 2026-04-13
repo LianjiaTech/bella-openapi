@@ -55,6 +55,7 @@ public class ApikeyRepo extends StatusRepo<ApikeyDB, ApikeyRecord, String> imple
     private SelectSeekStep1<ApikeyRecord, Long> constructSql(ApikeyOps.ApikeyCondition op) {
         return db.selectFrom(APIKEY)
                 .where(StringUtils.isEmpty(op.getOwnerType()) ? DSL.noCondition() : APIKEY.OWNER_TYPE.eq(op.getOwnerType()))
+                .and(StringUtils.isEmpty(op.getExcludeOwnerType()) ? DSL.noCondition() : APIKEY.OWNER_TYPE.ne(op.getExcludeOwnerType()))
                 .and(StringUtils.isEmpty(op.getOwnerCode()) ? DSL.noCondition() : APIKEY.OWNER_CODE.eq(op.getOwnerCode()))
                 .and(StringUtils.isEmpty(op.getParentCode()) ? DSL.noCondition() : APIKEY.PARENT_CODE.eq(op.getParentCode()))
                 .and(StringUtils.isEmpty(op.getName()) ? DSL.noCondition() : APIKEY.NAME.eq(op.getName()))
@@ -65,7 +66,7 @@ public class ApikeyRepo extends StatusRepo<ApikeyDB, ApikeyRecord, String> imple
                                 .or(APIKEY.SERVICE_ID.like(op.getSearchParam() + "%")))
                 .and(StringUtils.isEmpty(op.getOwnerSearch()) ? DSL.noCondition()
                         : APIKEY.OWNER_NAME.like(op.getOwnerSearch() + "%")
-                                .or(APIKEY.OWNER_CODE.like(op.getOwnerSearch() + "%")))
+                                .or(APIKEY.OWNER_CODE.like("%" + op.getOwnerSearch() + "%")))
                 .and(StringUtils.isEmpty(op.getManagerCode()) ? DSL.noCondition() : APIKEY.MANAGER_CODE.eq(op.getManagerCode()))
                 .and(StringUtils.isEmpty(op.getManagerSearch()) ? DSL.noCondition()
                         : APIKEY.MANAGER_NAME.like(op.getManagerSearch() + "%")

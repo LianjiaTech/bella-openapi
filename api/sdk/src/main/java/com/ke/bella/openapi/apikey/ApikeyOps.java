@@ -112,6 +112,7 @@ public class ApikeyOps {
     @Data
     public static class ApikeyCondition extends PermissionCondition {
         private String ownerType;
+        private String excludeOwnerType; // 排除指定所有者类型，如传 person 则过滤个人AK
         private String ownerCode;
         private String parentCode;
         private String name;
