@@ -79,12 +79,22 @@ public class ResponsesPriceInfo implements IProtocolProperty {
         private BigDecimal output;
         private BigDecimal cachedInput;
         private BigDecimal reasoningOutput;
+        private BigDecimal cachedRead;
+        private BigDecimal reasoning;
 
         public boolean match(int token) {
             if(token == 0 && minToken == 0) {
                 return true;
             }
             return token > minToken && token <= maxToken;
+        }
+
+        public BigDecimal getCachedInput() {
+            return cachedInput != null ? cachedInput : cachedRead;
+        }
+
+        public BigDecimal getReasoningOutput() {
+            return reasoningOutput != null ? reasoningOutput : reasoning;
         }
 
         public boolean validateRangePrice() {
@@ -96,11 +106,11 @@ public class ResponsesPriceInfo implements IProtocolProperty {
                 return false;
             }
 
-            if(cachedInput != null && cachedInput.compareTo(BigDecimal.ZERO) <= 0) {
+            if(getCachedInput() != null && getCachedInput().compareTo(BigDecimal.ZERO) <= 0) {
                 return false;
             }
 
-            if(reasoningOutput != null && reasoningOutput.compareTo(BigDecimal.ZERO) <= 0) {
+            if(getReasoningOutput() != null && getReasoningOutput().compareTo(BigDecimal.ZERO) <= 0) {
                 return false;
             }
 
