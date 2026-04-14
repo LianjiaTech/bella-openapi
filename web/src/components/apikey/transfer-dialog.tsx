@@ -21,12 +21,14 @@ import { searchUsers } from "@/lib/api/user"
 import { transferApikey, getTransferHistory } from "@/lib/api/apikey"
 import { UserSearchResult, TransferApikeyRequest, ApikeyTransferLog } from "@/lib/types/openapi"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { useUser } from "@/lib/context/user-context"
 
 interface TransferDialogProps {
     isOpen: boolean
     onClose: () => void
     akCode: string
     displayName: string
+    ownerCode: string
     onTransferSuccess: () => void
     excludeSelf?: boolean
 }
@@ -36,9 +38,11 @@ export const TransferDialog: React.FC<TransferDialogProps> = ({
     onClose,
     akCode,
     displayName,
+    ownerCode,
     onTransferSuccess,
     excludeSelf = true
 }) => {
+    const { userInfo } = useUser()
     const [searchKeyword, setSearchKeyword] = useState('')
     const [searchResults, setSearchResults] = useState<UserSearchResult[]>([])
     const [selectedUser, setSelectedUser] = useState<UserSearchResult | null>(null)
@@ -66,7 +70,9 @@ export const TransferDialog: React.FC<TransferDialogProps> = ({
         setSearchError('')
         
         try {
-            const results = await searchUsers(keyword, 20, excludeSelf)
+            // owner 搜索时排除自己（转给自己无意义）；manager 不排除（可接管到自己名下）
+            const isOwner = userInfo?.userId?.toString() === ownerCode || userInfo?.userId?.toString() === ownerCode
+            const results = await searchUsers(keyword, 20, excludeSelf && isOwner)
             setSearchResults(results)
             setSearchError('') // 搜索成功时清除错误信息
         } catch (error) {

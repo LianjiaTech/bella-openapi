@@ -177,185 +177,213 @@ public class ApikeyRecord extends UpdatableRecordImpl<ApikeyRecord> implements O
     }
 
     /**
+     * Setter for <code>apikey.manager_code</code>. 管理人编码
+     */
+    public void setManagerCode(String value) {
+        set(11, value);
+    }
+
+    /**
+     * Getter for <code>apikey.manager_code</code>. 管理人编码
+     */
+    public String getManagerCode() {
+        return (String) get(11);
+    }
+
+    /**
+     * Setter for <code>apikey.manager_name</code>. 管理人姓名
+     */
+    public void setManagerName(String value) {
+        set(12, value);
+    }
+
+    /**
+     * Getter for <code>apikey.manager_name</code>. 管理人姓名
+     */
+    public String getManagerName() {
+        return (String) get(12);
+    }
+
+    /**
      * Setter for <code>apikey.role_code</code>. 角色编码
      */
     public void setRoleCode(String value) {
-        set(11, value);
+        set(13, value);
     }
 
     /**
      * Getter for <code>apikey.role_code</code>. 角色编码
      */
     public String getRoleCode() {
-        return (String) get(11);
+        return (String) get(13);
     }
 
     /**
      * Setter for <code>apikey.certify_code</code>. 安全认证码
      */
     public void setCertifyCode(String value) {
-        set(12, value);
+        set(14, value);
     }
 
     /**
      * Getter for <code>apikey.certify_code</code>. 安全认证码
      */
     public String getCertifyCode() {
-        return (String) get(12);
+        return (String) get(14);
     }
 
     /**
      * Setter for <code>apikey.safety_scene_code</code>. 安全认证场景code
      */
     public void setSafetySceneCode(String value) {
-        set(13, value);
+        set(15, value);
     }
 
     /**
      * Getter for <code>apikey.safety_scene_code</code>. 安全认证场景code
      */
     public String getSafetySceneCode() {
-        return (String) get(13);
+        return (String) get(15);
     }
 
     /**
      * Setter for <code>apikey.safety_level</code>. 安全等级
      */
     public void setSafetyLevel(Byte value) {
-        set(14, value);
+        set(16, value);
     }
 
     /**
      * Getter for <code>apikey.safety_level</code>. 安全等级
      */
     public Byte getSafetyLevel() {
-        return (Byte) get(14);
+        return (Byte) get(16);
     }
 
     /**
      * Setter for <code>apikey.month_quota</code>. 每月额度
      */
     public void setMonthQuota(BigDecimal value) {
-        set(15, value);
+        set(17, value);
     }
 
     /**
      * Getter for <code>apikey.month_quota</code>. 每月额度
      */
     public BigDecimal getMonthQuota() {
-        return (BigDecimal) get(15);
+        return (BigDecimal) get(17);
     }
 
     /**
      * Setter for <code>apikey.status</code>. 状态(active/inactive)
      */
     public void setStatus(String value) {
-        set(16, value);
+        set(18, value);
     }
 
     /**
      * Getter for <code>apikey.status</code>. 状态(active/inactive)
      */
     public String getStatus() {
-        return (String) get(16);
+        return (String) get(18);
     }
 
     /**
      * Setter for <code>apikey.remark</code>. 备注
      */
     public void setRemark(String value) {
-        set(17, value);
+        set(19, value);
     }
 
     /**
      * Getter for <code>apikey.remark</code>. 备注
      */
     public String getRemark() {
-        return (String) get(17);
+        return (String) get(19);
     }
 
     /**
      * Setter for <code>apikey.cuid</code>. 创建人id
      */
     public void setCuid(Long value) {
-        set(18, value);
+        set(20, value);
     }
 
     /**
      * Getter for <code>apikey.cuid</code>. 创建人id
      */
     public Long getCuid() {
-        return (Long) get(18);
+        return (Long) get(20);
     }
 
     /**
      * Setter for <code>apikey.cu_name</code>. 创建人姓名
      */
     public void setCuName(String value) {
-        set(19, value);
+        set(21, value);
     }
 
     /**
      * Getter for <code>apikey.cu_name</code>. 创建人姓名
      */
     public String getCuName() {
-        return (String) get(19);
+        return (String) get(21);
     }
 
     /**
      * Setter for <code>apikey.muid</code>. 编辑人id
      */
     public void setMuid(Long value) {
-        set(20, value);
+        set(22, value);
     }
 
     /**
      * Getter for <code>apikey.muid</code>. 编辑人id
      */
     public Long getMuid() {
-        return (Long) get(20);
+        return (Long) get(22);
     }
 
     /**
      * Setter for <code>apikey.mu_name</code>. 编辑人姓名
      */
     public void setMuName(String value) {
-        set(21, value);
+        set(23, value);
     }
 
     /**
      * Getter for <code>apikey.mu_name</code>. 编辑人姓名
      */
     public String getMuName() {
-        return (String) get(21);
+        return (String) get(23);
     }
 
     /**
      * Setter for <code>apikey.ctime</code>.
      */
     public void setCtime(LocalDateTime value) {
-        set(22, value);
+        set(24, value);
     }
 
     /**
      * Getter for <code>apikey.ctime</code>.
      */
     public LocalDateTime getCtime() {
-        return (LocalDateTime) get(22);
+        return (LocalDateTime) get(24);
     }
 
     /**
      * Setter for <code>apikey.mtime</code>.
      */
     public void setMtime(LocalDateTime value) {
-        set(23, value);
+        set(25, value);
     }
 
     /**
      * Getter for <code>apikey.mtime</code>.
      */
     public LocalDateTime getMtime() {
-        return (LocalDateTime) get(23);
+        return (LocalDateTime) get(25);
     }
 
     // -------------------------------------------------------------------------
@@ -381,7 +409,7 @@ public class ApikeyRecord extends UpdatableRecordImpl<ApikeyRecord> implements O
     /**
      * Create a detached, initialised ApikeyRecord
      */
-    public ApikeyRecord(Long id, String code, String akSha, String akDisplay, String name, String parentCode, String outEntityCode, String serviceId, String ownerType, String ownerCode, String ownerName, String roleCode, String certifyCode, String safetySceneCode, Byte safetyLevel, BigDecimal monthQuota, String status, String remark, Long cuid, String cuName, Long muid, String muName, LocalDateTime ctime, LocalDateTime mtime) {
+    public ApikeyRecord(Long id, String code, String akSha, String akDisplay, String name, String parentCode, String outEntityCode, String serviceId, String ownerType, String ownerCode, String ownerName, String managerCode, String managerName, String roleCode, String certifyCode, String safetySceneCode, Byte safetyLevel, BigDecimal monthQuota, String status, String remark, Long cuid, String cuName, Long muid, String muName, LocalDateTime ctime, LocalDateTime mtime) {
         super(Apikey.APIKEY);
 
         setId(id);
@@ -395,6 +423,8 @@ public class ApikeyRecord extends UpdatableRecordImpl<ApikeyRecord> implements O
         setOwnerType(ownerType);
         setOwnerCode(ownerCode);
         setOwnerName(ownerName);
+        setManagerCode(managerCode);
+        setManagerName(managerName);
         setRoleCode(roleCode);
         setCertifyCode(certifyCode);
         setSafetySceneCode(safetySceneCode);

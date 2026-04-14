@@ -107,6 +107,16 @@ public class Apikey extends TableImpl<ApikeyRecord> {
     public final TableField<ApikeyRecord, String> OWNER_NAME = createField(DSL.name("owner_name"), SQLDataType.VARCHAR(16).nullable(false).defaultValue(DSL.inline("", SQLDataType.VARCHAR)), this, "所有者名称");
 
     /**
+     * The column <code>apikey.manager_code</code>. 管理人编码
+     */
+    public final TableField<ApikeyRecord, String> MANAGER_CODE = createField(DSL.name("manager_code"), SQLDataType.VARCHAR(64).nullable(false).defaultValue(DSL.inline("", SQLDataType.VARCHAR)), this, "管理人编码");
+
+    /**
+     * The column <code>apikey.manager_name</code>. 管理人姓名
+     */
+    public final TableField<ApikeyRecord, String> MANAGER_NAME = createField(DSL.name("manager_name"), SQLDataType.VARCHAR(16).nullable(false).defaultValue(DSL.inline("", SQLDataType.VARCHAR)), this, "管理人姓名");
+
+    /**
      * The column <code>apikey.role_code</code>. 角色编码
      */
     public final TableField<ApikeyRecord, String> ROLE_CODE = createField(DSL.name("role_code"), SQLDataType.VARCHAR(64).nullable(false).defaultValue(DSL.inline("", SQLDataType.VARCHAR)), this, "角色编码");
@@ -211,7 +221,7 @@ public class Apikey extends TableImpl<ApikeyRecord> {
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.<Index>asList(Indexes.APIKEY_IDX_OWNER_TYPE_CODE, Indexes.APIKEY_IDX_PARENT_OUT_ENTITY_CODE);
+        return Arrays.<Index>asList(Indexes.APIKEY_IDX_MANAGER_CODE, Indexes.APIKEY_IDX_OWNER_TYPE_CODE, Indexes.APIKEY_IDX_PARENT_OUT_ENTITY_CODE);
     }
 
     @Override
