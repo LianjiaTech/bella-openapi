@@ -16,6 +16,7 @@ import com.ke.bella.openapi.apikey.ApikeyCreateOp;
 import com.ke.bella.openapi.apikey.ApikeyInfo;
 import com.ke.bella.openapi.apikey.ApikeyOps;
 import com.ke.bella.openapi.apikey.ApikeyTransferLog;
+import com.ke.bella.openapi.apikey.ApikeyWithBalance;
 import com.ke.bella.openapi.apikey.SubApikeyUpdateOp;
 import com.ke.bella.openapi.apikey.TransferApikeyOwnerOp;
 import com.ke.bella.openapi.common.EntityConstants;
@@ -32,6 +33,7 @@ import com.ke.bella.openapi.tables.pojos.ApikeyDB;
 import com.ke.bella.openapi.tables.pojos.ApikeyMonthCostDB;
 import com.ke.bella.openapi.tables.pojos.ApikeyRoleDB;
 import com.ke.bella.openapi.tables.pojos.UserDB;
+import com.ke.bella.openapi.utils.DateTimeUtils;
 import com.ke.bella.openapi.utils.EncryptUtils;
 import com.ke.bella.openapi.utils.JacksonUtils;
 import com.ke.bella.openapi.utils.MatchUtils;
@@ -386,6 +388,22 @@ public class ApikeyService {
     public Page<ApikeyDB> pageApikey(ApikeyOps.ApikeyCondition condition) {
         fillPermissionCode(condition, false);
         return apikeyRepo.pageAccessKeys(condition);
+    }
+
+    /**
+     * 分页查询 API Key 列表并附带余额信息（优化版，避免 N+1 查询）
+     * @param condition 查询条件（与 pageApikey 参数完全一致）
+     * @return 带余额信息的 API Key 分页结果
+     */
+    public Page<ApikeyWithBalance> pageApikeysWithBalance(ApikeyOps.ApikeyCondition condition) {
+        // 1. 权限校验（复用现有逻辑）
+        fillPermissionCode(condition, false);
+
+        // 2. 获取当前月份（格式：2026-04）
+        String currentMonth = DateTimeUtils.getCurrentMonth();
+
+        // 3. 调用 Repository 层执行批量查询
+        return apikeyRepo.pageApikeysWithBalance(condition, currentMonth);
     }
 
     public void fillPermissionCode(PermissionCondition condition, boolean apikeyFirst) {
