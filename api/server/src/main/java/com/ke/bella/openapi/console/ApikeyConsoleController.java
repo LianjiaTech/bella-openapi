@@ -154,6 +154,17 @@ public class ApikeyConsoleController {
         return apikeyService.pageApikey(condition);
     }
 
+    @PostMapping("/manager/update")
+    public Boolean updateManager(@RequestBody ApikeyOps.ManagerOp op) {
+        Assert.hasText(op.getCode(), "code不可为空");
+        if(op.getManagerUserId() == null) {
+            Assert.hasText(op.getManagerCode(), "managerCode不可为空");
+            Assert.hasText(op.getManagerName(), "managerName不可为空");
+        }
+        apikeyService.updateManager(op);
+        return true;
+    }
+
     @PostMapping("/owner/transfer")
     public Boolean transferApikeyOwner(@RequestBody @Validated TransferApikeyOwnerOp op) {
         // 基本参数验证

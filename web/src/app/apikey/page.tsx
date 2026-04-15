@@ -2,7 +2,7 @@
 
 import React, {useEffect, useState, useMemo, useCallback} from "react"
 import {DataTable} from "@/components/ui/data-table"
-import {applyApikey, getApikeyInfos, getAdminApikeyInfos} from "@/lib/api/apikey"
+import {applyApikey, getApikeyInfos, getAdminApikeyInfos, getManagerApikeyInfos} from "@/lib/api/apikey"
 import {ApikeyColumns} from "@/components/apikey/apikey-column"
 import {ApikeyInfo} from "@/lib/types/openapi"
 import {ClientHeader} from "@/components/user/client-header"
@@ -14,6 +14,7 @@ import {useUser} from "@/lib/context/user-context"
 import {useToast} from "@/hooks/use-toast"
 import {CopyApikeyDialog} from "@/components/apikey/copy-apikey-dialog";
 import {SubApikeyTipsDialog} from "@/components/apikey/sub-apikey-tips-dialog";
+import {AdminCreateApikeyDialog} from "@/components/apikey/admin-create-apikey-dialog";
 import {hasPermission} from "@/lib/api/userInfo";
 
 const ApikeyPage: React.FC = () => {
@@ -27,8 +28,10 @@ const ApikeyPage: React.FC = () => {
     const [showSubApikeyTipsDialog, setShowSubApikeyTipsDialog] = useState<boolean>(false)
     const [copied, setCopied] = useState<boolean>(false)
     const [isAdminView, setIsAdminView] = useState<boolean>(false)
+    const [showAdminCreateDialog, setShowAdminCreateDialog] = useState<boolean>(false)
     const [adminOwnerTypeFilter, setAdminOwnerTypeFilter] = useState<string>("all")
-    const [adminSearchType, setAdminSearchType] = useState<"ak" | "owner">("ak")
+    const [adminSearchType, setAdminSearchType] = useState<"ak" | "owner" | "manager">("ak")
+    const [viewTab, setViewTab] = useState<"mine" | "managed">("mine")
     const {userInfo} = useUser()
     const {toast} = useToast()
 
@@ -57,7 +60,10 @@ const ApikeyPage: React.FC = () => {
                     const ownerType = adminOwnerTypeFilter === 'all' ? undefined : adminOwnerTypeFilter
                     const searchParam = adminSearchType === 'ak' ? searchTerm || null : null
                     const ownerSearch = adminSearchType === 'owner' ? searchTerm || null : null
-                    res = await getAdminApikeyInfos(page, { searchParam, ownerSearch, ownerType })
+                    const managerSearch = adminSearchType === 'manager' ? searchTerm || null : null
+                    res = await getAdminApikeyInfos(page, { searchParam, ownerSearch, managerSearch, ownerType })
+                } else if (viewTab === 'managed') {
+                    res = await getManagerApikeyInfos(page, userInfo.userId.toString(), searchTerm || null)
                 } else {
                     res = await getApikeyInfos(page, userInfo?.userId || null, searchTerm || null)
                 }
@@ -74,7 +80,7 @@ const ApikeyPage: React.FC = () => {
                 setIsLoading(false)
             }
         }
-    }, [page, userInfo, searchTerm, isAdminView, isAdmin, adminOwnerTypeFilter, adminSearchType])
+    }, [page, userInfo, searchTerm, isAdminView, isAdmin, adminOwnerTypeFilter, adminSearchType, viewTab])
 
     const handleAdminViewToggle = () => {
         setIsAdminView(prev => !prev)
@@ -82,6 +88,13 @@ const ApikeyPage: React.FC = () => {
         setSearchTerm("")
         setAdminOwnerTypeFilter("all")
         setAdminSearchType("ak")
+        setViewTab("mine")
+    }
+
+    const handleViewTabChange = (tab: "mine" | "managed") => {
+        setViewTab(tab)
+        setPage(1)
+        setSearchTerm("")
     }
 
     const showApikey = useCallback(async (apikey: string) => {
@@ -142,7 +155,7 @@ const ApikeyPage: React.FC = () => {
 
         try {
             setIsLoading(true)
-            const apikey = await applyApikey(userInfo.userId.toString(), userInfo.userName)
+            const apikey = await applyApikey({ ownerType: 'person', ownerCode: userInfo.userId.toString(), ownerName: userInfo.userName })
             if (apikey) {
                 showApikey(apikey)
             } else {
@@ -168,7 +181,8 @@ const ApikeyPage: React.FC = () => {
         setShowSubApikeyTipsDialog(true)
     }
 
-    const columns = useMemo(() => ApikeyColumns(refresh, showApikey, { updateApiKeyInPlace, isAdminView, isSuperAdmin, userQuotaEditEnabled }), [refresh, showApikey, updateApiKeyInPlace, isAdminView, isSuperAdmin, userQuotaEditEnabled])
+    const isManagedView = !isAdminView && viewTab === 'managed'
+    const columns = useMemo(() => ApikeyColumns(refresh, showApikey, { updateApiKeyInPlace, isAdminView, isManagedView, isSuperAdmin, userQuotaEditEnabled }), [refresh, showApikey, updateApiKeyInPlace, isAdminView, isManagedView, isSuperAdmin, userQuotaEditEnabled])
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -177,14 +191,31 @@ const ApikeyPage: React.FC = () => {
                 <div className="p-6">
                     <div className="mb-4 flex justify-between items-center">
                         <div className="flex items-center gap-2">
+                            {!isAdminView && (
+                                <div className="flex rounded-md border border-gray-200 overflow-hidden">
+                                    <button
+                                        onClick={() => handleViewTabChange("mine")}
+                                        className={`px-3 py-1.5 text-sm ${viewTab === 'mine' ? 'bg-gray-700 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+                                    >
+                                        我的 AK
+                                    </button>
+                                    <button
+                                        onClick={() => handleViewTabChange("managed")}
+                                        className={`px-3 py-1.5 text-sm border-l border-gray-200 ${viewTab === 'managed' ? 'bg-gray-700 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+                                    >
+                                        我管理的 AK
+                                    </button>
+                                </div>
+                            )}
                             {isAdmin && isAdminView && (
-                                <Select value={adminSearchType} onValueChange={(val: "ak" | "owner") => { setAdminSearchType(val); setSearchTerm(""); setPage(1); }}>
+                                <Select value={adminSearchType} onValueChange={(val: "ak" | "owner" | "manager") => { setAdminSearchType(val); setSearchTerm(""); setPage(1); }}>
                                     <SelectTrigger className="w-28">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="ak">名称/服务名</SelectItem>
                                         <SelectItem value="owner">所有者</SelectItem>
+                                        <SelectItem value="manager">管理人</SelectItem>
                                     </SelectContent>
                                 </Select>
                             )}
@@ -193,7 +224,11 @@ const ApikeyPage: React.FC = () => {
                                     className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4"/>
                                 <Input
                                     type="text"
-                                    placeholder={isAdminView && adminSearchType === 'owner' ? "搜索所有者名称/ID" : "搜索 API Key 名称"}
+                                    placeholder={
+                                        isAdminView && adminSearchType === 'owner' ? "搜索所有者名称/ID" :
+                                        isAdminView && adminSearchType === 'manager' ? "搜索管理人名称/ID" :
+                                        "搜索 API Key 名称"
+                                    }
                                     value={searchTerm}
                                     onChange={handleSearch}
                                     className="pl-10 w-64"
@@ -208,6 +243,7 @@ const ApikeyPage: React.FC = () => {
                                         <SelectItem value="all">全部类型</SelectItem>
                                         <SelectItem value="person">个人</SelectItem>
                                         <SelectItem value="org">组织</SelectItem>
+                                        <SelectItem value="project">项目</SelectItem>
                                     </SelectContent>
                                 </Select>
                             )}
@@ -223,7 +259,12 @@ const ApikeyPage: React.FC = () => {
                                     管理员视图
                                 </Button>
                             )}
-                            {!isAdminView && (
+                            {isAdminView ? (
+                                <Button onClick={() => setShowAdminCreateDialog(true)} className="bg-gray-700 hover:bg-gray-900 text-white">
+                                    <Plus className="h-4 w-4 mr-2"/>
+                                    创建 API Key
+                                </Button>
+                            ) : (
                                 <>
                                     <Button onClick={handleSubApikeyTipsDialog} className="bg-gray-700 hover:bg-gray-900 text-white ">
                                         <Users className="h-4 w-4"/><p>管理子ak</p>
@@ -278,6 +319,11 @@ const ApikeyPage: React.FC = () => {
             </div>
             <CopyApikeyDialog showDialog={showDialog} setShowDialog={setShowDialog} apikey={newApiKey} handleCopyApiKey={handleCopyApiKey} copied={copied}/>
             <SubApikeyTipsDialog showDialog={showSubApikeyTipsDialog} setShowDialog={setShowSubApikeyTipsDialog} />
+            <AdminCreateApikeyDialog
+                isOpen={showAdminCreateDialog}
+                onClose={() => setShowAdminCreateDialog(false)}
+                onSuccess={refresh}
+            />
         </div>
     )
 }
