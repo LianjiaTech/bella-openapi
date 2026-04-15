@@ -344,4 +344,29 @@ public class ResponsesCostDetailsTest {
                 diff.compareTo(new BigDecimal("0.001")) < 0);
     }
 
+    @Test
+    public void testResponsesShouldSupportCompletionStylePriceFields() {
+        String priceInfoJson = "{\"batchDiscount\":1,\"tiers\":[{\"inputRangePrice\":{\"minToken\":0,\"maxToken\":272000,\"input\":1.75,\"output\":10.5,\"cachedRead\":0.175}},{\"inputRangePrice\":{\"minToken\":272000,\"maxToken\":2147483647,\"input\":3.5,\"output\":15.75,\"cachedRead\":0.35}}],\"toolPrices\":{\"web_search\":17.5},\"unit\":\"分/千token\"}";
+
+        ResponsesApiResponse.Usage usage = new ResponsesApiResponse.Usage();
+        usage.setInput_tokens(10000);
+        usage.setOutput_tokens(5000);
+
+        ResponsesApiResponse.InputTokensDetail inputDetail = new ResponsesApiResponse.InputTokensDetail();
+        inputDetail.setCached_tokens(3000);
+        usage.setInput_tokens_details(inputDetail);
+
+        CostDetails costDetails = CostCalculator.calculate("/v1/responses", priceInfoJson, usage);
+
+        assertNotNull("兼容 completion 风格 cachedRead 后应有 cached_tokens 明细", costDetails.getInputDetails());
+        CostDetails.CostDetailItem cachedItem = costDetails.getInputDetails().get("cached_tokens");
+        assertNotNull("cached_tokens 明细不应为 null", cachedItem);
+        assertEquals("缓存单价应取 cachedRead", new BigDecimal("0.175"), cachedItem.getUnitPrice());
+        assertEquals("缓存成本应正确计算", 0, new BigDecimal("0.525").compareTo(cachedItem.getCost()));
+
+        CostDetails.CostDetailItem inputItem = costDetails.getInputDetails().get("input_tokens");
+        assertNotNull("普通输入 token 明细不应为 null", inputItem);
+        assertEquals("普通输入 token 应扣除缓存 token", Integer.valueOf(7000), inputItem.getTokens());
+    }
+
 }
