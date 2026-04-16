@@ -1,5 +1,4 @@
 import axios, { AxiosInstance, AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
-import { isValidRedirectUrl } from '@/lib/utils/security';
 
 /**
  * 动态解析 baseURL
@@ -7,7 +6,7 @@ import { isValidRedirectUrl } from '@/lib/utils/security';
  * - 自动适配 HTTP/HTTPS 协议
  * - 开发环境使用相对路径
  */
-const getBaseURL = (): string => {
+export const getBaseURL = (): string => {
   // 开发环境使用相对路径
   if (process.env.NODE_ENV === 'development') {
     return '/';
@@ -15,6 +14,7 @@ const getBaseURL = (): string => {
 
   // 读取环境变量配置
   const apiHost = process.env.NEXT_PUBLIC_API_HOST;
+  console.log('apiHost ====', apiHost)
   if (!apiHost) {
     return '/'; // 未配置时使用相对路径
   }
@@ -33,7 +33,7 @@ const getBaseURL = (): string => {
  */
 export const apiClient: AxiosInstance = axios.create({
   baseURL: getBaseURL(),
-  timeout: 30000, // 30秒超时
+  timeout: 300000, // 300秒超时
   headers: {
     'Content-Type': 'application/json',
     'X-BELLA-CONSOLE': 'true', // 标识控制台请求（Java 后端需要）
@@ -48,6 +48,11 @@ export const apiClient: AxiosInstance = axios.create({
  */
 apiClient.interceptors.request.use(
   (config) => {
+    // FormData 检测：让浏览器自动设置带 boundary 的 multipart/form-data
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
+    }
+
     // 开发环境：打印请求日志
     if (process.env.NODE_ENV === 'development') {
       console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`, {
@@ -82,6 +87,11 @@ apiClient.interceptors.response.use(
 
     const data = response.data;
 
+    // 二进制数据检测：Blob、ArrayBuffer 等类型直接返回
+    if (data instanceof Blob || data instanceof ArrayBuffer || response.config.responseType === 'blob' || response.config.responseType === 'arraybuffer') {
+      return data;
+    }
+
     // 格式检测：Java 后端包裹格式 { code, data, message }
     if (data && typeof data === 'object' && 'code' in data) {
       const apiData = data as any; // 类型断言以处理动态格式
@@ -107,58 +117,67 @@ apiClient.interceptors.response.use(
 
     // 开发环境：打印错误日志
     if (process.env.NODE_ENV === 'development') {
-      console.error('[API Error]', {
-        url: error.config?.url || 'unknown',
-        method: error.config?.method || 'unknown',
-        status: error.response?.status || 'unknown',
-        data: error.response?.data || {},
+      const errorInfo: Record<string, any> = {
         message: error.message || 'Unknown error',
-      });
+      };
+      if (error.config) {
+        errorInfo.url = error.config.url;
+        errorInfo.method = error.config.method;
+      }
+      if (error.response) {
+        errorInfo.status = error.response.status;
+        errorInfo.data = error.response.data;
+      }
+      console.error('[API Error]', errorInfo);
     }
 
     // HTTP 错误处理
     if (error.response) {
       const { status, data } = error.response;
 
+      // data.error 可能是字符串或对象（OpenAI 兼容格式），统一提取为字符串
+      const extractErrorMessage = (fallback: string): string => {
+        const err = (data as any)?.error;
+        if (typeof err === 'string') return err;
+        if (err && typeof err === 'object') return err.message || fallback;
+        return (data as any)?.message || fallback;
+      };
+
       switch (status) {
         case 400:
-          error.message = (data as any)?.error || '请求参数错误';
+          error.message = extractErrorMessage('请求参数错误');
           break;
         case 401:
-          error.message = (data as any)?.error || '未授权访问';
+          error.message = extractErrorMessage('未授权访问');
 
-          // 401 自动重定向逻辑（排除 userInfo 接口）
-          if (!error.config?.url?.endsWith('/openapi/userInfo')) {
-            // 支持大小写兼容的 Header 读取
-            const loginUrl = error.response.headers['X-Redirect-Login'] || error.response.headers['x-redirect-login'];
+          // 401 自动重定向逻辑
+          // 检查是否有 X-Redirect-Login 响应头（CAS企业登录模式）
+          const loginUrl = error.response.headers['X-Redirect-Login'] || error.response.headers['x-redirect-login'];
 
-            if (loginUrl && typeof window !== 'undefined') {
-              // 安全校验：验证重定向 URL 是否在白名单内
-              // if (!isValidRedirectUrl(loginUrl)) {
-              //   console.error('[Security] Invalid redirect URL blocked:', loginUrl);
-              //   error.message = '登录跳转地址不安全，请联系管理员';
-              //   break; // 阻止重定向，继续走 reject 流程
-              // }
+          if (loginUrl && typeof window !== 'undefined') {
 
-              // 添加回跳 URL 参数
-              const redirectUrl = loginUrl + encodeURIComponent(window.location.href);
-              window.location.href = redirectUrl;
-              // 返回永不 resolve 的 Promise，阻塞后续请求
-              return new Promise(() => {});
-            }
+            // CAS模式：直接跳转到企业登录页
+            // 添加回跳 URL 参数（包含当前页面地址）
+            const redirectUrl = loginUrl + encodeURIComponent(window.location.href);
+            window.location.href = redirectUrl;
+            // 返回永不 resolve 的 Promise，阻塞后续请求
+            return new Promise(() => {});
           }
+
+          // OAuth模式：没有X-Redirect-Login响应头
+          // 由AuthGuard组件处理重定向到/login页面
           break;
         case 403:
-          error.message = (data as any)?.error || '禁止访问';
+          error.message = extractErrorMessage('禁止访问');
           break;
         case 404:
-          error.message = (data as any)?.error || '资源不存在';
+          error.message = extractErrorMessage('资源不存在');
           break;
         case 500:
-          error.message = (data as any)?.error || '服务器内部错误';
+          error.message = extractErrorMessage('服务器内部错误');
           break;
         default:
-          error.message = (data as any)?.error || `请求失败 (${status})`;
+          error.message = extractErrorMessage(`请求失败 (${status})`);
       }
     } else if (error.request) {
       // 网络错误

@@ -49,8 +49,8 @@ export interface TypeSchema {
     code: string;
     name: string;
     valueType: string;
-    selections: string[]
-    child?: JsonSchema;
+    selections: string[];
+    child?: JsonSchema | null;
     description?: string;
 }
 
@@ -75,4 +75,48 @@ export interface MonitorData {
  */
 export interface VoiceProperties {
     voiceTypes: Record<string, string>;
+}
+export interface ChannelDetails {
+    cuid: number;
+    cuName: string;
+    muid: number;
+    muName: string;
+    ctime: string | null;
+    mtime: string | null;
+    channelCode: string;
+    channelInfo: string;
+    dataDestination: string;
+    entityCode: string;
+    entityType: string;
+    priceInfo: string;
+    priority: string;
+    protocol: string;
+    queueMode: number;
+    queueName: string;
+    status: string;
+    supplier: string;
+    trialEnabled: number;
+    url: string;
+}
+
+// Channel 类型用于创建和更新操作
+export interface Channel {
+    channelCode?: string;
+    entityType?: string;
+    entityCode?: string;
+    url?: string;
+    protocol?: string;
+    supplier?: string;
+    dataDestination?: string;
+    channelInfo?: string;
+    priceInfo?: string;
+    priority?: string;
+    trialEnabled?: number;
+    queueMode?: number;
+    queueName?: string;
+    ownerType?: string;
+    ownerCode?: string;
+    ownerName?: string;
+    visibility?: string;
+    status?: string;
 }

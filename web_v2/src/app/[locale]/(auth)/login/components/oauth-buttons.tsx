@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useEffect, useState } from "react"
@@ -6,6 +5,7 @@ import { useAuth } from "@/components/providers/auth-provider"
 import { Button } from "@/components/common/button"
 import { Github } from "lucide-react"
 import type { OAuthProvider } from "@/lib/types/auth"
+import { toast } from "sonner"
 
 interface OAuthButtonsProps {
   redirect?: string
@@ -30,7 +30,7 @@ export function OAuthButtons({ redirect = '/overview' }: OAuthButtonsProps) {
       setProviders(config.providers)
     } catch (error) {
       console.error('Failed to load OAuth config:', error)
-      
+      toast.error('OAuth配置加载失败')
       setProviders([])
     } finally {
       setIsLoading(false)

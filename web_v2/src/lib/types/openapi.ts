@@ -1,3 +1,5 @@
+import { ChannelDetails } from "./metadata";
+
 export interface ModelProperties {
     max_input_context?: number;
     max_output_context?: number;
@@ -19,6 +21,15 @@ export interface Model {
     endpoints: string[];
     priceDetails?: PriceDetails;
     terminalModel?: string;
+
+    ctime?: string;             // 创建时间，格式 "YYYY-MM-DD HH:mm:ss"
+    cuName?: string;            // 创建人名称
+    cuid?: number;              // 创建人ID
+
+    mtime?: string;             // 修改时间，格式 "YYYY-MM-DD HH:mm:ss"
+    muName?: string;            // 修改人名称
+    muid?: number;              // 修改人ID
+   
 }
 export interface MetadataFeature {
     code: string;
@@ -41,36 +52,23 @@ export interface EndpointDetails {
     features: MetadataFeature[];
     priceDetails: PriceDetails;
 }
-export interface Model {}
-
-// Channel 类型用于创建和更新操作
-export interface Channel {
-    channelCode?: string;
-    entityType?: string;
-    entityCode?: string;
-    url?: string;
-    protocol?: string;
-    supplier?: string;
-    dataDestination?: string;
-    channelInfo?: string;
-    priceInfo?: string;
-    priority?: string;
-    trialEnabled?: number;
-    queueMode?: number;
-    queueName?: string;
-    ownerType?: string;
-    ownerCode?: string;
-    ownerName?: string;
-    visibility?: string;
-    status?: string;
+export interface Model {
+    modelName: string;
+    description?: string;
+    documentUrl: string;
+    properties: string;
+    features: string;
+    ownerType: string;
+    ownerCode:string;
+    ownerName: string;
+    visibility: string;
+    status: string;
+    linkedTo: string;
+    endpoints: string[];
+    priceDetails?: PriceDetails;
+    terminalModel?: string;
 }
 
-export interface ModelDetails {
-    model: Model;
-    channels: ChannelDetails[];
-}
-export interface ChannelDetails {
-}
 export interface Endpoint {
     endpoint: string;
     endpointCode: string;
@@ -85,4 +83,17 @@ export interface Endpoint {
     ctime: string;
     mtime: string;
     documentUrl?: string;
+}
+
+export interface ModelDetails {
+    model: Model;
+    channels: ChannelDetails[];
+}
+
+export interface Page<T> {
+    data?: T[];
+    has_more: boolean;
+    page: number;
+    limit: number;
+    total: number;
 }
