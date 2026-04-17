@@ -13,7 +13,9 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.util.Assert;
 
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Data
 @JsonInclude(Include.NON_NULL)
@@ -108,6 +110,7 @@ public class CompletionResponse extends OpenapiResponse {
         private int index;
         private Message message;
         private Logprobs logprobs;
+        private Object grounding_metadata;
 
         public String content() {
             if(message != null && message.getContent() != null) {
@@ -171,11 +174,18 @@ public class CompletionResponse extends OpenapiResponse {
         private int cache_read_tokens;
         private TokensDetail completion_tokens_details;
         private TokensDetail prompt_tokens_details;
+        private Map<String, Integer> tool_usage;
 
         public TokenUsage add(TokenUsage u) {
             this.completion_tokens += u.completion_tokens;
             this.prompt_tokens += u.prompt_tokens;
             this.total_tokens += u.total_tokens;
+            if(u.tool_usage != null) {
+                if(this.tool_usage == null) {
+                    this.tool_usage = new HashMap<>();
+                }
+                u.tool_usage.forEach((k, v) -> this.tool_usage.merge(k, v, Integer::sum));
+            }
             return this;
         }
 

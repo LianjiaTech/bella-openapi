@@ -126,6 +126,7 @@ public class StreamCompletionResponse extends OpenapiResponse {
         private int index;
         private Message delta;
         private CompletionResponse.Logprobs logprobs;
+        private Object grounding_metadata;
 
         public String content() {
             if(delta != null && delta.getContent() != null) {
