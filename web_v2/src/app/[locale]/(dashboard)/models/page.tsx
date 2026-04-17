@@ -14,6 +14,7 @@ import { ModelCard } from "./components/modelCard"
 import { Button } from "@/components/common/button"
 import { VirtualGrid } from "@/components/ui/virtualGrid/index"
 import { SearchBar } from "@/components/ui/modelFilterPanel/components/SearchBar"
+import { ConfigureModelPanel } from "../metadata/components/ConfigureModelPanel"
 
 
 /**
@@ -26,6 +27,7 @@ const ModelsPage = () => {
   const [selectedCapability, setSelectedCapability] = useState<string>("")
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [selectedModel, setSelectedModel] = useState<Model | null>(null)
   // 使用自定义 Hook 获取端点数据
   const { features, models, initialLoading, modelsLoading, error, refetch } = useEndpointData(selectedCapability, selectedTags)
 
@@ -69,8 +71,10 @@ const ModelsPage = () => {
    * 处理能力分类变化
    */
   const handleCapabilityChange = useCallback((endpoint: string) => {
+    console.log('endpoint', endpoint);
     setSelectedCapability(endpoint)
     setSelectedTags([])
+    setSearchQuery("")
   }, [])
 
   /**
@@ -88,16 +92,33 @@ const ModelsPage = () => {
   }, [])
 
   /**
-   * 处理添加渠道操作
+   * 处理添加私有渠道操作：进入该模型的私有渠道配置面板
    */
-  const handleAddChannel = (model: Model) => {
-    // TODO: 添加渠道操作
-  }
+  const handleAddChannel = useCallback((model: Model) => {
+    setSelectedModel(model)
+  }, [])
+
+  /**
+   * 返回模型目录列表
+   */
+  const handleBackToList = useCallback(() => {
+    setSelectedModel(null)
+  }, [])
 
 
   return (
     <>
-      <TopBar title={t("modelCatalog")} description={t("modelCatalogDesc")} />
+      {selectedModel && (
+        <div className="animate-in fade-in duration-300">
+          <ConfigureModelPanel
+            model={selectedModel}
+            onBack={handleBackToList}
+            isPrivate={true}
+          />
+        </div>
+      )}
+
+      {!selectedModel && <><TopBar title={t("modelCatalog")} description={t("modelCatalogDesc")} />
       <div className=" flex h-[calc(100vh-4rem)] flex-col overflow-hidden">
         {/* 筛选面板区域（固定不滚动） */}
         <div className="flex-shrink-0 border-b bg-background">
@@ -166,7 +187,7 @@ const ModelsPage = () => {
               overscan={5}
               getItemKey={(model) => model.modelName}
               renderItem={(model) => (
-                <ModelCard model={model} onAddChannel={handleAddChannel} />
+                <ModelCard model={model} onAddChannel={handleAddChannel} selectedCapability={selectedCapability}/>
               )}
               emptyElement={
                 <div className="flex items-center justify-center h-full text-muted-foreground">
@@ -178,6 +199,7 @@ const ModelsPage = () => {
           )}
         </div>
       </div>
+      </>}
     </>
   )
 }
