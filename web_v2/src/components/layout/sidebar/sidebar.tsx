@@ -1,7 +1,7 @@
 'use client';
 
 import { Link, usePathname } from '@/i18n/routing';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Home,
   Sparkles,
@@ -16,24 +16,26 @@ import {
   Volume2,
   Radio,
   ImageIcon,
-  Database,
-  Network,
   FileText,
   WorkflowIcon,
-  Search,
   ScanText,
   Settings,
-  Activity,
   FolderTree,
-  LogIn,
   type LucideIcon,
   LogOut,
+  Wand2,
+  MessageCircle,
+  Shield,
+  KeySquare,
+  Database,
+  Users,
 } from "lucide-react"
 import { useLanguage } from "../../providers/language-provider"
+import { useAuth } from "../../providers/auth-provider"
 import { cn } from "@/lib/utils"
 import { SettingsDialog } from "./settings-dialog"
 import { logout } from '@/lib/api/auth';
-import { useRouter } from 'next/navigation';
+import { hasPermission } from '@/lib/utils/permission';
 
 interface NavItem {
   label: string;
@@ -42,39 +44,68 @@ interface NavItem {
   children?: NavItem[];
 }
 
-const navItems: NavItem[] = [
+/** 所有用户可见的基础菜单（静态，无需权限判断） */
+const BASE_NAV_ITEMS: NavItem[] = [
   { label: 'home', href: '/overview', icon: Home },
   { label: 'models', href: '/models', icon: FlaskConical },
   {
     label: 'playground',
     icon: Sparkles,
     children: [
-      { label: 'chat', href: '/playground/chat', icon: MessageSquare },
-      { label: 'embedding', href: '/playground/embedding', icon: Brain },
-      { label: 'audio', href: '/playground/audio', icon: Mic },
-      { label: 'tts', href: '/playground/tts', icon: Volume2 },
-      { label: 'realtime', href: '/playground/realtime', icon: Radio },
-      { label: 'images', href: '/playground/images', icon: ImageIcon },
-      { label: 'knowledge', href: '/playground/knowledge', icon: Database },
-      { label: 'rag', href: '/playground/rag', icon: Network },
-      { label: 'docparse', href: '/playground/docparse', icon: FileText },
-      { label: 'workflow', href: '/playground/workflow', icon: WorkflowIcon },
-      { label: 'search', href: '/playground/search', icon: Search },
+      { label: 'intelligentQA', href: '/playground/chat', icon: MessageSquare },
+      { label: 'vectorization', href: '/playground/embedding', icon: Brain },
+      { label: 'speechSynthesis', href: '/playground/audio/tts', icon: Mic },
+      { label: 'speechRecognition', href: '/playground/audio/asr/flash', icon: Volume2 },
+      { label: 'realtimeRecognition', href: '/playground/audio/asr/realtime/transcription', icon: Radio },
+      { label: 'realtimeConversation', href: '/playground/audio/asr/realtime/chat', icon: MessageCircle },
+      { label: 'textToImage', href: '/playground/images/generations', icon: ImageIcon },
+      { label: 'imageToImage', href: '/playground/images/edits', icon: Wand2 },
+      { label: 'documentParsing', href: '/playground/docparse', icon: FileText },
+      { label: 'aiWorkflow', href: '/playground/workflow', icon: WorkflowIcon },
+      // { label: 'search', href: '/playground/search', icon: Search },
       { label: 'ocr', href: '/playground/ocr', icon: ScanText },
     ]
   },
-  { label: 'apiKeys', href: '/api-keys', icon: Key },
-  { label: 'logs', href: '/analytics', icon: ScrollText },
+  {
+    label: 'apiKeys',
+    icon: Key,
+    children: [
+      { label: '我的密钥', href: '/apikey', icon: Key },
+      { label: '组织/项目密钥', href: '/manager', icon: Users },
+    ]
+  },
+  { label: 'logs', href: '/logs', icon: ScrollText },
   { label: 'modelStatus', href: '/status', icon: HelpCircle },
-  { label: 'metadata', href: '/metadata', icon: FolderTree },
 ];
+
+/** 管理员专属菜单组（仅 hasPermission('/console/**') 时追加） */
+const ADMIN_NAV_GROUP: NavItem = {
+  label: '管理员',
+  icon: Shield,
+  children: [
+    { label: 'API Key 管理', href: '/apikey-admin', icon: KeySquare },
+    { label: '元数据管理', href: '/metadata', icon: Database },
+    // 未来可在此追加：管理者管理、Model 限制管理等
+  ],
+};
 
 export default function Sidebar() {
   const pathname = usePathname();
   const { t } = useLanguage();
+  const { user } = useAuth();
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const router = useRouter();
+
+  /**
+   * 动态菜单列表：基础菜单 + 管理员分组（按权限）
+   * 仅在 user 变化时重算，避免每次渲染重新构建数组引用
+   */
+  const navItems = useMemo((): NavItem[] => {
+    if (hasPermission(user, '/console/**')) {
+      return [...BASE_NAV_ITEMS, ADMIN_NAV_GROUP];
+    }
+    return BASE_NAV_ITEMS;
+  }, [user]);
 
   const toggleExpanded = (label: string) => {
     setExpandedItems(prev => {
@@ -88,10 +119,16 @@ export default function Sidebar() {
     });
   };
 
-  // Auto-expand if user is currently on a child route
+  // 自动展开：当前路径在某个子路由组下时，展开对应父项
   useEffect(() => {
     if (pathname?.startsWith('/playground/')) {
       setExpandedItems(prev => new Set(prev).add('playground'));
+    }
+    if (pathname?.startsWith('/apikey-admin') || pathname?.startsWith('/metadata')) {
+      setExpandedItems(prev => new Set(prev).add('管理员'));
+    }
+    if (pathname?.startsWith('/apikey') || pathname?.startsWith('/manager')) {
+      setExpandedItems(prev => new Set(prev).add('apiKeys'));
     }
   }, [pathname]);
 
@@ -104,7 +141,7 @@ export default function Sidebar() {
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
             <Sparkles className="h-5 w-5 text-primary-foreground" />
           </div>
-          <span className="text-lg font-semibold text-sidebar-foreground">Bella</span>
+          <span className="text-lg font-semibold text-sidebar-foreground">OpenAPI 服务平台</span>
         </Link>
       </div>
 

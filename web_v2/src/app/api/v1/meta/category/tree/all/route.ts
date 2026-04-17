@@ -25,20 +25,6 @@ export async function GET() {
     return NextResponse.json(mockResponse);
   }
 
-  // TODO: 调用真实后端 API
-  // 示例实现:
-  // try {
-  //   const backendUrl = process.env.BACKEND_API_URL || 'http://localhost:8080';
-  //   const response = await fetch(`${backendUrl}/api/v1/meta/category/tree/all`);
-  //   const data = await response.json();
-  //   return NextResponse.json(data);
-  // } catch (error) {
-  //   return NextResponse.json(
-  //     { code: 500, message: 'Backend API error', data: null },
-  //     { status: 500 }
-  //   );
-  // }
-
   // 当前未实现真实 API 调用，返回错误提示
   return NextResponse.json(
     {

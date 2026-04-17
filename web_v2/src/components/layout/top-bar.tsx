@@ -9,15 +9,18 @@ import { useTheme } from "../providers/theme-provider"
 interface TopBarProps {
   title?: string
   description?: string
+  leftAction?: React.ReactNode
   action?: React.ReactNode
 }
 
-export function TopBar({ title, description, action }: TopBarProps) {
+export function TopBar({ title, description, leftAction, action }: TopBarProps) {
   const { theme, setTheme } = useTheme()
   const { t } = useLanguage()
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-sidebar-border bg-background/95 px-6 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      {leftAction && <div className="flex items-center gap-2">{leftAction}</div>}
+      
       {title && (
         <div className="flex flex-1 flex-col justify-center">
           <h1 className="text-lg font-semibold">{title}</h1>

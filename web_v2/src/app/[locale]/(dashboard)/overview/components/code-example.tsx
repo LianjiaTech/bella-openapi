@@ -32,11 +32,13 @@ print(response.choices[0].message.content)`
         <h2 className="text-2xl font-bold">{t("quickStart")}</h2>
         <nav className="flex gap-2" aria-label={t("quickStartActions")}>
           <Button variant="ghost" size="sm" asChild>
-            <Link href="/api-keys">{t("viewAPIKeys")}</Link>
+            <Link href="/apikey">{t("viewAPIKeys")}</Link>
           </Button>
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/docs">{t("browseDocs")}</Link>
-          </Button>
+          {config.api.docsUrl && (
+            <Button variant="ghost" size="sm" asChild>
+              <Link href={config.api.docsUrl} target="_blank" rel="noopener noreferrer">{t("browseDocs")}</Link>
+            </Button>
+          )}
         </nav>
       </div>
 
