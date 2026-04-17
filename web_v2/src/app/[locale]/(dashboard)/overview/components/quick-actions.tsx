@@ -27,7 +27,7 @@ export function QuickActions() {
       icon: MessageSquare,
       title: t("testInPlayground"),
       description: t("testInPlaygroundDesc"),
-      href: "/playground",
+      href: "/playground/chat",
     },
     {
       icon: Gauge,
