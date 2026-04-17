@@ -33,6 +33,9 @@ public class OpenapiResponse implements Serializable {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private Object requestRiskData;
 
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String channelCode;
+
     public static OpenapiResponse errorResponse(OpenapiError error) {
         OpenapiResponse response = new OpenapiResponse();
         response.setError(error);

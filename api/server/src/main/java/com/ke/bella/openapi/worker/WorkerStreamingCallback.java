@@ -7,6 +7,7 @@ import com.ke.bella.openapi.protocol.OpenapiResponse;
 import com.ke.bella.openapi.protocol.completion.callback.StreamCompletionCallback;
 import com.ke.bella.openapi.safety.ISafetyCheckService;
 import com.ke.bella.openapi.safety.SafetyCheckRequest;
+import com.ke.bella.openapi.utils.JacksonUtils;
 import com.ke.bella.queue.TaskWrapper;
 import lombok.extern.slf4j.Slf4j;
 
@@ -53,11 +54,14 @@ public class WorkerStreamingCallback extends StreamCompletionCallback {
 
     @Override
     public void send(Object data) {
-        taskWrapper.emitProgress(
-                String.valueOf(seq.getAndIncrement()),
-                "message",
-                data
-        );
+        if(!(data instanceof String)) {
+            Map<String, Object> dataMap = JacksonUtils.toMap(data);
+            if(dataMap != null) {
+                dataMap.put("channelCode", processData.getChannelCode());
+                data = dataMap;
+            }
+        }
+        taskWrapper.emitProgress(String.valueOf(seq.getAndIncrement()), "message", data);
     }
 
     @Override
