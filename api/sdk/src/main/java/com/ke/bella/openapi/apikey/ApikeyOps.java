@@ -44,6 +44,38 @@ public class ApikeyOps {
     @SuperBuilder
     @AllArgsConstructor
     @NoArgsConstructor
+    public static class ChangeOwnerOp extends Operator {
+        private String code;
+        private String targetOwnerType;
+        private String targetOwnerCode;
+        private String targetOwnerName;
+        private String reason;
+    }
+
+    @Data
+    @SuperBuilder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class ChangeParentOp extends Operator {
+        private String code;
+        private String targetParentCode;
+        private String reason;
+    }
+
+    @Data
+    @SuperBuilder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class ChangeResult {
+        private String code;
+        private String action;
+        private Integer affectedCount;
+    }
+
+    @Data
+    @SuperBuilder
+    @AllArgsConstructor
+    @NoArgsConstructor
     public static class NameOp extends Operator {
         private String code;
         private String name;
