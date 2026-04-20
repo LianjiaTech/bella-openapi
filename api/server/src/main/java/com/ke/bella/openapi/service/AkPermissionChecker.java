@@ -109,6 +109,12 @@ public class AkPermissionChecker {
      */
     private void checkOperatorPermission(ApikeyDB targetDb, AkOperation operation) {
         Operator op = BellaContext.getOperator();
+        if (op != null && isAdminOperator(op)) {
+            String roleCode = String.valueOf(op.getOptionalInfo().get("roleCode"));
+            if (AkPermissionMatrix.isAllowed(roleCode, AkRelation.UNRELATED, operation)) {
+                return;
+            }
+        }
         String userId = op.getUserId().toString();
 
         boolean isOwner = (PERSON.equals(targetDb.getOwnerType()) || CONSOLE.equals(targetDb.getOwnerType()))
@@ -153,6 +159,14 @@ public class AkPermissionChecker {
         }
 
         throw new BellaException.AuthorizationException("没有操作权限");
+    }
+
+    private boolean isAdminOperator(Operator op) {
+        if (op == null || op.getOptionalInfo() == null) {
+            return false;
+        }
+        Object roleCode = op.getOptionalInfo().get("roleCode");
+        return CONSOLE.equals(roleCode) || "all".equals(roleCode);
     }
 
     /**
