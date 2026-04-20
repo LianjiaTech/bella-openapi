@@ -1,6 +1,6 @@
 import { apiClient } from '@/lib/api/client';
 import {  Page } from '../types/openapi';
-import { ApikeyInfo, ApiKeyBalance,UserSearchResult, CreateSubApiKeyRequest, UpdateSubApiKeyRequest, TransferApikeyRequest, UpdateManagerRequest } from '../types/apikeys';
+import { ApikeyInfo, ApiKeyBalance,UserSearchResult, CreateSubApiKeyRequest, UpdateSubApiKeyRequest, TransferApikeyRequest, UpdateManagerRequest, ChangeApiKeyOwnerRequest, ChangeApiKeyParentRequest, ChangeApiKeyResult, ApikeyChangeLog } from '../types/apikeys';
 
 /**
  * 管理员专用查询参数接口
@@ -121,6 +121,21 @@ export async function transferApikey(request: TransferApikeyRequest): Promise<bo
         console.error('Error transferring apikey:', error);
         throw error;
     }
+}
+
+export async function changeApiKeyOwner(request: ChangeApiKeyOwnerRequest): Promise<ChangeApiKeyResult> {
+    const response = await apiClient.post<ChangeApiKeyResult>('/console/apikey/owner/change', request);
+    return response as unknown as ChangeApiKeyResult;
+}
+
+export async function changeApiKeyParent(request: ChangeApiKeyParentRequest): Promise<ChangeApiKeyResult> {
+    const response = await apiClient.post<ChangeApiKeyResult>('/console/apikey/parent/change', request);
+    return response as unknown as ChangeApiKeyResult;
+}
+
+export async function getApiKeyChangeHistory(akCode: string): Promise<ApikeyChangeLog[]> {
+    const response = await apiClient.get('/console/apikey/change/history', { params: { akCode } });
+    return response as unknown as ApikeyChangeLog[];
 }
 
 /**
