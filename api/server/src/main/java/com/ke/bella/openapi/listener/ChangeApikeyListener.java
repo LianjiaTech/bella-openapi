@@ -23,7 +23,7 @@ public class ChangeApikeyListener {
     private ApikeyService apikeyService;
 
     @Async("cacheTaskExecutor")
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void handleApiKeyChange(ApiKeyChangeEvent event) {
         if(event == null || CollectionUtils.isEmpty(event.getAkCodes())) {
             return;
