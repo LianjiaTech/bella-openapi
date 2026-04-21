@@ -1,0 +1,70 @@
+stages:
+  - sync
+
+github_sync_gitlab:
+  stage: sync
+  script:
+    - echo "======== 开始从GitHub同步到GitLab master分支 ========"
+
+    # 1️⃣ 配置 Git 用户
+    - echo "配置Git用户信息..."
+    - git config user.name "GitLab CI Bot"
+    - git config user.email "dy7tffuid54yu"
+
+    # 2️⃣ 配置 GitHub 远程仓库
+    - echo "配置GitHub远程仓库..."
+    - git remote remove github || true
+    - git remote add github https://oauth2:${GITHUB_ACCESS_TOKEN}@github.com/LianjiaTech/bella-openapi.git
+
+    # 3️⃣ 获取 GitHub main
+    - echo "获取GitHub最新代码..."
+    - git fetch github main
+
+    # 4️⃣ ✅ 切换到 master 分支（关键）
+    - echo "切换到 master 分支..."
+    - git checkout master || git checkout -b master
+
+    # 5️⃣ 判断是否需要同步
+    - echo "检查是否需要更新..."
+    - LOCAL_HEAD=$(git rev-parse HEAD)
+    - GITHUB_HEAD=$(git rev-parse github/main)
+
+    - |
+      if [ "$LOCAL_HEAD" = "$GITHUB_HEAD" ]; then
+        echo "本地 master 已是最新，无需同步"
+        exit 0
+      fi
+
+    # 6️⃣ 执行 rebase
+    - echo "执行 rebase 操作..."
+    - git rebase github/main || (echo "❌ rebase失败，存在冲突"; git rebase --abort; exit 1)
+
+    # 7️⃣ 配置 GitLab 推送地址
+    - echo "配置GitLab推送地址..."
+    - git remote set-url origin https://oauth2:${GITLAB_ACCESS_TOKEN}@git.ke.com/ai-arch/bella-openapi.git
+
+    # 8️⃣ 推送到 master
+    - echo "推送更新到 master 分支..."
+    - git push --force-with-lease origin HEAD:master || (echo "❌ 推送失败，请检查token权限"; exit 1)
+
+    - echo "✅ 同步成功完成"
+
+  rules:
+    # 定时任务
+    - if: '$CI_PIPELINE_SOURCE == "schedule" && $CI_COMMIT_BRANCH == "master"'
+      when: always
+
+    # push master
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "master"'
+      when: always
+
+    # MR 合并到 master
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master" && $CI_MERGE_REQUEST_EVENT_TYPE == "merged"'
+      when: always
+
+    # 手动触发
+    - if: '$CI_PIPELINE_SOURCE == "web" && $CI_COMMIT_BRANCH == "master"'
+      when: always
+
+    # 其他情况不执行
+    - when: never
