@@ -1,4 +1,4 @@
-import { ReactNode } from 'react'
+import { ReactNode, UIEvent } from 'react'
 
 /**
  * VirtualGrid 组件属性接口
@@ -46,4 +46,7 @@ export interface VirtualGridProps<T> {
 
   /** 容器额外样式类 */
   className?: string
+
+  /** 滚动容器滚动事件 */
+  onScroll?: (event: UIEvent<HTMLDivElement>) => void
 }

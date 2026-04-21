@@ -4,13 +4,13 @@ import { TopBar } from "@/components/layout"
 import { useLanguage } from "@/components/providers/language-provider"
 import { useSidebar } from "@/components/providers"
 import { useMemo, useDeferredValue } from "react"
+import { cn, getInitialEndpoint } from "@/lib/utils"
 import { ModelFilterPanel } from "@/components/ui/modelFilterPanel"
 import { useSearchParams } from "next/navigation"
 import { useState, useEffect, useCallback } from "react"
 import { useMetadataData } from "./hooks"
-import { getInitialEndpoint } from "@/lib/utils"
 import { Model } from "@/lib/types/openapi"
-import { Loader, AlertCircle, Plus } from "lucide-react"
+import { Loader, AlertCircle, Plus, ChevronDown } from "lucide-react"
 import { MetadataModelCard } from "./components/MetadataModelCard"
 import { Button } from "@/components/common/button"
 import { CreateModelDialog } from "./components/CreateModelDialog"
@@ -33,6 +33,8 @@ const MetadataPage = () => {
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [selectedModel, setSelectedModel] = useState<Model | null>(null)
+  const [isFilterCollapsed, setIsFilterCollapsed] = useState(false)
+  const [isFilterManuallyToggled, setIsFilterManuallyToggled] = useState(false)
 
   // 使用自定义 Hook 获取元数据
   const { features, models, initialLoading, modelsLoading, error, refetch } = useMetadataData(selectedCapability, selectedTags, selectedStatus, selectedVisibility)
@@ -95,6 +97,22 @@ const MetadataPage = () => {
     setSearchQuery(query)
   }, [])
 
+  const handleGridScroll = useCallback((event: React.UIEvent<HTMLDivElement>) => {
+    if (isFilterManuallyToggled) return
+    const nextCollapsed = event.currentTarget.scrollTop > 48
+    setIsFilterCollapsed((prev) => (prev === nextCollapsed ? prev : nextCollapsed))
+  }, [isFilterManuallyToggled])
+
+  const handleToggleFilterPanel = useCallback(() => {
+    setIsFilterManuallyToggled(true)
+    setIsFilterCollapsed((prev) => !prev)
+  }, [])
+
+  useEffect(() => {
+    setIsFilterCollapsed(false)
+    setIsFilterManuallyToggled(false)
+  }, [selectedCapability, selectedTags, searchQuery, selectedStatus, selectedVisibility])
+
   /**
    * 处理新建模型操作
    */
@@ -143,40 +161,8 @@ const MetadataPage = () => {
           <div className="flex h-[calc(100vh-4rem)] flex-col overflow-hidden">
             {/* 筛选面板区域（固定不滚动） */}
             <div className="flex-shrink-0 border-b bg-background">
-              <div className="px-6 py-4">
-                {/* 模型筛选面板 */}
-                <ModelFilterPanel
-                  categoryTrees={categoryTrees}
-                  features={features}
-                  initialEndpoint={selectedCapability}
-                  initialTags={selectedTags}
-                  isLoadingFeatures={initialLoading}
-                  onCapabilityChange={handleCapabilityChange}
-                  onTagsChange={handleTagsChange}
-                />
-
-                {/* 错误提示 */}
-                {error && (
-                  <div className="mt-4 rounded-lg border border-red-500/20 bg-red-500/10 p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-500" />
-                        <p className="text-sm text-red-500">{error.message}</p>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={refetch}
-                        className="ml-4 flex-shrink-0"
-                      >
-                        {t("retry")}
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-                {/* 搜索框与模型列表统计 */}
-                <div className="mt-4 flex items-center justify-between gap-4">
+              <div className="px-6 pt-4">
+                <div className="flex items-center justify-between gap-4">
                   <div className="flex-shrink-0">
                     <h2 className="text-sm font-medium text-muted-foreground whitespace-nowrap">
                       找到 {filteredModels.length} 个模型
@@ -210,6 +196,58 @@ const MetadataPage = () => {
                     />
                   </div>
                 </div>
+
+                <div
+                  className={cn(
+                    "overflow-hidden transition-all duration-200 ease-in-out",
+                    isFilterCollapsed ? "max-h-0 opacity-0 pt-0" : "max-h-[420px] opacity-100 pt-4"
+                  )}
+                >
+                  <ModelFilterPanel
+                    categoryTrees={categoryTrees}
+                    features={features}
+                    initialEndpoint={selectedCapability}
+                    initialTags={selectedTags}
+                    isLoadingFeatures={initialLoading}
+                    onCapabilityChange={handleCapabilityChange}
+                    onTagsChange={handleTagsChange}
+                  />
+
+                  {error && (
+                    <div className="mt-4 rounded-lg border border-red-500/20 bg-red-500/10 p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-500" />
+                          <p className="text-sm text-red-500">{error.message}</p>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={refetch}
+                          className="ml-4 flex-shrink-0"
+                        >
+                          {t("retry")}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex justify-center">
+                  <button
+                    type="button"
+                    onClick={handleToggleFilterPanel}
+                    aria-label={isFilterCollapsed ? "展开筛选面板" : "折叠筛选面板"}
+                    className="cursor-pointer flex h-6 w-10 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  >
+                    <ChevronDown
+                      className={cn(
+                        "h-4 w-4 transition-transform duration-200",
+                        isFilterCollapsed ? "rotate-180" : "rotate-0"
+                      )}
+                    />
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -237,6 +275,7 @@ const MetadataPage = () => {
                     </div>
                   }
                   className="px-6 py-6"
+                  onScroll={handleGridScroll}
                 />
               )}
             </div>
