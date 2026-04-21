@@ -1,10 +1,15 @@
 package com.ke.bella.openapi.protocol.asr;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import javax.validation.constraints.NotEmpty;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class AudioTranscriptionRequest {
     @Data
@@ -170,6 +175,22 @@ public class AudioTranscriptionRequest {
 
         @JsonProperty("ssd_version")
         private String ssdVersion;
+
+        @JsonIgnore
+        private Map<String, Object> extraBody;
+
+        @JsonAnyGetter
+        public Map<String, Object> getExtraBodyFields() {
+            return extraBody != null && !extraBody.isEmpty() ? extraBody : null;
+        }
+
+        @JsonAnySetter
+        public void setExtraBodyField(String key, Object value) {
+            if (extraBody == null) {
+                extraBody = new HashMap<>();
+            }
+            extraBody.put(key, value);
+        }
     }
 
     @Data
