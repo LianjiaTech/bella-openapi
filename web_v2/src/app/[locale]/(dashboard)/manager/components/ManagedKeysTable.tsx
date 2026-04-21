@@ -321,7 +321,7 @@ function AssignedSection({ managerCode, onCopy, onReset, onCountChange, refreshT
                 <TableHeader>
                     <TableRow>
                         <TableHead>密钥代码</TableHead>
-                        <TableHead>所属密钥</TableHead>
+                        <TableHead>密钥ID</TableHead>
                         <TableHead>名称</TableHead>
                         <TableHead>服务名</TableHead>
                         <TableHead>月配额</TableHead>
@@ -345,11 +345,30 @@ function AssignedSection({ managerCode, onCopy, onReset, onCountChange, refreshT
                             <TableCell className="text-xs">
                                 <span className="truncate max-w-[150px] block" title={apiKey.akDisplay}>{apiKey.akDisplay}</span>
                             </TableCell>
-                            {/* 父AK code：帮助用户知道这个子AK属于哪个组织 */}
+                            {/* AK code：帮助用户知道这个子AK的akcode */}
                             <TableCell className="text-xs">
-                                <span className="truncate max-w-[120px] block text-muted-foreground" title={apiKey.parentCode}>
-                                    {apiKey.parentCode || '-'}
-                                </span>
+                                {apiKey.code ? (
+                                    <div className="inline-flex max-w-[160px] items-center gap-1.5 rounded-md border bg-muted/40 px-2 py-1 align-middle">
+                                        <span
+                                            className="min-w-0 flex-1 overflow-x-auto whitespace-nowrap font-mono text-xs text-foreground [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+                                            title={apiKey.code}
+                                        >
+                                            {apiKey.code}
+                                        </span>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-5 w-5 shrink-0 p-0 text-muted-foreground hover:text-foreground"
+                                            onClick={() => onCopy(apiKey.code)}
+                                            aria-label={`复制密钥ID ${apiKey.code}`}
+                                        >
+                                            <Copy className="h-3.5 w-3.5" />
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <span className="text-muted-foreground">-</span>
+                                )}
                             </TableCell>
                             <TableCell className="text-sm">{apiKey.name || '-'}</TableCell>
                             <TableCell className="text-sm">{apiKey.serviceId || '-'}</TableCell>
@@ -379,7 +398,7 @@ function AssignedSection({ managerCode, onCopy, onReset, onCountChange, refreshT
                                                 onClick={() => onCopy(apiKey.code)}
                                             >
                                                 <Copy className="h-4 w-4" />
-                                                复制密钥编码
+                                                复制密钥ID
                                             </button>
                                         </div>
                                     </PopoverContent>
