@@ -5,7 +5,7 @@ import { ThemeProvider } from "@/components/providers/theme-provider";
 import { AuthProvider } from "@/components/providers/auth-provider";
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
-import { Toaster } from "sonner";
+import { Toaster } from "@/components/common/sonner"
 
 export const metadata: Metadata = {
   title: "Bella OpenAPI",

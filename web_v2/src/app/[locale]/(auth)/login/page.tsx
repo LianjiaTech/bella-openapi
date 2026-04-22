@@ -15,15 +15,25 @@ import { Separator } from "@/components/common/separator"
 export default function LoginPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { user } = useAuth()
+  const { user, isLoading } = useAuth()
   const redirect = searchParams.get('redirect') || '/overview'
 
   // 已登录自动跳转
   useEffect(() => {
-    if (user) {
+    if (user && !isLoading) {
       router.push(redirect)
     }
-  }, [user, redirect, router])
+  }, [user, isLoading, redirect, router])
+
+  // if (isLoading) {
+  //   return (
+  //     <LoginLayout>
+  //       <div className="flex items-center justify-center">
+  //         <div className="text-muted-foreground">加载中...</div>
+  //       </div>
+  //     </LoginLayout>
+  //   )
+  // }
 
   if (user) {
     return null // 重定向中
