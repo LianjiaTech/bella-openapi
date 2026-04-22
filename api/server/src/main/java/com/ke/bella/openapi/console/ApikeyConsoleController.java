@@ -187,16 +187,12 @@ public class ApikeyConsoleController {
     }
 
     @PostMapping("/owner/change")
-    public ApikeyOps.ChangeResult changeOwner(@RequestBody ApikeyOps.ChangeOwnerOp op) {
-        Assert.hasText(op.getCode(), "code不可为空");
-        Assert.hasText(op.getTargetOwnerType(), "targetOwnerType不可为空");
+    public ApikeyOps.ChangeResult changeOwner(@RequestBody @Validated ApikeyOps.ChangeOwnerOp op) {
         return apikeyService.changeOwner(op);
     }
 
     @PostMapping("/parent/change")
-    public ApikeyOps.ChangeResult changeParent(@RequestBody ApikeyOps.ChangeParentOp op) {
-        Assert.hasText(op.getCode(), "code不可为空");
-        Assert.hasText(op.getTargetParentCode(), "targetParentCode不可为空");
+    public ApikeyOps.ChangeResult changeParent(@RequestBody @Validated ApikeyOps.ChangeParentOp op) {
         return apikeyService.changeParent(op);
     }
 

@@ -385,6 +385,19 @@
                                         </pojoClass>
                                         <pojoImplements>com.ke.bella.openapi.db.repo.Timed</pojoImplements>
                                         <recordImplements>com.ke.bella.openapi.db.repo.Timed</recordImplements>
+                                        <expression>apikey_change_log</expression>
+                                    </table>
+                                    <table>
+                                        <daoClass>
+                                            <transform>PASCAL</transform>
+                                            <expression>$0_D_B_Dao</expression>
+                                        </daoClass>
+                                        <pojoClass>
+                                            <transform>PASCAL</transform>
+                                            <expression>$0_D_B</expression>
+                                        </pojoClass>
+                                        <pojoImplements>com.ke.bella.openapi.db.repo.Timed</pojoImplements>
+                                        <recordImplements>com.ke.bella.openapi.db.repo.Timed</recordImplements>
                                         <expression>user</expression>
                                     </table>
                                     <table>
@@ -451,6 +464,19 @@
                                         </pojoClass>
                                         <pojoImplements>com.ke.bella.openapi.db.repo.Timed</pojoImplements>
                                         <recordImplements>com.ke.bella.openapi.db.repo.Timed</recordImplements>
+                                    </table>
+                                    <table>
+                                        <expression>apikey_model_rel</expression>
+                                        <daoClass>
+                                            <transform>PASCAL</transform>
+                                            <expression>$0_D_B_Dao</expression>
+                                        </daoClass>
+                                        <pojoClass>
+                                            <transform>PASCAL</transform>
+                                            <expression>$0_D_B</expression>
+                                        </pojoClass>
+                                        <pojoImplements>java.io.Serializable</pojoImplements>
+                                        <recordImplements>java.io.Serializable</recordImplements>
                                     </table>
                                     <table>
                                         <daoClass>

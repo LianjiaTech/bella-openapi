@@ -167,9 +167,7 @@ public class ApikeyService {
     public String applyForNonPerson(ApikeyOps.ApplyOp op) {
         Assert.isTrue(!PERSON.equals(op.getOwnerType()), "ownerType不可为person");
         // 仅管理员（console/all）或 SYSTEM 类型 AK 可创建非个人 AK
-        ApikeyInfo caller = EndpointContext.getApikeyIgnoreNull();
-        boolean isSystemAk = caller != null && SYSTEM.equals(caller.getOwnerType());
-        Assert.isTrue(isAdminOperator() || isSystemAk, "无权创建非个人类型AK");
+        Assert.isTrue(akPermissionChecker.hasAdminPermission(), "无权创建非个人类型AK");
         if(StringUtils.isNotEmpty(op.getRoleCode())) {
             Assert.isTrue(childRoleCodes.contains(op.getRoleCode()), "role code不可使用");
         }
@@ -418,13 +416,12 @@ public class ApikeyService {
 
     @Transactional
     public ApikeyOps.ChangeResult changeOwner(ApikeyOps.ChangeOwnerOp op) {
-        Assert.hasText(op.getCode(), "code不可为空");
         Assert.isTrue(ORG.equals(op.getTargetOwnerType()) || PROJECT.equals(op.getTargetOwnerType()), "targetOwnerType仅支持org或project");
+        checkPermission(op.getCode(), AkOperation.CHANGE_OWNER);
 
         ApikeyInfo source = apikeyRepo.queryByCode(op.getCode());
         Assert.notNull(source, "AK不存在");
         Assert.isTrue(ACTIVE.equals(source.getStatus()), "AK状态不允许变更");
-        checkPermission(op.getCode(), AkOperation.CHANGE_OWNER);
 
         String targetOwnerCode = StringUtils.defaultIfEmpty(op.getTargetOwnerCode(), source.getOwnerCode());
         String targetOwnerName = StringUtils.defaultIfEmpty(op.getTargetOwnerName(), source.getOwnerName());
@@ -450,18 +447,29 @@ public class ApikeyService {
             apikeyRepo.batchUpdateOwnerAndManagerByParentCode(updateDB, op.getCode());
         }
 
-        insertChangeLog(buildChangeLog(
-                "owner_change",
-                op.getCode(),
-                affectedCodes,
-                source.getOwnerType(), source.getOwnerCode(), source.getOwnerName(),
-                op.getTargetOwnerType(), targetOwnerCode, targetOwnerName,
-                source.getParentCode(), source.getParentCode(),
-                source.getManagerCode(), source.getManagerName(),
-                source.getOwnerCode(), source.getOwnerName(),
-                op.getReason()
-        ));
-        publishChangeEvent(affectedCodes);
+        Operator currentOperator = BellaContext.getOperator();
+        apikeyChangeLogRepo.insert(ApikeyChangeLog.builder()
+                .actionType("owner_change")
+                .akCode(op.getCode())
+                .affectedCodes(JacksonUtils.serialize(affectedCodes))
+                .fromOwnerType(StringUtils.defaultString(source.getOwnerType()))
+                .fromOwnerCode(StringUtils.defaultString(source.getOwnerCode()))
+                .fromOwnerName(StringUtils.defaultString(source.getOwnerName()))
+                .toOwnerType(StringUtils.defaultString(op.getTargetOwnerType()))
+                .toOwnerCode(StringUtils.defaultString(targetOwnerCode))
+                .toOwnerName(StringUtils.defaultString(targetOwnerName))
+                .fromParentCode(StringUtils.defaultString(source.getParentCode()))
+                .toParentCode(StringUtils.defaultString(source.getParentCode()))
+                .fromManagerCode(StringUtils.defaultString(source.getManagerCode()))
+                .fromManagerName(StringUtils.defaultString(source.getManagerName()))
+                .toManagerCode(StringUtils.defaultString(source.getOwnerCode()))
+                .toManagerName(StringUtils.defaultString(source.getOwnerName()))
+                .reason(StringUtils.defaultString(op.getReason()))
+                .status("completed")
+                .operatorUid(currentOperator.getUserId())
+                .operatorName(currentOperator.getUserName())
+                .build());
+        eventPublisher.publishEvent(new ApiKeyChangeEvent(affectedCodes));
 
         return ApikeyOps.ChangeResult.builder()
                 .code(op.getCode())
@@ -472,13 +480,11 @@ public class ApikeyService {
 
     @Transactional
     public ApikeyOps.ChangeResult changeParent(ApikeyOps.ChangeParentOp op) {
-        Assert.hasText(op.getCode(), "code不可为空");
-        Assert.hasText(op.getTargetParentCode(), "targetParentCode不可为空");
+        checkPermission(op.getCode(), AkOperation.CHANGE_PARENT);
 
         ApikeyInfo source = apikeyRepo.queryByCode(op.getCode());
         Assert.notNull(source, "源AK不存在");
         Assert.isTrue(ACTIVE.equals(source.getStatus()), "源AK状态不允许变更");
-        checkPermission(op.getCode(), AkOperation.CHANGE_PARENT);
 
         ApikeyInfo targetParent = apikeyRepo.queryByCode(op.getTargetParentCode());
         Assert.notNull(targetParent, "目标父AK不存在");
@@ -501,18 +507,28 @@ public class ApikeyService {
                     currentOperator.getUserId(), currentOperator.getUserName());
         }
 
-        insertChangeLog(buildChangeLog(
-                "parent_change",
-                op.getCode(),
-                affectedCodes,
-                source.getOwnerType(), source.getOwnerCode(), source.getOwnerName(),
-                source.getOwnerType(), source.getOwnerCode(), source.getOwnerName(),
-                source.getParentCode(), op.getTargetParentCode(),
-                source.getManagerCode(), source.getManagerName(),
-                toManagerCode, toManagerName,
-                op.getReason()
-        ));
-        publishChangeEvent(affectedCodes);
+        apikeyChangeLogRepo.insert(ApikeyChangeLog.builder()
+                .actionType("parent_change")
+                .akCode(op.getCode())
+                .affectedCodes(JacksonUtils.serialize(affectedCodes))
+                .fromOwnerType(StringUtils.defaultString(source.getOwnerType()))
+                .fromOwnerCode(StringUtils.defaultString(source.getOwnerCode()))
+                .fromOwnerName(StringUtils.defaultString(source.getOwnerName()))
+                .toOwnerType(StringUtils.defaultString(source.getOwnerType()))
+                .toOwnerCode(StringUtils.defaultString(source.getOwnerCode()))
+                .toOwnerName(StringUtils.defaultString(source.getOwnerName()))
+                .fromParentCode(StringUtils.defaultString(source.getParentCode()))
+                .toParentCode(StringUtils.defaultString(op.getTargetParentCode()))
+                .fromManagerCode(StringUtils.defaultString(source.getManagerCode()))
+                .fromManagerName(StringUtils.defaultString(source.getManagerName()))
+                .toManagerCode(StringUtils.defaultString(toManagerCode))
+                .toManagerName(StringUtils.defaultString(toManagerName))
+                .reason(StringUtils.defaultString(op.getReason()))
+                .status("completed")
+                .operatorUid(currentOperator.getUserId())
+                .operatorName(currentOperator.getUserName())
+                .build());
+        eventPublisher.publishEvent(new ApiKeyChangeEvent(affectedCodes));
 
         return ApikeyOps.ChangeResult.builder()
                 .code(op.getCode())
@@ -581,7 +597,7 @@ public class ApikeyService {
         if (StringUtils.isNotEmpty(condition.getParentCode())) {
             // 查子AK：校验当前用户对父AK有 QUERY 权限，子AK ownerType 不受限，不叠加 personalCode
             // Operator 路径：显式校验；AK 路径：fillPermissionCode 内会通过 personalCode/ownerCode 隐式校验
-            if (op != null && !isAdminOperator()) {
+            if (!akPermissionChecker.hasAdminPermission()) {
                 checkPermission(condition.getParentCode(), AkOperation.QUERY);
             }
             return true;
@@ -602,22 +618,18 @@ public class ApikeyService {
         if(StringUtils.isEmpty(condition.getManagerCode()) && StringUtils.isEmpty(condition.getManagerSearch())) {
             return;
         }
-        ApikeyInfo apikeyInfo = EndpointContext.getApikeyIgnoreNull();
         Operator op = BellaContext.getOperatorIgnoreNull();
-        // SYSTEM 类型 AK 有全局权限，无需限制
-        if(apikeyInfo != null && EntityConstants.SYSTEM.equals(apikeyInfo.getOwnerType())) {
+        // 管理员（含 SYSTEM AK）不受限制
+        if(akPermissionChecker.hasAdminPermission()) {
             return;
         }
-        // Console 登录态：普通用户只能查自己为管理人的 AK
-        if(op != null && !isAdminOperator()) {
-            String userId = op.getUserId().toString();
-            if(StringUtils.isNotEmpty(condition.getManagerCode())) {
-                Assert.isTrue(userId.equals(condition.getManagerCode()), "没有操作权限");
-            }
-            // 普通用户不允许使用 managerSearch 模糊查询
-            if(StringUtils.isNotEmpty(condition.getManagerSearch())) {
-                throw new BellaException.AuthorizationException("没有操作权限");
-            }
+        String userId = op.getUserId().toString();
+        if(StringUtils.isNotEmpty(condition.getManagerCode())) {
+            Assert.isTrue(userId.equals(condition.getManagerCode()), "没有操作权限");
+        }
+        // 普通用户不允许使用 managerSearch 模糊查询
+        if(StringUtils.isNotEmpty(condition.getManagerSearch())) {
+            throw new BellaException.AuthorizationException("没有操作权限");
         }
     }
 
@@ -628,7 +640,7 @@ public class ApikeyService {
             if(op == null || CollectionUtils.isNotEmpty(condition.getOrgCodes())) {
                 throw new BellaException.AuthorizationException("没有操作权限");
             }
-            if(!isAdminOperator()) {
+            if(!akPermissionChecker.hasAdminPermission()) {
                 if(StringUtils.isNotEmpty(condition.getPersonalCode())) {
                     Assert.isTrue(op.getUserId().toString().equals(condition.getPersonalCode()), "没有操作权限");
                 } else {
@@ -762,17 +774,27 @@ public class ApikeyService {
                 .build();
 
         apikeyTransferLogRepo.insertTransferLog(transferLog);
-        insertChangeLog(buildChangeLog(
-                "owner_transfer",
-                op.getAkCode(),
-                collectAffectedCodes(op.getAkCode(), listChildren(op.getAkCode())),
-                fromOwnerType, fromOwnerCode, fromOwnerName,
-                PERSON, newOwnerCode, updateDB.getOwnerName(),
-                apikeyInfo.getParentCode(), apikeyInfo.getParentCode(),
-                apikeyInfo.getManagerCode(), apikeyInfo.getManagerName(),
-                apikeyInfo.getManagerCode(), apikeyInfo.getManagerName(),
-                op.getTransferReason()
-        ));
+        apikeyChangeLogRepo.insert(ApikeyChangeLog.builder()
+                .actionType("owner_transfer")
+                .akCode(op.getAkCode())
+                .affectedCodes(JacksonUtils.serialize(collectAffectedCodes(op.getAkCode(), listChildren(op.getAkCode()))))
+                .fromOwnerType(StringUtils.defaultString(fromOwnerType))
+                .fromOwnerCode(StringUtils.defaultString(fromOwnerCode))
+                .fromOwnerName(StringUtils.defaultString(fromOwnerName))
+                .toOwnerType(StringUtils.defaultString(PERSON))
+                .toOwnerCode(StringUtils.defaultString(newOwnerCode))
+                .toOwnerName(StringUtils.defaultString(updateDB.getOwnerName()))
+                .fromParentCode(StringUtils.defaultString(apikeyInfo.getParentCode()))
+                .toParentCode(StringUtils.defaultString(apikeyInfo.getParentCode()))
+                .fromManagerCode(StringUtils.defaultString(apikeyInfo.getManagerCode()))
+                .fromManagerName(StringUtils.defaultString(apikeyInfo.getManagerName()))
+                .toManagerCode(StringUtils.defaultString(apikeyInfo.getManagerCode()))
+                .toManagerName(StringUtils.defaultString(apikeyInfo.getManagerName()))
+                .reason(StringUtils.defaultString(op.getTransferReason()))
+                .status("completed")
+                .operatorUid(currentOperator.getUserId())
+                .operatorName(currentOperator.getUserName())
+                .build());
 
         // 8. 发布API Key转移事件（事务提交后自动处理）
         ApiKeyTransferEvent event = ApiKeyTransferEvent.of(op.getAkCode(), fromOwnerCode, fromOwnerName,
@@ -850,19 +872,6 @@ public class ApikeyService {
     }
 
     /**
-     * 判断当前 Console 登录态用户是否拥有管理员视图权限（roleCode ∈ {console, all}）。
-     * 管理员视图用户可以操作页面内可见的任意 AK，无需是 owner。
-     */
-    private boolean isAdminOperator() {
-        Operator op = BellaContext.getOperatorIgnoreNull();
-        if(op == null || op.getOptionalInfo() == null) {
-            return false;
-        }
-        Object roleCode = op.getOptionalInfo().get("roleCode");
-        return EntityConstants.CONSOLE.equals(roleCode) || EntityConstants.ALL.equals(roleCode);
-    }
-
-    /**
      * 根据当前操作者的登录场景（CAS/OAuth）将目标用户解析为对应的 userCode。
      * CAS 场景（sourceId == userId）存 sourceId；OAuth 场景存 userId。
      * TODO: 后续应统一规范为只存 sourceId，消除双轨制，届期需做历史数据迁移。
@@ -887,45 +896,6 @@ public class ApikeyService {
             children.forEach(child -> affectedCodes.add(child.getCode()));
         }
         return affectedCodes;
-    }
-
-    private void publishChangeEvent(List<String> affectedCodes) {
-        eventPublisher.publishEvent(new ApiKeyChangeEvent(affectedCodes));
-    }
-
-    private void insertChangeLog(ApikeyChangeLog log) {
-        apikeyChangeLogRepo.insert(log);
-    }
-
-    private ApikeyChangeLog buildChangeLog(String actionType, String akCode, List<String> affectedCodes,
-            String fromOwnerType, String fromOwnerCode, String fromOwnerName,
-            String toOwnerType, String toOwnerCode, String toOwnerName,
-            String fromParentCode, String toParentCode,
-            String fromManagerCode, String fromManagerName,
-            String toManagerCode, String toManagerName,
-            String reason) {
-        Operator operator = BellaContext.getOperatorIgnoreNull();
-        return ApikeyChangeLog.builder()
-                .actionType(actionType)
-                .akCode(akCode)
-                .affectedCodes(JacksonUtils.serialize(affectedCodes))
-                .fromOwnerType(StringUtils.defaultString(fromOwnerType))
-                .fromOwnerCode(StringUtils.defaultString(fromOwnerCode))
-                .fromOwnerName(StringUtils.defaultString(fromOwnerName))
-                .toOwnerType(StringUtils.defaultString(toOwnerType))
-                .toOwnerCode(StringUtils.defaultString(toOwnerCode))
-                .toOwnerName(StringUtils.defaultString(toOwnerName))
-                .fromParentCode(StringUtils.defaultString(fromParentCode))
-                .toParentCode(StringUtils.defaultString(toParentCode))
-                .fromManagerCode(StringUtils.defaultString(fromManagerCode))
-                .fromManagerName(StringUtils.defaultString(fromManagerName))
-                .toManagerCode(StringUtils.defaultString(toManagerCode))
-                .toManagerName(StringUtils.defaultString(toManagerName))
-                .reason(StringUtils.defaultString(reason))
-                .status("completed")
-                .operatorUid(operator == null || operator.getUserId() == null ? 0L : operator.getUserId())
-                .operatorName(operator == null ? "" : StringUtils.defaultString(operator.getUserName()))
-                .build();
     }
 
 }

@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
+import javax.validation.constraints.NotBlank;
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -45,7 +46,9 @@ public class ApikeyOps {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class ChangeOwnerOp extends Operator {
+        @NotBlank(message = "code不可为空")
         private String code;
+        @NotBlank(message = "targetOwnerType不可为空")
         private String targetOwnerType;
         private String targetOwnerCode;
         private String targetOwnerName;
@@ -57,7 +60,9 @@ public class ApikeyOps {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class ChangeParentOp extends Operator {
+        @NotBlank(message = "code不可为空")
         private String code;
+        @NotBlank(message = "targetParentCode不可为空")
         private String targetParentCode;
         private String reason;
     }

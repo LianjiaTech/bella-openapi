@@ -151,12 +151,12 @@ public class ApikeyRepo extends StatusRepo<ApikeyDB, ApikeyRecord, String> imple
 
     @Transactional
     public int updateParentAndManagerByCode(String code, String targetParentCode,
-            String managerCode, String managerName, Long muid, String muName) {
+            String managerCode, String managerName, Long muId, String muName) {
         return db.update(APIKEY)
                 .set(APIKEY.PARENT_CODE, targetParentCode)
                 .set(APIKEY.MANAGER_CODE, managerCode)
                 .set(APIKEY.MANAGER_NAME, managerName)
-                .set(APIKEY.MUID, muid)
+                .set(APIKEY.MUID, muId)
                 .set(APIKEY.MU_NAME, muName)
                 .where(APIKEY.CODE.eq(code))
                 .execute();
@@ -164,12 +164,12 @@ public class ApikeyRepo extends StatusRepo<ApikeyDB, ApikeyRecord, String> imple
 
     @Transactional
     public int batchUpdateParentAndManagerByParentCode(String sourceParentCode, String targetParentCode,
-            String managerCode, String managerName, Long muid, String muName) {
+            String managerCode, String managerName, Long muId, String muName) {
         return db.update(APIKEY)
                 .set(APIKEY.PARENT_CODE, targetParentCode)
                 .set(APIKEY.MANAGER_CODE, managerCode)
                 .set(APIKEY.MANAGER_NAME, managerName)
-                .set(APIKEY.MUID, muid)
+                .set(APIKEY.MUID, muId)
                 .set(APIKEY.MU_NAME, muName)
                 .where(APIKEY.PARENT_CODE.eq(sourceParentCode))
                 .execute();

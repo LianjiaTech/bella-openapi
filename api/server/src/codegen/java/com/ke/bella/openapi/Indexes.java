@@ -5,6 +5,7 @@ package com.ke.bella.openapi;
 
 
 import com.ke.bella.openapi.tables.Apikey;
+import com.ke.bella.openapi.tables.ApikeyChangeLog;
 import com.ke.bella.openapi.tables.ApikeyMonthCost;
 import com.ke.bella.openapi.tables.ApikeyTransferLog;
 import com.ke.bella.openapi.tables.Category;
@@ -33,12 +34,15 @@ public class Indexes {
     // INDEX definitions
     // -------------------------------------------------------------------------
 
+    public static final Index APIKEY_CHANGE_LOG_IDX_ACTION_TYPE = Internal.createIndex(DSL.name("idx_action_type"), ApikeyChangeLog.APIKEY_CHANGE_LOG, new OrderField[] { ApikeyChangeLog.APIKEY_CHANGE_LOG.ACTION_TYPE }, false);
+    public static final Index APIKEY_CHANGE_LOG_IDX_AK_CODE = Internal.createIndex(DSL.name("idx_ak_code"), ApikeyChangeLog.APIKEY_CHANGE_LOG, new OrderField[] { ApikeyChangeLog.APIKEY_CHANGE_LOG.AK_CODE }, false);
     public static final Index APIKEY_TRANSFER_LOG_IDX_AK_CODE = Internal.createIndex(DSL.name("idx_ak_code"), ApikeyTransferLog.APIKEY_TRANSFER_LOG, new OrderField[] { ApikeyTransferLog.APIKEY_TRANSFER_LOG.AK_CODE }, false);
     public static final Index VIDEO_JOB_IDX_AK_CODE = Internal.createIndex(DSL.name("idx_ak_code"), VideoJob.VIDEO_JOB, new OrderField[] { VideoJob.VIDEO_JOB.AK_CODE }, false);
     public static final Index MODEL_AUTHORIZER_REL_IDX_AUTHORIZER_CODE = Internal.createIndex(DSL.name("idx_authorizer_code"), ModelAuthorizerRel.MODEL_AUTHORIZER_REL, new OrderField[] { ModelAuthorizerRel.MODEL_AUTHORIZER_REL.AUTHORIZER_CODE }, false);
     public static final Index ENDPOINT_CATEGORY_REL_IDX_CATEGORY_CODE = Internal.createIndex(DSL.name("idx_category_code"), EndpointCategoryRel.ENDPOINT_CATEGORY_REL, new OrderField[] { EndpointCategoryRel.ENDPOINT_CATEGORY_REL.CATEGORY_CODE }, false);
     public static final Index CATEGORY_IDX_CATEGORY_NAME = Internal.createIndex(DSL.name("idx_category_name"), Category.CATEGORY, new OrderField[] { Category.CATEGORY.CATEGORY_NAME }, false);
     public static final Index VIDEO_JOB_IDX_CHANNEL_VIDEO_ID = Internal.createIndex(DSL.name("idx_channel_video_id"), VideoJob.VIDEO_JOB, new OrderField[] { VideoJob.VIDEO_JOB.CHANNEL_CODE, VideoJob.VIDEO_JOB.CHANNEL_VIDEO_ID }, false);
+    public static final Index APIKEY_CHANGE_LOG_IDX_CTIME = Internal.createIndex(DSL.name("idx_ctime"), ApikeyChangeLog.APIKEY_CHANGE_LOG, new OrderField[] { ApikeyChangeLog.APIKEY_CHANGE_LOG.CTIME }, false);
     public static final Index APIKEY_TRANSFER_LOG_IDX_CTIME = Internal.createIndex(DSL.name("idx_ctime"), ApikeyTransferLog.APIKEY_TRANSFER_LOG, new OrderField[] { ApikeyTransferLog.APIKEY_TRANSFER_LOG.CTIME }, false);
     public static final Index CHANNEL_IDX_ENTITY_TYPE_CODE = Internal.createIndex(DSL.name("idx_entity_type_code"), Channel.CHANNEL, new OrderField[] { Channel.CHANNEL.ENTITY_TYPE, Channel.CHANNEL.ENTITY_CODE }, false);
     public static final Index APIKEY_TRANSFER_LOG_IDX_FROM_OWNER = Internal.createIndex(DSL.name("idx_from_owner"), ApikeyTransferLog.APIKEY_TRANSFER_LOG, new OrderField[] { ApikeyTransferLog.APIKEY_TRANSFER_LOG.FROM_OWNER_TYPE, ApikeyTransferLog.APIKEY_TRANSFER_LOG.FROM_OWNER_CODE }, false);
