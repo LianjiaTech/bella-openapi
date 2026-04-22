@@ -448,27 +448,7 @@ public class ApikeyService {
         }
 
         Operator currentOperator = BellaContext.getOperator();
-        apikeyChangeLogRepo.insert(ApikeyChangeLog.builder()
-                .actionType("owner_change")
-                .akCode(op.getCode())
-                .affectedCodes(JacksonUtils.serialize(affectedCodes))
-                .fromOwnerType(StringUtils.defaultString(source.getOwnerType()))
-                .fromOwnerCode(StringUtils.defaultString(source.getOwnerCode()))
-                .fromOwnerName(StringUtils.defaultString(source.getOwnerName()))
-                .toOwnerType(StringUtils.defaultString(op.getTargetOwnerType()))
-                .toOwnerCode(StringUtils.defaultString(targetOwnerCode))
-                .toOwnerName(StringUtils.defaultString(targetOwnerName))
-                .fromParentCode(StringUtils.defaultString(source.getParentCode()))
-                .toParentCode(StringUtils.defaultString(source.getParentCode()))
-                .fromManagerCode(StringUtils.defaultString(source.getManagerCode()))
-                .fromManagerName(StringUtils.defaultString(source.getManagerName()))
-                .toManagerCode(StringUtils.defaultString(source.getOwnerCode()))
-                .toManagerName(StringUtils.defaultString(source.getOwnerName()))
-                .reason(StringUtils.defaultString(op.getReason()))
-                .status("completed")
-                .operatorUid(currentOperator.getUserId())
-                .operatorName(currentOperator.getUserName())
-                .build());
+        apikeyChangeLogRepo.insertOwnerChangeLog(op, source, affectedCodes, targetOwnerCode, targetOwnerName, currentOperator);
         eventPublisher.publishEvent(new ApiKeyChangeEvent(affectedCodes));
 
         return ApikeyOps.ChangeResult.builder()
@@ -507,27 +487,7 @@ public class ApikeyService {
                     currentOperator.getUserId(), currentOperator.getUserName());
         }
 
-        apikeyChangeLogRepo.insert(ApikeyChangeLog.builder()
-                .actionType("parent_change")
-                .akCode(op.getCode())
-                .affectedCodes(JacksonUtils.serialize(affectedCodes))
-                .fromOwnerType(StringUtils.defaultString(source.getOwnerType()))
-                .fromOwnerCode(StringUtils.defaultString(source.getOwnerCode()))
-                .fromOwnerName(StringUtils.defaultString(source.getOwnerName()))
-                .toOwnerType(StringUtils.defaultString(source.getOwnerType()))
-                .toOwnerCode(StringUtils.defaultString(source.getOwnerCode()))
-                .toOwnerName(StringUtils.defaultString(source.getOwnerName()))
-                .fromParentCode(StringUtils.defaultString(source.getParentCode()))
-                .toParentCode(StringUtils.defaultString(op.getTargetParentCode()))
-                .fromManagerCode(StringUtils.defaultString(source.getManagerCode()))
-                .fromManagerName(StringUtils.defaultString(source.getManagerName()))
-                .toManagerCode(StringUtils.defaultString(toManagerCode))
-                .toManagerName(StringUtils.defaultString(toManagerName))
-                .reason(StringUtils.defaultString(op.getReason()))
-                .status("completed")
-                .operatorUid(currentOperator.getUserId())
-                .operatorName(currentOperator.getUserName())
-                .build());
+        apikeyChangeLogRepo.insertParentChangeLog(op, source, affectedCodes, toManagerCode, toManagerName, currentOperator);
         eventPublisher.publishEvent(new ApiKeyChangeEvent(affectedCodes));
 
         return ApikeyOps.ChangeResult.builder()
