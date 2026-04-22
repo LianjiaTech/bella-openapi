@@ -50,21 +50,13 @@ github_sync_gitlab:
     - echo "✅ 同步成功完成"
 
   rules:
-    # 定时任务
-    - if: '$CI_PIPELINE_SOURCE == "schedule" && $CI_COMMIT_BRANCH == "master"'
-      when: always
+  # 定时任务
+  - if: '$CI_PIPELINE_SOURCE == "schedule"'
+    when: always
 
-    # push master
-    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "master"'
-      when: always
+  # 手动触发
+  - if: '$CI_PIPELINE_SOURCE == "web"'
+    when: always
 
-    # MR 合并到 master
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master" && $CI_MERGE_REQUEST_EVENT_TYPE == "merged"'
-      when: always
-
-    # 手动触发
-    - if: '$CI_PIPELINE_SOURCE == "web" && $CI_COMMIT_BRANCH == "master"'
-      when: always
-
-    # 其他情况不执行
-    - when: never
+  # 其他全部不执行
+  - when: never
