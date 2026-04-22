@@ -22,6 +22,9 @@ import com.ke.bella.openapi.annotations.BellaAPI;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 @BellaAPI
 @RestController
 @RequestMapping("/v1/route")
@@ -53,6 +56,36 @@ public class RouteController {
                 .queueMode(channelDB.getQueueMode().intValue())
                 .queueName(channelDB.getQueueName())
                 .build();
+    }
+
+    @PostMapping("/list")
+    public List<RouteResult> listAvailableChannels(@RequestBody RouteRequest request) {
+        String sha = EncryptUtils.sha256(request.getApikey());
+        ApikeyInfo apikeyInfo = apikeyService.queryBySha(sha, true);
+        if(apikeyInfo == null) {
+            throw new BizParamCheckException("用户的Apikey不存在");
+        }
+
+        List<ChannelDB> channels = channelRouter.listAvailableChannels(
+                request.getEndpoint(),
+                request.getModel(),
+                apikeyInfo,
+                request.getQueueMode()
+        );
+
+        return channels.stream()
+                .map(channelDB -> RouteResult.builder()
+                        .channelCode(channelDB.getChannelCode())
+                        .entityType(channelDB.getEntityType())
+                        .entityCode(channelDB.getEntityCode())
+                        .protocol(channelDB.getProtocol())
+                        .url(channelDB.getUrl())
+                        .channelInfo(JacksonUtils.toMap(channelDB.getChannelInfo()))
+                        .priceInfo(channelDB.getPriceInfo())
+                        .queueMode(channelDB.getQueueMode().intValue())
+                        .queueName(channelDB.getQueueName())
+                        .build())
+                .collect(Collectors.toList());
     }
 
 }

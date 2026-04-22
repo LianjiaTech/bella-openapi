@@ -185,7 +185,11 @@ public class ChannelService {
     public List<ChannelDB> listAllWorkerChannels() {
         return listByCondition(Condition.ChannelCondition.builder()
                 .status(ACTIVE)
-                .queueModes(Sets.newHashSet(QueueMode.PULL.getCode(), QueueMode.BOTH.getCode()))
+                .queueModes(Sets.newHashSet(
+                        QueueMode.SINGLE.getCode(),
+                        QueueMode.SINGLE_ROUTE.getCode(),
+                        QueueMode.BATCH.getCode(),
+                        QueueMode.BATCH_ROUTE.getCode()))
                 .build());
     }
 

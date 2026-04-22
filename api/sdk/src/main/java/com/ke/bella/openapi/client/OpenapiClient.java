@@ -1,5 +1,6 @@
 package com.ke.bella.openapi.client;
 
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
@@ -121,6 +122,24 @@ public class OpenapiClient {
                 .post(RequestBody.create(JacksonUtils.serialize(routeRequest), MediaType.parse("application/json")))
                 .build();
         BellaResponse<RouteResult> bellaResp = HttpUtils.httpRequest(request, new TypeReference<BellaResponse<RouteResult>>() {
+        });
+        if(bellaResp.getCode() != 200) {
+            throw BellaException.fromResponse(bellaResp.getCode(), bellaResp.getMessage());
+        }
+        return bellaResp.getData();
+    }
+
+    public List<RouteResult> listAvailableChannels(String endpoint, String model, Integer queueMode, String userApikey) {
+        Assert.hasText(serviceAk, "serviceAk is null");
+        String url = openapiHost + "/v1/route/list";
+        RouteRequest routeRequest = RouteRequest.builder().apikey(userApikey)
+                .endpoint(endpoint).model(model).queueMode(queueMode).build();
+        Request request = new Request.Builder()
+                .url(url)
+                .addHeader(HttpHeaders.AUTHORIZATION, "Bearer " + serviceAk)
+                .post(RequestBody.create(JacksonUtils.serialize(routeRequest), MediaType.parse("application/json")))
+                .build();
+        BellaResponse<List<RouteResult>> bellaResp = HttpUtils.httpRequest(request, new TypeReference<BellaResponse<List<RouteResult>>>() {
         });
         if(bellaResp.getCode() != 200) {
             throw BellaException.fromResponse(bellaResp.getCode(), bellaResp.getMessage());
