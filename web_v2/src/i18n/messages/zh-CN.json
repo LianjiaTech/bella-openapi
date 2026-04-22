@@ -23,7 +23,17 @@
     "docparse": "DocParse",
     "workflow": "Workflow",
     "search": "Search",
-    "ocr": "OCR"
+    "ocr": "OCR",
+    "intelligentQA": "智能问答",
+    "vectorization": "向量化",
+    "speechSynthesis": "语音合成",
+    "speechRecognition": "一句话语音识别",
+    "realtimeRecognition": "实时语音识别",
+    "realtimeConversation": "实时对话",
+    "textToImage": "文生图",
+    "imageToImage": "图生图",
+    "documentParsing": "文档解析",
+    "aiWorkflow": "AI工作流"
   },
   "settings": {
     "settingsTitle": "设置",
@@ -89,7 +99,9 @@
     "loading": "加载中...",
     "noFilterTags": "暂无可用筛选标签",
     "noModelsFound": "未找到匹配的模型",
-    "retry": "重试"
+    "retry": "重试",
+    "basicSearchPricing": "基础搜索价格",
+    "advancedSearchPricing": "高级搜索价格"
   },
   "metadata": {
     "metadataManagement": "元数据管理",
@@ -99,8 +111,108 @@
     "foundMetadata": "找到",
     "itemsCount": "项"
   },
+  "status": {
+    "modelStatus": "模型状态监控",
+    "modelStatusDesc": "实时监控模型性能指标和渠道状态(15秒颗粒度)"
+  },
+  "logs": {
+    "logsTitle": "日志查询",
+    "logsDesc": "查看和分析您的API调用记录",
+    "openapiTab": "OpenAPI服务查询",
+    "bellaTab": "Bella链路查询",
+    "queryType": "查询方式",
+    "akCode": "AK Code",
+    "requestId": "Request ID",
+    "bellaTraceId": "Bella TraceID",
+    "queryPlaceholder": "请输入查询内容",
+    "filter": {
+      "title": "筛选条件",
+      "queryMethod": "查询方式",
+      "timeRange": "时间范围",
+      "httpCode": "HTTP异常状态码",
+      "queryLimit": "查询条数",
+      "endpoint": "能力点",
+      "model": "模型",
+      "resetButton": "重置",
+      "searchButton": "搜索",
+      "placeholders": {
+        "selectTimeRange": "选择时间范围",
+        "enterHttpStatus": "输入状态码 (如: 404,500)",
+        "defaultLimit": "100",
+        "selectEndpoint": "选择能力点",
+        "selectModel": "选择模型"
+      },
+      "presets": {
+        "last5Minutes": "最近5分钟",
+        "last10Minutes": "最近10分钟",
+        "last20Minutes": "最近20分钟",
+        "last30Minutes": "最近30分钟",
+        "last1Hour": "最近1小时",
+        "last2Hours": "最近2小时",
+        "last6Hours": "最近6小时",
+        "last12Hours": "最近12小时",
+        "last7Days": "最近7天",
+        "last30Days": "最近30天",
+        "today": "今天",
+        "yesterday": "昨天",
+        "thisWeek": "本周",
+        "thisMonth": "本月"
+      },
+      "errors": {
+        "enterQueryValue": "请输入查询值",
+        "selectDateRange": "请选择日期范围"
+      },
+      "noDataPrompt": "请设置筛选条件并点击搜索按钮查询日志"
+    },
+    "responsePanel": {
+      "response": "响应体 (Response)",
+      "model": "模型",
+      "tokenUsageDistribution": "Token 使用分布",
+      "embeddingData": "向量数据",
+      "embeddingsCount": "个向量",
+      "characters": "字符",
+      "copyEmbedding": "复制向量数据"
+    }
+  },
   "common": {
     "star": "Star",
     "toggleTheme": "切换主题"
+  },
+  "playground": {
+    "chat": {
+      "title": "智能问答 Playground",
+      "description": "与 AI 进行多轮对话",
+      "temperature": "温度 (Temperature)",
+      "temperatureDescription": "控制输出的随机性，值越高越随机",
+      "maxTokens": "最大长度 (Max Tokens)",
+      "maxTokensDescription": "控制生成的最大长度",
+      "configPanel": {
+        "title": "配置参数",
+        "description": "调整模型参数和行为设置",
+        "modelSelection": "模型选择",
+        "parameterSettings": "参数设置",
+        "advancedOptions": "高级选项",
+        "mediaSupport": {
+          "image": "图片",
+          "video": "视频"
+        }
+      },
+      "config": {
+        "systemPrompt": {
+          "title": "系统提示词",
+          "description": "设置 AI 助手的角色和行为规则",
+          "placeholder": "例如：你是一个专业的编程助手，擅长解答技术问题...",
+          "defaultValue": "你是一个智能助手，可以回答各种问题并提供帮助。请尽量提供准确、有帮助的信息。"
+        },
+        "thinkingMode": {
+          "title": "思考模式",
+          "description": "启用后模型会展示推理过程"
+        },
+        "streaming": {
+          "title": "流式输出",
+          "description": "实时逐字输出响应内容"
+        }
+      }
+    }
   }
 }

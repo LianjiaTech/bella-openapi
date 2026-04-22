@@ -11,8 +11,6 @@
 const ALLOWED_REDIRECT_ORIGINS: string[] = [
     // 当前域名会在运行时动态添加（见 isValidRedirectUrl）
     // 如需添加其他可信域名，取消注释并配置：
-    // 'https://login.beike.com',
-    // 'https://sso.internal.com',
   ];
   
   /**

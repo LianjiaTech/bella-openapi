@@ -26,6 +26,8 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const tHome = useTranslations('home');
   const tModels = useTranslations('models');
   const tMetadata = useTranslations('metadata');
+  const tStatus = useTranslations('status');
+  const tLogs = useTranslations('logs');
   const tCommon = useTranslations('common');
 
   const [language, setLanguageState] = useState<Language>(locale)
@@ -90,6 +92,16 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       "workflow": "navigation.workflow",
       "search": "navigation.search",
       "ocr": "navigation.ocr",
+      "intelligentQA": "navigation.intelligentQA",
+      "vectorization": "navigation.vectorization",
+      "speechSynthesis": "navigation.speechSynthesis",
+      "speechRecognition": "navigation.speechRecognition",
+      "realtimeRecognition": "navigation.realtimeRecognition",
+      "realtimeConversation": "navigation.realtimeConversation",
+      "textToImage": "navigation.textToImage",
+      "imageToImage": "navigation.imageToImage",
+      "documentParsing": "navigation.documentParsing",
+      "aiWorkflow": "navigation.aiWorkflow",
 
       // Settings
       "settingsTitle": "settings.settingsTitle",
@@ -156,6 +168,8 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       "noFilterTags": "models.noFilterTags",
       "noModelsFound": "models.noModelsFound",
       "retry": "models.retry",
+      "basicSearchPricing": "models.basicSearchPricing",
+      "advancedSearchPricing": "models.advancedSearchPricing",
 
       // Metadata page
       "metadataManagement": "metadata.metadataManagement",
@@ -164,6 +178,14 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       "searchMetadata": "metadata.searchMetadata",
       "foundMetadata": "metadata.foundMetadata",
       "itemsCount": "metadata.itemsCount",
+
+      // Status page
+      "status.modelStatus": "status.modelStatus",
+      "status.modelStatusDesc": "status.modelStatusDesc",
+
+      // Logs page
+      "logs.logsTitle": "logs.logsTitle",
+      "logs.logsDesc": "logs.logsDesc",
 
       // Common
       "star": "common.star",
@@ -186,6 +208,10 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
           return tModels(translationKey);
         case 'metadata':
           return tMetadata(translationKey);
+        case 'status':
+          return tStatus(translationKey);
+        case 'logs':
+          return tLogs(translationKey);
         case 'common':
           return tCommon(translationKey);
         default:

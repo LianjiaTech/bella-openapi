@@ -40,8 +40,7 @@ public class TaskProcessor {
 
     public void executeTask(TaskWrapper taskWrapper, Runnable releaseSlot) {
         String taskId = taskWrapper.getTask().getTaskId();
-        log.info("Task started, taskId: {}, channel: {}, task: {}", taskId
-                , channel.getChannelCode(), JacksonUtils.serialize(taskWrapper.getTask()));
+        log.info("Task started, taskId: {}, channel: {}", taskId, channel.getChannelCode());
         boolean streamingStarted = false;
         try {
             OpenapiResponse response = processRequest(taskWrapper.getTask().getData(), taskWrapper, releaseSlot);
