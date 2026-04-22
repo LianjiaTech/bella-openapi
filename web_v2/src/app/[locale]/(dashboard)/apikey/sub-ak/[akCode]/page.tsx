@@ -17,8 +17,8 @@
 import { TopBar } from "@/components/layout/top-bar";
 import { Button } from "@/components/common/button";
 import { ArrowLeft, AlertCircle, Plus } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useState, useEffect, use, useRef, useMemo } from "react";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { getApiKeys, getApiKeyByCode, resetApiKey, deleteApiKey } from "@/lib/api/apiKeys";
 import { ApikeyInfo } from "@/lib/types/apikeys";
 import { SubAkTable, SubAkTableRef } from "./components/SubAkTable";
@@ -32,17 +32,13 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useSubAkCapability } from "./hooks/useSubAkCapability";
 
-interface SubAkPageProps {
-  params: Promise<{ akCode: string }>;
-  searchParams: Promise<{ viewer?: string }>;
-}
-
-export default function SubAkPage({ params, searchParams }: SubAkPageProps) {
-  const { akCode } = use(params);
-  const { viewer } = use(searchParams);
-
+export default function SubAkPage() {
   const { toast } = useToast();
   const router = useRouter();
+  const params = useParams<{ akCode: string }>();
+  const searchParams = useSearchParams();
+  const akCode = params.akCode;
+  const viewer = searchParams.get('viewer') ?? undefined;
   const subAkTableRef = useRef<SubAkTableRef>(null);
   const { user } = useAuth();
 
