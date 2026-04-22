@@ -8,9 +8,16 @@ import lombok.Getter;
 public enum QueueMode {
 
     NONE(0),
-    PULL(1),
+    SINGLE(1),
     ROUTE(2),
-    BOTH(3);
+    SINGLE_ROUTE(3),
+    BATCH(4),
+    BATCH_ROUTE(6);
+
+    private static final int SINGLE_BIT = 1;
+    private static final int ROUTE_BIT = 2;
+    private static final int BATCH_BIT = 4;
+    private static final int SUPPORTED_MASK = SINGLE_BIT | ROUTE_BIT | BATCH_BIT;
 
     private final Integer code;
 
@@ -26,28 +33,50 @@ public enum QueueMode {
         return NONE;
     }
 
-    public boolean supportsPull() {
-        return (this.code & 1) == 1;
+    public boolean supportsSingle() {
+        return (this.code & SINGLE_BIT) == SINGLE_BIT;
     }
 
     public boolean supportsRoute() {
-        return (this.code & 2) == 2;
+        return (this.code & ROUTE_BIT) == ROUTE_BIT;
+    }
+
+    public boolean supportsBatch() {
+        return (this.code & BATCH_BIT) == BATCH_BIT;
+    }
+
+    public QueueMode toWorkerMode() {
+        if(supportsBatch()) {
+            return BATCH;
+        }
+        if(supportsSingle()) {
+            return SINGLE;
+        }
+        return NONE;
+    }
+
+    public QueueMode toWorkerModeOrThrow() {
+        QueueMode workerMode = toWorkerMode();
+        if(workerMode != NONE) {
+            return workerMode;
+        }
+        throw new IllegalStateException("queueMode does not map to worker mode: " + code);
     }
 
     public boolean supports(Integer targetMode) {
-        if(targetMode == null) {
+        if(!isValid(targetMode)) {
             return false;
         }
-        return getCode().equals(targetMode) || (getCode() & targetMode) != 0;
+        return (getCode() & targetMode) == targetMode;
     }
 
     public static boolean isValid(Integer code) {
-        for (QueueMode mode : values()) {
-            if(mode.code.equals(code)) {
-                return true;
-            }
+        if(code == null || code < 0 || (code & ~SUPPORTED_MASK) != 0) {
+            return false;
         }
-        return false;
+        boolean hasSingle = (code & SINGLE_BIT) == SINGLE_BIT;
+        boolean hasBatch = (code & BATCH_BIT) == BATCH_BIT;
+        return !(hasSingle && hasBatch);
     }
 
 }
