@@ -417,11 +417,11 @@ public class ApikeyService {
     @Transactional
     public ApikeyOps.ChangeResult changeOwner(ApikeyOps.ChangeOwnerOp op) {
         Assert.isTrue(ORG.equals(op.getTargetOwnerType()) || PROJECT.equals(op.getTargetOwnerType()), "targetOwnerType仅支持org或project");
-        checkPermission(op.getCode(), AkOperation.CHANGE_OWNER);
 
         ApikeyInfo source = apikeyRepo.queryByCode(op.getCode());
         Assert.notNull(source, "AK不存在");
         Assert.isTrue(ACTIVE.equals(source.getStatus()), "AK状态不允许变更");
+        akPermissionChecker.check(source, AkOperation.CHANGE_OWNER);
 
         String targetOwnerCode = StringUtils.defaultIfEmpty(op.getTargetOwnerCode(), source.getOwnerCode());
         String targetOwnerName = StringUtils.defaultIfEmpty(op.getTargetOwnerName(), source.getOwnerName());
@@ -460,11 +460,10 @@ public class ApikeyService {
 
     @Transactional
     public ApikeyOps.ChangeResult changeParent(ApikeyOps.ChangeParentOp op) {
-        checkPermission(op.getCode(), AkOperation.CHANGE_PARENT);
-
         ApikeyInfo source = apikeyRepo.queryByCode(op.getCode());
         Assert.notNull(source, "源AK不存在");
         Assert.isTrue(ACTIVE.equals(source.getStatus()), "源AK状态不允许变更");
+        akPermissionChecker.check(source, AkOperation.CHANGE_PARENT);
 
         ApikeyInfo targetParent = apikeyRepo.queryByCode(op.getTargetParentCode());
         Assert.notNull(targetParent, "目标父AK不存在");
@@ -472,7 +471,7 @@ public class ApikeyService {
         Assert.isTrue(StringUtils.isEmpty(targetParent.getParentCode()), "目标AK必须是父级AK");
         Assert.isTrue(!StringUtils.equals(source.getCode(), targetParent.getCode()), "源AK与目标父AK不可相同");
         Assert.isTrue(!StringUtils.equals(source.getParentCode(), op.getTargetParentCode()), "源AK已挂在该目标父AK下");
-        checkPermission(op.getTargetParentCode(), AkOperation.CREATE_CHILD);
+        akPermissionChecker.check(targetParent, AkOperation.CREATE_CHILD);
 
         List<ApikeyDB> children = StringUtils.isEmpty(source.getParentCode()) ? listChildren(op.getCode()) : new ArrayList<>();
         List<String> affectedCodes = collectAffectedCodes(op.getCode(), children);

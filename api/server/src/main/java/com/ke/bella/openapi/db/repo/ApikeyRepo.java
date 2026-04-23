@@ -12,6 +12,7 @@ import org.jooq.impl.DSL;
 import org.jooq.impl.TableImpl;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.Assert;
 
 import java.util.List;
 
@@ -150,9 +151,9 @@ public class ApikeyRepo extends StatusRepo<ApikeyDB, ApikeyRecord, String> imple
     }
 
     @Transactional
-    public int updateParentAndManagerByCode(String code, String targetParentCode,
+    public void updateParentAndManagerByCode(String code, String targetParentCode,
             String managerCode, String managerName, Long muId, String muName) {
-        return db.update(APIKEY)
+        int num = db.update(APIKEY)
                 .set(APIKEY.PARENT_CODE, targetParentCode)
                 .set(APIKEY.MANAGER_CODE, managerCode)
                 .set(APIKEY.MANAGER_NAME, managerName)
@@ -160,6 +161,7 @@ public class ApikeyRepo extends StatusRepo<ApikeyDB, ApikeyRecord, String> imple
                 .set(APIKEY.MU_NAME, muName)
                 .where(APIKEY.CODE.eq(code))
                 .execute();
+        Assert.isTrue(num == 1, "更新AK父子关系失败，请刷新后重试");
     }
 
     @Transactional
