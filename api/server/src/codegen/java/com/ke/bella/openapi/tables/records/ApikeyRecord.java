@@ -275,115 +275,129 @@ public class ApikeyRecord extends UpdatableRecordImpl<ApikeyRecord> implements O
     }
 
     /**
+     * Setter for <code>apikey.qps_limit</code>. QPS限制（每秒请求数，0使用系统默认值，负数不限制）
+     */
+    public void setQpsLimit(Integer value) {
+        set(18, value);
+    }
+
+    /**
+     * Getter for <code>apikey.qps_limit</code>. QPS限制（每秒请求数，0使用系统默认值，负数不限制）
+     */
+    public Integer getQpsLimit() {
+        return (Integer) get(18);
+    }
+
+    /**
      * Setter for <code>apikey.status</code>. 状态(active/inactive)
      */
     public void setStatus(String value) {
-        set(18, value);
+        set(19, value);
     }
 
     /**
      * Getter for <code>apikey.status</code>. 状态(active/inactive)
      */
     public String getStatus() {
-        return (String) get(18);
+        return (String) get(19);
     }
 
     /**
      * Setter for <code>apikey.remark</code>. 备注
      */
     public void setRemark(String value) {
-        set(19, value);
+        set(20, value);
     }
 
     /**
      * Getter for <code>apikey.remark</code>. 备注
      */
     public String getRemark() {
-        return (String) get(19);
+        return (String) get(20);
     }
 
     /**
      * Setter for <code>apikey.cuid</code>. 创建人id
      */
     public void setCuid(Long value) {
-        set(20, value);
+        set(21, value);
     }
 
     /**
      * Getter for <code>apikey.cuid</code>. 创建人id
      */
     public Long getCuid() {
-        return (Long) get(20);
+        return (Long) get(21);
     }
 
     /**
      * Setter for <code>apikey.cu_name</code>. 创建人姓名
      */
     public void setCuName(String value) {
-        set(21, value);
+        set(22, value);
     }
 
     /**
      * Getter for <code>apikey.cu_name</code>. 创建人姓名
      */
     public String getCuName() {
-        return (String) get(21);
+        return (String) get(22);
     }
 
     /**
      * Setter for <code>apikey.muid</code>. 编辑人id
      */
     public void setMuid(Long value) {
-        set(22, value);
+        set(23, value);
     }
 
     /**
      * Getter for <code>apikey.muid</code>. 编辑人id
      */
     public Long getMuid() {
-        return (Long) get(22);
+        return (Long) get(23);
     }
 
     /**
      * Setter for <code>apikey.mu_name</code>. 编辑人姓名
      */
     public void setMuName(String value) {
-        set(23, value);
+        set(24, value);
     }
 
     /**
      * Getter for <code>apikey.mu_name</code>. 编辑人姓名
      */
     public String getMuName() {
-        return (String) get(23);
+        return (String) get(24);
     }
 
     /**
      * Setter for <code>apikey.ctime</code>.
      */
     public void setCtime(LocalDateTime value) {
-        set(24, value);
+        set(25, value);
     }
 
     /**
      * Getter for <code>apikey.ctime</code>.
      */
     public LocalDateTime getCtime() {
-        return (LocalDateTime) get(24);
+        return (LocalDateTime) get(25);
     }
 
     /**
      * Setter for <code>apikey.mtime</code>.
      */
     public void setMtime(LocalDateTime value) {
-        set(25, value);
+        set(26, value);
     }
 
     /**
      * Getter for <code>apikey.mtime</code>.
      */
     public LocalDateTime getMtime() {
-        return (LocalDateTime) get(25);
+        return (LocalDateTime) get(26);
     }
 
     // -------------------------------------------------------------------------
@@ -409,7 +423,7 @@ public class ApikeyRecord extends UpdatableRecordImpl<ApikeyRecord> implements O
     /**
      * Create a detached, initialised ApikeyRecord
      */
-    public ApikeyRecord(Long id, String code, String akSha, String akDisplay, String name, String parentCode, String outEntityCode, String serviceId, String ownerType, String ownerCode, String ownerName, String managerCode, String managerName, String roleCode, String certifyCode, String safetySceneCode, Byte safetyLevel, BigDecimal monthQuota, String status, String remark, Long cuid, String cuName, Long muid, String muName, LocalDateTime ctime, LocalDateTime mtime) {
+    public ApikeyRecord(Long id, String code, String akSha, String akDisplay, String name, String parentCode, String outEntityCode, String serviceId, String ownerType, String ownerCode, String ownerName, String managerCode, String managerName, String roleCode, String certifyCode, String safetySceneCode, Byte safetyLevel, BigDecimal monthQuota, Integer qpsLimit, String status, String remark, Long cuid, String cuName, Long muid, String muName, LocalDateTime ctime, LocalDateTime mtime) {
         super(Apikey.APIKEY);
 
         setId(id);
@@ -430,6 +444,7 @@ public class ApikeyRecord extends UpdatableRecordImpl<ApikeyRecord> implements O
         setSafetySceneCode(safetySceneCode);
         setSafetyLevel(safetyLevel);
         setMonthQuota(monthQuota);
+        setQpsLimit(qpsLimit);
         setStatus(status);
         setRemark(remark);
         setCuid(cuid);

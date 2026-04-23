@@ -43,6 +43,7 @@ export function UpdateSafeLevel({
 }: UpdateSafeLevelProps) {
   const [certifyCode, setCertifyCode] = useState("");
   const [loading, setLoading] = useState(false);
+  const privacyUrl = config.compliance.privacyUrl;
 
   // 处理确认提交
   const handleConfirm = async () => {
@@ -87,7 +88,12 @@ export function UpdateSafeLevel({
 
   // 处理安全合规申请链接点击
   const handleComplianceClick = () => {
-    window.open(config.compliance.privacyUrl, "_blank");
+    if (!privacyUrl) {
+      toast.error("未配置安全合规申请地址，请联系部署方在环境变量中设置 NEXT_PUBLIC_PRIVACY_URL");
+      return;
+    }
+
+    window.open(privacyUrl, "_blank");
   };
 
   return (

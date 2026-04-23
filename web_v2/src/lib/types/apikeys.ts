@@ -70,6 +70,51 @@ export interface ApikeyTransferLog {
     mtime: string;
 }
 
+export interface ApikeyChangeLog {
+    id: number;
+    actionType: 'owner_transfer' | 'owner_change' | 'parent_change';
+    akCode: string;
+    affectedCodes: string;
+    fromOwnerType: string;
+    fromOwnerCode: string;
+    fromOwnerName: string;
+    toOwnerType: string;
+    toOwnerCode: string;
+    toOwnerName: string;
+    fromParentCode: string;
+    toParentCode: string;
+    fromManagerCode: string;
+    fromManagerName: string;
+    toManagerCode: string;
+    toManagerName: string;
+    reason: string;
+    status: string;
+    operatorUid: number;
+    operatorName: string;
+    ctime: string;
+    mtime: string;
+}
+
+export interface ChangeApiKeyOwnerRequest {
+    code: string;
+    targetOwnerType: 'org' | 'project';
+    targetOwnerCode?: string;
+    targetOwnerName?: string;
+    reason?: string;
+}
+
+export interface ChangeApiKeyParentRequest {
+    code: string;
+    targetParentCode: string;
+    reason?: string;
+}
+
+export interface ChangeApiKeyResult {
+    code: string;
+    action: 'owner_change' | 'parent_change';
+    affectedCount: number;
+}
+
 // 创建子API Key的请求参数
 export interface CreateSubApiKeyRequest {
     monthQuota: number;

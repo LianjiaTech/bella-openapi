@@ -36,6 +36,10 @@ import { SearchInput } from "@/app/[locale]/(dashboard)/apikey/components/Search
 import { ManagerDialog } from "@/app/[locale]/(dashboard)/apikey/components/ManagerDialog";
 import { AdminCreateDialog } from "./components/AdminCreateDialog";
 import { ApiKeyCreatedDialog } from "@/app/[locale]/(dashboard)/apikey/components/ApiKeyCreatedDialog";
+import { OwnerChangeDialog } from "./components/OwnerChangeDialog";
+import { ParentChangeDialog } from "./components/ParentChangeDialog";
+import { ApiKeyHistoryDialog } from "./components/ApiKeyHistoryDialog";
+import { ApiKeyAdminAction } from "./components/apiKeyAdminAction";
 import { copyToClipboard } from "@/lib/utils/clipboard";
 import { toast } from "sonner";
 import { useAuth } from "@/components/providers/auth-provider";
@@ -57,10 +61,6 @@ export default function ApiKeyAdminPage() {
     const [searchType, setSearchType] = useState<'ak' | 'owner' | 'code' | 'manager'>('ak');
     /** 所有者类型筛选 */
     const [ownerTypeFilter, setOwnerTypeFilter] = useState<'all' | 'person' | 'org' | 'project'>('all');
-
-    // 转交对话框
-    const [showTransferDialog, setShowTransferDialog] = useState(false);
-    const [transferingApiKey, setTransferingApiKey] = useState<ApikeyInfo | null>(null);
 
     // 删除对话框
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -88,9 +88,9 @@ export default function ApiKeyAdminPage() {
     const [showCreatedDialog, setShowCreatedDialog] = useState(false);
     const [newApiKey, setNewApiKey] = useState("");
 
-    // 设置管理人弹窗相关 state
-    const [showManagerDialog, setShowManagerDialog] = useState(false);
-    const [managerTargetApiKey, setManagerTargetApiKey] = useState<ApikeyInfo | null>(null);
+    // admin 业务动作统一状态：页面只关心“当前处理哪个 AK、打开哪个动作”
+    const [activeAction, setActiveAction] = useState<ApiKeyAdminAction | null>(null);
+    const [activeApiKey, setActiveApiKey] = useState<ApikeyInfo | null>(null);
 
     const { user } = useAuth();
 
@@ -106,10 +106,10 @@ export default function ApiKeyAdminPage() {
     /**
      * 获取全量 API Keys
      * 依赖 searchType / ownerTypeFilter，筛选变化时 useCallback 重建，触发 useEffect 重新请求
-     * showTransferDialog 在依赖中：转交弹窗打开期间暂停刷新，防止数据抖动
+     * activeAction=transfer 时暂停刷新，防止转交流程中数据抖动
      */
     const fetchApiKeys = useCallback(async (currentPage: number, search: string) => {
-        if (showTransferDialog) return;
+        if (activeAction === 'transfer') return;
         try {
             setLoading(true);
             setError(null);
@@ -166,7 +166,7 @@ export default function ApiKeyAdminPage() {
         } finally {
             setLoading(false);
         }
-    }, [showTransferDialog, searchType, ownerTypeFilter]);
+    }, [activeAction, searchType, ownerTypeFilter]);
 
     // 搜索防抖 500ms
     useEffect(() => {
@@ -208,12 +208,6 @@ export default function ApiKeyAdminPage() {
         setSearchQuery("");
         setDebouncedSearchQuery("");
         setPage(1);
-    }, []);
-
-    // 转交
-    const handleTransferClick = useCallback((apiKey: ApikeyInfo) => {
-        setTransferingApiKey(apiKey);
-        setShowTransferDialog(true);
     }, []);
 
     // 删除
@@ -327,14 +321,17 @@ export default function ApiKeyAdminPage() {
         fetchApiKeys(page, debouncedSearchQuery);
     }, [fetchApiKeys, page, debouncedSearchQuery]);
 
-    // 处理设置管理人点击：管理员可为任意 AK 设置管理者
-    const handleSetManagerClick = useCallback((apiKey: ApikeyInfo) => {
-        setManagerTargetApiKey(apiKey);
-        setShowManagerDialog(true);
+    const handleOpenAction = useCallback((action: ApiKeyAdminAction, apiKey: ApikeyInfo) => {
+        setActiveAction(action);
+        setActiveApiKey(apiKey);
     }, []);
 
-    // 设置管理人成功回调：刷新当前页列表
-    const handleManagerSuccess = useCallback(() => {
+    const handleCloseAction = useCallback(() => {
+        setActiveAction(null);
+        setActiveApiKey(null);
+    }, []);
+
+    const handleGovernSuccess = useCallback(() => {
         fetchApiKeys(page, debouncedSearchQuery);
     }, [fetchApiKeys, page, debouncedSearchQuery]);
 
@@ -415,13 +412,12 @@ export default function ApiKeyAdminPage() {
                         searchQuery={debouncedSearchQuery}
                         isSuperAdmin={isSuperAdmin}
                         onCopy={handleCopy}
-                        onTransfer={handleTransferClick}
+                        onOpenAction={handleOpenAction}
                         onDelete={handleDeleteClick}
                         onEditName={handleEditName}
                         onEditService={handleEditService}
                         onEditSafetyLevel={handleEditSafetyLevelClick}
                         onEditQuota={handleEditQuotaClick}
-                        onSetManager={handleSetManagerClick}
                     />
 
                     {!loading && apiKeys.length > 0 && (
@@ -437,11 +433,11 @@ export default function ApiKeyAdminPage() {
 
                 {/* 转交对话框 */}
                 <ApiKeyTransferDialog
-                    isOpen={showTransferDialog}
-                    onClose={() => setShowTransferDialog(false)}
-                    apiKeyName={transferingApiKey?.name}
-                    apiKeyCode={transferingApiKey?.code}
-                    akDisplay={transferingApiKey?.akDisplay}
+                    isOpen={activeAction === 'transfer'}
+                    onClose={handleCloseAction}
+                    apiKeyName={activeApiKey?.name}
+                    apiKeyCode={activeApiKey?.code}
+                    akDisplay={activeApiKey?.akDisplay}
                 />
 
                 {/* 删除对话框 */}
@@ -483,12 +479,32 @@ export default function ApiKeyAdminPage() {
 
                 {/* 设置管理人弹窗 */}
                 <ManagerDialog
-                    isOpen={showManagerDialog}
-                    onClose={() => setShowManagerDialog(false)}
-                    akCode={managerTargetApiKey?.code ?? ""}
-                    akDisplay={managerTargetApiKey?.akDisplay}
-                    onSuccess={handleManagerSuccess}
+                    isOpen={activeAction === 'manager'}
+                    onClose={handleCloseAction}
+                    akCode={activeApiKey?.code ?? ""}
+                    akDisplay={activeApiKey?.akDisplay}
+                    onSuccess={handleGovernSuccess}
                     excludeSelf={false}
+                />
+
+                <OwnerChangeDialog
+                    isOpen={activeAction === 'ownerChange'}
+                    apiKey={activeApiKey}
+                    onClose={handleCloseAction}
+                    onSuccess={handleGovernSuccess}
+                />
+
+                <ParentChangeDialog
+                    isOpen={activeAction === 'parentChange'}
+                    apiKey={activeApiKey}
+                    onClose={handleCloseAction}
+                    onSuccess={handleGovernSuccess}
+                />
+
+                <ApiKeyHistoryDialog
+                    isOpen={activeAction === 'history'}
+                    apiKey={activeApiKey}
+                    onClose={handleCloseAction}
                 />
 
                 {/* 创建 AK 弹窗 */}

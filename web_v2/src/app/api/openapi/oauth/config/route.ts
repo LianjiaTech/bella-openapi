@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { NextRequest } from 'next/server';
+import { getBackendOrigin } from '@/lib/config/backend';
 import { getOAuthConfigByScenario, currentScenario } from '@/mocks/login/authData';
 
 /**
@@ -47,10 +48,9 @@ export async function GET(request: NextRequest) {
   // 真实后端模式
   try {
     // 构造后端 API URL
-    const backendHost = process.env.NEXT_PUBLIC_API_HOST || 'localhost:8080';
     const searchParams = request.nextUrl.searchParams;
     const queryString = searchParams.toString();
-    const backendUrl = `http://${backendHost}/openapi/oauth/config${queryString ? '?' + queryString : ''}`;
+    const backendUrl = `${getBackendOrigin()}/openapi/oauth/config${queryString ? `?${queryString}` : ''}`;
 
     // 转发 Cookie
     const cookie = request.headers.get('cookie') || '';

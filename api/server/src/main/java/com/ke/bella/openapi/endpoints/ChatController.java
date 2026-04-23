@@ -38,6 +38,7 @@ import com.ke.bella.openapi.protocol.log.EndpointLogger;
 import com.ke.bella.openapi.safety.ISafetyCheckService;
 import com.ke.bella.openapi.safety.SafetyCheckHelper;
 import com.ke.bella.openapi.safety.SafetyCheckRequest;
+import com.ke.bella.openapi.db.repo.ChannelRepo;
 import com.ke.bella.openapi.service.EndpointDataService;
 import com.ke.bella.openapi.tables.pojos.ChannelDB;
 import com.ke.bella.openapi.utils.JacksonUtils;
@@ -68,6 +69,8 @@ public class ChatController {
     private Integer maxModelsPerRequest;
     @Autowired
     private QueueClient queueClient;
+    @Autowired
+    private ChannelRepo channelRepo;
 
     @PostMapping("/completions")
     public Object completion(HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException {
@@ -182,7 +185,7 @@ public class ChatController {
     private CompletionAdaptor<?> decorateAdaptor(CompletionAdaptor<?> adaptor, CompletionProperty property, EndpointProcessData processData) {
         if(StringUtils.isNotBlank(property.getQueueName())) {
             if(adaptor instanceof CompletionAdaptorDelegator) {
-                adaptor = new QueueAdaptor<>((CompletionAdaptorDelegator<?>) adaptor, queueClient, processData);
+                adaptor = new QueueAdaptor<>((CompletionAdaptorDelegator<?>) adaptor, queueClient, processData, channelRepo::queryByUniqueKey);
             } else {
                 throw new IllegalStateException(adaptor.getClass().getSimpleName() + "不支持请求代理");
             }

@@ -4,6 +4,7 @@ import com.ke.bella.openapi.EndpointProcessData;
 import com.ke.bella.openapi.apikey.ApikeyInfo;
 import com.ke.bella.openapi.common.exception.BellaException;
 import com.ke.bella.openapi.protocol.OpenapiResponse;
+import com.ke.bella.openapi.protocol.completion.StreamCompletionResponse;
 import com.ke.bella.openapi.protocol.completion.callback.StreamCompletionCallback;
 import com.ke.bella.openapi.safety.ISafetyCheckService;
 import com.ke.bella.openapi.safety.SafetyCheckRequest;
@@ -52,12 +53,14 @@ public class WorkerStreamingCallback extends StreamCompletionCallback {
     }
 
     @Override
+    public void callback(StreamCompletionResponse msg) {
+        msg.setChannelCode(processData.getChannelCode());
+        super.callback(msg);
+    }
+
+    @Override
     public void send(Object data) {
-        taskWrapper.emitProgress(
-                String.valueOf(seq.getAndIncrement()),
-                "message",
-                data
-        );
+        taskWrapper.emitProgress(String.valueOf(seq.getAndIncrement()), "message", data);
     }
 
     @Override

@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
+import javax.validation.constraints.NotBlank;
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -38,6 +39,42 @@ public class ApikeyOps {
         private Long managerUserId;  // 通过 userId 查用户，后端自动计算正确的 managerCode
         private String managerCode;
         private String managerName;
+    }
+
+    @Data
+    @SuperBuilder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class ChangeOwnerOp extends Operator {
+        @NotBlank(message = "code不可为空")
+        private String code;
+        @NotBlank(message = "targetOwnerType不可为空")
+        private String targetOwnerType;
+        private String targetOwnerCode;
+        private String targetOwnerName;
+        private String reason;
+    }
+
+    @Data
+    @SuperBuilder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class ChangeParentOp extends Operator {
+        @NotBlank(message = "code不可为空")
+        private String code;
+        @NotBlank(message = "targetParentCode不可为空")
+        private String targetParentCode;
+        private String reason;
+    }
+
+    @Data
+    @SuperBuilder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class ChangeResult {
+        private String code;
+        private String action;
+        private Integer affectedCount;
     }
 
     @Data
