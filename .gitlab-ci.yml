@@ -12,6 +12,11 @@ github_sync_gitlab:
     GIT_USER_NAME: "chenzhenhua016"
     GIT_USER_EMAIL: "chenzhenhua016@ke.com"
   script:
+    - echo "开始调试变量..."
+    - if [ -z "$GITLAB_ACCESS_TOKEN" ]; then echo "❌ GITLAB_ACCESS_TOKEN 为空"; exit 1; fi
+    - if [ -z "$GITHUB_ACCESS_TOKEN" ]; then echo "❌ GITHUB_ACCESS_TOKEN 为空"; exit 1; fi
+    - echo "✅ 变量检查通过"
+
     - echo "======== 开始从GitHub同步到GitLab master分支 ========"
 
     - echo "配置Git用户信息..."
@@ -52,7 +57,7 @@ github_sync_gitlab:
           exit 0
         fi
     - echo "配置推送URL..."
-    - git remote set-url origin "https://oauth2:${PROJECT_ACCESS_TOKEN}@git.ke.com/${GITLAB_REPO_PATH}.git"
+    - git remote set-url origin "https://oauth2:${GITLAB_ACCESS_TOKEN}@git.ke.com/${GITLAB_REPO_PATH}.git"
     - echo "推送更新到 ${GITLAB_TARGET_BRANCH} 分支..."
     - git push origin HEAD:"${GITLAB_TARGET_BRANCH}" || (echo "推送失败，请检查访问令牌权限"; exit 1)
     - echo "✅ 同步完成！保持了commit历史完整性"
