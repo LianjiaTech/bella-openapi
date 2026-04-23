@@ -20,6 +20,7 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Set;
 
+import static com.ke.bella.openapi.common.EntityConstants.ALL;
 import static com.ke.bella.openapi.common.EntityConstants.CONSOLE;
 import static com.ke.bella.openapi.common.EntityConstants.ORG;
 import static com.ke.bella.openapi.common.EntityConstants.PERSON;
@@ -109,6 +110,12 @@ public class AkPermissionChecker {
      */
     private void checkOperatorPermission(ApikeyDB targetDb, AkOperation operation) {
         Operator op = BellaContext.getOperator();
+        if (hasAdminPermission()) {
+            String roleCode = String.valueOf(op.getOptionalInfo().get("roleCode"));
+            if (AkPermissionMatrix.isAllowed(roleCode, AkRelation.UNRELATED, operation)) {
+                return;
+            }
+        }
         String userId = op.getUserId().toString();
 
         boolean isOwner = (PERSON.equals(targetDb.getOwnerType()) || CONSOLE.equals(targetDb.getOwnerType()))
@@ -153,6 +160,17 @@ public class AkPermissionChecker {
         }
 
         throw new BellaException.AuthorizationException("没有操作权限");
+    }
+
+    public boolean hasAdminPermission() {
+        ApikeyInfo caller = EndpointContext.getApikeyIgnoreNull();
+        if (caller != null && SYSTEM.equals(caller.getOwnerType())) {
+            return true;
+        }
+        Operator op = BellaContext.getOperatorIgnoreNull();
+        return op != null
+                && op.getOptionalInfo() != null
+                && (CONSOLE.equals(op.getOptionalInfo().get("roleCode")) || ALL.equals(op.getOptionalInfo().get("roleCode")));
     }
 
     /**

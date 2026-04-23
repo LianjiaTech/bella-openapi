@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { NextRequest } from 'next/server';
+import { getBackendOrigin } from '@/lib/config/backend';
 import { getUserInfoByScenario, currentScenario } from '@/mocks/login/authData';
 
 /**
@@ -62,8 +63,7 @@ export async function GET(request: NextRequest) {
   // 真实后端模式
   try {
     // 构造后端 API URL
-    const backendHost = process.env.NEXT_PUBLIC_API_HOST || 'localhost:8080';
-    const backendUrl = `http://${backendHost}/console/userInfo`;
+    const backendUrl = `${getBackendOrigin()}/console/userInfo`;
 
     // 转发 Cookie（用于会话认证）
     const cookie = request.headers.get('cookie') || '';
