@@ -4,51 +4,59 @@ variables:
   GIT_DEPTH: "0"
 github_sync_gitlab:
   stage: sync
+  variables:
+    GITHUB_REPO_PATH: "LianjiaTech/bella-openapi"
+    GITLAB_REPO_PATH: "ai-arch/bella-openapi"
+    GITHUB_SOURCE_BRANCH: "main"
+    GITLAB_TARGET_BRANCH: "master"
+    GIT_USER_NAME: "chenzhenhua016"
+    GIT_USER_EMAIL: "chenzhenhua016@ke.com"
   script:
     - echo "======== 开始从GitHub同步到GitLab master分支 ========"
 
-    # 1️⃣ 配置 Git 用户
     - echo "配置Git用户信息..."
-    - git config user.name "GitLab CI Bot"
-    - git config user.email "dy7tffuid54yu"
+    - git config user.name "${GIT_USER_NAME}"
+    - git config user.email "${GIT_USER_EMAIL}"
 
-    # 2️⃣ 配置 GitHub 远程仓库
     - echo "配置GitHub远程仓库..."
     - git remote remove github || true
-    - git remote add github https://oauth2:${GITHUB_ACCESS_TOKEN}@github.com/LianjiaTech/bella-openapi.git
+    - git remote add github "https://oauth2:${GITHUB_ACCESS_TOKEN}@github.com/${GITHUB_REPO_PATH}.git"
 
-    # 3️⃣ 获取 GitHub main
     - echo "获取GitHub最新代码..."
-    - git fetch github main
+    - git fetch github "${GITHUB_SOURCE_BRANCH}"
 
-    # 4️⃣ ✅ 切换到 master 分支（关键）
-    - echo "切换到 master 分支..."
-    - git checkout master || git checkout -b master
 
-    # 5️⃣ 判断是否需要同步
-    - echo "检查是否需要更新..."
+    - echo "分析分支状态..."
     - LOCAL_HEAD=$(git rev-parse HEAD)
-    - GITHUB_HEAD=$(git rev-parse FETCH_HEAD)
+    - GITHUB_HEAD=$(git rev-parse "github/${GITHUB_SOURCE_BRANCH}")
+    - echo "GitLab当前HEAD $LOCAL_HEAD"
+    - echo "GitHub远程HEAD $GITHUB_HEAD"
+    - if [ "$LOCAL_HEAD" = "$GITHUB_HEAD" ]; then echo "本地分支已是最新，无需同步"; exit 0; fi
+
+    - echo "检查分支差异..."
+    - GITLAB_ONLY=$(git rev-list --count "github/${GITHUB_SOURCE_BRANCH}"..HEAD 2>/dev/null || echo "0")
+    - GITHUB_ONLY=$(git rev-list --count HEAD.."github/${GITHUB_SOURCE_BRANCH}" 2>/dev/null || echo "0")
+    - echo "GitLab独有提交数 $GITLAB_ONLY"
+    - echo "GitHub独有提交数 $GITHUB_ONLY"
+
 
     - |
-      if [ "$LOCAL_HEAD" = "$GITHUB_HEAD" ]; then
-        echo "本地 master 已是最新，无需同步"
-        exit 0
-      fi
-
-    # 6️⃣ 执行 rebase
-    - echo "执行 rebase 操作..."
-    - git rebase FETCH_HEAD || (echo "❌ rebase失败，存在冲突"; git rebase --abort; exit 1)
-
-    # 7️⃣ 配置 GitLab 推送地址
-    - echo "配置GitLab推送地址..."
-    - git remote set-url origin https://oauth2:${GITLAB_ACCESS_TOKEN}@git.ke.com/ai-arch/bella-openapi.git
-
-    # 8️⃣ 推送到 master
-    - echo "推送更新到 master 分支..."
-    - git push --force-with-lease origin HEAD:master || (echo "❌ 推送失败，请检查token权限"; exit 1)
-
-    - echo "✅ 同步成功完成"
+        if [ "$GITLAB_ONLY" -gt 0 ] && [ "$GITHUB_ONLY" -gt 0 ]; then
+          echo "双向存在新提交，执行安全merge策略..."
+          git merge "github/${GITHUB_SOURCE_BRANCH}" -m "chore: sync from github/${GITHUB_SOURCE_BRANCH} [保持双向提交历史]" || (echo "merge失败，存在冲突需手动解决"; exit 1)
+        elif [ "$GITHUB_ONLY" -gt 0 ]; then
+          echo "GitHub有新提交，执行快进合并..."
+          git merge "github/${GITHUB_SOURCE_BRANCH}" --ff-only || git merge "github/${GITHUB_SOURCE_BRANCH}" -m "chore: sync from github/${GITHUB_SOURCE_BRANCH}"
+        else
+          echo "仅GitLab有新提交，无需同步"
+          exit 0
+        fi
+    - echo "配置推送URL..."
+    - git remote set-url origin "https://oauth2:${PROJECT_ACCESS_TOKEN}@git.lianjia.com/${GITLAB_REPO_PATH}.git"
+    - echo "推送更新到 ${GITLAB_TARGET_BRANCH} 分支..."
+    - git push origin HEAD:"${GITLAB_TARGET_BRANCH}" || (echo "推送失败，请检查访问令牌权限"; exit 1)
+    - echo "✅ 同步完成！保持了commit历史完整性"
+    
 
   rules:
   # 定时任务
