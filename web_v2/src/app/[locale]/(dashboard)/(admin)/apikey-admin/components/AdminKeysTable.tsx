@@ -16,13 +16,14 @@
 
 import { Button } from "@/components/common/button";
 import { Badge } from "@/components/common/badge";
-import { Copy, MoreVertical, UserPlus, Trash2, Key, Pencil, Users } from "lucide-react";
+import { Copy, MoreVertical, UserPlus, Trash2, Key, Pencil, Users, Building2, Waypoints, History } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/common/table";
 import { ApikeyInfo, ApiKeyBalance } from "@/lib/types/apikeys";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/common/popover";
 import Link from "next/link";
 import { TableLoadingRow } from "@/components/ui/table/TableLoadingRow";
 import { QuotaUsageDisplay } from "@/components/ui/QuotaUsageDisplay";
+import { ApiKeyAdminAction } from "./apiKeyAdminAction";
 
 /** 表格固定列数：密钥代码、所有者、名称、服务名、月额度配置、安全等级、月额度使用、备注、管理者、操作 */
 const COL_SPAN = 10;
@@ -59,14 +60,12 @@ interface AdminKeysTableProps {
     /** 是否为超级管理员：控制转交/删除操作的可见性 */
     isSuperAdmin: boolean;
     onCopy: (text: string) => void;
-    onTransfer: (apiKey: ApikeyInfo) => void;
+    onOpenAction: (action: ApiKeyAdminAction, apiKey: ApikeyInfo) => void;
     onDelete: (akCode: string) => void;
     onEditName: (code: string, currentName: string) => void;
     onEditService: (code: string, currentServiceId: string) => void;
     onEditSafetyLevel: (akCode: string) => void;
     onEditQuota: (code: string, currentQuota: number) => void;
-    /** 管理员可为任意 AK 设置管理者 */
-    onSetManager: (apiKey: ApikeyInfo) => void;
 }
 
 export function AdminKeysTable({
@@ -76,13 +75,12 @@ export function AdminKeysTable({
     searchQuery,
     isSuperAdmin,
     onCopy,
-    onTransfer,
+    onOpenAction,
     onDelete,
     onEditName,
     onEditService,
     onEditSafetyLevel,
     onEditQuota,
-    onSetManager,
 }: AdminKeysTableProps) {
     return (
         <div className="rounded-md border bg-card">
@@ -265,10 +263,31 @@ export function AdminKeysTable({
                                                 {/* 设置管理人：管理员可为任意 AK 设置管理者 */}
                                                 <button
                                                     className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent rounded cursor-pointer"
-                                                    onClick={() => onSetManager(apiKey)}
+                                                    onClick={() => onOpenAction('manager', apiKey)}
                                                 >
                                                     <Users className="h-4 w-4" />
                                                     设置管理人
+                                                </button>
+                                                <button
+                                                    className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent rounded cursor-pointer"
+                                                    onClick={() => onOpenAction('ownerChange', apiKey)}
+                                                >
+                                                    <Building2 className="h-4 w-4" />
+                                                    变更所有者
+                                                </button>
+                                                <button
+                                                    className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent rounded cursor-pointer"
+                                                    onClick={() => onOpenAction('parentChange', apiKey)}
+                                                >
+                                                    <Waypoints className="h-4 w-4" />
+                                                    迁移父级
+                                                </button>
+                                                <button
+                                                    className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent rounded cursor-pointer"
+                                                    onClick={() => onOpenAction('history', apiKey)}
+                                                >
+                                                    <History className="h-4 w-4" />
+                                                    变更历史
                                                 </button>
                                                 <button
                                                     className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent rounded cursor-pointer"
@@ -282,7 +301,7 @@ export function AdminKeysTable({
                                                     <>
                                                         <button
                                                             className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent rounded cursor-pointer"
-                                                            onClick={() => onTransfer(apiKey)}
+                                                            onClick={() => onOpenAction('transfer', apiKey)}
                                                         >
                                                             <UserPlus className="h-4 w-4" />
                                                             转交

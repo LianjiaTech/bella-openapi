@@ -3,6 +3,7 @@ package com.ke.bella.openapi.console;
 import com.ke.bella.openapi.BellaContext;
 import com.ke.bella.openapi.Operator;
 import com.ke.bella.openapi.annotations.BellaAPI;
+import com.ke.bella.openapi.apikey.ApikeyChangeLog;
 import com.ke.bella.openapi.apikey.ApikeyInfo;
 import com.ke.bella.openapi.apikey.ApikeyOps;
 import com.ke.bella.openapi.apikey.ApikeyTransferLog;
@@ -185,10 +186,26 @@ public class ApikeyConsoleController {
         return apikeyService.transferApikeyOwner(op, currentOperator);
     }
 
+    @PostMapping("/owner/change")
+    public ApikeyOps.ChangeResult changeOwner(@RequestBody @Validated ApikeyOps.ChangeOwnerOp op) {
+        return apikeyService.changeOwner(op);
+    }
+
+    @PostMapping("/parent/change")
+    public ApikeyOps.ChangeResult changeParent(@RequestBody @Validated ApikeyOps.ChangeParentOp op) {
+        return apikeyService.changeParent(op);
+    }
+
     @GetMapping("/transfer/history")
     public List<ApikeyTransferLog> getTransferHistory(@RequestParam String akCode) {
         Assert.hasText(akCode, "API Key编码不能为空");
         return apikeyService.getTransferHistory(akCode);
+    }
+
+    @GetMapping("/change/history")
+    public List<ApikeyChangeLog> getChangeHistory(@RequestParam String akCode) {
+        Assert.hasText(akCode, "API Key编码不能为空");
+        return apikeyService.getChangeHistory(akCode);
     }
 
     @GetMapping("/qps/topN")

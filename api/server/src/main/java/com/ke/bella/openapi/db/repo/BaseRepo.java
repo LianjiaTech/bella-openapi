@@ -36,8 +36,12 @@ public interface BaseRepo {
         Operator op = (Operator) object;
         com.ke.bella.openapi.Operator oper = BellaContext.getOperatorIgnoreNull();
         if(oper != null) {
-            op.setMuid(oper.getUserId());
-            op.setMuName(oper.getUserName());
+            if(oper.getUserId() != null) {
+                op.setMuid(oper.getUserId());
+            }
+            if(StringUtils.isNotEmpty(oper.getUserName())) {
+                op.setMuName(oper.getUserName());
+            }
         }
     }
 
