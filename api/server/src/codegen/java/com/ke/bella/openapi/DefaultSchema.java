@@ -5,6 +5,7 @@ package com.ke.bella.openapi;
 
 
 import com.ke.bella.openapi.tables.Apikey;
+import com.ke.bella.openapi.tables.ApikeyChangeLog;
 import com.ke.bella.openapi.tables.ApikeyMonthCost;
 import com.ke.bella.openapi.tables.ApikeyRole;
 import com.ke.bella.openapi.tables.ApikeyTransferLog;
@@ -47,6 +48,12 @@ public class DefaultSchema extends SchemaImpl {
      * ak
      */
     public final Apikey APIKEY = Apikey.APIKEY;
+
+    /**
+     * API Key变更历史表
+     */
+    public final ApikeyChangeLog APIKEY_CHANGE_LOG = ApikeyChangeLog.APIKEY_CHANGE_LOG;
+
 
     /**
      * ak月花费
@@ -145,6 +152,7 @@ public class DefaultSchema extends SchemaImpl {
     public final List<Table<?>> getTables() {
         return Arrays.<Table<?>>asList(
             Apikey.APIKEY,
+            ApikeyChangeLog.APIKEY_CHANGE_LOG,
             ApikeyMonthCost.APIKEY_MONTH_COST,
             ApikeyRole.APIKEY_ROLE,
             ApikeyTransferLog.APIKEY_TRANSFER_LOG,

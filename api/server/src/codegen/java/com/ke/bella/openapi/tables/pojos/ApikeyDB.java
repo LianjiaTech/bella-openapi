@@ -37,6 +37,7 @@ public class ApikeyDB implements Operator, Serializable {
     private String        safetySceneCode;
     private Byte          safetyLevel;
     private BigDecimal    monthQuota;
+    private Integer       qpsLimit;
     private String        status;
     private String        remark;
     private Long          cuid;
@@ -67,6 +68,7 @@ public class ApikeyDB implements Operator, Serializable {
         this.safetySceneCode = value.safetySceneCode;
         this.safetyLevel = value.safetyLevel;
         this.monthQuota = value.monthQuota;
+        this.qpsLimit = value.qpsLimit;
         this.status = value.status;
         this.remark = value.remark;
         this.cuid = value.cuid;
@@ -96,6 +98,7 @@ public class ApikeyDB implements Operator, Serializable {
         String        safetySceneCode,
         Byte          safetyLevel,
         BigDecimal    monthQuota,
+        Integer       qpsLimit,
         String        status,
         String        remark,
         Long          cuid,
@@ -123,6 +126,7 @@ public class ApikeyDB implements Operator, Serializable {
         this.safetySceneCode = safetySceneCode;
         this.safetyLevel = safetyLevel;
         this.monthQuota = monthQuota;
+        this.qpsLimit = qpsLimit;
         this.status = status;
         this.remark = remark;
         this.cuid = cuid;
@@ -386,6 +390,20 @@ public class ApikeyDB implements Operator, Serializable {
     }
 
     /**
+     * Getter for <code>apikey.qps_limit</code>. QPS限制（每秒请求数，0使用系统默认值，负数不限制）
+     */
+    public Integer getQpsLimit() {
+        return this.qpsLimit;
+    }
+
+    /**
+     * Setter for <code>apikey.qps_limit</code>. QPS限制（每秒请求数，0使用系统默认值，负数不限制）
+     */
+    public void setQpsLimit(Integer qpsLimit) {
+        this.qpsLimit = qpsLimit;
+    }
+
+    /**
      * Getter for <code>apikey.status</code>. 状态(active/inactive)
      */
     public String getStatus() {
@@ -519,6 +537,7 @@ public class ApikeyDB implements Operator, Serializable {
         sb.append(", ").append(safetySceneCode);
         sb.append(", ").append(safetyLevel);
         sb.append(", ").append(monthQuota);
+        sb.append(", ").append(qpsLimit);
         sb.append(", ").append(status);
         sb.append(", ").append(remark);
         sb.append(", ").append(cuid);

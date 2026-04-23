@@ -12,6 +12,7 @@ import org.jooq.impl.DSL;
 import org.jooq.impl.TableImpl;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.Assert;
 
 import java.util.List;
 
@@ -132,6 +133,47 @@ public class ApikeyRepo extends StatusRepo<ApikeyDB, ApikeyRecord, String> imple
                 .set(APIKEY.MUID, updateDB.getMuid())
                 .set(APIKEY.MU_NAME, updateDB.getMuName())
                 .where(APIKEY.PARENT_CODE.eq(parentCode))
+                .execute();
+    }
+
+    @Transactional
+    public int batchUpdateOwnerAndManagerByParentCode(ApikeyDB updateDB, String parentCode) {
+        return db.update(APIKEY)
+                .set(APIKEY.OWNER_TYPE, updateDB.getOwnerType())
+                .set(APIKEY.OWNER_CODE, updateDB.getOwnerCode())
+                .set(APIKEY.OWNER_NAME, updateDB.getOwnerName())
+                .set(APIKEY.MANAGER_CODE, updateDB.getManagerCode())
+                .set(APIKEY.MANAGER_NAME, updateDB.getManagerName())
+                .set(APIKEY.MUID, updateDB.getMuid())
+                .set(APIKEY.MU_NAME, updateDB.getMuName())
+                .where(APIKEY.PARENT_CODE.eq(parentCode))
+                .execute();
+    }
+
+    @Transactional
+    public void updateParentAndManagerByCode(String code, String targetParentCode,
+            String managerCode, String managerName, Long muId, String muName) {
+        int num = db.update(APIKEY)
+                .set(APIKEY.PARENT_CODE, targetParentCode)
+                .set(APIKEY.MANAGER_CODE, managerCode)
+                .set(APIKEY.MANAGER_NAME, managerName)
+                .set(APIKEY.MUID, muId)
+                .set(APIKEY.MU_NAME, muName)
+                .where(APIKEY.CODE.eq(code))
+                .execute();
+        Assert.isTrue(num == 1, "更新AK父子关系失败，请刷新后重试");
+    }
+
+    @Transactional
+    public int batchUpdateParentAndManagerByParentCode(String sourceParentCode, String targetParentCode,
+            String managerCode, String managerName, Long muId, String muName) {
+        return db.update(APIKEY)
+                .set(APIKEY.PARENT_CODE, targetParentCode)
+                .set(APIKEY.MANAGER_CODE, managerCode)
+                .set(APIKEY.MANAGER_NAME, managerName)
+                .set(APIKEY.MUID, muId)
+                .set(APIKEY.MU_NAME, muName)
+                .where(APIKEY.PARENT_CODE.eq(sourceParentCode))
                 .execute();
     }
 }
