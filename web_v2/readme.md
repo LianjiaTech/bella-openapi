@@ -39,8 +39,12 @@ cp .env.example .env.local
 # 使用 Mock 数据
 NEXT_PUBLIC_USE_MOCK=true
 
-# 后端 API 地址（当使用真实 API 时）
+# 使用真实后端时配置
 BACKEND_API_URL=http://localhost:8080
+
+# 可选：暴露给浏览器的真实后端地址
+# 不填时默认走相对路径，由 rewrites 或反向代理处理
+NEXT_PUBLIC_API_ORIGIN=http://localhost:8080
 ```
 
 ### 3. 重启开发服务器
@@ -73,6 +77,12 @@ NEXT_PUBLIC_USE_MOCK=true
 NEXT_PUBLIC_USE_MOCK=false
 BACKEND_API_URL=http://your-backend-api.com
 ```
+
+说明：
+
+- `BACKEND_API_URL`：开发代理和 Next.js 服务端 API 转发使用
+- `NEXT_PUBLIC_API_ORIGIN`：可选，暴露给浏览器端；不配置时前端默认走相对路径
+- `NEXT_PUBLIC_API_HOST`：旧变量，仍兼容，建议逐步替换为上面两个变量
 
 此时所有 API 请求将转发到真实后端服务。
 
