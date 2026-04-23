@@ -27,7 +27,7 @@ github_sync_gitlab:
     # 5️⃣ 判断是否需要同步
     - echo "检查是否需要更新..."
     - LOCAL_HEAD=$(git rev-parse HEAD)
-    - GITHUB_HEAD=$(git rev-parse github/main)
+    - GITHUB_HEAD=$(git rev-parse FETCH_HEAD)
 
     - |
       if [ "$LOCAL_HEAD" = "$GITHUB_HEAD" ]; then
@@ -37,7 +37,7 @@ github_sync_gitlab:
 
     # 6️⃣ 执行 rebase
     - echo "执行 rebase 操作..."
-    - git rebase github/main || (echo "❌ rebase失败，存在冲突"; git rebase --abort; exit 1)
+    - git rebase FETCH_HEAD || (echo "❌ rebase失败，存在冲突"; git rebase --abort; exit 1)
 
     # 7️⃣ 配置 GitLab 推送地址
     - echo "配置GitLab推送地址..."
