@@ -52,7 +52,7 @@ github_sync_gitlab:
           exit 0
         fi
     - echo "配置推送URL..."
-    - git remote set-url origin "https://oauth2:${PROJECT_ACCESS_TOKEN}@git.lianjia.com/${GITLAB_REPO_PATH}.git"
+    - git remote set-url origin "https://oauth2:${PROJECT_ACCESS_TOKEN}@git.ke.com/${GITLAB_REPO_PATH}.git"
     - echo "推送更新到 ${GITLAB_TARGET_BRANCH} 分支..."
     - git push origin HEAD:"${GITLAB_TARGET_BRANCH}" || (echo "推送失败，请检查访问令牌权限"; exit 1)
     - echo "✅ 同步完成！保持了commit历史完整性"
