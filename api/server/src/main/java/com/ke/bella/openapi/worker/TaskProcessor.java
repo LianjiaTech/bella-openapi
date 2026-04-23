@@ -102,6 +102,7 @@ public class TaskProcessor {
         int httpCode = Optional.ofNullable(response.getError())
                 .map(error -> Optional.ofNullable(error.getHttpCode()).orElse(500))
                 .orElse(200);
+        response.setChannelCode(channel.getChannelCode());
         Map<String, Object> result = new HashMap<>();
         result.put("status_code", httpCode);
         result.put("body", response);

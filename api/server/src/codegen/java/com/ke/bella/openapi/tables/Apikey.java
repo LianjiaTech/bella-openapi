@@ -142,6 +142,11 @@ public class Apikey extends TableImpl<ApikeyRecord> {
     public final TableField<ApikeyRecord, BigDecimal> MONTH_QUOTA = createField(DSL.name("month_quota"), SQLDataType.DECIMAL(10, 2).nullable(false).defaultValue(DSL.inline("0.00", SQLDataType.DECIMAL)), this, "每月额度");
 
     /**
+     * The column <code>apikey.qps_limit</code>. QPS限制（每秒请求数，0使用系统默认值，负数不限制）
+     */
+    public final TableField<ApikeyRecord, Integer> QPS_LIMIT = createField(DSL.name("qps_limit"), SQLDataType.INTEGER.defaultValue(DSL.inline("200", SQLDataType.INTEGER)), this, "QPS限制（每秒请求数，0使用系统默认值，负数不限制）");
+
+    /**
      * The column <code>apikey.status</code>. 状态(active/inactive)
      */
     public final TableField<ApikeyRecord, String> STATUS = createField(DSL.name("status"), SQLDataType.VARCHAR(64).nullable(false).defaultValue(DSL.inline("active", SQLDataType.VARCHAR)), this, "状态(active/inactive)");

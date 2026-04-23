@@ -1,31 +1,26 @@
 import axios, { AxiosInstance, AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
 
+function normalizeOrigin(value?: string): string {
+  if (!value) return '';
+
+  const withProtocol = /^https?:\/\//.test(value) ? value : `http://${value}`;
+  return withProtocol.replace(/\/$/, '');
+}
+
 /**
  * 动态解析 baseURL
  * - 支持 SSR/CSR 环境
- * - 自动适配 HTTP/HTTPS 协议
- * - 开发环境使用相对路径
+ * - 未配置真实后端时默认走相对路径
+ * - 兼容旧配置 NEXT_PUBLIC_API_HOST
  */
 export const getBaseURL = (): string => {
-  // 开发环境使用相对路径
-  if (process.env.NODE_ENV === 'development') {
-    return '/';
-  }
+  const configuredOrigin = normalizeOrigin(
+    process.env.NEXT_PUBLIC_API_ORIGIN ||
+    process.env.NEXT_PUBLIC_API_BASE_URL ||
+    process.env.NEXT_PUBLIC_API_HOST
+  );
 
-  // 读取环境变量配置
-  const apiHost = process.env.NEXT_PUBLIC_API_HOST;
-  console.log('apiHost ====', apiHost)
-  if (!apiHost) {
-    return '/'; // 未配置时使用相对路径
-  }
-
-  // SSR: 服务端渲染时使用 http 协议
-  if (typeof window === 'undefined') {
-    return `http://${apiHost}`;
-  }
-
-  // CSR: 客户端使用当前协议（支持 http/https 自动切换）
-  return `${window.location.protocol}//${apiHost}`;
+  return configuredOrigin || '/';
 };
 
 /**

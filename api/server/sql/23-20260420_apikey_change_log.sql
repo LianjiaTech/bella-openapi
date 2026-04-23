@@ -1,0 +1,30 @@
+SET NAMES utf8mb4;
+
+CREATE TABLE `apikey_change_log` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `action_type` VARCHAR(32) NOT NULL DEFAULT '' COMMENT '变更类型(owner_transfer/owner_change/parent_change)',
+    `ak_code` VARCHAR(64) NOT NULL DEFAULT '' COMMENT '入口AK编码',
+    `affected_codes` TEXT NOT NULL COMMENT '受影响AK编码列表(JSON)',
+    `from_owner_type` VARCHAR(16) NOT NULL DEFAULT '' COMMENT '变更前所有者类型',
+    `from_owner_code` VARCHAR(64) NOT NULL DEFAULT '' COMMENT '变更前所有者编码',
+    `from_owner_name` VARCHAR(64) NOT NULL DEFAULT '' COMMENT '变更前所有者名称',
+    `to_owner_type` VARCHAR(16) NOT NULL DEFAULT '' COMMENT '变更后所有者类型',
+    `to_owner_code` VARCHAR(64) NOT NULL DEFAULT '' COMMENT '变更后所有者编码',
+    `to_owner_name` VARCHAR(64) NOT NULL DEFAULT '' COMMENT '变更后所有者名称',
+    `from_parent_code` VARCHAR(64) NOT NULL DEFAULT '' COMMENT '变更前父AK编码',
+    `to_parent_code` VARCHAR(64) NOT NULL DEFAULT '' COMMENT '变更后父AK编码',
+    `from_manager_code` VARCHAR(64) NOT NULL DEFAULT '' COMMENT '变更前管理者编码',
+    `from_manager_name` VARCHAR(64) NOT NULL DEFAULT '' COMMENT '变更前管理者名称',
+    `to_manager_code` VARCHAR(64) NOT NULL DEFAULT '' COMMENT '变更后管理者编码',
+    `to_manager_name` VARCHAR(64) NOT NULL DEFAULT '' COMMENT '变更后管理者名称',
+    `reason` VARCHAR(500) NOT NULL DEFAULT '' COMMENT '变更原因',
+    `status` VARCHAR(16) NOT NULL DEFAULT 'completed' COMMENT '变更状态',
+    `operator_uid` BIGINT NOT NULL DEFAULT 0 COMMENT '操作人用户ID',
+    `operator_name` VARCHAR(64) NOT NULL DEFAULT '' COMMENT '操作人姓名',
+    `ctime` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `mtime` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (`id`),
+    KEY `idx_ak_code` (`ak_code`),
+    KEY `idx_action_type` (`action_type`),
+    KEY `idx_ctime` (`ctime`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='API Key变更历史表';
