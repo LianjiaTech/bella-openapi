@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { NextRequest } from 'next/server';
+import { getBackendOrigin } from '@/lib/config/backend';
 import { mockSecretLogin } from '@/mocks/login/authData';
 
 /**
@@ -69,8 +70,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     // 构造后端 API URL
-    const backendHost = process.env.NEXT_PUBLIC_API_HOST || 'localhost:8080';
-    const backendUrl = `http://${backendHost}/openapi/login`;
+    const backendUrl = `${getBackendOrigin()}/openapi/login`;
 
     // 转发 Cookie
     const cookie = request.headers.get('cookie') || '';
