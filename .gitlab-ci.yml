@@ -1,5 +1,7 @@
 stages:
   - sync
+variables:
+  GIT_DEPTH: "0"
 github_sync_gitlab:
   stage: sync
   script:
