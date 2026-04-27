@@ -7,9 +7,11 @@ import com.ke.bella.openapi.common.exception.BellaException;
 import com.ke.bella.openapi.protocol.completion.CompletionResponse;
 import com.ke.bella.openapi.protocol.completion.VertexConverter;
 import com.ke.bella.openapi.protocol.completion.VertexProperty;
+import com.ke.bella.openapi.protocol.completion.gemini.Candidate;
 import com.ke.bella.openapi.protocol.completion.gemini.Content;
 import com.ke.bella.openapi.protocol.completion.gemini.GeminiRequest;
 import com.ke.bella.openapi.protocol.completion.gemini.GeminiResponse;
+import com.ke.bella.openapi.protocol.completion.gemini.GroundingMetadata;
 import com.ke.bella.openapi.protocol.completion.gemini.Part;
 import com.ke.bella.openapi.protocol.log.EndpointLogger;
 import com.ke.bella.openapi.utils.HttpUtils;
@@ -29,6 +31,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Vertex Gemini 适配器
@@ -201,6 +205,7 @@ public class VertexAdaptor implements GeminiAdaptor<VertexProperty> {
         CompletionResponse finalResponse = new CompletionResponse();
         StringBuilder fullContent = new StringBuilder();
         CompletionResponse.TokenUsage finalUsage = null;
+        GroundingMetadata lastGroundingMetadata = null;
 
         try (java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.StringReader(responseStr))) {
             String line;
@@ -217,13 +222,17 @@ public class VertexAdaptor implements GeminiAdaptor<VertexProperty> {
                         GeminiResponse chunk = JacksonUtils.deserialize(jsonData, GeminiResponse.class);
                         if (chunk != null) {
                             if (chunk.getCandidates() != null && !chunk.getCandidates().isEmpty()) {
-                                Content content = chunk.getCandidates().get(0).getContent();
+                                Candidate candidate = chunk.getCandidates().get(0);
+                                Content content = candidate.getContent();
                                 if (content != null && content.getParts() != null) {
                                     for (Part part : content.getParts()) {
                                         if (part.getText() != null) {
                                             fullContent.append(part.getText());
                                         }
                                     }
+                                }
+                                if (candidate.getGroundingMetadata() != null) {
+                                    lastGroundingMetadata = candidate.getGroundingMetadata();
                                 }
                             }
                             if (chunk.getUsageMetadata() != null) {
@@ -242,11 +251,23 @@ public class VertexAdaptor implements GeminiAdaptor<VertexProperty> {
             log.error("Failed to parse SSE response", e);
         }
 
+        // Populate tool_usage from grounding metadata
+        if (finalUsage != null && lastGroundingMetadata != null
+                && lastGroundingMetadata.getWebSearchQueries() != null
+                && !lastGroundingMetadata.getWebSearchQueries().isEmpty()) {
+            Map<String, Integer> toolUsage = new HashMap<>();
+            toolUsage.put("web_search", lastGroundingMetadata.getWebSearchQueries().size());
+            finalUsage.setTool_usage(toolUsage);
+        }
+
         CompletionResponse.Choice choice = new CompletionResponse.Choice();
         com.ke.bella.openapi.protocol.completion.Message msg = new com.ke.bella.openapi.protocol.completion.Message();
         msg.setRole("assistant");
         msg.setContent(fullContent.toString());
         choice.setMessage(msg);
+        if (lastGroundingMetadata != null) {
+            choice.setGrounding_metadata(lastGroundingMetadata);
+        }
 
         finalResponse.setChoices(Collections.singletonList(choice));
         finalResponse.setUsage(finalUsage);
