@@ -34,11 +34,15 @@ export const config = {
     // 文档地址（用于首页"浏览文档"按钮，为空时隐藏按钮）
     docsUrl: process.env.NEXT_PUBLIC_DOCS_URL || '',
   },
-  
+
   // 应用配置
   app: {
     name: 'Bella OpenAPI',
     version: '0.1.0',
+  },
+
+  tips: {
+    apiKeyPageTip: process.env.NEXT_PUBLIC_APIKEY_PAGE_TIP || '',
   },
 
   // 安全合规配置
