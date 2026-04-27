@@ -139,10 +139,16 @@ public class CostCalculator {
                         .cost(completionCost).build());
             }
 
+            Map<String, CostDetails.ToolCostDetailItem> toolDetails = new HashMap<>();
+            if(price.getToolPrices() != null && tokenUsage.getTool_usage() != null) {
+                totalCost = totalCost.add(calculateToolCost(price.getToolPrices(), tokenUsage.getTool_usage(), toolDetails));
+            }
+
             return CostDetails.builder()
                     .totalCost(totalCost)
                     .inputDetails(inputDetails.isEmpty() ? null : inputDetails)
                     .outputDetails(outputDetails.isEmpty() ? null : outputDetails)
+                    .toolDetails(toolDetails.isEmpty() ? null : toolDetails)
                     .build();
         }
 
@@ -603,31 +609,7 @@ public class CostCalculator {
                 Map<String, BigDecimal> toolPrices,
                 Map<String, Integer> toolUsage,
                 Map<String, CostDetails.ToolCostDetailItem> toolDetails) {
-            BigDecimal toolCost = BigDecimal.ZERO;
-
-            if(toolUsage == null || toolUsage.isEmpty()) {
-                return toolCost;
-            }
-
-            for(Map.Entry<String, Integer> entry : toolUsage.entrySet()) {
-                String toolName = entry.getKey();
-                Integer count = entry.getValue();
-
-                if(count == null || count == 0) {
-                    continue;
-                }
-
-                BigDecimal unitPrice = toolPrices.get(toolName);
-                if(unitPrice != null) {
-                    BigDecimal cost = unitPrice.multiply(BigDecimal.valueOf(count));
-                    toolCost = toolCost.add(cost);
-                    toolDetails.put(toolName, CostDetails.ToolCostDetailItem.builder()
-                            .callCount(count).unitPrice(unitPrice)
-                            .cost(cost).build());
-                }
-            }
-
-            return toolCost;
+            return CostCalculator.calculateToolCost(toolPrices, toolUsage, toolDetails);
         }
 
         @Override
@@ -639,6 +621,37 @@ public class CostCalculator {
             return price.validate();
         }
     };
+
+    static BigDecimal calculateToolCost(
+            Map<String, BigDecimal> toolPrices,
+            Map<String, Integer> toolUsage,
+            Map<String, CostDetails.ToolCostDetailItem> toolDetails) {
+        BigDecimal toolCost = BigDecimal.ZERO;
+
+        if(toolUsage == null || toolUsage.isEmpty()) {
+            return toolCost;
+        }
+
+        for(Map.Entry<String, Integer> entry : toolUsage.entrySet()) {
+            String toolName = entry.getKey();
+            Integer count = entry.getValue();
+
+            if(count == null || count == 0) {
+                continue;
+            }
+
+            BigDecimal unitPrice = toolPrices.get(toolName);
+            if(unitPrice != null) {
+                BigDecimal cost = unitPrice.multiply(BigDecimal.valueOf(count));
+                toolCost = toolCost.add(cost);
+                toolDetails.put(toolName, CostDetails.ToolCostDetailItem.builder()
+                        .callCount(count).unitPrice(unitPrice)
+                        .cost(cost).build());
+            }
+        }
+
+        return toolCost;
+    }
 
     interface EndpointCostCalculator {
         CostDetails calculate(String priceInfo, Object usage);

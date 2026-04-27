@@ -1,5 +1,8 @@
 package com.ke.bella.openapi.protocol.completion;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -13,7 +16,9 @@ import javax.annotation.Nullable;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Data
@@ -128,6 +133,21 @@ public class Message implements Serializable {
         private String type;
         private Function function;
         private Object cache_control;
+        @JsonIgnore
+        private Map<String, Object> extraBody;
+
+        @JsonAnyGetter
+        public Map<String, Object> getExtraBodyFields() {
+            return extraBody != null && !extraBody.isEmpty() ? extraBody : null;
+        }
+
+        @JsonAnySetter
+        public void setExtraBodyField(String key, Object value) {
+            if (extraBody == null) {
+                extraBody = new HashMap<>();
+            }
+            extraBody.put(key, value);
+        }
     }
 
     @Data

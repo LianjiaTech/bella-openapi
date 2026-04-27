@@ -42,23 +42,23 @@ export function KeysTable({
     onEditSafetyLevel, onEditName, onEditService,
 }: KeysTableProps) {
     return (
-        <div className="rounded-md border bg-card">
+        <div className="rounded-md border bg-card w-min-[1000px]">
             <div className="p-4">
                 <div className="flex items-center gap-2 mb-2">
                     <Key className="h-5 w-5" />
                     <h3 className="text-sm font-medium">您的 API Keys</h3>
                 </div>
             </div>
-            <Table>
+            <Table className="w-full">
                 <TableHeader>
                     <TableRow>
                         <TableHead>密钥代码</TableHead>
                         <TableHead>名称</TableHead>
-                        <TableHead>服务名</TableHead>
-                        <TableHead>月额度配置</TableHead>
-                        <TableHead>安全等级</TableHead>
-                        <TableHead>月额度使用</TableHead>
-                        <TableHead>备注</TableHead>
+                        <TableHead className="whitespace-nowrap">服务名</TableHead>
+                        <TableHead className="whitespace-nowrap">月额度配置</TableHead>
+                        <TableHead className="whitespace-nowrap">安全等级</TableHead>
+                        <TableHead className="whitespace-nowrap">月额度使用</TableHead>
+                        <TableHead className="whitespace-nowrap">备注</TableHead>
                         <TableHead className="w-[100px] text-center">操作</TableHead>
                     </TableRow>
                 </TableHeader>
@@ -85,12 +85,12 @@ export function KeysTable({
                     ) : (
                         apiKeys.map((apiKey) => (
                             <TableRow key={apiKey.code}>
-                                <TableCell className="text-xs">
+                                <TableCell className="text-xs ">
                                     <span className="truncate max-w-[150px] block" title={apiKey.akDisplay}>
                                         {apiKey.akDisplay}
                                     </span>
                                 </TableCell>
-                                <TableCell className="text-sm">
+                                <TableCell className="text-sm w-1/5 whitespace-nowrap truncate">
                                     <div className="flex items-center gap-1">
                                         <span>{apiKey.name || '-'}</span>
                                         <Button
@@ -105,7 +105,7 @@ export function KeysTable({
                                 </TableCell>
                                 <TableCell className="text-sm">
                                     <div className="flex items-center gap-1">
-                                        <span>{apiKey.serviceId || '-'}</span>
+                                        <div className="whitespace-nowrap">{apiKey.serviceId || '-'}</div>
                                         <Button
                                             variant="ghost"
                                             size="sm"

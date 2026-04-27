@@ -22,12 +22,14 @@ public class CompletionPriceInfo implements IPriceInfo, Serializable {
     private String unit = "分/千token";
     private double batchDiscount = 1.0;
     private List<Tier> tiers;
+    private Map<String, BigDecimal> toolPrices;
 
     @Override
     public Map<String, String> description() {
         Map<String, String> map = new LinkedHashMap<>();
         map.put("batchDiscount", "批量折扣");
         map.put("tiers", "区间价格列表");
+        map.put("toolPrices", "工具调用价格配置(Map<工具名,单价(分/次)>,可选),如:{\"web_search\":0.035}");
         return map;
     }
 

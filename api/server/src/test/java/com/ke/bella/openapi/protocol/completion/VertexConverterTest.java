@@ -17,7 +17,7 @@ class VertexConverterTest {
 
 	@Test
 	void testConvertUsage_WithNull_ShouldReturnNull() {
-		CompletionResponse.TokenUsage result = VertexConverter.convertUsage(null);
+		CompletionResponse.TokenUsage result = VertexConverter.convertUsage(null, null);
 
 		assertNull(result);
 	}
@@ -30,7 +30,7 @@ class VertexConverterTest {
 				.totalTokenCount(150)
 				.build();
 
-		CompletionResponse.TokenUsage result = VertexConverter.convertUsage(metadata);
+		CompletionResponse.TokenUsage result = VertexConverter.convertUsage(metadata, null);
 
 		assertNotNull(result);
 		assertEquals(100, result.getPrompt_tokens());
@@ -50,7 +50,7 @@ class VertexConverterTest {
 				.cachedContentTokenCount(30)
 				.build();
 
-		CompletionResponse.TokenUsage result = VertexConverter.convertUsage(metadata);
+		CompletionResponse.TokenUsage result = VertexConverter.convertUsage(metadata, null);
 
 		assertNotNull(result);
 		assertEquals(100, result.getPrompt_tokens());
@@ -70,7 +70,7 @@ class VertexConverterTest {
 				.cachedContentTokenCount(0)
 				.build();
 
-		CompletionResponse.TokenUsage result = VertexConverter.convertUsage(metadata);
+		CompletionResponse.TokenUsage result = VertexConverter.convertUsage(metadata, null);
 
 		assertNotNull(result);
 		assertEquals(0, result.getCache_read_tokens());
@@ -97,7 +97,7 @@ class VertexConverterTest {
 				.promptTokensDetails(promptDetails)
 				.build();
 
-		CompletionResponse.TokenUsage result = VertexConverter.convertUsage(metadata);
+		CompletionResponse.TokenUsage result = VertexConverter.convertUsage(metadata, null);
 
 		assertNotNull(result);
 		assertNotNull(result.getPrompt_tokens_details());
@@ -121,7 +121,7 @@ class VertexConverterTest {
 				.promptTokensDetails(promptDetails)
 				.build();
 
-		CompletionResponse.TokenUsage result = VertexConverter.convertUsage(metadata);
+		CompletionResponse.TokenUsage result = VertexConverter.convertUsage(metadata, null);
 
 		assertNotNull(result);
 		assertNotNull(result.getPrompt_tokens_details());
@@ -157,7 +157,7 @@ class VertexConverterTest {
 				.promptTokensDetails(promptDetails)
 				.build();
 
-		CompletionResponse.TokenUsage result = VertexConverter.convertUsage(metadata);
+		CompletionResponse.TokenUsage result = VertexConverter.convertUsage(metadata, null);
 
 		assertNotNull(result);
 		assertNotNull(result.getPrompt_tokens_details());
@@ -182,7 +182,7 @@ class VertexConverterTest {
 				.promptTokensDetails(promptDetails)
 				.build();
 
-		CompletionResponse.TokenUsage result = VertexConverter.convertUsage(metadata);
+		CompletionResponse.TokenUsage result = VertexConverter.convertUsage(metadata, null);
 
 		assertNotNull(result);
 		assertEquals(40, result.getCache_read_tokens());
@@ -201,7 +201,7 @@ class VertexConverterTest {
 				.totalTokenCount(170)
 				.build();
 
-		CompletionResponse.TokenUsage result = VertexConverter.convertUsage(metadata);
+		CompletionResponse.TokenUsage result = VertexConverter.convertUsage(metadata, null);
 
 		assertNotNull(result);
 		assertEquals(100, result.getPrompt_tokens());
@@ -226,7 +226,7 @@ class VertexConverterTest {
 				.candidatesTokensDetails(candidatesDetails)
 				.build();
 
-		CompletionResponse.TokenUsage result = VertexConverter.convertUsage(metadata);
+		CompletionResponse.TokenUsage result = VertexConverter.convertUsage(metadata, null);
 
 		assertNotNull(result);
 		assertNotNull(result.getCompletion_tokens_details());
@@ -251,7 +251,7 @@ class VertexConverterTest {
 				.candidatesTokensDetails(candidatesDetails)
 				.build();
 
-		CompletionResponse.TokenUsage result = VertexConverter.convertUsage(metadata);
+		CompletionResponse.TokenUsage result = VertexConverter.convertUsage(metadata, null);
 
 		assertNotNull(result);
 		assertNotNull(result.getCompletion_tokens_details());
@@ -281,7 +281,7 @@ class VertexConverterTest {
 				.candidatesTokensDetails(candidatesDetails)
 				.build();
 
-		CompletionResponse.TokenUsage result = VertexConverter.convertUsage(metadata);
+		CompletionResponse.TokenUsage result = VertexConverter.convertUsage(metadata, null);
 
 		assertNotNull(result);
 		assertEquals(80, result.getCompletion_tokens());
@@ -307,7 +307,7 @@ class VertexConverterTest {
 				.cacheTokensDetails(cacheDetails)
 				.build();
 
-		CompletionResponse.TokenUsage result = VertexConverter.convertUsage(metadata);
+		CompletionResponse.TokenUsage result = VertexConverter.convertUsage(metadata, null);
 
 		assertNotNull(result);
 		assertNotNull(result.getPrompt_tokens_details());
@@ -330,7 +330,7 @@ class VertexConverterTest {
 				.cacheTokensDetails(cacheDetails)
 				.build();
 
-		CompletionResponse.TokenUsage result = VertexConverter.convertUsage(metadata);
+		CompletionResponse.TokenUsage result = VertexConverter.convertUsage(metadata, null);
 
 		assertNotNull(result);
 		assertNotNull(result.getPrompt_tokens_details());
@@ -353,7 +353,7 @@ class VertexConverterTest {
 				.cacheTokensDetails(cacheDetails)
 				.build();
 
-		CompletionResponse.TokenUsage result = VertexConverter.convertUsage(metadata);
+		CompletionResponse.TokenUsage result = VertexConverter.convertUsage(metadata, null);
 
 		assertNotNull(result);
 		assertNull(result.getPrompt_tokens_details());
@@ -401,7 +401,7 @@ class VertexConverterTest {
 				.cacheTokensDetails(cacheDetails)
 				.build();
 
-		CompletionResponse.TokenUsage result = VertexConverter.convertUsage(metadata);
+		CompletionResponse.TokenUsage result = VertexConverter.convertUsage(metadata, null);
 
 		assertNotNull(result);
 		assertEquals(300, result.getPrompt_tokens());
@@ -429,7 +429,7 @@ class VertexConverterTest {
 				.promptTokensDetails(new ArrayList<>())
 				.build();
 
-		CompletionResponse.TokenUsage result = VertexConverter.convertUsage(metadata);
+		CompletionResponse.TokenUsage result = VertexConverter.convertUsage(metadata, null);
 
 		assertNotNull(result);
 		assertNotNull(result.getPrompt_tokens_details());
@@ -453,7 +453,7 @@ class VertexConverterTest {
 				.promptTokensDetails(promptDetails)
 				.build();
 
-		CompletionResponse.TokenUsage result = VertexConverter.convertUsage(metadata);
+		CompletionResponse.TokenUsage result = VertexConverter.convertUsage(metadata, null);
 
 		assertNotNull(result);
 		assertNotNull(result.getPrompt_tokens_details());
@@ -477,7 +477,7 @@ class VertexConverterTest {
 				.candidatesTokensDetails(candidatesDetails)
 				.build();
 
-		CompletionResponse.TokenUsage result = VertexConverter.convertUsage(metadata);
+		CompletionResponse.TokenUsage result = VertexConverter.convertUsage(metadata, null);
 
 		assertNotNull(result);
 		assertNull(result.getCompletion_tokens_details());
@@ -491,7 +491,7 @@ class VertexConverterTest {
 				.totalTokenCount(null)
 				.build();
 
-		CompletionResponse.TokenUsage result = VertexConverter.convertUsage(metadata);
+		CompletionResponse.TokenUsage result = VertexConverter.convertUsage(metadata, null);
 
 		assertNotNull(result);
 		assertEquals(0, result.getPrompt_tokens());
