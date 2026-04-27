@@ -40,6 +40,7 @@ export function VirtualGrid<T>({
   overscan = 5,
   emptyElement,
   className,
+  onScroll,
 }: VirtualGridProps<T>) {
   // 滚动容器引用
   const parentRef = useRef<HTMLDivElement>(null)
@@ -130,7 +131,7 @@ export function VirtualGrid<T>({
   }
 
   return (
-    <div ref={parentRef} className={cn('h-full overflow-y-auto', className)}>
+    <div ref={parentRef} onScroll={onScroll} className={cn('h-full overflow-y-auto', className)}>
       {/* 虚拟滚动容器（总高度） */}
       <div
         style={{
