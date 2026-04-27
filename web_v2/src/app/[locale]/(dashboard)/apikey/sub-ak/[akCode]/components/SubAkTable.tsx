@@ -23,6 +23,7 @@ import { Copy, MoreVertical, Info, RotateCcw, Trash2, Key, Pencil, Users } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/common/table";
 import { ApikeyInfo } from "@/lib/types/apikeys";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/common/popover";
+import { TooltipProvider, TooltipTrigger } from "@/components/common/tooltip";
 import { Pagination } from "@/components/ui/pagination";
 import { SearchInput } from "../../../components/SearchInput";
 import { getApiKeys, getAdminApiKeys, getApiKeyBalance } from "@/lib/api/apiKeys";
@@ -30,6 +31,7 @@ import { useState, useEffect, useCallback, forwardRef, useImperativeHandle } fro
 import { TableLoadingRow } from "@/components/ui/table/TableLoadingRow";
 import { QuotaUsageDisplay } from "@/components/ui/QuotaUsageDisplay";
 import type { SubAkCapability } from "../hooks/useSubAkCapability";
+import { Tooltip, TooltipContent } from "@/components/common/tooltip";
 
 interface SubAkTableProps {
     ownerCode: string;
@@ -178,14 +180,14 @@ export const SubAkTable = forwardRef<SubAkTableRef, SubAkTableProps>(({
                 <TableHeader>
                     <TableRow>
                         <TableHead>密钥代码</TableHead>
-                        <TableHead>名称</TableHead>
-                        <TableHead>用途标识</TableHead>
-                        <TableHead>安全等级</TableHead>
-                        <TableHead className="w-[200px]">月额度配置</TableHead>
-                        <TableHead className="w-[200px]">月额度使用</TableHead>
-                        <TableHead>备注</TableHead>
+                        <TableHead className="whitespace-nowrap">名称</TableHead>
+                        <TableHead className="whitespace-nowrap">用途标识</TableHead>
+                        <TableHead className="whitespace-nowrap">安全等级</TableHead>
+                        <TableHead className="whitespace-nowrap">月额度配置</TableHead>
+                        <TableHead className="whitespace-nowrap">月额度使用</TableHead>
+                        <TableHead className="whitespace-nowrap">备注</TableHead>
                         {/* 管理者列：canSetManager=true 时显示，帮助直观感知当前管理者 */}
-                        {capability.canSetManager && <TableHead>管理者</TableHead>}
+                        {capability.canSetManager && <TableHead className="whitespace-nowrap">管理者</TableHead>}
                         <TableHead className="w-[100px] text-center">操作</TableHead>
                     </TableRow>
                 </TableHeader>
@@ -244,9 +246,13 @@ export const SubAkTable = forwardRef<SubAkTableRef, SubAkTableProps>(({
                                     <QuotaUsageDisplay balance={apiKey.balance} />
                                 </TableCell>
                                 <TableCell className="text-sm">
-                                    <div className="truncate max-w-[150px]" title={apiKey.remark}>
+                                    <TooltipProvider>
+                                        <Tooltip><TooltipTrigger asChild><div className="truncate max-w-[150px]">
                                         {apiKey.remark || '-'}
-                                    </div>
+                                        </div></TooltipTrigger>
+                                    <TooltipContent>{apiKey.remark || '-'}</TooltipContent>
+                                    </Tooltip>
+                                    </TooltipProvider>
                                 </TableCell>
                                 {/* 管理者列：展示当前管理者，点击"设置管理人"可更换 */}
                                 {capability.canSetManager && (
