@@ -21,4 +21,5 @@ public class Candidate {
     private Double avgLogprobs;
     private LogprobsResult logprobsResult;
     private Integer index;
+    private GroundingMetadata groundingMetadata;
 }

@@ -16,8 +16,8 @@ export function QuotaUsageDisplay({ balance }: QuotaUsageDisplayProps) {
     const usagePercent = balance.quota > 0 ? (balance.cost / balance.quota * 100).toFixed(1) : 0;
 
     return (
-        <div className="space-y-1">
-            <div className="text-xs text-muted-foreground">
+        <div className="space-y-1 w-[160px]">
+            <div className="text-xs text-muted-foreground whitespace-nowrap">
                 {balance.cost.toFixed(2)} / {balance.quota.toFixed(2)}
             </div>
             <div className="flex items-center gap-2">

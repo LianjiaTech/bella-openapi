@@ -8,6 +8,7 @@ import com.ke.bella.openapi.protocol.completion.gemini.FunctionResponse;
 import com.ke.bella.openapi.protocol.completion.gemini.GeminiRequest;
 import com.ke.bella.openapi.protocol.completion.gemini.GeminiResponse;
 import com.ke.bella.openapi.protocol.completion.gemini.GenerationConfig;
+import com.ke.bella.openapi.protocol.completion.gemini.GroundingMetadata;
 import com.ke.bella.openapi.protocol.completion.gemini.LogprobsResult;
 import com.ke.bella.openapi.protocol.completion.gemini.Part;
 import com.ke.bella.openapi.protocol.completion.gemini.SystemInstruction;
@@ -61,6 +62,17 @@ public class VertexConverter {
             builder.tools(tools);
         }
 
+        // Handle toolConfig from extra_body
+        Map<String, Object> extraBody = openaiRequest.getExtra_body();
+        if(MapUtils.isNotEmpty(extraBody) && extraBody.containsKey("toolConfig")) {
+            Object toolConfigObj = extraBody.get("toolConfig");
+            if(toolConfigObj instanceof Map) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> toolConfig = (Map<String, Object>) toolConfigObj;
+                builder.toolConfig(toolConfig);
+            }
+        }
+
         // Convert generation config
         GenerationConfig generationConfig = convertGenerationConfig(openaiRequest, property);
         builder.generationConfig(generationConfig);
@@ -96,7 +108,7 @@ public class VertexConverter {
         }
 
         // Convert usage
-        CompletionResponse.TokenUsage usage = convertUsage(vertexResponse.getUsageMetadata());
+        CompletionResponse.TokenUsage usage = convertUsage(vertexResponse.getUsageMetadata(), vertexResponse.getCandidates());
 
         return CompletionResponse.builder()
                 .id(vertexResponse.getResponseId())
@@ -139,7 +151,7 @@ public class VertexConverter {
 
         // 处理 usage metadata
         if(geminiResponse.getUsageMetadata() != null && isFinal) {
-            builder.usage(VertexConverter.convertUsage(geminiResponse.getUsageMetadata()));
+            builder.usage(VertexConverter.convertUsage(geminiResponse.getUsageMetadata(), geminiResponse.getCandidates()));
         }
 
         return builder.build();
@@ -327,7 +339,21 @@ public class VertexConverter {
     }
 
     private static List<Tool> convertTools(List<Message.Tool> openaiTools) {
+        Map<String, Object> googleSearch = null;
+        for (Message.Tool tool : openaiTools) {
+            Map<String, Object> extraBodyFields = tool.getExtraBodyFields();
+            if(extraBodyFields != null && extraBodyFields.containsKey("google_search")) {
+                Object googleSearchObj = extraBodyFields.get("google_search");
+                @SuppressWarnings("unchecked")
+                Map<String, Object> parsed = (googleSearchObj instanceof Map)
+                        ? (Map<String, Object>) googleSearchObj : Collections.emptyMap();
+                googleSearch = parsed;
+                break;
+            }
+        }
+
         List<Tool.FunctionDeclaration> functionDeclarations = openaiTools.stream()
+                .filter(tool -> tool.getFunction() != null)
                 .map(tool -> {
                     Message.Function function = tool.getFunction();
                     return Tool.FunctionDeclaration.builder()
@@ -338,8 +364,14 @@ public class VertexConverter {
                 })
                 .collect(Collectors.toList());
 
-        return Collections.singletonList(
-                Tool.builder().functionDeclarations(functionDeclarations).build());
+        Tool.ToolBuilder toolBuilder = Tool.builder();
+        if(googleSearch != null) {
+            toolBuilder.googleSearch(googleSearch);
+        }
+        if(!functionDeclarations.isEmpty()) {
+            toolBuilder.functionDeclarations(functionDeclarations);
+        }
+        return Collections.singletonList(toolBuilder.build());
     }
 
     private static GenerationConfig convertGenerationConfig(CompletionRequest request, VertexProperty property) {
@@ -411,6 +443,7 @@ public class VertexConverter {
                 .message(message)
                 .finish_reason(finishReason)
                 .logprobs(convertLogprobs(candidate.getLogprobsResult()))
+                .grounding_metadata(candidate.getGroundingMetadata())
                 .build();
     }
 
@@ -423,6 +456,7 @@ public class VertexConverter {
                 .delta(delta)
                 .finish_reason(finishReason)
                 .logprobs(convertLogprobs(candidate.getLogprobsResult()))
+                .grounding_metadata(candidate.getGroundingMetadata())
                 .build();
     }
 
@@ -552,7 +586,7 @@ public class VertexConverter {
         return builder.build();
     }
 
-    public static CompletionResponse.TokenUsage convertUsage(UsageMetadata usageMetadata) {
+    public static CompletionResponse.TokenUsage convertUsage(UsageMetadata usageMetadata, List<Candidate> candidates) {
         if(usageMetadata == null) {
             return null;
         }
@@ -621,6 +655,24 @@ public class VertexConverter {
                     }
                 }
             });
+        }
+
+        // Extract tool_usage from grounding metadata (web_search count)
+        if(CollectionUtils.isNotEmpty(candidates)) {
+            Map<String, Integer> toolUsage = null;
+            for (Candidate candidate : candidates) {
+                GroundingMetadata groundingMetadata = candidate.getGroundingMetadata();
+                if(groundingMetadata != null && CollectionUtils.isNotEmpty(groundingMetadata.getWebSearchQueries())) {
+                    if(toolUsage == null) {
+                        toolUsage = new HashMap<>();
+                    }
+                    int current = toolUsage.getOrDefault("web_search", 0);
+                    toolUsage.put("web_search", current + groundingMetadata.getWebSearchQueries().size());
+                }
+            }
+            if(toolUsage != null) {
+                builder.tool_usage(toolUsage);
+            }
         }
 
         return builder.build();

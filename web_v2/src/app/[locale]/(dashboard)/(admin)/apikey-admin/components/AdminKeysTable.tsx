@@ -20,6 +20,7 @@ import { Copy, MoreVertical, UserPlus, Trash2, Key, Pencil, Users, Building2, Wa
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/common/table";
 import { ApikeyInfo, ApiKeyBalance } from "@/lib/types/apikeys";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/common/popover";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/common/tooltip";
 import Link from "next/link";
 import { TableLoadingRow } from "@/components/ui/table/TableLoadingRow";
 import { QuotaUsageDisplay } from "@/components/ui/QuotaUsageDisplay";
@@ -83,25 +84,25 @@ export function AdminKeysTable({
     onEditQuota,
 }: AdminKeysTableProps) {
     return (
-        <div className="rounded-md border bg-card">
+        <div className="rounded-md border bg-card w-min-[1000px]">
             <div className="p-4">
                 <div className="flex items-center gap-2 mb-2">
                     <Key className="h-5 w-5" />
                     <h3 className="text-sm font-medium">全量 API Keys</h3>
                 </div>
             </div>
-            <Table>
+            <Table className="w-full">
                 <TableHeader>
                     <TableRow>
-                        <TableHead>密钥代码</TableHead>
-                        <TableHead>所有者</TableHead>
-                        <TableHead>名称</TableHead>
-                        <TableHead>服务名</TableHead>
-                        <TableHead>月额度配置</TableHead>
-                        <TableHead>安全等级</TableHead>
-                        <TableHead>月额度使用</TableHead>
-                        <TableHead>备注</TableHead>
-                        <TableHead>管理者</TableHead>
+                        <TableHead className="text-center">密钥代码</TableHead>
+                        <TableHead className="text-center">所有者</TableHead>
+                        <TableHead className="text-center ">名称</TableHead>
+                        <TableHead className="text-center whitespace-nowrap">服务名</TableHead>
+                        <TableHead className="text-center w-[100px] whitespace-nowrap">月额度配置</TableHead>
+                        <TableHead className="text-center w-[100px] whitespace-nowrap">安全等级</TableHead>
+                        <TableHead className="text-center w-[200px] whitespace-nowrap">月额度使用</TableHead>
+                        <TableHead className="text-center w-[100px] whitespace-nowrap">备注</TableHead>
+                        <TableHead className="text-center w-[100px] whitespace-nowrap">管理者</TableHead>
                         <TableHead className="w-[100px] text-center">操作</TableHead>
                     </TableRow>
                 </TableHeader>
@@ -127,7 +128,7 @@ export function AdminKeysTable({
                         </TableRow>
                     ) : (
                         apiKeys.map((apiKey) => (
-                            <TableRow key={apiKey.code}>
+                            <TableRow key={apiKey.code} className="text-center">
                                 {/* 密钥代码 */}
                                 <TableCell className="text-xs">
                                     <span className="truncate max-w-[150px] block" title={apiKey.akDisplay}>
@@ -138,12 +139,14 @@ export function AdminKeysTable({
                                 {/* 所有者：ownerType Badge + ownerName + ownerCode（重名时可区分） */}
                                 <TableCell className="text-sm">
                                     <div className="flex items-center gap-1">
+                                        <div className="w-[75px] text-right">
                                         {OWNER_TYPE_BADGE[apiKey.ownerType] && (
-                                            <Badge className={OWNER_TYPE_BADGE[apiKey.ownerType].className}>
+                                            <Badge className={OWNER_TYPE_BADGE[apiKey.ownerType].className} >
                                                 {OWNER_TYPE_BADGE[apiKey.ownerType].label}
                                             </Badge>
                                         )}
-                                        <div className="min-w-0">
+                                        </div>
+                                        <div className="min-w-0 pl-2 text-left">
                                             <div className="truncate max-w-[120px]" title={apiKey.ownerName}>
                                                 {apiKey.ownerName || '-'}
                                             </div>
@@ -159,7 +162,14 @@ export function AdminKeysTable({
                                 {/* 名称（可编辑） */}
                                 <TableCell className="text-sm">
                                     <div className="flex items-center gap-1">
-                                        <span>{apiKey.name || '-'}</span>
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <span className="whitespace-nowrap max-w-[100px] truncate">{apiKey.name || '-'}</span>
+                                                </TooltipTrigger>
+                                                <TooltipContent>{apiKey.name||'-'}</TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
                                         <Button
                                             variant="ghost"
                                             size="sm"
@@ -189,7 +199,7 @@ export function AdminKeysTable({
                                 {/* 月额度配置（可编辑） */}
                                 <TableCell className="text-sm">
                                     <div className="flex items-center gap-1">
-                                        <span>{apiKey.monthQuota || '-'}</span>
+                                        <div className="w-min-[160px] whitespace-nowrap">{apiKey.monthQuota || '-'}</div>
                                         <Button
                                             variant="ghost"
                                             size="sm"
@@ -320,7 +330,8 @@ export function AdminKeysTable({
                                     </Popover>
                                 </TableCell>
                             </TableRow>
-                        ))
+                        )
+                    )
                     )}
                 </TableBody>
             </Table>

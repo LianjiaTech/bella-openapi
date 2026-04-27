@@ -5,7 +5,7 @@ import { useLanguage } from "@/components/providers/language-provider"
 import { useSidebar } from "@/components/providers"
 import { useMemo, useDeferredValue } from "react"
 import { ModelFilterPanel } from "@/components/ui/modelFilterPanel"
-import { useSearchParams } from "next/navigation"
+import { useRouter, useSearchParams, usePathname } from "next/navigation"
 import { useState, useEffect, useCallback } from "react"
 import { useMetadataData } from "./hooks"
 import { getInitialEndpoint } from "@/lib/utils"
@@ -23,6 +23,8 @@ import { StatusSelector } from "@/components/ui/status-selector"
  * 元数据管理页面组件
  */
 const MetadataPage = () => {
+  const router = useRouter()
+  const pathname = usePathname()
   const searchParams = useSearchParams()
   const { t } = useLanguage()
   const { categoryTrees } = useSidebar()
@@ -33,6 +35,7 @@ const MetadataPage = () => {
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [selectedModel, setSelectedModel] = useState<Model | null>(null)
+  const [modelParamError, setModelParamError] = useState<string | null>(null)
 
   // 使用自定义 Hook 获取元数据
   const { features, models, initialLoading, modelsLoading, error, refetch } = useMetadataData(selectedCapability, selectedTags, selectedStatus, selectedVisibility)
@@ -50,13 +53,9 @@ const MetadataPage = () => {
 
     const query = deferredSearchQuery.toLowerCase().trim()
     return models.filter((model) => {
-      // 搜索模型名称
       if (model.modelName?.toLowerCase().includes(query)) return true
-      // 搜索拥有者名称
       if (model.ownerName?.toLowerCase().includes(query)) return true
-      // 搜索端点
       if (model.endpoints?.some(ep => ep.toLowerCase().includes(query))) return true
-      // 搜索特性标签
       const modelFeatures = typeof model.features === 'string'
         ? model.features.split(',').map(f => f.trim())
         : model.features || []
@@ -65,6 +64,23 @@ const MetadataPage = () => {
     })
   }, [models, deferredSearchQuery])
 
+  const modelFromUrl = searchParams.get("model")?.trim() || ""
+
+  const updateSearchParams = useCallback((updates: Record<string, string | null>) => {
+    const params = new URLSearchParams(searchParams.toString())
+
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value && value.trim()) {
+        params.set(key, value)
+      } else {
+        params.delete(key)
+      }
+    })
+
+    const query = params.toString()
+    router.push(query ? `${pathname}?${query}` : pathname)
+  }, [pathname, router, searchParams])
+
   /**
    * 初始化选中的能力分类选项 endpoint
    */
@@ -72,6 +88,28 @@ const MetadataPage = () => {
     const endpoint = getInitialEndpoint(searchParams.get("endpoint"))
     setSelectedCapability(endpoint)
   }, [searchParams])
+
+  useEffect(() => {
+    if (!modelFromUrl) {
+      setSelectedModel(null)
+      setModelParamError(null)
+      return
+    }
+
+    if (initialLoading || modelsLoading) {
+      return
+    }
+
+    const matchedModel = models.find(model => model.modelName === modelFromUrl)
+    if (matchedModel) {
+      setSelectedModel(matchedModel)
+      setModelParamError(null)
+      return
+    }
+
+    setSelectedModel(null)
+    setModelParamError(`未找到模型：${modelFromUrl}`)
+  }, [initialLoading, modelFromUrl, models, modelsLoading])
 
   /**
    * 处理能力分类变化
@@ -107,6 +145,8 @@ const MetadataPage = () => {
    */
   const handleConfigureModel = (model: Model) => {
     setSelectedModel(model)
+    setModelParamError(null)
+    updateSearchParams({ model: model.modelName })
   }
 
   /**
@@ -114,13 +154,14 @@ const MetadataPage = () => {
    */
   const handleBackToList = () => {
     setSelectedModel(null)
+    setModelParamError(null)
+    updateSearchParams({ model: null })
   }
 
   return (
     <>
       {/* 条件渲染:列表视图或配置视图 */}
       {selectedModel ? (
-        /* 配置视图 - 淡入动画 */
         <div className="animate-in fade-in duration-300">
           <ConfigureModelPanel
             model={selectedModel}
@@ -156,21 +197,23 @@ const MetadataPage = () => {
                 />
 
                 {/* 错误提示 */}
-                {error && (
+                {(error || modelParamError) && (
                   <div className="mt-4 rounded-lg border border-red-500/20 bg-red-500/10 p-4">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-4">
                       <div className="flex items-center gap-2">
                         <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-500" />
-                        <p className="text-sm text-red-500">{error.message}</p>
+                        <p className="text-sm text-red-500">{error?.message || modelParamError}</p>
                       </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={refetch}
-                        className="ml-4 flex-shrink-0"
-                      >
-                        {t("retry")}
-                      </Button>
+                      {error && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={refetch}
+                          className="ml-4 flex-shrink-0"
+                        >
+                          {t("retry")}
+                        </Button>
+                      )}
                     </div>
                   </div>
                 )}

@@ -20,6 +20,7 @@ import { copyToClipboard } from "@/lib/utils/clipboard";
 import { toast } from "sonner";
 import { useAuth } from "@/components/providers/auth-provider";
 import { Alert, AlertTitle } from "@/components/common/alert";
+import config from "@/config";
 
 export default function ApiKeysPage() {
   const [apiKeys, setApiKeys] = useState<ApikeyInfo[]>([]);
@@ -266,6 +267,11 @@ export default function ApiKeysPage() {
     <div>
       <TopBar title="我的密钥" description="管理您直接持有的 API 密钥，设置额度和安全等级" />
       <div className="p-8">
+        {config.tips.apiKeyPageTip && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertTitle className="text-sm font-normal">{config.tips.apiKeyPageTip}</AlertTitle>
+          </Alert>
+        )}
 
         {/* 顶部操作栏 */}
         <div className="flex items-center justify-between mb-4">
