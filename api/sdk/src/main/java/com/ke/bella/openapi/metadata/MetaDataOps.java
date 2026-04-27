@@ -150,6 +150,10 @@ public class MetaDataOps {
     public static class ChannelUpdateOp extends Operator {
         private String priority;
         private String channelCode;
+        private String dataDestination;
+        private String protocol;
+        private String supplier;
+        private String url;
         private String channelInfo;
         private String priceInfo;
         private Byte trialEnabled;

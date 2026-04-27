@@ -174,13 +174,31 @@ public class MetadataValidator {
     public static void checkChannelUpdateOp(MetaDataOps.ChannelUpdateOp op) {
         Assert.hasText(op.getChannelCode(), "通道编码不可为空");
         Assert.isTrue(StringUtils.isNotBlank(op.getPriority())
+                || StringUtils.isNotBlank(op.getDataDestination())
+                || StringUtils.isNotBlank(op.getProtocol())
+                || StringUtils.isNotBlank(op.getSupplier())
+                || StringUtils.isNotBlank(op.getUrl())
                 || StringUtils.isNotBlank(op.getChannelInfo())
                 || StringUtils.isNotBlank(op.getPriceInfo())
+                || op.getTrialEnabled() != null
                 || StringUtils.isNotBlank(op.getQueueName())
                 || op.getQueueMode() != null, "可修改字段全部为空，无法修改");
         if(op.getPriority() != null) {
             Assert.isTrue(CHANNEL_PRIORITY.contains(op.getPriority()),
                     "通道的优先级只能是：" + String.join("或", CHANNEL_PRIORITY));
+        }
+        if(op.getDataDestination() != null) {
+            Assert.isTrue(DATA_DESTINATIONS.contains(op.getDataDestination()),
+                    "通道的数据流向只能是：" + String.join("或", DATA_DESTINATIONS));
+        }
+        if(op.getProtocol() != null) {
+            Assert.hasText(op.getProtocol(), "请求协议不可为空字符串");
+        }
+        if(op.getSupplier() != null) {
+            Assert.hasText(op.getSupplier(), "供应商不可为空字符串");
+        }
+        if(op.getUrl() != null) {
+            Assert.hasText(op.getUrl(), "url不可为空字符串");
         }
         Assert.isTrue(op.getTrialEnabled() == null || op.getTrialEnabled() == 1 || op.getTrialEnabled() == 0, "试用开关只能是0或1");
         checkJsonInfo(op.getChannelInfo());
