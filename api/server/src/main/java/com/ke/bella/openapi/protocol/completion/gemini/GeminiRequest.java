@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Data
 @Builder
@@ -23,6 +24,7 @@ public class GeminiRequest implements IMemoryClearable, ITransfer {
     private List<Tool> tools;
     private List<SafetySetting> safetySettings;
     private GenerationConfig generationConfig;
+    private Map<String, Object> toolConfig;
 
     // 关闭所有安全审核策略
     public GeminiRequest offSafetySettings() {
@@ -60,6 +62,7 @@ public class GeminiRequest implements IMemoryClearable, ITransfer {
             this.safetySettings = null;
             this.systemInstruction = null;
             this.generationConfig = null;
+            this.toolConfig = null;
 
             // 标记为已清理
             this.cleared = true;
