@@ -1,6 +1,7 @@
 package com.ke.bella.openapi.protocol.completion.gemini;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ke.bella.openapi.protocol.completion.Message;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -18,6 +19,8 @@ import java.util.Map;
 public class Tool {
     private List<FunctionDeclaration> functionDeclarations;
     private Map<String, Object> codeExecution;
+    @JsonProperty("google_search")
+    private Map<String, Object> googleSearch;
 
     @Data
     @Builder
