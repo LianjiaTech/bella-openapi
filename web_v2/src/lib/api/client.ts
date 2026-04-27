@@ -3,7 +3,7 @@ import axios, { AxiosInstance, AxiosError, AxiosRequestConfig, AxiosResponse } f
 function normalizeOrigin(value?: string): string {
   if (!value) return '';
 
-  const withProtocol = /^https?:\/\//.test(value) ? value : `http://${value}`;
+  const withProtocol = /^https?:\/\//.test(value) ? value : `//${value}`;
   return withProtocol.replace(/\/$/, '');
 }
 
