@@ -21,6 +21,7 @@ import com.ke.bella.openapi.protocol.ocr.businesslicense.BusinessLicenseAdaptor;
 import com.ke.bella.openapi.protocol.ocr.general.GeneralAdaptor;
 import com.ke.bella.openapi.protocol.ocr.idcard.IdcardAdaptor;
 import com.ke.bella.openapi.protocol.ocr.overseaspassport.OverseasPassportAdaptor;
+import com.ke.bella.openapi.protocol.ocr.hmt_travel_permit.HmtTravelPermitAdaptor;
 import com.ke.bella.openapi.protocol.ocr.residence_permit.ResidencePermitAdaptor;
 import com.ke.bella.openapi.protocol.ocr.tmpidcard.TmpIdcardAdaptor;
 import com.ke.bella.openapi.service.EndpointDataService;
@@ -88,6 +89,18 @@ public class OcrController {
         EndpointContext.setEncodingType(property.getEncodingType());
 
         return adaptor.tmpIdcard(request, ctx.getUrl(), property);
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @PostMapping("/hmt-travel-permit")
+    public Object hmtTravelPermit(@RequestBody @Valid OcrRequest request) {
+        OcrContext ctx = OcrContext.initialize(request, endpointDataService, router, limiterManager);
+
+        HmtTravelPermitAdaptor adaptor = adaptorManager.getProtocolAdaptor(ctx.getEndpoint(), ctx.getProtocol(), HmtTravelPermitAdaptor.class);
+        OcrProperty property = (OcrProperty) JacksonUtils.deserialize(ctx.getChannelInfo(), adaptor.getPropertyClass());
+        EndpointContext.setEncodingType(property.getEncodingType());
+
+        return adaptor.hmtTravelPermit(request, ctx.getUrl(), property);
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
