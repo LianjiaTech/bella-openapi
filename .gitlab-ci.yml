@@ -90,7 +90,7 @@ sync_master_to_gitlab:
 
     - echo "配置目标 GitLab remote..."
     - git remote remove target || true
-    - git remote add target "https://oauth2:${GITLAB_ACCESS_TOKEN}@git.ke.com/${TARGET_GITLAB_REPO_PATH}.git"
+    - git remote add target "https://oauth2:${GITLAB_ACCESS_TOKEN}@git.lianjia.com/${TARGET_GITLAB_REPO_PATH}.git"
 
     - git fetch target ${TARGET_BRANCH} || true
 
