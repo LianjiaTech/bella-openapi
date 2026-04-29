@@ -28,13 +28,22 @@ sync_master_to_github:
     - git config user.name "${GIT_USER_NAME}"
     - git config user.email "${GIT_USER_EMAIL}"
 
-    - git checkout ${SOURCE_BRANCH}
+    # =========================
+    # 🔥 关键修复：强制拉取最新 master
+    # =========================
+    - echo "获取最新 GitLab master..."
+    - git fetch origin master
+    - git checkout master
+    - git reset --hard origin/master
+
+    - echo "当前 HEAD："
+    - git rev-parse HEAD
 
     - echo "配置 GitHub remote..."
     - git remote remove github || true
     - git remote add github "https://oauth2:${GITHUB_ACCESS_TOKEN}@github.com/${GITHUB_REPO_PATH}.git"
 
-    - echo "开始强制同步到 GitHub..."
+    - echo "开始镜像同步到 GitHub..."
     - git push github HEAD:${TARGET_BRANCH} --force-with-lease
 
     - echo "✅ GitHub 同步完成"
@@ -67,13 +76,22 @@ sync_dev_to_gitlab:
     - git config user.name "${GIT_USER_NAME}"
     - git config user.email "${GIT_USER_EMAIL}"
 
-    - git checkout ${SOURCE_BRANCH}
+    # =========================
+    # 🔥 关键修复：强制拉取最新 dev
+    # =========================
+    - echo "获取最新 GitLab dev..."
+    - git fetch origin dev
+    - git checkout dev
+    - git reset --hard origin/dev
+
+    - echo "当前 HEAD："
+    - git rev-parse HEAD
 
     - echo "配置目标 GitLab remote..."
     - git remote remove target || true
     - git remote add target "https://oauth2:${GITLAB_ACCESS_TOKEN}@git.lianjia.com/${TARGET_GITLAB_REPO_PATH}.git"
 
-    - echo "开始强制同步到 GitLab..."
+    - echo "开始镜像同步到 GitLab..."
     - git push target HEAD:${TARGET_BRANCH} --force-with-lease
 
     - echo "✅ GitLab 同步完成"
