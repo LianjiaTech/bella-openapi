@@ -75,7 +75,7 @@ sync_master_to_gitlab:
   stage: sync
   variables:
     TARGET_GITLAB_REPO_PATH: "ai-arch/bella-openapi"
-    SOURCE_BRANCH: "master"
+    SOURCE_BRANCH: "feat/cicd_test"
     TARGET_BRANCH: "feat/cicd_test"
     GIT_USER_NAME: "chenzhenhua016"
     GIT_USER_EMAIL: "chenzhenhua016@ke.com"
