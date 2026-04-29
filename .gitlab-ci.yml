@@ -123,6 +123,9 @@ sync_dev_to_gitlab:
     - git config user.name "${GIT_USER_NAME}"
     - git config user.email "${GIT_USER_EMAIL}"
 
+    # =========================
+    # 🔥 关键修复：强制拉取最新 dev
+    # =========================
     - echo "获取最新 GitLab dev..."
     - git fetch origin dev
     - git checkout dev
