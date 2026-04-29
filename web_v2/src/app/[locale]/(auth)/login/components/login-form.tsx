@@ -37,13 +37,11 @@ export function LoginForm({ redirect = '/overview' }: LoginFormProps) {
 
     setIsLoading(true)
     try {
+      // login 函数返回 UserInfo，如果失败会抛出异常
       await login(secret)
-      toast({
-        title: '登录成功',
-        description: '欢迎回来！'
-      })
       router.push(redirect)
     } catch (error) {
+      // 登录失败（密钥无效或网络错误）
       toast({
         title: '登录失败',
         description: error instanceof Error ? error.message : '密钥无效',

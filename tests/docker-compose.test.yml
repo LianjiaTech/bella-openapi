@@ -1,0 +1,128 @@
+# Docker Compose 配置文件 - Playwright E2E 测试环境
+#
+# 职责:
+# - 提供 Playwright 测试容器编排配置
+# - 管理 node_modules 命名卷持久化
+# - 配置测试环境变量和资源限制
+# - 支持代码热更新和测试报告输出
+#
+# 设计说明:
+# 1. 使用命名卷持久化 node_modules,即使容器删除也保留依赖
+# 2. 测试代码通过只读卷挂载,支持实时修改无需重建镜像
+# 3. 启用资源限制防止测试占用过多系统资源
+# 4. 移除废弃的 version 字段(Docker Compose v2+ 不需要)
+#
+# 使用方法:
+#   docker-compose -f tests/docker-compose.test.yml run --rm playwright-test
+#
+# 或使用环境变量指定测试地址:
+#   BASE_URL=http://host.docker.internal:8080 docker-compose -f tests/docker-compose.test.yml run --rm playwright-test
+
+services:
+  playwright-test:
+    # 构建配置
+    build:
+      context: ..
+      dockerfile: tests/Dockerfile
+      # 添加缓存支持(可选,需要 Docker BuildKit)
+      # cache_from:
+      #   - bella-openapi-playwright-test:latest
+
+    # 容器名称
+    container_name: bella-openapi-playwright-test
+
+    # 镜像名称(用于缓存)
+    image: bella-openapi-playwright-test:latest
+
+    # 挂载目录,支持代码热更新和测试报告输出
+    volumes:
+      # 挂载测试代码目录(只读,支持实时修改)
+      # 注意: .auth 目录需要可写,因此单独挂载测试文件,排除 .auth 目录
+      - ../tests:/app/tests:ro
+
+      # 挂载 Playwright 配置文件(只读)
+      - ../playwright.config.ts:/app/playwright.config.ts:ro
+      - ../playwright.docker.config.ts:/app/playwright.docker.config.ts:ro
+
+      # 挂载测试报告输出目录到宿主机(可读写)
+      - ../test-results:/app/test-results
+      - ../playwright-report:/app/playwright-report
+
+      # 挂载 package.json (只读,如果需要在容器内安装新依赖)
+      - ../package.json:/app/package.json:ro
+
+      # 挂载系统密钥文件(只读,用于 Docker 本地环境登录测试)
+      - ../system-apikey.txt:/app/system-apikey.txt:ro
+
+      # ⭐ 新增:挂载登录态目录(可读写,支持容器和宿主机共享登录态)
+      # 登录态保存在宿主机,容器重启后无需重新登录
+      - ../tests/.auth:/app/tests/.auth
+
+      # ⭐ 关键:使用命名卷持久化 node_modules,避免每次重新安装
+      # 即使容器删除或镜像重建,这个卷的内容也会保留
+      - playwright_node_modules:/app/node_modules
+
+    # 环境变量配置
+    environment:
+      # 测试目标地址
+      # host 网络模式下使用 localhost 直接访问宿主机服务
+      # 可通过命令行覆盖: BASE_URL=http://localhost:3000 docker-compose run ...
+      - BASE_URL=${BASE_URL:-http://localhost}
+
+      # Playwright 配置
+      - CI=true
+      - PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+      - PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium
+
+      # 禁用 Playwright 遥测
+      - PLAYWRIGHT_TELEMETRY_DISABLED=1
+
+    # 网络配置: 使用 host.docker.internal 访问宿主机
+    # 将企业域名映射到宿主机,解决 macOS Docker Desktop 网络隔离问题
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+      - "bi.off.ke.com:host-gateway"
+      - "bella-test-host:host-gateway"  # 测试专用域名,指向宿主机
+
+    # 工作目录
+    working_dir: /app
+
+    # 默认命令: 运行所有测试
+    # 可通过 docker-compose run 传递额外参数,例如:
+    #   docker-compose run --rm playwright-test npx playwright test --headed
+    #   docker-compose run --rm playwright-test npx playwright test tests/seed.spec.ts
+    command: npx playwright test --config=playwright.docker.config.ts
+
+    # ⭐ 资源限制:防止测试占用过多系统资源
+    deploy:
+      resources:
+        limits:
+          cpus: '2'        # 最多使用 2 个 CPU 核心
+          memory: 2G       # 最多使用 2GB 内存
+        reservations:
+          cpus: '1'        # 预留 1 个 CPU 核心
+          memory: 512M     # 预留 512MB 内存
+
+    # ⭐ 网络配置:使用 host 网络模式直接访问宿主机
+    # 注意: host 模式在 Linux 上生效,macOS/Windows 仍使用 bridge
+    network_mode: "host"
+
+    # # 如果 host 模式不适用,使用默认 bridge 网络
+    # networks:
+    #   - bella-openapi-network
+
+# 命名卷配置 - 持久化 node_modules
+volumes:
+  playwright_node_modules:
+    driver: local
+    # 添加卷标签便于识别
+    labels:
+      com.bella.service: "playwright-test"
+      com.bella.volume.type: "node_modules"
+
+# 网络配置 - 连接到应用 Docker 网络
+# 暂时注释掉,测试容器需要访问宿主机服务
+# networks:
+#   bella-openapi-network:
+#     external: true  # 使用外部已存在的网络
+#     name: bella-openapi_default  # 应用容器所在的网络名称

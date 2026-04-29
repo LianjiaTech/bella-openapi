@@ -34,9 +34,20 @@ export async function getUserInfo(): Promise<UserInfo | null> {
   try {
     const data = await get<UserInfo>(getApiPath('/console/userInfo'))
 
-    // 验证返回数据是否包含userId
-    if (data?.userId) {
-      return data
+    // 与 web 版本对齐：只要后端返回了用户对象就视为已登录
+    // 某些登录来源下 userId 可能为空/0，此时由业务侧决定是否传 ownerCode
+    if (data && typeof data === 'object') {
+      return {
+        ...data,
+        userId: data.userId || 0,
+        userName: data.userName || '',
+        email: data.email || '',
+        tenantId: data.tenantId ?? null,
+        spaceCode: data.spaceCode || '',
+        source: data.source || '',
+        sourceId: data.sourceId || '',
+        managerAk: data.managerAk || '',
+      }
     }
 
     return null
@@ -63,18 +74,15 @@ export async function getUserInfo(): Promise<UserInfo | null> {
  * 使用场景:
  * - 用户在登录页面输入密钥进行登录
  */
-export async function login(secret: string): Promise<UserInfo> {
-  const response = await post<LoginResponse>(
+export async function login(secret: string): Promise<boolean> {
+  // client.ts 已经自动解包 { code: 200, data: true } -> true
+  // 如果 code !== 200，拦截器会抛出错误，不会执行到这里
+  const success = await post<boolean>(
     getApiPath('/openapi/login'),
     { secret } as LoginRequest
   )
 
-  // 验证响应数据
-  if (!response.success || !response.user) {
-    throw new Error(response.message || '登录失败')
-  }
-
-  return response.user
+  return success
 }
 
 /**

@@ -20,10 +20,24 @@ export interface AdminApiKeyQueryParams {
     // TODO: managerSearch?: string  — 管理员视角模糊搜索管理人，待后端联调后开放
 }
 
-export async function getApiKeys(ownerCode: string, search: string, page: number, parentCode: string): Promise<Page<ApikeyInfo>> {
+export async function getApiKeys(ownerCode: string | undefined, search: string, page: number, parentCode: string): Promise<Page<ApikeyInfo>> {
     // apiClient 拦截器会自动解包 { code, data } 格式，直接返回 data
+    const params: Record<string, unknown> = {
+        status: 'active',
+        searchParam: search,
+        page,
+        parentCode,
+        includeChild: !!parentCode,
+    };
+
+    // userId 缺失时不传 ownerCode/ownerType，由后端基于登录态兜底
+    if (ownerCode) {
+        params.ownerType = 'person';
+        params.ownerCode = ownerCode;
+    }
+
     const response = await apiClient.get('/console/apikey/page', {
-        params: { status: 'active', ownerType:'person', ownerCode: ownerCode, searchParam: search, page, parentCode: parentCode, includeChild: !!parentCode }
+        params
     });
     return response as unknown as Page<ApikeyInfo>;
 }
