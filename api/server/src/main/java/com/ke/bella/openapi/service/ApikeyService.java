@@ -246,14 +246,21 @@ public class ApikeyService {
     @Transactional
     public boolean updateSubApikey(SubApikeyUpdateOp op) {
         ApikeyInfo subApikey = apikeyRepo.queryByCode(op.getCode());
+        Assert.notNull(subApikey, "子ak不存在");
+        Assert.hasText(subApikey.getParentCode(), "只可以修改子ak");
         ApikeyInfo apikey = queryByCode(subApikey.getParentCode(), false);
-        Assert.notNull(apikey, "只可以修改子ak");
+        Assert.notNull(apikey, "父ak不存在");
         checkPermission(subApikey.getParentCode(), AkOperation.CREATE_CHILD);
         if(StringUtils.isNotEmpty(op.getRoleCode())) {
             apikeyRoleRepo.checkExist(op.getRoleCode(), true);
         }
-        Assert.isTrue(op.getMonthQuota() == null || op.getMonthQuota().doubleValue() <= apikey.getMonthQuota().doubleValue(), "配额超出ak的最大配额");
-        Assert.isTrue(op.getSafetyLevel() <= apikey.getSafetyLevel(), "安全等级超出ak的最高等级");
+        if(op.getMonthQuota() != null) {
+            Assert.isTrue(op.getMonthQuota().compareTo(BigDecimal.ZERO) > 0, "配额应大于0");
+            Assert.isTrue(op.getMonthQuota().compareTo(apikey.getMonthQuota()) <= 0, "配额超出ak的最大配额");
+        }
+        if(op.getSafetyLevel() != null) {
+            Assert.isTrue(op.getSafetyLevel() <= apikey.getSafetyLevel(), "安全等级超出ak的最高等级");
+        }
         apikeyRepo.update(op, op.getCode());
         if(CollectionUtils.isNotEmpty(op.getPaths())) {
             boolean match = op.getPaths().stream()
@@ -520,14 +527,21 @@ public class ApikeyService {
         }
         apikeyRepo.fillUpdatorInfo(db);
         apikeyRepo.update(db, op.getCode());
-        // 同步更新子 ak 的管理人（含操作人审计信息）
-        apikeyRepo.syncManagerToChildren(op.getCode(), db);
+        boolean syncChildren = op.getSyncChildren() == null || op.getSyncChildren();
+        List<ApikeyDB> children = syncChildren ? listChildren(op.getCode()) : new ArrayList<>();
+        if(syncChildren) {
+            // 同步更新子 ak 的管理人（含操作人审计信息）
+            apikeyRepo.syncManagerToChildren(op.getCode(), db);
+        }
+        List<String> affectedCodes = collectAffectedCodes(op.getCode(), children);
+        boolean managerChanged = !StringUtils.equals(StringUtils.defaultString(existing.getManagerCode()), db.getManagerCode())
+                || !StringUtils.equals(StringUtils.defaultString(existing.getManagerName()), db.getManagerName());
+        if(managerChanged) {
+            apikeyChangeLogRepo.insertManagerChangeLog(existing, affectedCodes, db.getManagerCode(), db.getManagerName(), op.getReason(), BellaContext.getOperator());
+        }
         // 清除主 ak 及所有子 ak 的缓存（manager 变更影响权限校验）
         ApikeyService self = applicationContext.getBean(ApikeyService.class);
         self.clearApikeyCache(existing.getAkSha());
-        ApikeyOps.ApikeyCondition childCondition = new ApikeyOps.ApikeyCondition();
-        childCondition.setParentCode(op.getCode());
-        List<ApikeyDB> children = apikeyRepo.listAccessKeys(childCondition);
         children.forEach(child -> self.clearApikeyCache(child.getAkSha()));
     }
 

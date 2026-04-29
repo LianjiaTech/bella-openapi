@@ -20,8 +20,7 @@ public final class AkPermissionMatrix {
     static final Set<AkOperation> MANAGER_ALL_OPS_EXCEPT_GOVERN =
             Collections.unmodifiableSet(EnumSet.complementOf(EnumSet.of(
                     AkOperation.CHANGE_OWNER,
-                    AkOperation.CHANGE_PARENT,
-                    AkOperation.VIEW_CHANGE_HISTORY
+                    AkOperation.CHANGE_PARENT
             )));
 
     private static final Map<String, Map<AkRelation, Set<AkOperation>>> MATRIX;

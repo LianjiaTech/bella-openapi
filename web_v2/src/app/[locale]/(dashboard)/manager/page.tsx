@@ -22,6 +22,9 @@ import { ManagedKeysTable } from "./components/ManagedKeysTable";
 import { ApiKeyResetDialog } from "@/app/[locale]/(dashboard)/apikey/components/ApiKeyResetDialog";
 import { ApiKeyCreatedDialog } from "@/app/[locale]/(dashboard)/apikey/components/ApiKeyCreatedDialog";
 import { UpdateSafeLevel } from "@/app/[locale]/(dashboard)/apikey/components/UpdateSafeLevel";
+import { ManagerDialog } from "@/app/[locale]/(dashboard)/apikey/components/ManagerDialog";
+import { ApiKeyHistoryDialog } from "@/app/[locale]/(dashboard)/(admin)/apikey-admin/components/ApiKeyHistoryDialog";
+import { ApikeyInfo } from "@/lib/types/apikeys";
 import { copyToClipboard } from "@/lib/utils/clipboard";
 import { toast } from "sonner";
 import { useAuth } from "@/components/providers/auth-provider";
@@ -38,6 +41,10 @@ export default function ManagerPage() {
     const [newApiKey, setNewApiKey] = useState("");
     const [showSafeLevelDialog, setShowSafeLevelDialog] = useState(false);
     const [editingAkCode, setEditingAkCode] = useState<string>("");
+    const [showManagerDialog, setShowManagerDialog] = useState(false);
+    const [managerTargetAk, setManagerTargetAk] = useState<ApikeyInfo | null>(null);
+    const [showHistoryDialog, setShowHistoryDialog] = useState(false);
+    const [historyApiKey, setHistoryApiKey] = useState<ApikeyInfo | null>(null);
 
     // 递增此值通知 Section 刷新，避免将整个 fetchData 提升到 page 层
     const [refreshToken, setRefreshToken] = useState(0);
@@ -97,6 +104,25 @@ export default function ManagerPage() {
         setRefreshToken(t => t + 1);
     }, []);
 
+    const handleSetManagerClick = useCallback((apiKey: ApikeyInfo) => {
+        setManagerTargetAk(apiKey);
+        setShowManagerDialog(true);
+    }, []);
+
+    const handleManagerDialogClose = useCallback(() => {
+        setShowManagerDialog(false);
+        setManagerTargetAk(null);
+    }, []);
+
+    const handleManagerUpdateSuccess = useCallback(() => {
+        setRefreshToken(t => t + 1);
+    }, []);
+
+    const handleViewHistory = useCallback((apiKey: ApikeyInfo) => {
+        setHistoryApiKey(apiKey);
+        setShowHistoryDialog(true);
+    }, []);
+
     return (
         <div>
             <TopBar title="组织/项目密钥" description="查看并管理组织或项目相关的密钥，包括受托管理的密钥和分配给我使用的子密钥" />
@@ -118,6 +144,8 @@ export default function ManagerPage() {
                         onCopy={handleCopy}
                         onReset={handleResetClick}
                         onEditSafetyLevel={handleEditSafetyLevelClick}
+                        onSetManager={handleSetManagerClick}
+                        onViewHistory={handleViewHistory}
                         refreshToken={refreshToken}
                     />
                 </div>
@@ -144,6 +172,26 @@ export default function ManagerPage() {
                     onClose={() => setShowSafeLevelDialog(false)}
                     akCode={editingAkCode}
                     onSuccess={handleSafeLevelUpdateSuccess}
+                />
+
+                {/* 管理权转移 */}
+                <ManagerDialog
+                    isOpen={showManagerDialog}
+                    onClose={handleManagerDialogClose}
+                    akCode={managerTargetAk?.code ?? ""}
+                    akDisplay={managerTargetAk?.akDisplay}
+                    onSuccess={handleManagerUpdateSuccess}
+                    excludeSelf={false}
+                    showReason
+                    reasonRequired
+                    showSyncChildrenOption={!!managerTargetAk && !managerTargetAk.parentCode}
+                />
+
+                {/* 受托父 AK 变更历史 */}
+                <ApiKeyHistoryDialog
+                    isOpen={showHistoryDialog}
+                    apiKey={historyApiKey}
+                    onClose={() => setShowHistoryDialog(false)}
                 />
             </div>
         </div>
