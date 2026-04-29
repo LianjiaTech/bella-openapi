@@ -232,6 +232,14 @@ public class ChannelRouter {
     }
 
     public ChannelDB route(String endpoint, String model, ApikeyInfo apikey, Integer queueMode) {
+        List<ChannelDB> channels = listAvailableChannels(endpoint, model, apikey, queueMode);
+        if(CollectionUtils.isEmpty(channels)) {
+            throw new BizParamCheckException("没有可用通道");
+        }
+        return channels.get(0);
+    }
+
+    public List<ChannelDB> listAvailableChannels(String endpoint, String model, ApikeyInfo apikey, Integer queueMode) {
         if(StringUtils.isBlank(endpoint)) {
             throw new BizParamCheckException("endpoint不能为空");
         }
@@ -244,28 +252,19 @@ public class ChannelRouter {
             channels = channelService.listActives(EntityConstants.MODEL, terminalName);
         }
 
-        List<ChannelDB> endpointMatched = Optional.ofNullable(channels)
-                .orElse(Collections.emptyList())
-                .stream()
-                .filter(channel -> AdaptorManager.getInstance().support(endpoint, channel.getProtocol()))
-                .collect(Collectors.toList());
-
-        if(CollectionUtils.isEmpty(endpointMatched)) {
-            throw new BizParamCheckException("没有支持当前endpoint的可用通道: " + endpoint);
+        if(CollectionUtils.isEmpty(channels)) {
+            return null;
         }
 
-        List<ChannelDB> filteredChannels = endpointMatched.stream()
+        return channels.stream()
                 .filter(channel -> queueMode == null
                         || QueueMode.of(channel.getQueueMode()).supports(queueMode))
                 .filter(channel -> isAccessible(channel, apikey))
-                .filter(channel -> isSafetyCompliant(channel, apikey))
-                .collect(Collectors.toList());
-
-        if(CollectionUtils.isEmpty(filteredChannels)) {
-            throw new BizParamCheckException("没有可用通道");
-        }
-
-        return pickMaxPriority(filteredChannels).get(0);
+                .filter(channel -> isSafetyCompliant(channel, apikey)).sorted((c1, c2) -> {
+                    String v1 = StringUtils.isNotBlank(c1.getVisibility()) ? c1.getVisibility() : EntityConstants.PUBLIC;
+                    String v2 = StringUtils.isNotBlank(c2.getVisibility()) ? c2.getVisibility() : EntityConstants.PUBLIC;
+                    return -compare(c1.getPriority(), c2.getPriority(), v1, v2);
+                }).collect(Collectors.toList());
     }
 
     private boolean isAccessible(ChannelDB channel, ApikeyInfo apikeyInfo) {
