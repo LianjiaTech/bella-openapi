@@ -30,6 +30,13 @@ type AuthProviderProps = {
   children: React.ReactNode
 }
 
+function isLoginPath(pathname: string): boolean {
+  if (pathname === '/login' || pathname.startsWith('/login/')) {
+    return true
+  }
+  return /^\/(zh-CN|en-US)\/login(?:\/|$)/.test(pathname)
+}
+
 /**
  * 认证Provider
  * 管理全局用户状态和认证相关操作
@@ -45,9 +52,30 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [error, setError] = useState<Error | null>(null)
 
   const isInitializing = useRef(false)
+  const hasRetriedInit = useRef(false)
+  const initRetryTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const shouldRetryInit = (err: unknown): boolean => {
+    if (!err || typeof err !== 'object') return true
+
+    const maybeErr = err as { response?: { status?: number }, message?: string }
+    const status = maybeErr.response?.status
+
+    // 401 代表未登录，不重试；5xx 或网络波动重试一次
+    if (status === 401) return false
+    if (typeof status === 'number') return status >= 500
+    return true
+  }
 
   // 初始化：获取当前用户信息
   useEffect(() => {
+    if (typeof window !== 'undefined' && isLoginPath(window.location.pathname)) {
+      // 与旧版 web 对齐：登录页不做全局登录态初始化请求
+      setIsLoading(false)
+      setIsInitialized(true)
+      return
+    }
+
     if (!isInitializing.current) {
       isInitializing.current = true
       initAuth()
@@ -64,12 +92,28 @@ export function AuthProvider({ children }: AuthProviderProps) {
    * - 不需要前端显式重定向到/login
    */
   const initAuth = useCallback(async () => {
+    let scheduledRetry = false
+
     try {
       setIsLoading(true)
       const userInfo = await getUserInfo()
       setUser(userInfo)
       setError(null)
+      hasRetriedInit.current = false
     } catch (err) {
+      if (!hasRetriedInit.current && shouldRetryInit(err)) {
+        hasRetriedInit.current = true
+        scheduledRetry = true
+
+        if (initRetryTimer.current) {
+          clearTimeout(initRetryTimer.current)
+        }
+        initRetryTimer.current = setTimeout(() => {
+          initAuth()
+        }, 1200)
+        return
+      }
+
       // 401错误表示未登录，不算错误
       // CAS模式下，client.ts会自动处理X-Redirect-Login响应头并跳转
       // OAuth模式下，页面会通过路由守卫跳转到/login
@@ -79,8 +123,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
       setUser(null)
     } finally {
+      if (scheduledRetry) {
+        return
+      }
       setIsLoading(false)
       setIsInitialized(true)
+    }
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      if (initRetryTimer.current) {
+        clearTimeout(initRetryTimer.current)
+      }
     }
   }, [])
 
@@ -104,7 +159,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       setIsLoading(true)
       setError(null)
-      const userInfo = await apiLogin(secret)
+      await apiLogin(secret)
+      const userInfo = await getUserInfo()
       setUser(userInfo)
     } catch (err) {
       const error = err instanceof Error ? err : new Error('登录失败')
