@@ -5,8 +5,8 @@
  *
  * 职责：
  *   - 提供 managerCode（当前登录用户ID）给 ManagedKeysTable
- *   - 管理重置子AK的弹窗状态（唯一写操作）
- *   - 重置成功后通过递增 refreshToken 通知 AssignedSection 刷新
+ *   - 管理重置 AK 的弹窗状态
+ *   - 重置成功后通过递增 refreshToken 通知各 Section 刷新
  *   - 数据获取/搜索/分页完全由 ManagedKeysTable 内部各 Section 自治
  *
  * 防 re-render：
@@ -21,6 +21,7 @@ import { resetApiKey } from "@/lib/api/apiKeys";
 import { ManagedKeysTable } from "./components/ManagedKeysTable";
 import { ApiKeyResetDialog } from "@/app/[locale]/(dashboard)/apikey/components/ApiKeyResetDialog";
 import { ApiKeyCreatedDialog } from "@/app/[locale]/(dashboard)/apikey/components/ApiKeyCreatedDialog";
+import { UpdateSafeLevel } from "@/app/[locale]/(dashboard)/apikey/components/UpdateSafeLevel";
 import { copyToClipboard } from "@/lib/utils/clipboard";
 import { toast } from "sonner";
 import { useAuth } from "@/components/providers/auth-provider";
@@ -29,12 +30,14 @@ export default function ManagerPage() {
     const { user } = useAuth();
     const managerCode = user?.userId?.toString() ?? "";
 
-    // 重置子AK相关（子AK分配给自己使用时的唯一写操作）
+    // 重置 AK 相关（我管理的 AK / 分配给我的子 AK 共用）
     const [showResetDialog, setShowResetDialog] = useState(false);
     const [resetingAkCode, setResetingAkCode] = useState<string>("");
     const [resetting, setResetting] = useState(false);
     const [showCreatedDialog, setShowCreatedDialog] = useState(false);
     const [newApiKey, setNewApiKey] = useState("");
+    const [showSafeLevelDialog, setShowSafeLevelDialog] = useState(false);
+    const [editingAkCode, setEditingAkCode] = useState<string>("");
 
     // 递增此值通知 Section 刷新，避免将整个 fetchData 提升到 page 层
     const [refreshToken, setRefreshToken] = useState(0);
@@ -50,7 +53,7 @@ export default function ManagerPage() {
         }
     }, []);
 
-    // 处理重置点击：仅对分配给自己的子AK生效
+    // 处理重置点击
     const handleResetClick = useCallback((akCode: string) => {
         setResetingAkCode(akCode);
         setShowResetDialog(true);
@@ -78,10 +81,19 @@ export default function ManagerPage() {
         }
     }, [resetingAkCode]);
 
-    // 重置成功弹窗关闭：递增 refreshToken 触发 AssignedSection 刷新
+    // 重置成功弹窗关闭：递增 refreshToken 触发各 Section 刷新
     const handleCreatedDialogClose = useCallback(() => {
         setShowCreatedDialog(false);
         setNewApiKey("");
+        setRefreshToken(t => t + 1);
+    }, []);
+
+    const handleEditSafetyLevelClick = useCallback((akCode: string) => {
+        setEditingAkCode(akCode);
+        setShowSafeLevelDialog(true);
+    }, []);
+
+    const handleSafeLevelUpdateSuccess = useCallback(() => {
         setRefreshToken(t => t + 1);
     }, []);
 
@@ -105,11 +117,12 @@ export default function ManagerPage() {
                         managerCode={managerCode}
                         onCopy={handleCopy}
                         onReset={handleResetClick}
+                        onEditSafetyLevel={handleEditSafetyLevelClick}
                         refreshToken={refreshToken}
                     />
                 </div>
 
-                {/* 重置确认对话框（子AK重置） */}
+                {/* 重置确认对话框 */}
                 <ApiKeyResetDialog
                     isOpen={showResetDialog}
                     onClose={() => setShowResetDialog(false)}
@@ -123,6 +136,14 @@ export default function ManagerPage() {
                     isOpen={showCreatedDialog}
                     onClose={handleCreatedDialogClose}
                     onCopy={handleCopy}
+                />
+
+                {/* 安全等级编辑对话框 */}
+                <UpdateSafeLevel
+                    isOpen={showSafeLevelDialog}
+                    onClose={() => setShowSafeLevelDialog(false)}
+                    akCode={editingAkCode}
+                    onSuccess={handleSafeLevelUpdateSuccess}
                 />
             </div>
         </div>
