@@ -56,7 +56,7 @@ sync_master_to_github:
 
 
 # =========================
-# 2️⃣ GitLab master → GitLab dev（新增）
+# 2️⃣ GitLab master → GitLab dev
 # =========================
 sync_master_to_dev:
   stage: sync
@@ -87,7 +87,9 @@ sync_master_to_dev:
     - git merge origin/master --no-edit --strategy-option=ours
 
     - echo "推送 dev 到远端..."
-    - git push "https://oauth2:${GITLAB_ACCESS_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" HEAD:${TARGET_BRANCH}
+    - git remote remove target || true
+    - git remote add target "https://oauth2:${KE_GITLAB_ACCESS_TOKEN}@git.ke.com/ai-arch/bella-openapi.git"
+    - git push target HEAD:${TARGET_BRANCH}
 
     - echo "✅ master → dev 同步完成"
 
@@ -99,7 +101,6 @@ sync_master_to_dev:
     - if: '$CI_PIPELINE_SOURCE == "web"'
       when: always
     - when: never
-
 
 # =========================
 # 3️⃣ GitLab dev → GitLab feat/cicd_test
