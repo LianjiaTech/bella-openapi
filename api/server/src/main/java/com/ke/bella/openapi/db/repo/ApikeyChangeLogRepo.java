@@ -4,6 +4,7 @@ import com.ke.bella.openapi.Operator;
 import com.ke.bella.openapi.apikey.ApikeyChangeLog;
 import com.ke.bella.openapi.apikey.ApikeyInfo;
 import com.ke.bella.openapi.apikey.ApikeyOps;
+import com.ke.bella.openapi.tables.pojos.ApikeyDB;
 import com.ke.bella.openapi.tables.records.ApikeyChangeLogRecord;
 import com.ke.bella.openapi.utils.JacksonUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -76,6 +77,31 @@ public class ApikeyChangeLogRepo implements BaseRepo {
                 .toManagerCode(StringUtils.defaultString(toManagerCode))
                 .toManagerName(StringUtils.defaultString(toManagerName))
                 .reason(StringUtils.defaultString(op.getReason()))
+                .status("completed")
+                .operatorUid(currentOperator.getUserId())
+                .operatorName(currentOperator.getUserName())
+                .build());
+    }
+
+    public void insertManagerChangeLog(ApikeyDB source, List<String> affectedCodes,
+                                       String toManagerCode, String toManagerName, String reason, Operator currentOperator) {
+        insert(ApikeyChangeLog.builder()
+                .actionType("manager_change")
+                .akCode(source.getCode())
+                .affectedCodes(JacksonUtils.serialize(affectedCodes))
+                .fromOwnerType(StringUtils.defaultString(source.getOwnerType()))
+                .fromOwnerCode(StringUtils.defaultString(source.getOwnerCode()))
+                .fromOwnerName(StringUtils.defaultString(source.getOwnerName()))
+                .toOwnerType(StringUtils.defaultString(source.getOwnerType()))
+                .toOwnerCode(StringUtils.defaultString(source.getOwnerCode()))
+                .toOwnerName(StringUtils.defaultString(source.getOwnerName()))
+                .fromParentCode(StringUtils.defaultString(source.getParentCode()))
+                .toParentCode(StringUtils.defaultString(source.getParentCode()))
+                .fromManagerCode(StringUtils.defaultString(source.getManagerCode()))
+                .fromManagerName(StringUtils.defaultString(source.getManagerName()))
+                .toManagerCode(StringUtils.defaultString(toManagerCode))
+                .toManagerName(StringUtils.defaultString(toManagerName))
+                .reason(StringUtils.defaultString(reason))
                 .status("completed")
                 .operatorUid(currentOperator.getUserId())
                 .operatorName(currentOperator.getUserName())

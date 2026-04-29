@@ -39,6 +39,8 @@ public class ApikeyOps {
         private Long managerUserId;  // 通过 userId 查用户，后端自动计算正确的 managerCode
         private String managerCode;
         private String managerName;
+        private String reason;
+        private Boolean syncChildren;
     }
 
     @Data

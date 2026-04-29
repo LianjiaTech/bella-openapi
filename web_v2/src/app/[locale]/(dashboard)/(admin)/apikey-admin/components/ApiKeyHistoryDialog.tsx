@@ -14,19 +14,21 @@ interface ApiKeyHistoryDialogProps {
     onClose: () => void;
 }
 
-type HistoryFilter = 'all' | 'owner_transfer' | 'owner_change' | 'parent_change';
+type HistoryFilter = 'all' | 'owner_transfer' | 'owner_change' | 'parent_change' | 'manager_change';
 
 const FILTER_OPTIONS: Array<{ value: HistoryFilter; label: string }> = [
     { value: 'all', label: '全部' },
     { value: 'owner_transfer', label: '转交' },
     { value: 'owner_change', label: '所有者变更' },
     { value: 'parent_change', label: '父级迁移' },
+    { value: 'manager_change', label: '管理者变更' },
 ];
 
 const ACTION_LABEL: Record<Exclude<HistoryFilter, 'all'>, string> = {
     owner_transfer: '转交',
     owner_change: '所有者变更',
     parent_change: '父级迁移',
+    manager_change: '管理者变更',
 };
 
 export function ApiKeyHistoryDialog({ isOpen, apiKey, onClose }: ApiKeyHistoryDialogProps) {

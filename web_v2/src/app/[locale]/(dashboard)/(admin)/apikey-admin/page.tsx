@@ -485,6 +485,7 @@ export default function ApiKeyAdminPage() {
                     akDisplay={activeApiKey?.akDisplay}
                     onSuccess={handleGovernSuccess}
                     excludeSelf={false}
+                    showSyncChildrenOption={!!activeApiKey && !activeApiKey.parentCode}
                 />
 
                 <OwnerChangeDialog
