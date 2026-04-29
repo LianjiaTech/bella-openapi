@@ -1,3 +1,11 @@
+image:
+  name: alpine/git:latest
+  entrypoint: [""]
+
+default:
+  tags:
+    - docker
+
 stages:
   - sync
 
