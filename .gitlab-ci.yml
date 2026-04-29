@@ -1,76 +1,120 @@
 stages:
   - sync
+
 variables:
   GIT_DEPTH: "0"
-github_sync_gitlab:
+
+# =========================
+# 1️⃣ GitLab master → GitHub feat/cicd_test
+# =========================
+sync_master_to_github:
   stage: sync
   variables:
     GITHUB_REPO_PATH: "LianjiaTech/bella-openapi"
-    GITLAB_REPO_PATH: "ai-arch/bella-openapi"
-    GITHUB_SOURCE_BRANCH: "main"
-    GITLAB_TARGET_BRANCH: "master"
+    SOURCE_BRANCH: "master"
+    TARGET_BRANCH: "feat/cicd_test"
     GIT_USER_NAME: "chenzhenhua016"
     GIT_USER_EMAIL: "chenzhenhua016@ke.com"
+
   script:
-    - echo "开始调试变量..."
-    - if [ -z "$GITLAB_ACCESS_TOKEN" ]; then echo "❌ GITLAB_ACCESS_TOKEN 为空"; exit 1; fi
-    - if [ -z "$GITHUB_ACCESS_TOKEN" ]; then echo "❌ GITHUB_ACCESS_TOKEN 为空"; exit 1; fi
-    - echo "✅ 变量检查通过"
+    - echo "======== GitLab master → GitHub feat/cicd_test ========"
 
-    - echo "======== 开始从GitHub同步到GitLab master分支 ========"
-
-    - echo "配置Git用户信息..."
     - git config user.name "${GIT_USER_NAME}"
     - git config user.email "${GIT_USER_EMAIL}"
 
-    - echo "配置GitHub远程仓库..."
+    - git checkout ${SOURCE_BRANCH}
+
+    - echo "配置 GitHub remote..."
     - git remote remove github || true
     - git remote add github "https://oauth2:${GITHUB_ACCESS_TOKEN}@github.com/${GITHUB_REPO_PATH}.git"
 
-    - echo "获取GitHub最新代码..."
-    - git fetch github "${GITHUB_SOURCE_BRANCH}"
-
-
-    - echo "分析分支状态..."
-    - LOCAL_HEAD=$(git rev-parse HEAD)
-    - GITHUB_HEAD=$(git rev-parse "github/${GITHUB_SOURCE_BRANCH}")
-    - echo "GitLab当前HEAD $LOCAL_HEAD"
-    - echo "GitHub远程HEAD $GITHUB_HEAD"
-    - if [ "$LOCAL_HEAD" = "$GITHUB_HEAD" ]; then echo "本地分支已是最新，无需同步"; exit 0; fi
-
-    - echo "检查分支差异..."
-    - GITLAB_ONLY=$(git rev-list --count "github/${GITHUB_SOURCE_BRANCH}"..HEAD 2>/dev/null || echo "0")
-    - GITHUB_ONLY=$(git rev-list --count HEAD.."github/${GITHUB_SOURCE_BRANCH}" 2>/dev/null || echo "0")
-    - echo "GitLab独有提交数 $GITLAB_ONLY"
-    - echo "GitHub独有提交数 $GITHUB_ONLY"
-
+    - git fetch github ${TARGET_BRANCH} || true
 
     - |
-        if [ "$GITLAB_ONLY" -gt 0 ] && [ "$GITHUB_ONLY" -gt 0 ]; then
-          echo "双向存在新提交，执行安全merge策略..."
-          git merge "github/${GITHUB_SOURCE_BRANCH}" -m "chore: sync from github/${GITHUB_SOURCE_BRANCH} [保持双向提交历史]" || (echo "merge失败，存在冲突需手动解决"; exit 1)
-        elif [ "$GITHUB_ONLY" -gt 0 ]; then
-          echo "GitHub有新提交，执行快进合并..."
-          git merge "github/${GITHUB_SOURCE_BRANCH}" --ff-only || git merge "github/${GITHUB_SOURCE_BRANCH}" -m "chore: sync from github/${GITHUB_SOURCE_BRANCH}"
-        else
-          echo "仅GitLab有新提交，无需同步"
-          exit 0
+        if git show-ref --verify --quiet refs/remotes/github/${TARGET_BRANCH}; then
+          LOCAL_HEAD=$(git rev-parse HEAD)
+          REMOTE_HEAD=$(git rev-parse github/${TARGET_BRANCH})
+
+          if [ "$LOCAL_HEAD" != "$REMOTE_HEAD" ]; then
+            echo "检测到差异，开始同步..."
+            git merge github/${TARGET_BRANCH} -m "sync: master → github ${TARGET_BRANCH}" || (echo "冲突失败"; exit 1)
+          else
+            echo "无需同步"
+            exit 0
+          fi
         fi
-    - echo "配置推送URL..."
-    - git remote set-url origin "https://oauth2:${GITLAB_ACCESS_TOKEN}@git.ke.com/${GITLAB_REPO_PATH}.git"
-    - echo "推送更新到 ${GITLAB_TARGET_BRANCH} 分支..."
-    - git push origin HEAD:"${GITLAB_TARGET_BRANCH}" || (echo "推送失败，请检查访问令牌权限"; exit 1)
-    - echo "✅ 同步完成！保持了commit历史完整性"
-    
+
+    - echo "推送到 GitHub..."
+    - git push github HEAD:${TARGET_BRANCH}
+
+    - echo "✅ GitHub 同步完成"
 
   rules:
-  # 定时任务
-  - if: '$CI_PIPELINE_SOURCE == "schedule"'
-    when: always
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+      when: always
 
-  # 手动触发
-  - if: '$CI_PIPELINE_SOURCE == "web"'
-    when: always
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+      when: always
 
-  # 其他全部不执行
-  - when: never
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "master"'
+      when: on_success
+
+    - when: never
+
+
+# =========================
+# 2️⃣ GitLab master → 另一个 GitLab CICD-TEST
+# =========================
+sync_master_to_gitlab:
+  stage: sync
+  variables:
+    TARGET_GITLAB_REPO_PATH: "ai-arch/bella-openapi"
+    SOURCE_BRANCH: "master"
+    TARGET_BRANCH: "CICD-TEST"
+    GIT_USER_NAME: "chenzhenhua016"
+    GIT_USER_EMAIL: "chenzhenhua016@ke.com"
+
+  script:
+    - echo "======== GitLab master → GitLab CICD-TEST ========"
+
+    - git config user.name "${GIT_USER_NAME}"
+    - git config user.email "${GIT_USER_EMAIL}"
+
+    - git checkout ${SOURCE_BRANCH}
+
+    - echo "配置目标 GitLab remote..."
+    - git remote remove target || true
+    - git remote add target "https://oauth2:${GITLAB_ACCESS_TOKEN}@git.ke.com/${TARGET_GITLAB_REPO_PATH}.git"
+
+    - git fetch target ${TARGET_BRANCH} || true
+
+    - |
+        if git show-ref --verify --quiet refs/remotes/target/${TARGET_BRANCH}; then
+          LOCAL_HEAD=$(git rev-parse HEAD)
+          REMOTE_HEAD=$(git rev-parse target/${TARGET_BRANCH})
+
+          if [ "$LOCAL_HEAD" != "$REMOTE_HEAD" ]; then
+            echo "检测到差异，开始同步..."
+            git merge target/${TARGET_BRANCH} -m "sync: master → CICD-TEST" || (echo "冲突失败"; exit 1)
+          else
+            echo "无需同步"
+            exit 0
+          fi
+        fi
+
+    - echo "推送到目标 GitLab..."
+    - git push target HEAD:${TARGET_BRANCH}
+
+    - echo "✅ GitLab 同步完成"
+
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+      when: always
+
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+      when: always
+
+    - if: '$CI_COMMIT_BRANCH == "master"'
+      when: on_success
+
+    - when: never
