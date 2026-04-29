@@ -8,6 +8,7 @@ public enum AkOperation {
     UPDATE_MANAGER,
     CERTIFY,
     UPDATE_QUOTA,
+    UPDATE_CHILD_QUOTA,
     UPDATE_QPS,
     CHANGE_STATUS,
     CREATE_CHILD,

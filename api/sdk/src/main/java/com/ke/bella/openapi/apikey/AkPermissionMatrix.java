@@ -17,10 +17,11 @@ public final class AkPermissionMatrix {
             Collections.unmodifiableSet(EnumSet.allOf(AkOperation.class));
     static final Set<AkOperation> NO_OPS =
             Collections.unmodifiableSet(EnumSet.noneOf(AkOperation.class));
-    static final Set<AkOperation> MANAGER_ALL_OPS_EXCEPT_GOVERN =
+    static final Set<AkOperation> MANAGER_ALL_OPS_EXCEPT_GOVERN_AND_MAIN_QUOTA =
             Collections.unmodifiableSet(EnumSet.complementOf(EnumSet.of(
                     AkOperation.CHANGE_OWNER,
                     AkOperation.CHANGE_PARENT,
+                    AkOperation.UPDATE_QUOTA,
                     AkOperation.VIEW_CHANGE_HISTORY
             )));
 
@@ -53,11 +54,12 @@ public final class AkPermissionMatrix {
         // high
         Set<AkOperation> highOwner = Collections.unmodifiableSet(EnumSet.of(
                 AkOperation.QUERY, AkOperation.RESET, AkOperation.RENAME,
-                AkOperation.CHANGE_STATUS, AkOperation.CREATE_CHILD, AkOperation.TRANSFER,
+                AkOperation.CERTIFY,
+                AkOperation.UPDATE_CHILD_QUOTA, AkOperation.CHANGE_STATUS, AkOperation.CREATE_CHILD, AkOperation.TRANSFER,
                 AkOperation.VIEW_TRANSFER_HISTORY, AkOperation.UPDATE_MANAGER));
         Map<AkRelation, Set<AkOperation>> highMap = new EnumMap<>(AkRelation.class);
         highMap.put(AkRelation.OWNER,     highOwner);
-        highMap.put(AkRelation.MANAGER,   MANAGER_ALL_OPS_EXCEPT_GOVERN);
+        highMap.put(AkRelation.MANAGER,   MANAGER_ALL_OPS_EXCEPT_GOVERN_AND_MAIN_QUOTA);
         highMap.put(AkRelation.SAME_ORG,  NO_OPS);
         highMap.put(AkRelation.UNRELATED, NO_OPS);
         m.put(EntityConstants.HIGH, Collections.unmodifiableMap(highMap));
@@ -65,11 +67,12 @@ public final class AkPermissionMatrix {
         // low
         Set<AkOperation> lowOwner = Collections.unmodifiableSet(EnumSet.of(
                 AkOperation.QUERY, AkOperation.RESET, AkOperation.RENAME,
-                AkOperation.CHANGE_STATUS, AkOperation.CREATE_CHILD, AkOperation.TRANSFER,
+                AkOperation.CERTIFY,
+                AkOperation.UPDATE_CHILD_QUOTA, AkOperation.CHANGE_STATUS, AkOperation.CREATE_CHILD, AkOperation.TRANSFER,
                 AkOperation.VIEW_TRANSFER_HISTORY, AkOperation.UPDATE_MANAGER));
         Map<AkRelation, Set<AkOperation>> lowMap = new EnumMap<>(AkRelation.class);
         lowMap.put(AkRelation.OWNER,     lowOwner);
-        lowMap.put(AkRelation.MANAGER,   MANAGER_ALL_OPS_EXCEPT_GOVERN);
+        lowMap.put(AkRelation.MANAGER,   MANAGER_ALL_OPS_EXCEPT_GOVERN_AND_MAIN_QUOTA);
         lowMap.put(AkRelation.SAME_ORG,  NO_OPS);
         lowMap.put(AkRelation.UNRELATED, NO_OPS);
         m.put(EntityConstants.LOW, Collections.unmodifiableMap(lowMap));

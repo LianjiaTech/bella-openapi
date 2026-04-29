@@ -92,6 +92,15 @@ public class ApikeyConsoleController {
         return true;
     }
 
+    @PostMapping("/sub/quota/update")
+    public Boolean updateSubQuota(@RequestBody ApikeyOps.QuotaOp op) {
+        Assert.hasText(op.getCode(), "code不可为空");
+        Assert.notNull(op.getMonthQuota(), "配额不可为空");
+        Assert.isTrue(op.getMonthQuota().doubleValue() > 0, "配额应大于0");
+        apikeyService.updateSubQuota(op);
+        return true;
+    }
+
     @PostMapping("/qpsLimit/update")
     public Boolean updateQpsLimit(@RequestBody ApikeyOps.QpsLimitOp op) {
         Assert.hasText(op.getCode(), "code不可为空");
