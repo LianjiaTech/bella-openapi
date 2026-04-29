@@ -23,7 +23,7 @@ sync_master_to_github:
     GIT_USER_EMAIL: "chenzhenhua016@ke.com"
 
   script:
-    - echo "======== GitLab master → GitHub feat/cicd_test ========"
+    - echo "======== master → GitHub feat/cicd_test (mirror sync) ========"
 
     - git config user.name "${GIT_USER_NAME}"
     - git config user.email "${GIT_USER_EMAIL}"
@@ -34,54 +34,35 @@ sync_master_to_github:
     - git remote remove github || true
     - git remote add github "https://oauth2:${GITHUB_ACCESS_TOKEN}@github.com/${GITHUB_REPO_PATH}.git"
 
-    - git fetch github ${TARGET_BRANCH} || true
-
-    - |
-        if git show-ref --verify --quiet refs/remotes/github/${TARGET_BRANCH}; then
-          LOCAL_HEAD=$(git rev-parse HEAD)
-          REMOTE_HEAD=$(git rev-parse github/${TARGET_BRANCH})
-
-          if [ "$LOCAL_HEAD" != "$REMOTE_HEAD" ]; then
-            echo "检测到差异，开始同步..."
-            git merge github/${TARGET_BRANCH} -m "sync: master → github ${TARGET_BRANCH}" || (echo "冲突失败"; exit 1)
-          else
-            echo "无需同步"
-            exit 0
-          fi
-        fi
-
-    - echo "推送到 GitHub..."
-    - git push github HEAD:${TARGET_BRANCH}
+    - echo "开始强制同步到 GitHub..."
+    - git push github HEAD:${TARGET_BRANCH} --force-with-lease
 
     - echo "✅ GitHub 同步完成"
 
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "schedule"'
-      when: always
-
-    - if: '$CI_PIPELINE_SOURCE == "web"'
-      when: always
-
     - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "master"'
       when: on_success
-
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+      when: always
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+      when: always
     - when: never
 
 
 # =========================
-# 2️⃣ GitLab master → 另一个 GitLab feat/cicd_test
+# 2️⃣ GitLab dev → GitLab feat/cicd_test
 # =========================
-sync_master_to_gitlab:
+sync_dev_to_gitlab:
   stage: sync
   variables:
     TARGET_GITLAB_REPO_PATH: "ai-arch/bella-openapi"
-    SOURCE_BRANCH: "feat/cicd_test"
+    SOURCE_BRANCH: "dev"
     TARGET_BRANCH: "feat/cicd_test"
     GIT_USER_NAME: "chenzhenhua016"
     GIT_USER_EMAIL: "chenzhenhua016@ke.com"
 
   script:
-    - echo "======== GitLab master → GitLab feat/cicd_test ========"
+    - echo "======== dev → GitLab feat/cicd_test (mirror sync) ========"
 
     - git config user.name "${GIT_USER_NAME}"
     - git config user.email "${GIT_USER_EMAIL}"
@@ -92,35 +73,16 @@ sync_master_to_gitlab:
     - git remote remove target || true
     - git remote add target "https://oauth2:${GITLAB_ACCESS_TOKEN}@git.lianjia.com/${TARGET_GITLAB_REPO_PATH}.git"
 
-    - git fetch target ${TARGET_BRANCH} || true
-
-    - |
-        if git show-ref --verify --quiet refs/remotes/target/${TARGET_BRANCH}; then
-          LOCAL_HEAD=$(git rev-parse HEAD)
-          REMOTE_HEAD=$(git rev-parse target/${TARGET_BRANCH})
-
-          if [ "$LOCAL_HEAD" != "$REMOTE_HEAD" ]; then
-            echo "检测到差异，开始同步..."
-            git merge target/${TARGET_BRANCH} -m "sync: master → feat/cicd_test" || (echo "冲突失败"; exit 1)
-          else
-            echo "无需同步"
-            exit 0
-          fi
-        fi
-
-    - echo "推送到目标 GitLab..."
-    - git push target HEAD:${TARGET_BRANCH}
+    - echo "开始强制同步到 GitLab..."
+    - git push target HEAD:${TARGET_BRANCH} --force-with-lease
 
     - echo "✅ GitLab 同步完成"
 
   rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "dev"'
+      when: on_success
     - if: '$CI_PIPELINE_SOURCE == "schedule"'
       when: always
-
     - if: '$CI_PIPELINE_SOURCE == "web"'
       when: always
-
-    - if: '$CI_COMMIT_BRANCH == "master"'
-      when: on_success
-
     - when: never
