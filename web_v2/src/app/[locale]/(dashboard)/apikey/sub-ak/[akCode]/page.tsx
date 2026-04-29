@@ -16,10 +16,12 @@
 
 import { TopBar } from "@/components/layout/top-bar";
 import { Button } from "@/components/common/button";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/common/dialog";
+import { Input } from "@/components/common/input";
 import { ArrowLeft, AlertCircle, Plus } from "lucide-react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { useState, useEffect, useRef, useMemo } from "react";
-import { getApiKeys, getApiKeyByCode, resetApiKey, deleteApiKey } from "@/lib/api/apiKeys";
+import { getApiKeys, getApiKeyByCode, resetApiKey, deleteApiKey, updateSubApiKey } from "@/lib/api/apiKeys";
 import { ApikeyInfo } from "@/lib/types/apikeys";
 import { SubAkTable, SubAkTableRef } from "./components/SubAkTable";
 import { CreateSubApiKeyDialog } from "./components/CreateSubApiKeyDialog";
@@ -54,6 +56,11 @@ export default function SubAkPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deletingAkCode, setDeletingAkCode] = useState<string>("");
   const [deleting, setDeleting] = useState(false);
+  const [showQuotaDialog, setShowQuotaDialog] = useState(false);
+  const [quotaEditingSubAk, setQuotaEditingSubAk] = useState<ApikeyInfo | null>(null);
+  const [quotaEditingValue, setQuotaEditingValue] = useState("");
+  const [quotaError, setQuotaError] = useState("");
+  const [quotaSubmitting, setQuotaSubmitting] = useState(false);
 
   // 设置管理人弹窗：为子 AK 指派管理者
   const [showManagerDialog, setShowManagerDialog] = useState(false);
@@ -101,6 +108,50 @@ export default function SubAkPage() {
   const handleEditSubApiKey = (apiKey: ApikeyInfo) => {
     setEditingSubApiKey(apiKey);
     setIsCreateDialogOpen(true);
+  };
+
+  const handleEditQuotaClick = (apiKey: ApikeyInfo) => {
+    setQuotaEditingSubAk(apiKey);
+    setQuotaEditingValue(apiKey.monthQuota?.toString() || "");
+    setQuotaError("");
+    setShowQuotaDialog(true);
+  };
+
+  const handleQuotaClose = () => {
+    setShowQuotaDialog(false);
+    setQuotaEditingSubAk(null);
+    setQuotaEditingValue("");
+    setQuotaError("");
+  };
+
+  const handleQuotaConfirm = async () => {
+    if (!quotaEditingSubAk) return;
+
+    const quota = Number(quotaEditingValue);
+    if (isNaN(quota) || quota <= 0) {
+      setQuotaError('月额度必须为正数');
+      return;
+    }
+    if (parentApiKey?.monthQuota != null && quota > parentApiKey.monthQuota) {
+      setQuotaError(`月额度不能超过 ￥${parentApiKey.monthQuota}`);
+      return;
+    }
+
+    try {
+      setQuotaSubmitting(true);
+      setError(null);
+      await updateSubApiKey({
+        code: quotaEditingSubAk.code,
+        monthQuota: quota,
+      });
+      handleQuotaClose();
+      subAkTableRef.current?.refresh();
+    } catch (err) {
+      console.error('修改子密钥额度失败:', err);
+      setQuotaError(err instanceof Error ? err.message : '修改子密钥额度失败');
+    } finally {
+      setQuotaSubmitting(false);
+    }
   };
 
   const handleCloseDialog = () => {
@@ -242,13 +293,14 @@ export default function SubAkPage() {
             capability={capability}
             onCopy={handleCopy}
             onEdit={handleEditSubApiKey}
+            onEditQuota={handleEditQuotaClick}
             onReset={handleReset}
             onDelete={handleDelete}
             onSetManager={handleSetManagerClick}
           />
         </div>
 
-        {/* Dialog 同时服务创建（canCreate）和编辑（canEditQuota）两个入口，
+        {/* Dialog 同时服务创建（canCreate）和完整编辑两个入口，
             只要 parentApiKey 已加载即挂载，内部创建按钮由 isEditMode 判断 */}
         {parentApiKey && (
           <CreateSubApiKeyDialog
@@ -288,6 +340,41 @@ export default function SubAkPage() {
           loading={deleting}
         />
 
+        {/* 子 AK 月额度编辑：复用 /v1/apikey/update，仅提交 code + monthQuota */}
+        <Dialog open={showQuotaDialog} onOpenChange={handleQuotaClose}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle>修改月额度</DialogTitle>
+            </DialogHeader>
+            <Input
+              type="number"
+              min={1}
+              max={parentApiKey?.monthQuota}
+              value={quotaEditingValue}
+              onChange={(e) => {
+                setQuotaEditingValue(e.target.value);
+                setQuotaError("");
+              }}
+              placeholder="请输入月额度"
+              onKeyDown={(e) => e.key === 'Enter' && handleQuotaConfirm()}
+            />
+            {quotaError && (
+              <p className="text-xs text-red-500">{quotaError}</p>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={handleQuotaClose} disabled={quotaSubmitting}>
+                取消
+              </Button>
+              <Button
+                onClick={handleQuotaConfirm}
+                disabled={quotaSubmitting || !quotaEditingValue || Number(quotaEditingValue) <= 0}
+              >
+                {quotaSubmitting ? '保存中...' : '确认'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         {/* 为子 AK 设置管理人弹窗（capability.canSetManager=true 时可触发） */}
         <ManagerDialog
           isOpen={showManagerDialog}
@@ -295,7 +382,9 @@ export default function SubAkPage() {
           akCode={managerTargetSubAk?.code ?? ""}
           akDisplay={managerTargetSubAk?.akDisplay}
           onSuccess={handleManagerSuccess}
+          excludeSelf={false}
         />
+
       </div>
     </div>
   );

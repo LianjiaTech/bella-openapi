@@ -20,8 +20,7 @@ public final class AkPermissionMatrix {
     static final Set<AkOperation> MANAGER_ALL_OPS_EXCEPT_GOVERN =
             Collections.unmodifiableSet(EnumSet.complementOf(EnumSet.of(
                     AkOperation.CHANGE_OWNER,
-                    AkOperation.CHANGE_PARENT,
-                    AkOperation.VIEW_CHANGE_HISTORY
+                    AkOperation.CHANGE_PARENT
             )));
 
     private static final Map<String, Map<AkRelation, Set<AkOperation>>> MATRIX;
@@ -53,6 +52,7 @@ public final class AkPermissionMatrix {
         // high
         Set<AkOperation> highOwner = Collections.unmodifiableSet(EnumSet.of(
                 AkOperation.QUERY, AkOperation.RESET, AkOperation.RENAME,
+                AkOperation.CERTIFY,
                 AkOperation.CHANGE_STATUS, AkOperation.CREATE_CHILD, AkOperation.TRANSFER,
                 AkOperation.VIEW_TRANSFER_HISTORY, AkOperation.UPDATE_MANAGER));
         Map<AkRelation, Set<AkOperation>> highMap = new EnumMap<>(AkRelation.class);
@@ -65,6 +65,7 @@ public final class AkPermissionMatrix {
         // low
         Set<AkOperation> lowOwner = Collections.unmodifiableSet(EnumSet.of(
                 AkOperation.QUERY, AkOperation.RESET, AkOperation.RENAME,
+                AkOperation.CERTIFY,
                 AkOperation.CHANGE_STATUS, AkOperation.CREATE_CHILD, AkOperation.TRANSFER,
                 AkOperation.VIEW_TRANSFER_HISTORY, AkOperation.UPDATE_MANAGER));
         Map<AkRelation, Set<AkOperation>> lowMap = new EnumMap<>(AkRelation.class);

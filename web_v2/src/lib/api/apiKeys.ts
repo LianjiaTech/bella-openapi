@@ -212,7 +212,7 @@ export async function getManagerApiKeys(
 /**
  * 设置 AK 的管理人
  * POST /console/apikey/manager/update
- * 只传 code + managerUserId，后端自动关联 managerCode/managerName
+ * 传 code + managerUserId，后端自动关联 managerCode/managerName；reason 用于审计历史；syncChildren 控制是否同步子 AK
  */
 export async function updateManager(params: UpdateManagerRequest): Promise<boolean> {
     const response = await apiClient.post<boolean>('/console/apikey/manager/update', params);
