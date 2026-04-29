@@ -5,7 +5,7 @@
  *
  * 职责：
  *   - Tab 切换展示两个独立区块：
- *     1. DelegatedSection（委托管理）：顶层AK，可进入子AK管理页
+ *     1. DelegatedSection（委托管理）：顶层AK，可重置密钥、进入子AK管理页
  *     2. AssignedSection（分配给我）：子AK，可重置密钥
  *   - Tab badge 显示各区块总数（由各 Section 加载完成后上报）
  *
@@ -24,7 +24,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/common/button";
 import { Badge } from "@/components/common/badge";
-import { Copy, MoreVertical, Key, RotateCcw, Users } from "lucide-react";
+import { Copy, MoreVertical, Key, RotateCcw, Users, Pencil } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/common/table";
 import { ApikeyInfo, ApiKeyBalance } from "@/lib/types/apikeys";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/common/popover";
@@ -57,8 +57,9 @@ function formatSafetyLevel(level: number): string {
 interface ManagedKeysTableProps {
     managerCode: string;
     onCopy: (text: string) => void;
-    /** 重置子AK密钥（仅分配给我的子AK可触发） */
+    /** 重置 AK 密钥 */
     onReset: (akCode: string) => void;
+    onEditSafetyLevel: (akCode: string) => void;
     /** 外部触发刷新（重置成功后由 page 层递增） */
     refreshToken?: number;
 }
@@ -71,11 +72,13 @@ const DELEGATED_COL_SPAN = 10;
 interface DelegatedSectionProps {
     managerCode: string;
     onCopy: (text: string) => void;
+    onReset: (akCode: string) => void;
+    onEditSafetyLevel: (akCode: string) => void;
     onCountChange: (count: number) => void;
     refreshToken?: number;
 }
 
-function DelegatedSection({ managerCode, onCopy, onCountChange, refreshToken }: DelegatedSectionProps) {
+function DelegatedSection({ managerCode, onCopy, onReset, onEditSafetyLevel, onCountChange, refreshToken }: DelegatedSectionProps) {
     const [apiKeys, setApiKeys] = useState<ApikeyInfo[]>([]);
     const [balances, setBalances] = useState<Record<string, ApiKeyBalance>>({});
     const [loading, setLoading] = useState(true);
@@ -189,7 +192,19 @@ function DelegatedSection({ managerCode, onCopy, onCountChange, refreshToken }: 
                             <TableCell className="text-sm">{apiKey.name || '-'}</TableCell>
                             <TableCell className="text-sm">{apiKey.serviceId || '-'}</TableCell>
                             <TableCell className="text-sm">{apiKey.monthQuota || '-'}</TableCell>
-                            <TableCell className="text-sm">{formatSafetyLevel(apiKey.safetyLevel)}</TableCell>
+                            <TableCell className="text-sm">
+                                <div className="flex items-center gap-1">
+                                    <span>{formatSafetyLevel(apiKey.safetyLevel)}</span>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-5 w-5 p-0 opacity-50 hover:opacity-100"
+                                        onClick={() => onEditSafetyLevel(apiKey.code)}
+                                    >
+                                        <Pencil className="h-3 w-3" />
+                                    </Button>
+                                </div>
+                            </TableCell>
                             <TableCell><QuotaUsageDisplay balance={balances[apiKey.code]} /></TableCell>
                             <TableCell className="text-sm">
                                 <div className="truncate max-w-[150px]" title={apiKey.remark}>{apiKey.remark || '-'}</div>
@@ -213,6 +228,13 @@ function DelegatedSection({ managerCode, onCopy, onCountChange, refreshToken }: 
                                                 <Key className="h-4 w-4" />
                                                 管理子密钥
                                             </Link>
+                                            <button
+                                                className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent rounded cursor-pointer"
+                                                onClick={() => onReset(apiKey.code)}
+                                            >
+                                                <RotateCcw className="h-4 w-4" />
+                                                重置
+                                            </button>
                                             <button
                                                 className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent rounded cursor-pointer"
                                                 onClick={() => onCopy(apiKey.code)}
@@ -251,11 +273,12 @@ interface AssignedSectionProps {
     managerCode: string;
     onCopy: (text: string) => void;
     onReset: (akCode: string) => void;
+    onEditSafetyLevel: (akCode: string) => void;
     onCountChange: (count: number) => void;
     refreshToken?: number;
 }
 
-function AssignedSection({ managerCode, onCopy, onReset, onCountChange, refreshToken }: AssignedSectionProps) {
+function AssignedSection({ managerCode, onCopy, onReset, onEditSafetyLevel, onCountChange, refreshToken }: AssignedSectionProps) {
     const [apiKeys, setApiKeys] = useState<ApikeyInfo[]>([]);
     const [balances, setBalances] = useState<Record<string, ApiKeyBalance>>({});
     const [loading, setLoading] = useState(true);
@@ -373,7 +396,19 @@ function AssignedSection({ managerCode, onCopy, onReset, onCountChange, refreshT
                             <TableCell className="text-sm">{apiKey.name || '-'}</TableCell>
                             <TableCell className="text-sm">{apiKey.serviceId || '-'}</TableCell>
                             <TableCell className="text-sm">{apiKey.monthQuota || '-'}</TableCell>
-                            <TableCell className="text-sm">{formatSafetyLevel(apiKey.safetyLevel)}</TableCell>
+                            <TableCell className="text-sm">
+                                <div className="flex items-center gap-1">
+                                    <span>{formatSafetyLevel(apiKey.safetyLevel)}</span>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-5 w-5 p-0 opacity-50 hover:opacity-100"
+                                        onClick={() => onEditSafetyLevel(apiKey.code)}
+                                    >
+                                        <Pencil className="h-3 w-3" />
+                                    </Button>
+                                </div>
+                            </TableCell>
                             <TableCell><QuotaUsageDisplay balance={balances[apiKey.code]} /></TableCell>
                             <TableCell className="text-sm">
                                 <div className="truncate max-w-[150px]" title={apiKey.remark}>{apiKey.remark || '-'}</div>
@@ -426,7 +461,7 @@ function AssignedSection({ managerCode, onCopy, onReset, onCountChange, refreshT
 
 type ActiveTab = 'delegated' | 'assigned';
 
-export function ManagedKeysTable({ managerCode, onCopy, onReset, refreshToken }: ManagedKeysTableProps) {
+export function ManagedKeysTable({ managerCode, onCopy, onReset, onEditSafetyLevel, refreshToken }: ManagedKeysTableProps) {
     const [activeTab, setActiveTab] = useState<ActiveTab>('delegated');
     const [delegatedCount, setDelegatedCount] = useState<number | null>(null);
     const [assignedCount, setAssignedCount] = useState<number | null>(null);
@@ -485,6 +520,8 @@ export function ManagedKeysTable({ managerCode, onCopy, onReset, refreshToken }:
                 <DelegatedSection
                     managerCode={managerCode}
                     onCopy={onCopy}
+                    onReset={onReset}
+                    onEditSafetyLevel={onEditSafetyLevel}
                     onCountChange={handleDelegatedCount}
                     refreshToken={refreshToken}
                 />
@@ -494,6 +531,7 @@ export function ManagedKeysTable({ managerCode, onCopy, onReset, refreshToken }:
                     managerCode={managerCode}
                     onCopy={onCopy}
                     onReset={onReset}
+                    onEditSafetyLevel={onEditSafetyLevel}
                     onCountChange={handleAssignedCount}
                     refreshToken={refreshToken}
                 />
