@@ -325,15 +325,6 @@ public class ApikeyService {
     }
 
     @Transactional
-    public void updateSubQuota(ApikeyOps.QuotaOp op) {
-        ApikeyDB db = apikeyRepo.queryByUniqueKey(op.getCode());
-        Assert.notNull(db, "apikey不存在");
-        Assert.hasText(db.getParentCode(), "仅支持修改子AK额度");
-        akPermissionChecker.check(db, AkOperation.UPDATE_CHILD_QUOTA);
-        apikeyRepo.update(op, op.getCode());
-    }
-
-    @Transactional
     public void updateQpsLimit(ApikeyOps.QpsLimitOp op) {
         apikeyRepo.checkExist(op.getCode(), true);
         checkPermission(op.getCode(), AkOperation.UPDATE_QPS);

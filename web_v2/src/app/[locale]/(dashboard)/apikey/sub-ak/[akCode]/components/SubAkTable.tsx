@@ -40,7 +40,6 @@ interface SubAkTableProps {
     capability: SubAkCapability;
     onCopy: (text: string) => void;
     onEdit: (apiKey: ApikeyInfo) => void;
-    onEditQuota: (apiKey: ApikeyInfo) => void;
     onReset: (akCode: string) => void;
     onDelete: (akCode: string) => void;
     /** 为子 AK 设置管理者（capability.canSetManager=true 时显示） */
@@ -67,7 +66,6 @@ export const SubAkTable = forwardRef<SubAkTableRef, SubAkTableProps>(({
     capability,
     onCopy,
     onEdit,
-    onEditQuota,
     onReset,
     onDelete,
     onSetManager,
@@ -237,7 +235,7 @@ export const SubAkTable = forwardRef<SubAkTableRef, SubAkTableProps>(({
                                                 variant="ghost"
                                                 size="sm"
                                                 className="h-5 w-5 p-0 opacity-50 hover:opacity-100"
-                                                onClick={() => onEditQuota(apiKey)}
+                                                onClick={() => onEdit(apiKey)}
                                             >
                                                 <Pencil className="h-3 w-3" />
                                             </Button>

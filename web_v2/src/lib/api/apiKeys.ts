@@ -176,12 +176,6 @@ export async function updateApiKeyQuota(code: string, monthQuota: number): Promi
     return (response as unknown as boolean) || false;
 }
 
-// 更新子 AK 月额度
-export async function updateSubApiKeyQuota(code: string, monthQuota: number): Promise<boolean> {
-    const response = await apiClient.post<boolean>('/console/apikey/sub/quota/update', { code, monthQuota });
-    return (response as unknown as boolean) || false;
-}
-
 // 更新安全等级
 export async function updateSafeLevel(params: { certifyCode: string; code: string }): Promise<boolean> {
     const response = await apiClient.post<boolean>('/console/apikey/certify', params);
