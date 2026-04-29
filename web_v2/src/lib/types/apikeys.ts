@@ -72,7 +72,7 @@ export interface ApikeyTransferLog {
 
 export interface ApikeyChangeLog {
     id: number;
-    actionType: 'owner_transfer' | 'owner_change' | 'parent_change';
+    actionType: 'owner_transfer' | 'owner_change' | 'parent_change' | 'manager_change';
     akCode: string;
     affectedCodes: string;
     fromOwnerType: string;
@@ -129,12 +129,12 @@ export interface CreateSubApiKeyRequest {
 // 更新子API Key的请求参数
 export interface UpdateSubApiKeyRequest {
     code: string;
-    monthQuota: number;
-    name: string;
-    outEntityCode: string;
+    monthQuota?: number;
+    name?: string;
+    outEntityCode?: string;
     remark?: string;
-    roleCode: string;
-    safetyLevel: number;
+    roleCode?: string;
+    safetyLevel?: number;
 }
 
 // 更新安全等级的请求参数
@@ -147,4 +147,6 @@ export interface UpdateSafeLevelRequest {
 export interface UpdateManagerRequest {
     code: string;        // AK code，必填
     managerUserId: number; // 管理人用户 ID，后端自动推导 managerCode
+    reason?: string;     // 管理者变更原因，用于审计历史
+    syncChildren?: boolean; // 是否同步更新子 AK 管理者，未传时后端保持默认同步
 }
