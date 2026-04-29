@@ -85,6 +85,8 @@ public class QueueAdaptor<T extends CompletionProperty> implements CompletionAda
         }
         if(DEFAULT_CHANNEL.equals(returnedChannelCode)) {
             processData.setChannelCode(DEFAULT_CHANNEL);
+            processData.setSupplier("ke");
+            processData.setForwardUrl(StringUtils.EMPTY);
             return;
         }
         ChannelDB channel = channelLookup.apply(returnedChannelCode);
