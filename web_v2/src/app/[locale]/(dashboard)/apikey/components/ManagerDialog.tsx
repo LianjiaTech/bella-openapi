@@ -16,6 +16,8 @@
 
 import { useState, useEffect, useDeferredValue } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/common/dialog";
+import { Textarea } from "@/components/common/textarea";
+import { Switch } from "@/components/common/switch";
 import { Search } from "lucide-react";
 import { searchUserInfo, updateManager } from "@/lib/api/apiKeys";
 import { UserSearchResult } from "@/lib/types/apikeys";
@@ -29,10 +31,32 @@ interface ManagerDialogProps {
     onSuccess: () => void;
     /** 搜索时是否排除自己，admin 场景可设置自己为管理人，默认 true */
     excludeSelf?: boolean;
+    /** 是否展示管理者变更原因输入框 */
+    showReason?: boolean;
+    /** 是否要求提交前填写变更原因 */
+    reasonRequired?: boolean;
+    /** 是否展示同步子 AK 管理者的开关 */
+    showSyncChildrenOption?: boolean;
+    /** 同步子 AK 管理者开关的默认值 */
+    defaultSyncChildren?: boolean;
 }
 
-export function ManagerDialog({ isOpen, onClose, akCode, akDisplay, onSuccess, excludeSelf = true }: ManagerDialogProps) {
+export function ManagerDialog({
+    isOpen,
+    onClose,
+    akCode,
+    akDisplay,
+    onSuccess,
+    excludeSelf = true,
+    showReason = false,
+    reasonRequired = false,
+    showSyncChildrenOption = false,
+    defaultSyncChildren = true,
+}: ManagerDialogProps) {
     const [searchQuery, setSearchQuery] = useState("");
+    const [reason, setReason] = useState("");
+    const shouldShowReason = showReason || reasonRequired;
+    const [syncChildren, setSyncChildren] = useState(defaultSyncChildren);
     const [searchResults, setSearchResults] = useState<UserSearchResult[]>([]);
     const [isSearching, setIsSearching] = useState(false);
     const [searchError, setSearchError] = useState("");
@@ -46,11 +70,13 @@ export function ManagerDialog({ isOpen, onClose, akCode, akDisplay, onSuccess, e
     useEffect(() => {
         if (!isOpen) {
             setSearchQuery("");
+            setReason("");
+            setSyncChildren(defaultSyncChildren);
             setSearchResults([]);
             setSearchError("");
             setSubmittingId(null);
         }
-    }, [isOpen]);
+    }, [isOpen, defaultSyncChildren]);
 
     // 500ms 防抖搜索
     useEffect(() => {
@@ -78,9 +104,19 @@ export function ManagerDialog({ isOpen, onClose, akCode, akDisplay, onSuccess, e
 
     const handleSetManager = async (user: UserSearchResult) => {
         if (submittingId !== null) return;
+        const trimmedReason = reason.trim();
+        if (reasonRequired && !trimmedReason) {
+            toast.error("请填写变更原因");
+            return;
+        }
         try {
             setSubmittingId(user.id);
-            await updateManager({ code: akCode, managerUserId: user.id });
+            await updateManager({
+                code: akCode,
+                managerUserId: user.id,
+                reason: trimmedReason || undefined,
+                ...(showSyncChildrenOption ? { syncChildren } : {}),
+            });
             toast.success(`已将 ${user.userName} 设置为管理人`);
             onSuccess();
             onClose();
@@ -107,6 +143,36 @@ export function ManagerDialog({ isOpen, onClose, akCode, akDisplay, onSuccess, e
                 </DialogHeader>
 
                 <div className="space-y-4">
+                    {shouldShowReason && (
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">
+                                变更原因{reasonRequired && <span className="ml-1 text-destructive">*</span>}
+                            </label>
+                            <Textarea
+                                value={reason}
+                                onChange={(e) => setReason(e.target.value)}
+                                placeholder="请记录本次管理权变更原因"
+                                className="min-h-[88px]"
+                            />
+                        </div>
+                    )}
+
+                    {showSyncChildrenOption && (
+                        <div className="flex items-start justify-between gap-3 rounded-md border bg-muted/40 p-3">
+                            <div className="space-y-1">
+                                <label className="text-sm font-medium">同步更新子 AK 管理者</label>
+                                <p className="text-xs text-muted-foreground">
+                                    开启后，本次管理权变更会同步到该父 AK 下所有子 AK。
+                                </p>
+                            </div>
+                            <Switch
+                                checked={syncChildren}
+                                onCheckedChange={setSyncChildren}
+                                aria-label="同步更新子 AK 管理者"
+                            />
+                        </div>
+                    )}
+
                     {/* 搜索输入框 */}
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -145,7 +211,7 @@ export function ManagerDialog({ isOpen, onClose, akCode, akDisplay, onSuccess, e
                                         <button
                                             className="text-sm text-primary hover:underline disabled:opacity-50 disabled:cursor-not-allowed px-2"
                                             onClick={() => handleSetManager(user)}
-                                            disabled={submittingId !== null}
+                                            disabled={submittingId !== null || (reasonRequired && !reason.trim())}
                                         >
                                             {submittingId === user.id ? '设置中...' : '设置'}
                                         </button>

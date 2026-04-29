@@ -24,7 +24,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/common/button";
 import { Badge } from "@/components/common/badge";
-import { Copy, MoreVertical, Key, RotateCcw, Users, Pencil } from "lucide-react";
+import { Copy, MoreVertical, Key, RotateCcw, Users, Pencil, UserCog, History } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/common/table";
 import { ApikeyInfo, ApiKeyBalance } from "@/lib/types/apikeys";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/common/popover";
@@ -60,6 +60,8 @@ interface ManagedKeysTableProps {
     /** 重置 AK 密钥 */
     onReset: (akCode: string) => void;
     onEditSafetyLevel: (akCode: string) => void;
+    onSetManager: (apiKey: ApikeyInfo) => void;
+    onViewHistory: (apiKey: ApikeyInfo) => void;
     /** 外部触发刷新（重置成功后由 page 层递增） */
     refreshToken?: number;
 }
@@ -74,11 +76,13 @@ interface DelegatedSectionProps {
     onCopy: (text: string) => void;
     onReset: (akCode: string) => void;
     onEditSafetyLevel: (akCode: string) => void;
+    onSetManager: (apiKey: ApikeyInfo) => void;
+    onViewHistory: (apiKey: ApikeyInfo) => void;
     onCountChange: (count: number) => void;
     refreshToken?: number;
 }
 
-function DelegatedSection({ managerCode, onCopy, onReset, onEditSafetyLevel, onCountChange, refreshToken }: DelegatedSectionProps) {
+function DelegatedSection({ managerCode, onCopy, onReset, onEditSafetyLevel, onSetManager, onViewHistory, onCountChange, refreshToken }: DelegatedSectionProps) {
     const [apiKeys, setApiKeys] = useState<ApikeyInfo[]>([]);
     const [balances, setBalances] = useState<Record<string, ApiKeyBalance>>({});
     const [loading, setLoading] = useState(true);
@@ -230,6 +234,20 @@ function DelegatedSection({ managerCode, onCopy, onReset, onEditSafetyLevel, onC
                                             </Link>
                                             <button
                                                 className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent rounded cursor-pointer"
+                                                onClick={() => onSetManager(apiKey)}
+                                            >
+                                                <UserCog className="h-4 w-4" />
+                                                转移管理权
+                                            </button>
+                                            <button
+                                                className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent rounded cursor-pointer"
+                                                onClick={() => onViewHistory(apiKey)}
+                                            >
+                                                <History className="h-4 w-4" />
+                                                变更历史
+                                            </button>
+                                            <button
+                                                className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent rounded cursor-pointer"
                                                 onClick={() => onReset(apiKey.code)}
                                             >
                                                 <RotateCcw className="h-4 w-4" />
@@ -274,11 +292,12 @@ interface AssignedSectionProps {
     onCopy: (text: string) => void;
     onReset: (akCode: string) => void;
     onEditSafetyLevel: (akCode: string) => void;
+    onSetManager: (apiKey: ApikeyInfo) => void;
     onCountChange: (count: number) => void;
     refreshToken?: number;
 }
 
-function AssignedSection({ managerCode, onCopy, onReset, onEditSafetyLevel, onCountChange, refreshToken }: AssignedSectionProps) {
+function AssignedSection({ managerCode, onCopy, onReset, onEditSafetyLevel, onSetManager, onCountChange, refreshToken }: AssignedSectionProps) {
     const [apiKeys, setApiKeys] = useState<ApikeyInfo[]>([]);
     const [balances, setBalances] = useState<Record<string, ApiKeyBalance>>({});
     const [loading, setLoading] = useState(true);
@@ -420,6 +439,13 @@ function AssignedSection({ managerCode, onCopy, onReset, onEditSafetyLevel, onCo
                                     </PopoverTrigger>
                                     <PopoverContent align="end" className="w-48 p-2">
                                         <div className="flex flex-col gap-1">
+                                            <button
+                                                className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent rounded cursor-pointer"
+                                                onClick={() => onSetManager(apiKey)}
+                                            >
+                                                <UserCog className="h-4 w-4" />
+                                                转移管理权
+                                            </button>
                                             {/* 重置：后端已保护不能转移/创建子AK */}
                                             <button
                                                 className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent rounded cursor-pointer"
@@ -461,7 +487,7 @@ function AssignedSection({ managerCode, onCopy, onReset, onEditSafetyLevel, onCo
 
 type ActiveTab = 'delegated' | 'assigned';
 
-export function ManagedKeysTable({ managerCode, onCopy, onReset, onEditSafetyLevel, refreshToken }: ManagedKeysTableProps) {
+export function ManagedKeysTable({ managerCode, onCopy, onReset, onEditSafetyLevel, onSetManager, onViewHistory, refreshToken }: ManagedKeysTableProps) {
     const [activeTab, setActiveTab] = useState<ActiveTab>('delegated');
     const [delegatedCount, setDelegatedCount] = useState<number | null>(null);
     const [assignedCount, setAssignedCount] = useState<number | null>(null);
@@ -522,6 +548,8 @@ export function ManagedKeysTable({ managerCode, onCopy, onReset, onEditSafetyLev
                     onCopy={onCopy}
                     onReset={onReset}
                     onEditSafetyLevel={onEditSafetyLevel}
+                    onSetManager={onSetManager}
+                    onViewHistory={onViewHistory}
                     onCountChange={handleDelegatedCount}
                     refreshToken={refreshToken}
                 />
@@ -532,6 +560,7 @@ export function ManagedKeysTable({ managerCode, onCopy, onReset, onEditSafetyLev
                     onCopy={onCopy}
                     onReset={onReset}
                     onEditSafetyLevel={onEditSafetyLevel}
+                    onSetManager={onSetManager}
                     onCountChange={handleAssignedCount}
                     refreshToken={refreshToken}
                 />
