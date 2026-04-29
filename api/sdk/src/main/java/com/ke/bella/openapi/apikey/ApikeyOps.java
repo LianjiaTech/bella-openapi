@@ -8,7 +8,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
+import javax.validation.constraints.DecimalMin;
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -119,7 +121,10 @@ public class ApikeyOps {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class QuotaOp extends Operator {
+        @NotBlank(message = "code不可为空")
         private String code;
+        @NotNull(message = "配额不可为空")
+        @DecimalMin(value = "0", inclusive = false, message = "配额应大于0")
         private BigDecimal monthQuota;
     }
 
