@@ -1,8 +1,6 @@
 stages:
   - sync
 
-variables:
-  GIT_DEPTH: "0"
 
 # =========================
 # 1️⃣ GitLab master → GitHub feat/cicd_test
