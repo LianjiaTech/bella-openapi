@@ -461,26 +461,22 @@ export function ChannelConfigDialog({
   const validateForm = (): boolean => {
     const newErrors: typeof errors = {}
 
-    // URL验证 (仅新增时)
-    if (mode === 'create') {
-      if (!formData.url) {
-        newErrors.url = '渠道转发URL不能为空'
-      } else if (!isValidUrl(formData.url)) {
-        newErrors.url = 'URL格式不正确'
-      }
-
-      // 协议验证 (仅新增时)
-      if (!formData.protocol) {
-        newErrors.protocol = '协议不能为空'
-      }
-
-      // 供应商验证 (仅新增时)
-      if (!formData.supplier) {
-        newErrors.supplier = '供应商不能为空'
-      }
+    if (!formData.url) {
+      newErrors.url = '渠道转发URL不能为空'
+    } else if (!isValidUrl(formData.url)) {
+      newErrors.url = 'URL格式不正确'
     }
 
-    // 价格验证 (始终)
+    // 协议验证 
+    if (!formData.protocol) {
+      newErrors.protocol = '协议不能为空'
+    }
+
+    // 供应商验证 
+    if (!formData.supplier) {
+      newErrors.supplier = '供应商不能为空'
+    }
+    // 价格验证 (
     if (!formData.priceInfo) {
       newErrors.priceInfo = '价格信息不能为空'
     } 
@@ -563,11 +559,19 @@ export function ChannelConfigDialog({
       // 如果解析失败，使用原始值（验证阶段应该已经捕获了这个错误）
     }
 
-    // 3. 压缩 channelInfo 为单行 JSON，避免 pretty-print 换行存入数据库
+    // 3. 压缩并清洗 channelInfo，避免将空字符串和 defaultMaxToken=0 存入数据库
     let finalChannelInfo = formData.channelInfo
     if (finalChannelInfo) {
       try {
-        finalChannelInfo = JSON.stringify(JSON.parse(finalChannelInfo))
+        const parsedChannelInfo = JSON.parse(finalChannelInfo)
+        const cleanedChannelInfo = Object.fromEntries(
+          Object.entries(parsedChannelInfo).filter(([key, value]) => {
+            if (value === '') return false
+            if (key === 'defaultMaxToken' && value === 0) return false
+            return true
+          })
+        )
+        finalChannelInfo = JSON.stringify(cleanedChannelInfo)
       } catch {
         // 解析失败则使用原始值
       }
@@ -597,11 +601,14 @@ export function ChannelConfigDialog({
           await createChannel(channelData)
         }
       } else {
-        // 调用更新接口 - 只传递允许编辑的字段
         if (!initialData?.channelCode) {
           throw new Error('缺少渠道编码')
         }
         const updateData = {
+          url: formData.url,
+          protocol: formData.protocol,
+          supplier: formData.supplier,
+          dataDestination: formData.dataDestination,
           priceInfo: finalPriceInfo,
           priority: formData.priority,
           channelInfo: finalChannelInfo,
@@ -710,7 +717,6 @@ export function ChannelConfigDialog({
               <Select
                 value={formData.dataDestination}
                 onValueChange={handleSelectChange('dataDestination')}
-                disabled={mode === 'edit'}
               >
                 <SelectTrigger id="dataDestination">
                   <SelectValue placeholder="选择数据流向" />
@@ -755,7 +761,7 @@ export function ChannelConfigDialog({
               <Select
                 value={formData.protocol}
                 onValueChange={handleSelectChange('protocol')}
-                disabled={mode === 'edit' || protocolsLoading}
+                disabled={protocolsLoading}
               >
                 <SelectTrigger
                   id="protocol"
@@ -800,7 +806,6 @@ export function ChannelConfigDialog({
                 placeholder="OpenAI Official"
                 value={formData.supplier}
                 onChange={handleInputChange('supplier')}
-                disabled={mode === 'edit'}
                 className={errors.supplier ? 'border-red-600' : ''}
               />
               {errors.supplier && (
@@ -817,7 +822,6 @@ export function ChannelConfigDialog({
                 placeholder="https://api.example.com/v1/chat/completions"
                 value={formData.url}
                 onChange={handleInputChange('url')}
-                disabled={mode === 'edit'}
                 className={errors.url ? 'border-red-600' : ''}
               />
               {errors.url && (

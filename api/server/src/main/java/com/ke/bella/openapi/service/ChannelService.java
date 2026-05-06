@@ -109,16 +109,20 @@ public class ChannelService {
     @Transactional
     public void updateChannel(MetaDataOps.ChannelUpdateOp op) {
         channelRepo.checkExist(op.getChannelCode(), true);
+        Entity entity = getEntityInfoByCode(op.getChannelCode());
+        List<String> endpoints = new ArrayList<>();
+        if(entity.getEntityType().equals(MODEL)) {
+            ModelDB model = modelService.getOne(entity.getEntityCode());
+            endpoints = modelService.getAllEndpoints(model.getModelName());
+        } else {
+            endpoints.add(entity.getEntityCode());
+        }
+
         if(StringUtils.isNotEmpty(op.getPriceInfo())) {
-            List<String> endpoints = new ArrayList<>();
-            Entity entity = getEntityInfoByCode(op.getChannelCode());
-            if(entity.getEntityType().equals(MODEL)) {
-                ModelDB model = modelService.getOne(entity.getEntityCode());
-                endpoints = modelService.getAllEndpoints(model.getModelName());
-            } else {
-                endpoints.add(entity.getEntityCode());
-            }
             endpoints.forEach(endpoint -> Assert.isTrue(CostCalculator.validate(endpoint, op.getPriceInfo()), "priceInfo invalid"));
+        }
+        if(StringUtils.isNotEmpty(op.getProtocol())) {
+            endpoints.forEach(endpoint -> Assert.isTrue(AdaptorManager.getInstance().support(endpoint, op.getProtocol()), "不支持的协议"));
         }
 
         validateQueueConfig(op.getQueueMode(), op.getQueueName());
