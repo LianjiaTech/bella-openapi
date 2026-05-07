@@ -49,8 +49,8 @@ public class ApikeyChangeLogRepo implements BaseRepo {
                 .toParentCode(StringUtils.defaultString(source.getParentCode()))
                 .fromManagerCode(StringUtils.defaultString(source.getManagerCode()))
                 .fromManagerName(StringUtils.defaultString(source.getManagerName()))
-                .toManagerCode(StringUtils.defaultString(source.getOwnerCode()))
-                .toManagerName(StringUtils.defaultString(source.getOwnerName()))
+                .toManagerCode(StringUtils.defaultString(source.getManagerCode()))
+                .toManagerName(StringUtils.defaultString(source.getManagerName()))
                 .reason(StringUtils.defaultString(op.getReason()))
                 .status("completed")
                 .operatorUid(currentOperator.getUserId())
@@ -59,7 +59,7 @@ public class ApikeyChangeLogRepo implements BaseRepo {
     }
 
     public void insertParentChangeLog(ApikeyOps.ChangeParentOp op, ApikeyInfo source, List<String> affectedCodes,
-                                      String toManagerCode, String toManagerName, Operator currentOperator) {
+                                      Operator currentOperator) {
         insert(ApikeyChangeLog.builder()
                 .actionType("parent_change")
                 .akCode(op.getCode())
@@ -74,8 +74,8 @@ public class ApikeyChangeLogRepo implements BaseRepo {
                 .toParentCode(StringUtils.defaultString(op.getTargetParentCode()))
                 .fromManagerCode(StringUtils.defaultString(source.getManagerCode()))
                 .fromManagerName(StringUtils.defaultString(source.getManagerName()))
-                .toManagerCode(StringUtils.defaultString(toManagerCode))
-                .toManagerName(StringUtils.defaultString(toManagerName))
+                .toManagerCode(StringUtils.defaultString(source.getManagerCode()))
+                .toManagerName(StringUtils.defaultString(source.getManagerName()))
                 .reason(StringUtils.defaultString(op.getReason()))
                 .status("completed")
                 .operatorUid(currentOperator.getUserId())

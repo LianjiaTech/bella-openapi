@@ -5,7 +5,7 @@
  *
  * 职责：管理员查看并操作全量 API Key。
  *   - 数据源：getAdminApiKeys（不绑定 ownerCode，返回全量数据）
- *   - 搜索维度：ak（名称/服务名）/ owner（所有者名称/ID）/ code（AK Code 精确查找）可切换
+ *   - 搜索维度：ak（名称/服务名）/ owner（所有者名称/ID）/ manager（管理人名称/ID）/ code（AK Code 精确查找）可切换
  *   - 所有者类型筛选：全部 / 个人 / 组织
  *   - 操作权限：转交/删除仅 isSuperAdmin 可见（由 AdminKeysTable 内部控制）
  *   - 创建：管理员可创建 org/project 类型顶层 AK（支持指定管理人）
@@ -57,7 +57,7 @@ export default function ApiKeyAdminPage() {
     const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
     const [isSearching, setIsSearching] = useState(false);
 
-    /** 搜索维度：ak=名称/服务名，owner=所有者名称/ID，code=AK Code 精确查找，manager=管理人（待联调） */
+    /** 搜索维度：ak=名称/服务名，owner=所有者名称/ID，manager=管理人名称/ID，code=AK Code 精确查找 */
     const [searchType, setSearchType] = useState<'ak' | 'owner' | 'code' | 'manager'>('ak');
     /** 所有者类型筛选 */
     const [ownerTypeFilter, setOwnerTypeFilter] = useState<'all' | 'person' | 'org' | 'project'>('all');
@@ -135,15 +135,11 @@ export default function ApiKeyAdminPage() {
                 return;
             }
 
-            // TODO: 后端 /console/apikey/page 已支持 managerSearch 参数（模糊搜索管理人）
-            // 需在 AdminApiKeyQueryParams 中追加 managerSearch?: string，并在此传参
-            // 联调确认后激活以下逻辑：
-            // if (searchType === 'manager') queryParams.managerSearch = search;
-
             const response = await getAdminApiKeys(currentPage, {
-                searchType: searchType === 'manager' ? 'ak' : searchType,
+                searchType,
                 searchParam: searchType === 'ak' ? search : undefined,
                 ownerSearch: searchType === 'owner' ? search : undefined,
+                managerSearch: searchType === 'manager' ? search : undefined,
                 ownerType: ownerTypeFilter === 'all' ? undefined : ownerTypeFilter as 'person' | 'org' | 'project',
             });
 
