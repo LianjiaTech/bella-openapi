@@ -6,6 +6,7 @@ import com.ke.bella.openapi.annotations.BellaAPI;
 import com.ke.bella.openapi.apikey.ApikeyChangeLog;
 import com.ke.bella.openapi.apikey.ApikeyInfo;
 import com.ke.bella.openapi.apikey.ApikeyOps;
+import com.ke.bella.openapi.apikey.ApikeyPageWithBalance;
 import com.ke.bella.openapi.apikey.ApikeyTransferLog;
 import com.ke.bella.openapi.apikey.TransferApikeyOwnerOp;
 import com.ke.bella.openapi.db.repo.Page;
@@ -28,12 +29,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.math.RoundingMode;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
 import java.math.BigDecimal;
 import com.ke.bella.openapi.utils.DateTimeUtils;
+import com.ke.bella.openapi.utils.JacksonUtils;
 
 @BellaAPI
 @RestController
@@ -128,16 +128,12 @@ public class ApikeyConsoleController {
 
     @GetMapping("/balance/{akCode}")
     public Map<String, Object> getApiKeyBalance(@PathVariable String akCode) {
-        String currentMonth = DateTimeUtils.getCurrentMonth();
-        BigDecimal monthCost = apikeyService.loadCost(akCode, currentMonth).divide(BigDecimal.valueOf(100), RoundingMode.UP);
         ApikeyInfo apiKeyInfo = apikeyService.queryByCode(akCode, true);
-        Map<String, Object> result = new HashMap<>();
-        result.put("akCode", akCode);
-        result.put("month", currentMonth);
-        result.put("cost", monthCost);
-        result.put("quota", apiKeyInfo != null ? apiKeyInfo.getMonthQuota() : BigDecimal.ZERO);
-        result.put("balance", apiKeyInfo != null ? apiKeyInfo.getMonthQuota().subtract(monthCost) : BigDecimal.ZERO);
-        return result;
+        return JacksonUtils.toMap(apikeyService.buildBalanceView(
+                akCode,
+                apiKeyInfo != null ? apiKeyInfo.getMonthQuota() : BigDecimal.ZERO,
+                DateTimeUtils.getCurrentMonth(),
+                apikeyService.loadCost(akCode, DateTimeUtils.getCurrentMonth())));
     }
 
     @GetMapping("/fetchByCode")
@@ -153,6 +149,11 @@ public class ApikeyConsoleController {
     @GetMapping("/page")
     public Page<ApikeyDB> pageApikey(ApikeyOps.ApikeyCondition condition) {
         return apikeyService.pageApikey(condition);
+    }
+
+    @GetMapping("/pageWithBalance")
+    public Page<ApikeyPageWithBalance> pageApikeyWithBalance(ApikeyOps.ApikeyCondition condition) {
+        return apikeyService.pageApikeyWithBalance(condition);
     }
 
     @PostMapping("/manager/update")

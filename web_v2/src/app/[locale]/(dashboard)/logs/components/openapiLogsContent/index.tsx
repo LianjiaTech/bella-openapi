@@ -1,6 +1,7 @@
 'use client'
 
 import * as React from "react"
+import { useSearchParams } from "next/navigation"
 import { LogsFilter } from "./components/logsFilter"
 import { LogsTable } from "./components/logsTable"
 import { QueryType } from "../common/QueryTypeSelector/types"
@@ -11,12 +12,28 @@ import type { LogsApiResponse } from "@/lib/types/logs"
 import { useLanguage } from "@/components/providers/language-provider"
 import axios from "axios"
 
+// OpenAPI 日志支持的查询类型，与 LogsFilter 中保持一致
+const SUPPORTED_QUERY_TYPES: QueryType[] = ["AK Code", "Request ID", "Bella TraceID"]
+
 export function OpenapiLogsContent() {
   const { t } = useLanguage()
+  const searchParams = useSearchParams()
+
+  // 从 URL 读取初始查询条件（用于从其他页面跳转携带 AK Code 等场景，仅初始化不自动查询）
+  const initialQueryType = React.useMemo<QueryType>(() => {
+    const fromUrl = searchParams.get("queryType")
+    return SUPPORTED_QUERY_TYPES.includes(fromUrl as QueryType)
+      ? (fromUrl as QueryType)
+      : "AK Code"
+  }, [searchParams])
+  const initialQueryValue = React.useMemo<string>(
+    () => searchParams.get("queryValue") ?? "",
+    [searchParams]
+  )
 
   // 查询类型和查询值状态管理
-  const [queryType, setQueryType] = React.useState<QueryType>("AK Code")
-  const [queryValue, setQueryValue] = React.useState<string>("")
+  const [queryType, setQueryType] = React.useState<QueryType>(initialQueryType)
+  const [queryValue, setQueryValue] = React.useState<string>(initialQueryValue)
   const [queryValueError, setQueryValueError] = React.useState<string>("")
 
   // 能力点代码状态管理
