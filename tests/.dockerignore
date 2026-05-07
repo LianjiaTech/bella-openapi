@@ -1,0 +1,106 @@
+# .dockerignore for Playwright Test Environment
+#
+# 职责:
+# - 排除不必要的文件,避免Docker构建上下文过大
+# - 防止临时文件变化触发Docker层缓存失效
+# - 确保只有依赖文件(package.json)变化时才重新安装依赖
+#
+# 设计说明:
+# 1. 排除node_modules因为会在Docker镜像内重新安装
+# 2. 排除测试输出目录(test-results, playwright-report)避免缓存失效
+# 3. 排除开发工具配置和临时文件
+# 4. 保留package.json和lock文件用于依赖安装
+
+# Node.js 相关
+node_modules/
+**/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.npm/
+.yarn/
+
+# 测试输出(这些文件变化频繁,不应触发重建)
+test-results/
+playwright-report/
+*.log
+logs/
+**/logs/
+
+# 后端 Java 项目文件(不需要打包到测试镜像)
+api/logs/
+api/target/
+api/**/target/
+api/server/logs/
+api/server/target/
+api/**/*.class
+api/**/*.jar
+api/**/*.war
+api/.mvn/
+api/mvnw
+api/mvnw.cmd
+
+# Git 相关
+.git/
+.gitignore
+.gitattributes
+
+# 临时文件
+*.tmp
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# IDE 配置
+.vscode/
+.idea/
+*.iml
+*.iws
+*.ipr
+.project
+.classpath
+.settings/
+
+# 构建产物
+dist/
+build/
+.next/
+out/
+
+# Web 前端构建产物(不影响测试代码)
+web/node_modules/
+web/.next/
+web/out/
+web/dist/
+web_v2/node_modules/
+web_v2/.next/
+web_v2/out/
+web_v2/dist/
+
+# Docker 相关文件(避免递归复制)
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# 环境变量文件(可能包含敏感信息)
+.env
+.env.local
+.env*.local
+
+# 操作系统文件
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Desktop.ini
+
+# 其他开发工具
+.husky/
+.cache/
+coverage/
+*.orig

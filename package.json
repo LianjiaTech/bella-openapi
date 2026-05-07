@@ -1,5 +1,10 @@
 {
   "dependencies": {
     "eventsource-parser": "^3.0.1"
-  }
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.59.1",
+    "@types/node": "^25.6.0"
+  },
+  "scripts": {}
 }

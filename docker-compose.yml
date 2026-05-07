@@ -36,7 +36,7 @@ services:
   web:
     image: ${REGISTRY:-bellatop}/bella-openapi-web:${VERSION:-latest}
     build:
-      context: ./web
+      context: ./web_v2
       args:
         - NODE_ENV=${NODE_ENV:-production}
         - DEPLOY_ENV=${DEPLOY_ENV:-production}
@@ -92,7 +92,8 @@ services:
     sysctls:
       - net.core.somaxconn=1024
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "123456", "ping"]
+      test: ["CMD-SHELL", "cd / && redis-cli -a 123456 ping | grep -q PONG"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 5s
