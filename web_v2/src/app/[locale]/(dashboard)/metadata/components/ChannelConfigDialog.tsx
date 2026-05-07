@@ -23,6 +23,33 @@ function isTokenBased(schema: JsonSchema, existingUnit?: string): boolean {
   )
 }
 
+function removeEmptyChannelInfoFields(channelInfo: string): string {
+  if (!channelInfo) return channelInfo
+
+  try {
+    const parsed = JSON.parse(channelInfo)
+    const fieldsToRemove = new Set([
+      'queueName',
+      'messageEndpointUrl',
+      'encodingType',
+      'defaultMaxToken',
+      'anthropicVersion',
+      'deployName',
+    ])
+
+    const filtered = Object.fromEntries(
+      Object.entries(parsed).filter(([key, value]) => {
+        if (!fieldsToRemove.has(key)) return true
+        return value !== '' && value !== 0 && value != null
+      })
+    )
+
+    return JSON.stringify(filtered)
+  } catch {
+    return channelInfo
+  }
+}
+
 
 interface ChannelConfigDialogProps {
   open: boolean
@@ -567,7 +594,7 @@ export function ChannelConfigDialog({
     let finalChannelInfo = formData.channelInfo
     if (finalChannelInfo) {
       try {
-        finalChannelInfo = JSON.stringify(JSON.parse(finalChannelInfo))
+        finalChannelInfo = removeEmptyChannelInfoFields(finalChannelInfo)
       } catch {
         // 解析失败则使用原始值
       }
@@ -851,7 +878,7 @@ export function ChannelConfigDialog({
               <div className="space-y-2">
                 <Label className="text-sm">协议配置信息</Label>
                 <p className="text-xs text-muted-foreground">
-                  根据所选协议配置不同的参数
+                根据所选协议配置不同的参数
                 </p>
               </div>
 
