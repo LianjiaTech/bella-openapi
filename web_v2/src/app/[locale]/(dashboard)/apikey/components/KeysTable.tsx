@@ -1,7 +1,7 @@
 'use client'
 
 import { Button } from "@/components/common/button";
-import { Copy, MoreVertical, RotateCcw, UserPlus, Trash2, Key, Pencil } from "lucide-react";
+import { Copy, MoreVertical, RotateCcw, UserPlus, Trash2, Key, Pencil, ScrollText } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/common/table";
 import { ApikeyInfo, ApiKeyBalance } from "@/lib/types/apikeys";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/common/popover";
@@ -171,6 +171,13 @@ export function KeysTable({
                                                     <UserPlus className="h-4 w-4" />
                                                     转交
                                                 </button>
+                                                <Link
+                                                    href={`/logs?queryType=${encodeURIComponent('AK Code')}&queryValue=${encodeURIComponent(apiKey.code)}`}
+                                                    className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent rounded cursor-pointer"
+                                                >
+                                                    <ScrollText className="h-4 w-4" />
+                                                    日志查询
+                                                </Link>
                                                 <button
                                                     className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent rounded cursor-pointer"
                                                     onClick={() => onCopy(apiKey.code)}
