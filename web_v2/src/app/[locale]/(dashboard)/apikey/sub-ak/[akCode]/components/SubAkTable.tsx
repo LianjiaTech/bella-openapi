@@ -26,7 +26,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/common/pop
 import { TooltipProvider, TooltipTrigger } from "@/components/common/tooltip";
 import { Pagination } from "@/components/ui/pagination";
 import { SearchInput } from "../../../components/SearchInput";
-import { getApiKeys, getAdminApiKeys, getApiKeyBalance } from "@/lib/api/apiKeys";
+import { getApiKeysWithBalance, getAdminApiKeysWithBalance, getApiKeyBalance } from "@/lib/api/apiKeys";
 import { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from "react";
 import { TableLoadingRow } from "@/components/ui/table/TableLoadingRow";
 import { QuotaUsageDisplay } from "@/components/ui/QuotaUsageDisplay";
@@ -95,30 +95,32 @@ export const SubAkTable = forwardRef<SubAkTableRef, SubAkTableProps>(({
 
     /**
      * 查询子 AK 列表：
-     *   - fetchMode=admin：getAdminApiKeys（不绑定 ownerCode，管理员/管理者视角）
-     *   - fetchMode=user：getApiKeys（ownerCode = 当前用户，普通用户视角）
+     *   - fetchMode=admin：getAdminApiKeysWithBalance（不绑定 ownerCode，管理员/管理者视角）
+     *   - fetchMode=user：getApiKeysWithBalance（ownerCode = 当前用户，普通用户视角）
      */
     const fetchSubApiKeys = useCallback(async () => {
         try {
             setLoading(true);
             let response;
             if (capability.fetchMode === 'admin') {
-                response = await getAdminApiKeys(currentPage, {
+                response = await getAdminApiKeysWithBalance(currentPage, {
                     searchType: 'ak',
                     searchParam: debouncedSearchQuery || undefined,
                     parentCode,
                 });
             } else {
-                response = await getApiKeys(ownerCode, debouncedSearchQuery, currentPage, parentCode);
+                response = await getApiKeysWithBalance(ownerCode, debouncedSearchQuery, currentPage, parentCode);
             }
 
             setHasMore(response.has_more);
             setTotalItems(response.total);
 
-            // 获取每个子密钥的余额信息
             if (response.data && response.data.length > 0) {
                 const apiKeysWithBalances = await Promise.all(
                     response.data.map(async (apiKey: ApikeyInfo) => {
+                        if ('balance' in apiKey && apiKey.balance) {
+                            return apiKey;
+                        }
                         try {
                             const balance = await getApiKeyBalance(apiKey.code);
                             return { ...apiKey, balance };

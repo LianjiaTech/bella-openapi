@@ -15,8 +15,10 @@ import com.ke.bella.openapi.PermissionCondition;
 import com.ke.bella.openapi.apikey.AkOperation;
 import com.ke.bella.openapi.apikey.ApikeyChangeLog;
 import com.ke.bella.openapi.apikey.ApikeyCreateOp;
+import com.ke.bella.openapi.apikey.ApikeyBalanceView;
 import com.ke.bella.openapi.apikey.ApikeyInfo;
 import com.ke.bella.openapi.apikey.ApikeyOps;
+import com.ke.bella.openapi.apikey.ApikeyPageWithBalance;
 import com.ke.bella.openapi.apikey.ApikeyTransferLog;
 import com.ke.bella.openapi.apikey.SubApikeyUpdateOp;
 import com.ke.bella.openapi.apikey.TransferApikeyOwnerOp;
@@ -39,6 +41,7 @@ import com.ke.bella.openapi.tables.pojos.UserDB;
 import com.ke.bella.openapi.utils.EncryptUtils;
 import com.ke.bella.openapi.utils.JacksonUtils;
 import com.ke.bella.openapi.utils.MatchUtils;
+import com.ke.bella.openapi.utils.DateTimeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -52,12 +55,15 @@ import org.springframework.util.Assert;
 
 import javax.annotation.PostConstruct;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static com.ke.bella.openapi.common.EntityConstants.ACTIVE;
 import static com.ke.bella.openapi.common.EntityConstants.CONSOLE;
@@ -419,6 +425,70 @@ public class ApikeyService {
 
     public List<ApikeyMonthCostDB> queryBillingsByAkCode(String akCode) {
         return apikeyCostRepo.queryByAkCode(akCode);
+    }
+
+    public Page<ApikeyPageWithBalance> pageApikeyWithBalance(ApikeyOps.ApikeyCondition condition) {
+        Page<ApikeyDB> page = pageApikey(condition);
+        List<ApikeyDB> apikeys = page.getData();
+        if(CollectionUtils.isEmpty(apikeys)) {
+            return Page.<ApikeyPageWithBalance>from(page.getPage(), page.getPageSize())
+                    .total(page.getTotal())
+                    .list(new ArrayList<>());
+        }
+        String currentMonth = DateTimeUtils.getCurrentMonth();
+        Map<String, BigDecimal> amountMap = apikeyCostRepo.queryCosts(apikeys.stream()
+                .map(ApikeyDB::getCode)
+                .collect(Collectors.toList()), currentMonth);
+        List<ApikeyPageWithBalance> result = apikeys.stream()
+                .map(apikey -> buildApikeyPageWithBalance(apikey, currentMonth, amountMap.get(apikey.getCode())))
+                .collect(Collectors.toList());
+        return Page.<ApikeyPageWithBalance>from(page.getPage(), page.getPageSize())
+                .total(page.getTotal())
+                .list(result);
+    }
+
+    public ApikeyBalanceView buildBalanceView(String akCode, BigDecimal monthQuota, String month, BigDecimal amount) {
+        BigDecimal safeCost = BigDecimal.ZERO.equals(amount) ? BigDecimal.ZERO : defaultCost(amount);
+        BigDecimal safeQuota = monthQuota == null ? BigDecimal.ZERO : monthQuota;
+        return ApikeyBalanceView.builder()
+                .akCode(akCode)
+                .month(month)
+                .cost(safeCost)
+                .quota(safeQuota)
+                .balance(safeQuota.subtract(safeCost))
+                .build();
+    }
+
+    private ApikeyPageWithBalance buildApikeyPageWithBalance(ApikeyDB apikey, String month, BigDecimal amount) {
+        ApikeyPageWithBalance result = new ApikeyPageWithBalance();
+        result.setCode(apikey.getCode());
+        result.setServiceId(apikey.getServiceId());
+        result.setAkSha(apikey.getAkSha());
+        result.setAkDisplay(apikey.getAkDisplay());
+        result.setName(apikey.getName());
+        result.setOutEntityCode(apikey.getOutEntityCode());
+        result.setParentCode(apikey.getParentCode());
+        result.setOwnerType(apikey.getOwnerType());
+        result.setOwnerCode(apikey.getOwnerCode());
+        result.setOwnerName(apikey.getOwnerName());
+        result.setRoleCode(apikey.getRoleCode());
+        result.setSafetySceneCode(apikey.getSafetySceneCode());
+        result.setSafetyLevel(apikey.getSafetyLevel());
+        result.setMonthQuota(apikey.getMonthQuota());
+        result.setStatus(apikey.getStatus());
+        result.setRemark(apikey.getRemark());
+        result.setManagerCode(apikey.getManagerCode());
+        result.setManagerName(apikey.getManagerName());
+        result.setQpsLimit(apikey.getQpsLimit());
+        result.setBalance(buildBalanceView(apikey.getCode(), apikey.getMonthQuota(), month, amount));
+        return result;
+    }
+
+    private BigDecimal defaultCost(BigDecimal amount) {
+        if(amount == null) {
+            return BigDecimal.ZERO;
+        }
+        return amount.divide(BigDecimal.valueOf(100), RoundingMode.UP);
     }
 
     @Transactional

@@ -3,10 +3,13 @@ package com.ke.bella.openapi.db.repo;
 import static com.ke.bella.openapi.Tables.*;
 
 import java.math.BigDecimal;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.Resource;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.jooq.DSLContext;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,6 +49,17 @@ public class ApikeyCostRepo implements BaseRepo {
                 .where(APIKEY_MONTH_COST.AK_CODE.eq(akCode))
                 .and(APIKEY_MONTH_COST.MONTH.eq(month))
                 .fetchOneInto(BigDecimal.class);
+    }
+
+    public Map<String, BigDecimal> queryCosts(List<String> akCodes, String month) {
+        if(CollectionUtils.isEmpty(akCodes)) {
+            return Collections.emptyMap();
+        }
+        return db.select(APIKEY_MONTH_COST.AK_CODE, APIKEY_MONTH_COST.AMOUNT)
+                .from(APIKEY_MONTH_COST)
+                .where(APIKEY_MONTH_COST.MONTH.eq(month))
+                .and(APIKEY_MONTH_COST.AK_CODE.in(akCodes))
+                .fetchMap(APIKEY_MONTH_COST.AK_CODE, APIKEY_MONTH_COST.AMOUNT);
     }
 
     public BigDecimal refreshCache(String akCode, String month) {

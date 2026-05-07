@@ -2,6 +2,10 @@ import { apiClient } from '@/lib/api/client';
 import {  Page } from '../types/openapi';
 import { ApikeyInfo, ApiKeyBalance,UserSearchResult, CreateSubApiKeyRequest, UpdateSubApiKeyRequest, TransferApikeyRequest, UpdateManagerRequest, ChangeApiKeyOwnerRequest, ChangeApiKeyParentRequest, ChangeApiKeyResult, ApikeyChangeLog } from '../types/apikeys';
 
+export interface ApikeyPageWithBalance extends ApikeyInfo {
+    balance: ApiKeyBalance;
+}
+
 /**
  * 管理员专用查询参数接口
  * 与普通查询的区别：不固定 ownerType='person'，支持按所有者维度搜索
@@ -26,6 +30,13 @@ export async function getApiKeys(ownerCode: string, search: string, page: number
         params: { status: 'active', ownerType:'person', ownerCode: ownerCode, searchParam: search, page, parentCode: parentCode, includeChild: !!parentCode }
     });
     return response as unknown as Page<ApikeyInfo>;
+}
+
+export async function getApiKeysWithBalance(ownerCode: string, search: string, page: number, parentCode: string): Promise<Page<ApikeyPageWithBalance>> {
+    const response = await apiClient.get('/console/apikey/pageWithBalance', {
+        params: { status: 'active', ownerType:'person', ownerCode: ownerCode, searchParam: search, page, parentCode: parentCode, includeChild: !!parentCode }
+    });
+    return response as unknown as Page<ApikeyPageWithBalance>;
 }
 
 export async function getApiKeyBalance(akCode: string): Promise<ApiKeyBalance> {
@@ -160,6 +171,23 @@ export async function getAdminApiKeys(page: number, params: AdminApiKeyQueryPara
     }
     const response = await apiClient.get('/console/apikey/page', { params: queryParams });
     return response as unknown as Page<ApikeyInfo>;
+}
+
+export async function getAdminApiKeysWithBalance(page: number, params: AdminApiKeyQueryParams): Promise<Page<ApikeyPageWithBalance>> {
+    const queryParams: Record<string, unknown> = {
+        status: 'active',
+        page,
+        ...(params.parentCode ? { parentCode: params.parentCode, includeChild: true } : {}),
+        ...(params.ownerType ? { ownerType: params.ownerType } : {}),
+    };
+    if (params.searchType === 'ak' && params.searchParam) {
+        queryParams.searchParam = params.searchParam;
+    }
+    if (params.searchType === 'owner' && params.ownerSearch) {
+        queryParams.ownerSearch = params.ownerSearch;
+    }
+    const response = await apiClient.get('/console/apikey/pageWithBalance', { params: queryParams });
+    return response as unknown as Page<ApikeyPageWithBalance>;
 }
 
 /**

@@ -4,7 +4,7 @@ import { TopBar } from "@/components/layout/top-bar";
 import { Button } from "@/components/common/button";
 import { Plus, AlertCircle } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
-import { getApiKeys, getApiKeyBalance, applyApiKey, resetApiKey, deleteApiKey, renameApiKey, bindApiKeyService } from "@/lib/api/apiKeys";
+import { getApiKeys, getApiKeysWithBalance, getApiKeyBalance, applyApiKey, resetApiKey, deleteApiKey, renameApiKey, bindApiKeyService } from "@/lib/api/apiKeys";
 import { ApikeyInfo, ApiKeyBalance } from "@/lib/types/apikeys";
 import { KeysTable } from "./components/KeysTable";
 import { Pagination } from "@/components/ui/pagination";
@@ -58,20 +58,27 @@ export default function ApiKeysPage() {
     try {
       setLoading(true);
       setError(null);
-      const response = await getApiKeys(user.userId.toString(), search, currentPage, "");
-      setApiKeys(response.data || []);
-      setHasMore(response.has_more);
+      try {
+        const response = await getApiKeysWithBalance(user.userId.toString(), search, currentPage, "");
+        const rows = response.data || [];
+        setApiKeys(rows);
+        setBalances(Object.fromEntries(rows.map((apiKey) => [apiKey.code, apiKey.balance])));
+        setHasMore(response.has_more);
+      } catch {
+        const response = await getApiKeys(user.userId.toString(), search, currentPage, "");
+        setApiKeys(response.data || []);
+        setHasMore(response.has_more);
+        setBalances({});
 
-      // 获取每个 API Key 的余额信息
-      if (response.data && response.data.length > 0) {
-        response.data.forEach(async (apiKey: ApikeyInfo) => {
-          try {
-            const balance = await getApiKeyBalance(apiKey.code);
-            setBalances(prev => ({ ...prev, [apiKey.code]: balance }));
-          } catch (err) {
-            console.error(`Failed to fetch balance for ${apiKey.code}:`, err);
-          }
-        });
+        if (response.data && response.data.length > 0) {
+          const balanceEntries = await Promise.all(
+            response.data.map(async (apiKey: ApikeyInfo) => {
+              const balance = await getApiKeyBalance(apiKey.code);
+              return [apiKey.code, balance] as const;
+            })
+          );
+          setBalances(Object.fromEntries(balanceEntries));
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to fetch API keys'));

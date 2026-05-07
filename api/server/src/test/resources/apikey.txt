@@ -83,6 +83,11 @@ GET /console/apikey/page?ownerType=person&ownerCode=10000000
 {}
 skip
 
+GET /console/apikey/pageWithBalance?ownerType=person&ownerCode=10000000
+{"Authorization":"Bearer {testApikey}"}
+{}
+[{"balance":{"akCode":"%{81-data-0-code}%"}}]
+
 POST /v1/apikey/create
 {"Authorization":"Bearer %{76}%"}
 {"parentCode":"%{81-data-0-code}%", "outEntityCode":"10009999", "safetyLevel":0, "roleCode":"low", "monthQuota":0 }
