@@ -135,11 +135,12 @@ export default function ApiKeyAdminPage() {
                 return;
             }
 
+            const adminSearchType = searchType as 'ak' | 'owner' | 'manager';
             const response = await getAdminApiKeys(currentPage, {
-                searchType,
-                searchParam: searchType === 'ak' ? search : undefined,
-                ownerSearch: searchType === 'owner' ? search : undefined,
-                managerSearch: searchType === 'manager' ? search : undefined,
+                searchType: adminSearchType,
+                searchParam: adminSearchType === 'ak' ? search : undefined,
+                ownerSearch: adminSearchType === 'owner' ? search : undefined,
+                managerSearch: adminSearchType === 'manager' ? search : undefined,
                 ownerType: ownerTypeFilter === 'all' ? undefined : ownerTypeFilter as 'person' | 'org' | 'project',
             });
 

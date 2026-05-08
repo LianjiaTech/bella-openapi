@@ -54,6 +54,7 @@ import javax.annotation.PostConstruct;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -437,7 +438,7 @@ public class ApikeyService {
                 || !StringUtils.equals(targetOwnerName, source.getOwnerName());
         Assert.isTrue(changed, "未检测到有效变更");
 
-        List<String> affectedCodes = collectSingleAffectedCode(op.getCode());
+        List<String> affectedCodes = Collections.singletonList(op.getCode());
 
         ApikeyDB updateDB = new ApikeyDB();
         updateDB.setOwnerType(op.getTargetOwnerType());
@@ -862,10 +863,5 @@ public class ApikeyService {
         return affectedCodes;
     }
 
-    private List<String> collectSingleAffectedCode(String code) {
-        List<String> affectedCodes = new ArrayList<>();
-        affectedCodes.add(code);
-        return affectedCodes;
-    }
 
 }
