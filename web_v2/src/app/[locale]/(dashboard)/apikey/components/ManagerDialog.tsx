@@ -37,7 +37,7 @@ interface ManagerDialogProps {
     reasonRequired?: boolean;
     /** 是否展示同步子 AK 管理者的开关 */
     showSyncChildrenOption?: boolean;
-    /** 同步子 AK 管理者开关的默认值 */
+    /** 同步子 AK 管理者开关的默认值，默认关闭 */
     defaultSyncChildren?: boolean;
 }
 
@@ -51,7 +51,7 @@ export function ManagerDialog({
     showReason = false,
     reasonRequired = false,
     showSyncChildrenOption = false,
-    defaultSyncChildren = true,
+    defaultSyncChildren = false,
 }: ManagerDialogProps) {
     const [searchQuery, setSearchQuery] = useState("");
     const [reason, setReason] = useState("");

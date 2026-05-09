@@ -16,7 +16,7 @@
 
 import { Button } from "@/components/common/button";
 import { Badge } from "@/components/common/badge";
-import { Copy, MoreVertical, UserPlus, Trash2, Key, Pencil, Users, Building2, Waypoints, History } from "lucide-react";
+import { Copy, MoreVertical, UserPlus, Trash2, Key, Pencil, Users, Building2, Waypoints, History, GitBranch } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/common/table";
 import { ApikeyInfo, ApiKeyBalance } from "@/lib/types/apikeys";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/common/popover";
@@ -285,6 +285,15 @@ export function AdminKeysTable({
                                                     <Building2 className="h-4 w-4" />
                                                     变更所有者
                                                 </button>
+                                                {!apiKey.parentCode && (
+                                                    <button
+                                                        className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent rounded cursor-pointer"
+                                                        onClick={() => onOpenAction('ownerInheritance', apiKey)}
+                                                    >
+                                                        <GitBranch className="h-4 w-4" />
+                                                        检查子AK归属
+                                                    </button>
+                                                )}
                                                 <button
                                                     className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent rounded cursor-pointer"
                                                     onClick={() => onOpenAction('parentChange', apiKey)}

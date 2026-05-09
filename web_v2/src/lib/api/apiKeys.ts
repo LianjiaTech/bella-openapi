@@ -1,6 +1,6 @@
 import { apiClient } from '@/lib/api/client';
 import {  Page } from '../types/openapi';
-import { ApikeyInfo, ApiKeyBalance,UserSearchResult, CreateSubApiKeyRequest, UpdateSubApiKeyRequest, TransferApikeyRequest, UpdateManagerRequest, ChangeApiKeyOwnerRequest, ChangeApiKeyParentRequest, ChangeApiKeyResult, ApikeyChangeLog } from '../types/apikeys';
+import { ApikeyInfo, ApiKeyBalance,UserSearchResult, CreateSubApiKeyRequest, UpdateSubApiKeyRequest, TransferApikeyRequest, UpdateManagerRequest, ChangeApiKeyOwnerRequest, ChangeApiKeyParentRequest, ChangeApiKeyResult, ApikeyChangeLog, OwnerInheritancePreview } from '../types/apikeys';
 
 /**
  * 管理员专用查询参数接口
@@ -23,8 +23,16 @@ export interface AdminApiKeyQueryParams {
 
 export async function getApiKeys(ownerCode: string, search: string, page: number, parentCode: string): Promise<Page<ApikeyInfo>> {
     // apiClient 拦截器会自动解包 { code, data } 格式，直接返回 data
+    const isSubAkQuery = !!parentCode;
     const response = await apiClient.get('/console/apikey/page', {
-        params: { status: 'active', ownerType:'person', ownerCode: ownerCode, searchParam: search, page, parentCode: parentCode, includeChild: !!parentCode }
+        params: {
+            status: 'active',
+            searchParam: search,
+            page,
+            ...(isSubAkQuery
+                ? { parentCode, includeChild: true }
+                : { ownerType: 'person', ownerCode }),
+        }
     });
     return response as unknown as Page<ApikeyInfo>;
 }
@@ -132,6 +140,11 @@ export async function changeApiKeyOwner(request: ChangeApiKeyOwnerRequest): Prom
 export async function changeApiKeyParent(request: ChangeApiKeyParentRequest): Promise<ChangeApiKeyResult> {
     const response = await apiClient.post<ChangeApiKeyResult>('/console/apikey/parent/change', request);
     return response as unknown as ChangeApiKeyResult;
+}
+
+export async function previewOwnerInheritance(parentCode: string): Promise<OwnerInheritancePreview> {
+    const response = await apiClient.post<OwnerInheritancePreview>('/console/apikey/owner/inheritance/preview', { parentCode });
+    return response as unknown as OwnerInheritancePreview;
 }
 
 export async function getApiKeyChangeHistory(akCode: string): Promise<ApikeyChangeLog[]> {

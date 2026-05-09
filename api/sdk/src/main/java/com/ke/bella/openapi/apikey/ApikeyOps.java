@@ -83,6 +83,46 @@ public class ApikeyOps {
     @SuperBuilder
     @AllArgsConstructor
     @NoArgsConstructor
+    public static class OwnerInheritanceOp extends Operator {
+        @NotBlank(message = "parentCode不可为空")
+        private String parentCode;
+    }
+
+    @Data
+    @SuperBuilder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class OwnerInheritancePreview {
+        private String parentCode;
+        private String parentOwnerType;
+        private String parentOwnerCode;
+        private String parentOwnerName;
+        private Integer mismatchedCount;
+        private List<OwnerInheritanceItem> items;
+    }
+
+    @Data
+    @SuperBuilder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class OwnerInheritanceItem {
+        private String code;
+        private String akDisplay;
+        private String name;
+        private String currentOwnerType;
+        private String currentOwnerCode;
+        private String currentOwnerName;
+        private String targetOwnerType;
+        private String targetOwnerCode;
+        private String targetOwnerName;
+        private String managerCode;
+        private String managerName;
+    }
+
+    @Data
+    @SuperBuilder
+    @AllArgsConstructor
+    @NoArgsConstructor
     public static class NameOp extends Operator {
         private String code;
         private String name;

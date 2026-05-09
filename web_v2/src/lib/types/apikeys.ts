@@ -97,7 +97,7 @@ export interface ApikeyChangeLog {
 
 export interface ChangeApiKeyOwnerRequest {
     code: string;
-    targetOwnerType: 'org' | 'project';
+    targetOwnerType: 'person' | 'org' | 'project';
     targetOwnerCode?: string;
     targetOwnerName?: string;
     reason?: string;
@@ -113,6 +113,29 @@ export interface ChangeApiKeyResult {
     code: string;
     action: 'owner_change' | 'parent_change';
     affectedCount: number;
+}
+
+export interface OwnerInheritancePreviewItem {
+    code: string;
+    akDisplay?: string;
+    name?: string;
+    currentOwnerType: string;
+    currentOwnerCode: string;
+    currentOwnerName: string;
+    targetOwnerType: string;
+    targetOwnerCode: string;
+    targetOwnerName: string;
+    managerCode?: string;
+    managerName?: string;
+}
+
+export interface OwnerInheritancePreview {
+    parentCode: string;
+    parentOwnerType: string;
+    parentOwnerCode: string;
+    parentOwnerName: string;
+    mismatchedCount: number;
+    items: OwnerInheritancePreviewItem[];
 }
 
 // 创建子API Key的请求参数
@@ -148,5 +171,5 @@ export interface UpdateManagerRequest {
     code: string;        // AK code，必填
     managerUserId: number; // 管理人用户 ID，后端自动推导 managerCode
     reason?: string;     // 管理者变更原因，用于审计历史
-    syncChildren?: boolean; // 是否同步更新子 AK 管理者，未传时后端保持默认同步
+    syncChildren?: boolean; // 是否同步更新子 AK 管理者，未传时后端默认不同步
 }

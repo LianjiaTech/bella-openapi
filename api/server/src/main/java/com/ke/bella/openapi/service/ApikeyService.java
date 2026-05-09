@@ -424,7 +424,8 @@ public class ApikeyService {
 
     @Transactional
     public ApikeyOps.ChangeResult changeOwner(ApikeyOps.ChangeOwnerOp op) {
-        Assert.isTrue(ORG.equals(op.getTargetOwnerType()) || PROJECT.equals(op.getTargetOwnerType()), "targetOwnerType仅支持org或project");
+        Assert.isTrue(PERSON.equals(op.getTargetOwnerType()) || ORG.equals(op.getTargetOwnerType()) || PROJECT.equals(op.getTargetOwnerType()),
+                "targetOwnerType仅支持person、org或project");
 
         ApikeyInfo source = apikeyRepo.queryByCode(op.getCode());
         Assert.notNull(source, "AK不存在");
@@ -495,6 +496,63 @@ public class ApikeyService {
                 .build();
     }
 
+    public ApikeyOps.OwnerInheritancePreview previewOwnerInheritance(ApikeyOps.OwnerInheritanceOp op) {
+        ApikeyInfo parent = validateOwnerInheritanceParent(op);
+        List<ApikeyDB> mismatchedChildren = listOwnerMismatchedChildren(parent);
+        List<ApikeyOps.OwnerInheritanceItem> items = new ArrayList<>();
+        for(ApikeyDB child : mismatchedChildren) {
+            items.add(buildOwnerInheritanceItem(parent, child));
+        }
+        return ApikeyOps.OwnerInheritancePreview.builder()
+                .parentCode(parent.getCode())
+                .parentOwnerType(parent.getOwnerType())
+                .parentOwnerCode(parent.getOwnerCode())
+                .parentOwnerName(parent.getOwnerName())
+                .mismatchedCount(items.size())
+                .items(items)
+                .build();
+    }
+
+    private ApikeyInfo validateOwnerInheritanceParent(ApikeyOps.OwnerInheritanceOp op) {
+        ApikeyInfo parent = apikeyRepo.queryByCode(op.getParentCode());
+        Assert.notNull(parent, "父AK不存在");
+        Assert.isTrue(ACTIVE.equals(parent.getStatus()), "父AK状态不允许检查");
+        Assert.isTrue(StringUtils.isEmpty(parent.getParentCode()), "只能检查父级AK的直属子AK归属");
+        if(!akPermissionChecker.hasAdminPermission()) {
+            akPermissionChecker.check(parent, AkOperation.CREATE_CHILD);
+        }
+        return parent;
+    }
+
+    private List<ApikeyDB> listOwnerMismatchedChildren(ApikeyInfo parent) {
+        List<ApikeyDB> children = listChildren(parent.getCode());
+        List<ApikeyDB> mismatchedChildren = new ArrayList<>();
+        for(ApikeyDB child : children) {
+            if(!StringUtils.equals(parent.getOwnerType(), child.getOwnerType())
+                    || !StringUtils.equals(parent.getOwnerCode(), child.getOwnerCode())
+                    || !StringUtils.equals(parent.getOwnerName(), child.getOwnerName())) {
+                mismatchedChildren.add(child);
+            }
+        }
+        return mismatchedChildren;
+    }
+
+    private ApikeyOps.OwnerInheritanceItem buildOwnerInheritanceItem(ApikeyInfo parent, ApikeyDB child) {
+        return ApikeyOps.OwnerInheritanceItem.builder()
+                .code(child.getCode())
+                .akDisplay(child.getAkDisplay())
+                .name(child.getName())
+                .currentOwnerType(child.getOwnerType())
+                .currentOwnerCode(child.getOwnerCode())
+                .currentOwnerName(child.getOwnerName())
+                .targetOwnerType(parent.getOwnerType())
+                .targetOwnerCode(parent.getOwnerCode())
+                .targetOwnerName(parent.getOwnerName())
+                .managerCode(child.getManagerCode())
+                .managerName(child.getManagerName())
+                .build();
+    }
+
     @Transactional
     public void updateManager(ApikeyOps.ManagerOp op) {
         ApikeyDB existing = apikeyRepo.queryByUniqueKey(op.getCode());
@@ -519,7 +577,7 @@ public class ApikeyService {
         }
         apikeyRepo.fillUpdatorInfo(db);
         apikeyRepo.update(db, op.getCode());
-        boolean syncChildren = op.getSyncChildren() == null || op.getSyncChildren();
+        boolean syncChildren = Boolean.TRUE.equals(op.getSyncChildren());
         List<ApikeyDB> children = syncChildren ? listChildren(op.getCode()) : new ArrayList<>();
         if(syncChildren) {
             // 同步更新子 ak 的管理人（含操作人审计信息）
@@ -862,6 +920,5 @@ public class ApikeyService {
         }
         return affectedCodes;
     }
-
 
 }

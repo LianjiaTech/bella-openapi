@@ -196,6 +196,11 @@ public class ApikeyConsoleController {
         return apikeyService.changeParent(op);
     }
 
+    @PostMapping("/owner/inheritance/preview")
+    public ApikeyOps.OwnerInheritancePreview previewOwnerInheritance(@RequestBody @Validated ApikeyOps.OwnerInheritanceOp op) {
+        return apikeyService.previewOwnerInheritance(op);
+    }
+
     @GetMapping("/transfer/history")
     public List<ApikeyTransferLog> getTransferHistory(@RequestParam String akCode) {
         Assert.hasText(akCode, "API Key编码不能为空");

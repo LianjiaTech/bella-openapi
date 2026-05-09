@@ -37,6 +37,7 @@ import { ManagerDialog } from "@/app/[locale]/(dashboard)/apikey/components/Mana
 import { AdminCreateDialog } from "./components/AdminCreateDialog";
 import { ApiKeyCreatedDialog } from "@/app/[locale]/(dashboard)/apikey/components/ApiKeyCreatedDialog";
 import { OwnerChangeDialog } from "./components/OwnerChangeDialog";
+import { OwnerInheritanceDialog } from "./components/OwnerInheritanceDialog";
 import { ParentChangeDialog } from "./components/ParentChangeDialog";
 import { ApiKeyHistoryDialog } from "./components/ApiKeyHistoryDialog";
 import { ApiKeyAdminAction } from "./components/apiKeyAdminAction";
@@ -490,6 +491,12 @@ export default function ApiKeyAdminPage() {
                     apiKey={activeApiKey}
                     onClose={handleCloseAction}
                     onSuccess={handleGovernSuccess}
+                />
+
+                <OwnerInheritanceDialog
+                    isOpen={activeAction === 'ownerInheritance'}
+                    apiKey={activeApiKey}
+                    onClose={handleCloseAction}
                 />
 
                 <ParentChangeDialog
