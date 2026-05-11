@@ -1,7 +1,7 @@
 package com.ke.bella.openapi.db.log;
 
 import com.ke.bella.openapi.EndpointProcessData;
-import com.ke.bella.openapi.protocol.log.CostLogHandler;
+import com.ke.bella.openapi.utils.CompressUtils;
 import com.ke.bella.openapi.utils.JacksonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,19 +18,55 @@ public class ConsoleLogRepo implements LogRepo {
     @Value("${bella.log.max-size-bytes:#{null}}")
     private Integer maxLogSizeBytes;
 
+    @Value("${bella.log.compress-threshold-bytes:10240}")
+    private int compressThresholdBytes;
+
     @Override
     public void record(EndpointProcessData log) {
         String serialized = JacksonUtils.serialize(log);
 
         FULL_LOGGER.info(serialized);
 
-        // Check if log size limit is configured and serialized size exceeds it
-        if(maxLogSizeBytes != null && serialized.getBytes().length > maxLogSizeBytes) {
-            // Create a copy with request and response removed to reduce size
+        // Compress large fields instead of removing them
+        EndpointProcessData outputLog = log;
+        boolean needsCompression = false;
+
+        String requestStr = JacksonUtils.serialize(log.getRequestForLogging());
+        String responseStr = JacksonUtils.serialize(log.getResponse());
+
+        if (requestStr.getBytes().length > compressThresholdBytes) {
+            needsCompression = true;
+        }
+        if (responseStr.getBytes().length > compressThresholdBytes) {
+            needsCompression = true;
+        }
+
+        if (needsCompression) {
+            outputLog = new EndpointProcessData();
+            BeanUtils.copyProperties(log, outputLog);
+
+            if (requestStr.getBytes().length > compressThresholdBytes) {
+                outputLog.setRequest(CompressUtils.compress(requestStr));
+                outputLog.setRequestCompressed(true);
+            }
+            if (responseStr.getBytes().length > compressThresholdBytes) {
+                outputLog.setResponse(null);
+                outputLog.setResponseCompressed(true);
+                outputLog.setResponseRaw(CompressUtils.compress(responseStr));
+            }
+
+            serialized = JacksonUtils.serialize(outputLog);
+        }
+
+        // Fallback: if compressed log still exceeds max-size-bytes, truncate
+        if (maxLogSizeBytes != null && serialized.getBytes().length > maxLogSizeBytes) {
             EndpointProcessData reducedLog = new EndpointProcessData();
-            BeanUtils.copyProperties(log, reducedLog);
+            BeanUtils.copyProperties(outputLog, reducedLog);
             reducedLog.setRequest("[REMOVED: Log size exceeded " + maxLogSizeBytes + " bytes]");
             reducedLog.setResponse(null);
+            reducedLog.setResponseRaw(null);
+            reducedLog.setRequestCompressed(false);
+            reducedLog.setResponseCompressed(false);
 
             serialized = JacksonUtils.serialize(reducedLog);
         }

@@ -89,6 +89,8 @@ public class EndpointProcessData {
     private CostDetails costDetails;
     private boolean overrideInnerLog;
     private String clientIp;
+    private boolean requestCompressed;
+    private boolean responseCompressed;
 
     public void setApikeyInfo(ApikeyInfo ak) {
         this.setApikey(ak.getApikey());

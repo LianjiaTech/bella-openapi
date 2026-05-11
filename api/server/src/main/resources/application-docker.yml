@@ -43,6 +43,8 @@ management:
       enabled: true
 
 bella:
+  log:
+    compress-threshold-bytes: 10240
   session:
     cookie-name: bella_openapi_sessionId
     max-inactive-interval: 60
