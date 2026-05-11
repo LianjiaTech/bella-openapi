@@ -56,6 +56,8 @@ springdoc:
 
 
 bella:
+  log:
+    compress-threshold-bytes: 10240
   console:
     user-quota-edit-enabled: false
   limiter:

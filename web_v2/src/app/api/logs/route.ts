@@ -1,8 +1,40 @@
 import { NextResponse } from 'next/server';
 import { es_apikey, es_url, isEsConfigComplete } from '@/lib/config/server';
+import { gunzipSync } from 'zlib';
 
 const API_KEY = es_apikey;
 const API_URL = es_url;
+
+function decompressField(value: string): string {
+  try {
+    const buffer = Buffer.from(value, 'base64');
+    const decompressed = gunzipSync(buffer);
+    return decompressed.toString('utf-8');
+  } catch {
+    return value;
+  }
+}
+
+function decompressLogFields(hit: Record<string, unknown>): Record<string, unknown> {
+  if (hit.data_info_msg_requestCompressed === true || hit.data_info_msg_requestCompressed === 'true') {
+    const request = hit.data_info_msg_request;
+    if (typeof request === 'string') {
+      hit.data_info_msg_request = decompressField(request);
+    }
+  }
+  if (hit.data_info_msg_responseCompressed === true || hit.data_info_msg_responseCompressed === 'true') {
+    const response = hit.data_info_msg_response;
+    if (typeof response === 'string') {
+      hit.data_info_msg_response = decompressField(response);
+    } else if (!response) {
+      const responseRaw = hit.data_info_msg_responseRaw;
+      if (typeof responseRaw === 'string') {
+        hit.data_info_msg_response = decompressField(responseRaw);
+      }
+    }
+  }
+  return hit;
+}
 
 export async function POST(request: Request) {
   if (!isEsConfigComplete()) {
@@ -32,6 +64,9 @@ export async function POST(request: Request) {
           "data_info_msg_channelCode",
           "data_info_msg_request",
           "data_info_msg_response",
+          "data_info_msg_responseRaw",
+          "data_info_msg_requestCompressed",
+          "data_info_msg_responseCompressed",
           "data_info_msg_endpoint",
           "data_info_msg_requestId",
           "data_info_msg_bellaTraceId",
@@ -47,6 +82,19 @@ export async function POST(request: Request) {
     });
 
     const data = await response.json();
+
+    // Decompress gzip+base64 fields if marked as compressed
+    if (data && Array.isArray(data.data)) {
+      data.data = data.data.map((hit: Record<string, unknown>) => decompressLogFields(hit));
+    } else if (data && data.hits && Array.isArray(data.hits.hits)) {
+      data.hits.hits = data.hits.hits.map((hit: { _source: Record<string, unknown> }) => {
+        if (hit._source) {
+          hit._source = decompressLogFields(hit._source);
+        }
+        return hit;
+      });
+    }
+
     return NextResponse.json(data);
   } catch (error) {
     return NextResponse.json({ error: 'Failed to fetch logs' }, { status: 500 });
