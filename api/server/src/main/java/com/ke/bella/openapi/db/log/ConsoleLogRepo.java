@@ -24,15 +24,17 @@ public class ConsoleLogRepo implements LogRepo {
 
         FULL_LOGGER.info(serialized);
 
-        // Check if log size limit is configured and serialized size exceeds it
+        // 短期先优先保留 response，便于排查模型输出；中长期可将 payload 裁剪逻辑抽成结构化的 LogReducer。
         if(maxLogSizeBytes != null && serialized.getBytes().length > maxLogSizeBytes) {
-            // Create a copy with request and response removed to reduce size
             EndpointProcessData reducedLog = new EndpointProcessData();
             BeanUtils.copyProperties(log, reducedLog);
             reducedLog.setRequest("[REMOVED: Log size exceeded " + maxLogSizeBytes + " bytes]");
-            reducedLog.setResponse(null);
 
             serialized = JacksonUtils.serialize(reducedLog);
+            if(serialized.getBytes().length > maxLogSizeBytes) {
+                reducedLog.setResponse(null);
+                serialized = JacksonUtils.serialize(reducedLog);
+            }
         }
 
         LOGGER.info(serialized);
