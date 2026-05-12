@@ -1,0 +1,18 @@
+image:
+  name: alpine/git:latest
+  entrypoint: [""]
+
+default:
+  tags:
+    - docker
+
+variables:
+  GIT_DEPTH: "0"
+
+stages:
+  - sync
+  - triage
+
+include:
+  - local: ".gitlab/templates/agentrix.yml"
+  - local: ".gitlab/workflow/*.yml"

@@ -1,0 +1,81 @@
+.agentrix-run:
+  image: node:20-alpine
+  variables:
+    AGENTRIX_RESPONSE_MODE: stream
+  script:
+    - |
+      set -eu
+
+      set -- \
+        --agent "$AGENTRIX_AGENT" \
+        --prompt "$AGENTRIX_PROMPT" \
+        --response-mode "${AGENTRIX_RESPONSE_MODE:-stream}"
+
+      if [ -n "${AGENTRIX_TITLE:-}" ]; then
+        set -- "$@" --title "$AGENTRIX_TITLE"
+      fi
+      if [ -n "${AGENTRIX_OUTPUT_SCHEMA:-}" ]; then
+        set -- "$@" --output-schema "$AGENTRIX_OUTPUT_SCHEMA"
+      fi
+      if [ -n "${AGENTRIX_REPO:-}" ]; then
+        set -- "$@" --repo "$AGENTRIX_REPO"
+      fi
+      if [ -n "${AGENTRIX_REF:-}" ]; then
+        set -- "$@" --ref "$AGENTRIX_REF"
+      fi
+      if [ -n "${AGENTRIX_SHA:-}" ]; then
+        set -- "$@" --sha "$AGENTRIX_SHA"
+      fi
+      if [ -n "${AGENTRIX_BASE_REF:-}" ]; then
+        set -- "$@" --base-ref "$AGENTRIX_BASE_REF"
+      fi
+      if [ -n "${AGENTRIX_HEAD_REF:-}" ]; then
+        set -- "$@" --head-ref "$AGENTRIX_HEAD_REF"
+      fi
+      if [ -n "${AGENTRIX_PR_NUMBER:-}" ]; then
+        set -- "$@" --pr-number "$AGENTRIX_PR_NUMBER"
+      fi
+      if [ -n "${AGENTRIX_ISSUE_NUMBER:-}" ]; then
+        set -- "$@" --issue-number "$AGENTRIX_ISSUE_NUMBER"
+      fi
+      if [ -n "${AGENTRIX_TIMEOUT:-}" ]; then
+        set -- "$@" --timeout "$AGENTRIX_TIMEOUT"
+      fi
+      if [ -n "${AGENTRIX_CAPABILITY_PROFILE:-}" ]; then
+        set -- "$@" --capability-profile "$AGENTRIX_CAPABILITY_PROFILE"
+      fi
+      if [ -n "${AGENTRIX_RUNNER_ID:-}" ]; then
+        set -- "$@" --runner-id "$AGENTRIX_RUNNER_ID"
+      fi
+      if [ -n "${AGENTRIX_RESULT_FILE:-}" ]; then
+        set -- "$@" --result-file "$AGENTRIX_RESULT_FILE"
+      fi
+      if [ -n "${AGENTRIX_BASE_URL:-}" ]; then
+        set -- "$@" --base-url "$AGENTRIX_BASE_URL"
+      fi
+
+      if ! command -v npx >/dev/null 2>&1; then
+        NODE_VERSION="${AGENTRIX_NODE_VERSION:-20.19.0}"
+        NODE_DIR="$CI_PROJECT_DIR/.node"
+        mkdir -p "$NODE_DIR"
+
+        GLIBC_VERSION="$(getconf GNU_LIBC_VERSION 2>/dev/null | awk '{print $2}')"
+        case "$GLIBC_VERSION" in
+          2.0*|2.1*|2.2*|2.3*|2.4*|2.5*|2.6*|2.7*|2.8*|2.9*|2.10*|2.11*|2.12*|2.13*|2.14*|2.15*|2.16*|2.17*|2.18*|2.19*|2.20*|2.21*|2.22*|2.23*|2.24*|2.25*|2.26*|2.27*)
+            NODE_DISTRO="linux-x64-glibc-217"
+            NODE_BASE_URL="https://unofficial-builds.nodejs.org/download/release"
+            ;;
+          *)
+            NODE_DISTRO="linux-x64"
+            NODE_BASE_URL="https://nodejs.org/dist"
+            ;;
+        esac
+
+        NODE_TAR="node-v${NODE_VERSION}-${NODE_DISTRO}.tar.xz"
+        NODE_URL="${NODE_BASE_URL}/v${NODE_VERSION}/${NODE_TAR}"
+        curl -fsSL "$NODE_URL" -o "$NODE_DIR/$NODE_TAR"
+        tar -xJf "$NODE_DIR/$NODE_TAR" -C "$NODE_DIR"
+        export PATH="$NODE_DIR/node-v${NODE_VERSION}-${NODE_DISTRO}/bin:$PATH"
+      fi
+
+      npx --yes @agentrix/agentrix-run "$@"

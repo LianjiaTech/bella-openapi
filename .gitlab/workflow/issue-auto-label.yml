@@ -1,0 +1,68 @@
+issue-auto-label:
+  stage: triage
+  extends: .agentrix-run
+  rules:
+    - if: '$AGENTRIX_EVENT_NAME == "issue" && $AGENTRIX_EVENT_ACTION == "opened"'
+      when: on_success
+    - when: never
+  variables:
+    AGENTRIX_AGENT: codex
+    AGENTRIX_TITLE: "Issue labeler #${AGENTRIX_ISSUE_NUMBER}"
+    AGENTRIX_OUTPUT_SCHEMA: >-
+      {"type":"object","properties":{"typeLabel":{"type":"string","enum":["type::group","type::feature","type::bug","type::debt","type::design","type::spike","type::ops"]},"flowLabel":{"type":"string","enum":["flow::intake","flow::ready","flow::in_progress","flow::blocked","flow::in_review","flow::done","flow::cancelled"]},"priorityLabel":{"type":"string","enum":["priority::p0","priority::p1","priority::p2","priority::p3"]},"planLabel":{"type":"string","enum":["plan::skip","plan::required"]},"summary":{"type":"string"}},"required":["typeLabel","flowLabel","priorityLabel","planLabel","summary"],"additionalProperties":false}
+    AGENTRIX_PROMPT: |
+      你是 GitLab issue 自动标签机器人。请仅处理当前事件对应的这个 issue：
+      - git server id: ${AGENTRIX_GIT_SERVER_ID}
+      - repository owner: ${AGENTRIX_REPOSITORY_OWNER}
+      - repository name: ${AGENTRIX_REPOSITORY_NAME}
+      - issue iid: ${AGENTRIX_ISSUE_NUMBER}
+      - issue title: ${AGENTRIX_ISSUE_TITLE}
+      - issue url: ${AGENTRIX_ISSUE_URL}
+
+      任务目标：为该 issue 维护以下四组“托管标签”，每组必须且仅保留一个。
+
+      type 标签（选一）：
+      - type::group
+      - type::feature
+      - type::bug
+      - type::debt
+      - type::design
+      - type::spike
+      - type::ops
+
+      flow 标签（选一）：
+      - flow::intake
+      - flow::ready
+      - flow::in_progress
+      - flow::blocked
+      - flow::in_review
+      - flow::done
+      - flow::cancelled
+
+      priority 标签（选一）：
+      - priority::p0
+      - priority::p1
+      - priority::p2
+      - priority::p3
+
+      plan 标签（选一）：
+      - plan::skip
+      - plan::required
+
+      决策规则：
+      - 结合 issue 标题、描述和上下文判断。
+      - flow 默认应为 flow::intake（除非内容明确显示是其他状态）。
+      - priority 默认应为 priority::p2（除非紧急性有明显信号）。
+      - plan 默认应为 plan::required（仅在明显无需执行时设为 plan::skip）。
+
+      执行动作：
+      1) 读取该 issue 当前标签。
+      2) 移除所有已有的托管标签（前缀是 type:: / flow:: / priority:: / plan::）。
+      3) 添加你最终判定的四个标签。
+      4) 不要改动非托管标签。
+
+      输出要求：
+      - 只输出一个 JSON 对象，且必须严格符合 output schema。
+      - JSON 字段含义：
+        - typeLabel / flowLabel / priorityLabel / planLabel: 你最终选择的四个标签。
+        - summary: 一句话说明判断依据。
