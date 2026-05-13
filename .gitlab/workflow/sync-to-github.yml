@@ -3,8 +3,8 @@ sync_master_to_github:
 
   variables:
     GITHUB_REPO_PATH: "LianjiaTech/bella-openapi"
-    SOURCE_BRANCH: "master"
-    TARGET_BRANCH: "main"
+    SOURCE_BRANCH: "feat/add_ci"
+    TARGET_BRANCH: "feat/add_ci"
     GIT_USER_NAME: "GitLab CI Bot"
     GIT_USER_EMAIL: "CIBot@ke.com"
 
