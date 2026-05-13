@@ -1,108 +1,15 @@
-sync_master_to_github:
+sync_master_to_lj_gitlab:
   stage: sync
-
-  variables:
-    GITHUB_REPO_PATH: "LianjiaTech/bella-openapi"
-    SOURCE_BRANCH: "master"
-    TARGET_BRANCH: "main"
-    GIT_USER_NAME: "GitLab CI Bot"
-    GIT_USER_EMAIL: "CIBot@ke.com"
-
-  script:
-    - echo "======== ${SOURCE_BRANCH} -> GitHub ${TARGET_BRANCH} ========"
-    - git config user.name "${GIT_USER_NAME}"
-    - git config user.email "${GIT_USER_EMAIL}"
-
-    - echo "获取最新 ${SOURCE_BRANCH}..."
-    - git fetch origin ${SOURCE_BRANCH}
-    - git checkout ${SOURCE_BRANCH}
-    - git reset --hard origin/${SOURCE_BRANCH}
-
-    - echo "当前 HEAD:"
-    - git rev-parse HEAD
-
-    - echo "配置 GitHub remote..."
-    - git remote remove github || true
-    - git remote add github "https://oauth2:${GITHUB_ACCESS_TOKEN}@github.com/${GITHUB_REPO_PATH}.git"
-
-    - echo "开始同步到 GitHub..."
-    - git rm --cached .gitlab-ci.yml
-    - git rm -r --cached .gitlab || true
-    - git commit --amend --no-edit --no-verify
-    - git push github HEAD:${TARGET_BRANCH} --force
-    - git reset --hard origin/${SOURCE_BRANCH}
-    - echo "✅ ${SOURCE_BRANCH} -> GitHub 完成"
-
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "master"'
-      when: on_success
-    - if: '$CI_PIPELINE_SOURCE == "schedule"'
-      when: always
-    - if: '$CI_PIPELINE_SOURCE == "web"'
-      when: always
-    - when: never
-
-sync_master_to_dev:
-  stage: sync
-
-  variables:
-    KE_GITHUB_REPO_PATH: "ai-arch/bella-openapi"
-    SOURCE_BRANCH: "master"
-    TARGET_BRANCH: "dev"
-    GIT_USER_NAME: "GitLab CI Bot"
-    GIT_USER_EMAIL: "CIBot@ke.com"
-
-  script:
-    - echo "======== ${SOURCE_BRANCH} -> ${TARGET_BRANCH} ========"
-    - git config user.name "${GIT_USER_NAME}"
-    - git config user.email "${GIT_USER_EMAIL}"
-
-    - echo "获取最新 ${SOURCE_BRANCH} 和 ${TARGET_BRANCH}..."
-    - git fetch origin ${SOURCE_BRANCH}
-    - git fetch origin ${TARGET_BRANCH}
-
-    - echo "切换到 ${TARGET_BRANCH}..."
-    - git checkout ${TARGET_BRANCH}
-    - git reset --hard origin/${TARGET_BRANCH}
-
-    - echo "当前 dev HEAD:"
-    - git rev-parse HEAD
-
-    - echo "merge ${SOURCE_BRANCH} -> ${TARGET_BRANCH}"
-    - git merge origin/${SOURCE_BRANCH} --no-edit
-
-    - echo "推送 ${TARGET_BRANCH}..."
-    - git remote remove target || true
-    - git remote add target "https://oauth2:${KE_GITLAB_ACCESS_TOKEN}@git.ke.com/${KE_GITHUB_REPO_PATH}.git"
-    - git push target HEAD:${TARGET_BRANCH}
-
-    - echo "✅ master -> dev 完成"
-
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "master"'
-      when: on_success
-    - if: '$CI_PIPELINE_SOURCE == "schedule"'
-      when: always
-    - if: '$CI_PIPELINE_SOURCE == "web"'
-      when: always
-    - when: never
-
-sync_dev_to_gitlab:
-  stage: sync
-
-  needs:
-    - job: sync_master_to_dev
-      optional: true
 
   variables:
     TARGET_GITLAB_REPO_PATH: "ai-arch/bella-openapi"
-    SOURCE_BRANCH: "dev"
-    TARGET_BRANCH: "dev"
+    SOURCE_BRANCH: "master"
+    TARGET_BRANCH: "master"
     GIT_USER_NAME: "GitLab CI Bot"
     GIT_USER_EMAIL: "CIBot@ke.com"
 
   script:
-    - echo "======== ${SOURCE_BRANCH} -> old gitlab ${TARGET_BRANCH} ========"
+    - echo "======== ${SOURCE_BRANCH} -> lj gitlab ${TARGET_BRANCH} ========"
     - git config user.name "${GIT_USER_NAME}"
     - git config user.email "${GIT_USER_EMAIL}"
 
@@ -114,25 +21,74 @@ sync_dev_to_gitlab:
     - echo "当前 HEAD:"
     - git rev-parse HEAD
 
-    - echo "配置目标 GitLab remote..."
+    - echo "配置目标 gitlab remote..."
     - git remote remove target || true
     - git remote add target "https://oauth2:${GITLAB_ACCESS_TOKEN}@git.lianjia.com/${TARGET_GITLAB_REPO_PATH}.git"
 
-    - echo "开始同步到老 GitLab..."
+    - echo "开始同步到 lj gitlab..."
     - git rm --cached .gitlab-ci.yml
     - git rm -r --cached .gitlab || true
     - git commit --amend --no-edit --no-verify
     - git push target HEAD:${TARGET_BRANCH} --force
     - git reset --hard origin/${SOURCE_BRANCH}
-    - echo "✅ dev -> old gitlab 完成"
+    - echo "✅ dev -> lj gitlab completed"
 
   rules:
     - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "master"'
       when: on_success
-    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "dev"'
-      when: on_success
+
     - if: '$CI_PIPELINE_SOURCE == "schedule"'
       when: always
+
     - if: '$CI_PIPELINE_SOURCE == "web"'
       when: always
+
+    - when: never
+
+
+sync_develop_to_lj_gitlab:
+  stage: sync
+
+  variables:
+    TARGET_GITLAB_REPO_PATH: "ai-arch/bella-openapi"
+    SOURCE_BRANCH: "develop"
+    TARGET_BRANCH: "dev"
+    GIT_USER_NAME: "GitLab CI Bot"
+    GIT_USER_EMAIL: "CIBot@ke.com"
+
+  script:
+    - echo "======== ${SOURCE_BRANCH} -> lj gitlab ${TARGET_BRANCH} ========"
+    - git config user.name "${GIT_USER_NAME}"
+    - git config user.email "${GIT_USER_EMAIL}"
+
+    - echo "获取最新 ${SOURCE_BRANCH}..."
+    - git fetch origin ${SOURCE_BRANCH}
+    - git checkout ${SOURCE_BRANCH}
+    - git reset --hard origin/${SOURCE_BRANCH}
+
+    - echo "当前 HEAD:"
+    - git rev-parse HEAD
+
+    - echo "配置目标 gitlab remote..."
+    - git remote remove target || true
+    - git remote add target "https://oauth2:${GITLAB_ACCESS_TOKEN}@git.lianjia.com/${TARGET_GITLAB_REPO_PATH}.git"
+
+    - echo "开始同步到 lj gitlab..."
+    - git rm --cached .gitlab-ci.yml
+    - git rm -r --cached .gitlab || true
+    - git commit --amend --no-edit --no-verify
+    - git push target HEAD:${TARGET_BRANCH} --force
+    - git reset --hard origin/${SOURCE_BRANCH}
+    - echo "✅ dev -> lj gitlab completed"
+
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "develop"'
+      when: on_success
+
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+      when: always
+
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+      when: always
+
     - when: never

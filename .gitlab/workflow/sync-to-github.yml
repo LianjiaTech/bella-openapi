@@ -1,0 +1,47 @@
+sync_master_to_github:
+  stage: sync
+
+  variables:
+    GITHUB_REPO_PATH: "LianjiaTech/bella-openapi"
+    SOURCE_BRANCH: "master"
+    TARGET_BRANCH: "main"
+    GIT_USER_NAME: "GitLab CI Bot"
+    GIT_USER_EMAIL: "CIBot@ke.com"
+
+  script:
+    - echo "======== ${SOURCE_BRANCH} -> GitHub ${TARGET_BRANCH} ========"
+    - git config user.name "${GIT_USER_NAME}"
+    - git config user.email "${GIT_USER_EMAIL}"
+
+    - echo "获取最新 ${SOURCE_BRANCH}..."
+    - git fetch origin ${SOURCE_BRANCH}
+    - git checkout ${SOURCE_BRANCH}
+    - git reset --hard origin/${SOURCE_BRANCH}
+
+    - echo "当前 HEAD:"
+    - git rev-parse HEAD
+
+    - echo "配置 GitHub remote..."
+    - git remote remove github || true
+    - git remote add github "https://oauth2:${GITHUB_ACCESS_TOKEN}@github.com/${GITHUB_REPO_PATH}.git"
+
+    - echo "开始同步到 GitHub..."
+    - git rm --cached .gitlab-ci.yml
+    - git rm -r --cached .gitlab || true
+    - git commit --amend --no-edit --no-verify
+    - git push github HEAD:${TARGET_BRANCH} --force
+    - git reset --hard origin/${SOURCE_BRANCH}
+    - echo "✅ ${SOURCE_BRANCH} -> GitHub completed"
+
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "master"'
+      when: on_success
+
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+      when: always
+
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+      when: always
+
+    - when: never
+
