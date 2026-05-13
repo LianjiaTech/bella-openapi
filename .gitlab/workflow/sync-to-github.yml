@@ -13,25 +13,29 @@ sync_master_to_github:
     - git config user.name "${GIT_USER_NAME}"
     - git config user.email "${GIT_USER_EMAIL}"
 
-    - echo "获取最新 ${SOURCE_BRANCH}..."
+    - echo "获取最新源分支 ${SOURCE_BRANCH}..."
     - git fetch origin ${SOURCE_BRANCH}
-    - git checkout ${SOURCE_BRANCH}
-    - git reset --hard origin/${SOURCE_BRANCH}
-
-    - echo "当前 HEAD:"
-    - git rev-parse HEAD
 
     - echo "配置 GitHub remote..."
     - git remote remove github || true
     - git remote add github "https://oauth2:${GITHUB_ACCESS_TOKEN}@github.com/${GITHUB_REPO_PATH}.git"
 
-    - echo "开始同步到 GitHub..."
-    - git rm --cached .gitlab-ci.yml
-    - git rm -r --cached .gitlab || true
-    - git commit --amend --no-edit --no-verify
-    - git push github HEAD:${TARGET_BRANCH} --force
-    - git reset --hard origin/${SOURCE_BRANCH}
-    - echo "✅ ${SOURCE_BRANCH} -> GitHub completed"
+    - echo "获取 GitHub ${TARGET_BRANCH} 最新状态..."
+    - git fetch github ${TARGET_BRANCH}
+
+    - echo "基于 GitHub 分支创建同步工作分支..."
+    - git checkout -B github-sync-branch github/${TARGET_BRANCH}
+
+    - echo "将开源变更 merge 进 GitHub 分支（冲突时报错，不自动提交）..."
+    - git merge origin/${SOURCE_BRANCH} --no-commit --no-ff || (echo "❌ 存在合并冲突，需要手动处理后重新同步" && git merge --abort && exit 1)
+
+    - echo "确保 GitLab CI 配置不推送到 GitHub..."
+    - git rm --cached .gitlab-ci.yml 2>/dev/null || true
+    - git rm -r --cached .gitlab/ 2>/dev/null || true
+
+    - git diff --cached --quiet && echo "✅ 已是最新，无需提交" || git commit --no-edit --no-verify
+    - git push github github-sync-branch:${TARGET_BRANCH}
+    - echo "✅ ${SOURCE_BRANCH} -> GitHub ${TARGET_BRANCH} completed"
 
   rules:
     - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "master"'
