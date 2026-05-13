@@ -76,7 +76,7 @@ public class ChatController {
     public Object completion(HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException {
         String endpoint = httpRequest.getRequestURI();
         boolean isDirectMode = BellaContext.isDirectMode();
-
+        System.out.println("Test Ci");
         // Read and parse request body (common for both modes)
         byte[] bodyBytes = IOUtils.toByteArray(httpRequest.getInputStream());
         CompletionRequest request = JacksonUtils.deserialize(bodyBytes, CompletionRequest.class);
