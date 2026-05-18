@@ -117,7 +117,12 @@ const MetadataPage = () => {
   const handleCapabilityChange = useCallback((endpoint: string) => {
     setSelectedCapability(endpoint)
     setSearchQuery("")
-  }, [])
+    setModelParamError(null)
+    updateSearchParams({
+      endpoint,
+      model: null,
+    })
+  }, [updateSearchParams])
 
   /**
    * 处理标签变化
@@ -146,7 +151,10 @@ const MetadataPage = () => {
   const handleConfigureModel = (model: Model) => {
     setSelectedModel(model)
     setModelParamError(null)
-    updateSearchParams({ model: model.modelName })
+    updateSearchParams({
+      endpoint: selectedCapability,
+      model: model.modelName,
+    })
   }
 
   /**
@@ -161,7 +169,7 @@ const MetadataPage = () => {
   return (
     <>
       {/* 条件渲染:列表视图或配置视图 */}
-      {selectedModel ? (
+      {selectedModel? (
         <div className="animate-in fade-in duration-300">
           <ConfigureModelPanel
             model={selectedModel}
