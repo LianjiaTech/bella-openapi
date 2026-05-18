@@ -54,6 +54,7 @@ import javax.annotation.PostConstruct;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -437,22 +438,16 @@ public class ApikeyService {
                 || !StringUtils.equals(targetOwnerName, source.getOwnerName());
         Assert.isTrue(changed, "未检测到有效变更");
 
-        List<ApikeyDB> children = listChildren(op.getCode());
-        List<String> affectedCodes = collectAffectedCodes(op.getCode(), children);
+        List<String> affectedCodes = Collections.singletonList(op.getCode());
 
         ApikeyDB updateDB = new ApikeyDB();
         updateDB.setOwnerType(op.getTargetOwnerType());
         updateDB.setOwnerCode(targetOwnerCode);
         updateDB.setOwnerName(targetOwnerName);
-        updateDB.setManagerCode(source.getOwnerCode());
-        updateDB.setManagerName(source.getOwnerName());
         updateDB.setMuid(BellaContext.getOperator().getUserId());
         updateDB.setMuName(BellaContext.getOperator().getUserName());
 
         apikeyRepo.update(updateDB, op.getCode());
-        if(StringUtils.isEmpty(source.getParentCode())) {
-            apikeyRepo.batchUpdateOwnerAndManagerByParentCode(updateDB, op.getCode());
-        }
 
         Operator currentOperator = BellaContext.getOperator();
         apikeyChangeLogRepo.insertOwnerChangeLog(op, source, affectedCodes, targetOwnerCode, targetOwnerName, currentOperator);
@@ -483,17 +478,14 @@ public class ApikeyService {
         List<ApikeyDB> children = StringUtils.isEmpty(source.getParentCode()) ? listChildren(op.getCode()) : new ArrayList<>();
         List<String> affectedCodes = collectAffectedCodes(op.getCode(), children);
         Operator currentOperator = BellaContext.getOperator();
-        String toManagerCode = source.getOwnerCode();
-        String toManagerName = source.getOwnerName();
 
-        apikeyRepo.updateParentAndManagerByCode(op.getCode(), op.getTargetParentCode(), toManagerCode, toManagerName,
-                currentOperator.getUserId(), currentOperator.getUserName());
+        apikeyRepo.updateParentByCode(op.getCode(), op.getTargetParentCode(), currentOperator.getUserId(), currentOperator.getUserName());
         if(StringUtils.isEmpty(source.getParentCode())) {
-            apikeyRepo.batchUpdateParentAndManagerByParentCode(op.getCode(), op.getTargetParentCode(), toManagerCode, toManagerName,
-                    currentOperator.getUserId(), currentOperator.getUserName());
+            apikeyRepo.batchUpdateParentByParentCode(op.getCode(), op.getTargetParentCode(), currentOperator.getUserId(),
+                    currentOperator.getUserName());
         }
 
-        apikeyChangeLogRepo.insertParentChangeLog(op, source, affectedCodes, toManagerCode, toManagerName, currentOperator);
+        apikeyChangeLogRepo.insertParentChangeLog(op, source, affectedCodes, currentOperator);
         eventPublisher.publishEvent(new ApiKeyChangeEvent(affectedCodes));
 
         return ApikeyOps.ChangeResult.builder()
@@ -870,5 +862,6 @@ public class ApikeyService {
         }
         return affectedCodes;
     }
+
 
 }

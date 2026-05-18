@@ -4,20 +4,21 @@ import { ApikeyInfo, ApiKeyBalance,UserSearchResult, CreateSubApiKeyRequest, Upd
 
 /**
  * 管理员专用查询参数接口
- * 与普通查询的区别：不固定 ownerType='person'，支持按所有者维度搜索
+ * 与普通查询的区别：不固定 ownerType='person'，支持按所有者/管理者维度搜索
  */
 export interface AdminApiKeyQueryParams {
-    /** 搜索维度：ak=按名称/服务名，owner=按所有者 */
-    searchType: 'ak' | 'owner'
+    /** 搜索维度：ak=按名称/服务名，owner=按所有者，manager=按管理人 */
+    searchType: 'ak' | 'owner' | 'manager'
     /** ak 维度的搜索词（searchType='ak' 时生效） */
     searchParam?: string
     /** owner 维度的搜索词（searchType='owner' 时生效） */
     ownerSearch?: string
+    /** manager 维度的搜索词（searchType='manager' 时生效） */
+    managerSearch?: string
     /** 所有者类型过滤，传 undefined 返回全部类型 */
     ownerType?: 'person' | 'org' | 'project'
     /** 父级 ak code，用于筛选子 ak */
     parentCode?: string
-    // TODO: managerSearch?: string  — 管理员视角模糊搜索管理人，待后端联调后开放
 }
 
 export async function getApiKeys(ownerCode: string, search: string, page: number, parentCode: string): Promise<Page<ApikeyInfo>> {
@@ -140,7 +141,7 @@ export async function getApiKeyChangeHistory(akCode: string): Promise<ApikeyChan
 
 /**
  * 管理员全量查询接口
- * 与 getApiKeys 的区别：不固定 ownerType='person'，支持 ownerSearch 参数按所有者筛选
+ * 与 getApiKeys 的区别：不固定 ownerType='person'，支持 ownerSearch / managerSearch 参数筛选
  * 不传 ownerCode，让后端返回全量数据
  */
 export async function getAdminApiKeys(page: number, params: AdminApiKeyQueryParams): Promise<Page<ApikeyInfo>> {
@@ -157,6 +158,10 @@ export async function getAdminApiKeys(page: number, params: AdminApiKeyQueryPara
     // owner 维度：ownerSearch 传所有者名称/ID 关键词
     if (params.searchType === 'owner' && params.ownerSearch) {
         queryParams.ownerSearch = params.ownerSearch;
+    }
+    // manager 维度：managerSearch 传管理人名称/ID 关键词
+    if (params.searchType === 'manager' && params.managerSearch) {
+        queryParams.managerSearch = params.managerSearch;
     }
     const response = await apiClient.get('/console/apikey/page', { params: queryParams });
     return response as unknown as Page<ApikeyInfo>;
