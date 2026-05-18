@@ -3,6 +3,7 @@ package com.ke.bella.openapi.protocol.tts;
 import java.io.ByteArrayOutputStream;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.ke.bella.openapi.EndpointProcessData;
 import com.ke.bella.openapi.common.exception.BellaException;
@@ -30,6 +31,7 @@ public class HuoShanV3StreamTtsCallback implements Callbacks.HttpStreamTtsCallba
     private final EndpointLogger logger;
 
     private boolean first = true;
+    private final AtomicBoolean finished = new AtomicBoolean(false);
     private final long startTime = DateTimeUtils.getCurrentMills();
     private final ByteArrayOutputStream lineBuffer = new ByteArrayOutputStream();
 
@@ -37,7 +39,9 @@ public class HuoShanV3StreamTtsCallback implements Callbacks.HttpStreamTtsCallba
         this.byteSender = byteSender;
         this.processData = processData;
         this.logger = logger;
-        processData.setMetrics(new HashMap<>());
+        if (processData != null) {
+            processData.setMetrics(new HashMap<>());
+        }
     }
 
     @Override
@@ -46,7 +50,13 @@ public class HuoShanV3StreamTtsCallback implements Callbacks.HttpStreamTtsCallba
 
     @Override
     public void callback(byte[] msg) {
+        if (finished.get()) {
+            return;
+        }
         for (byte b : msg) {
+            if (finished.get()) {
+                return;
+            }
             if (b == '\n') {
                 processLine();
                 lineBuffer.reset();
@@ -57,6 +67,9 @@ public class HuoShanV3StreamTtsCallback implements Callbacks.HttpStreamTtsCallba
     }
 
     private void processLine() {
+        if (finished.get()) {
+            return;
+        }
         if (lineBuffer.size() == 0) {
             return;
         }
@@ -72,6 +85,7 @@ public class HuoShanV3StreamTtsCallback implements Callbacks.HttpStreamTtsCallba
             if (!response.isSuccess()) {
                 log.warn("HuoShanV3 stream error: code={}, message={}", response.getCode(), response.getMessage());
                 HttpStatus status = HuoShanV3Adaptor.mapErrorCode(response.getCode());
+                lineBuffer.reset();
                 finish(new BellaException.ChannelException(status.value(), status.getReasonPhrase(), response.getMessage()));
                 return;
             }
@@ -79,7 +93,7 @@ public class HuoShanV3StreamTtsCallback implements Callbacks.HttpStreamTtsCallba
                 byte[] audioBytes = BASE64_DECODER.decode(response.getData());
                 byteSender.send(audioBytes);
                 if (first) {
-                    processData.getMetrics().put("ttft", DateTimeUtils.getCurrentMills() - startTime);
+                    recordMetric("ttft", DateTimeUtils.getCurrentMills() - startTime);
                     first = false;
                 }
             }
@@ -97,15 +111,38 @@ public class HuoShanV3StreamTtsCallback implements Callbacks.HttpStreamTtsCallba
 
     @Override
     public void finish() {
+        if (finished.get()) {
+            return;
+        }
         flushLineBuffer();
-        processData.getMetrics().put("ttlt", DateTimeUtils.getCurrentMills() - startTime);
+        complete();
+    }
+
+    private void complete() {
+        if (!finished.compareAndSet(false, true)) {
+            return;
+        }
+        recordMetric("ttlt", DateTimeUtils.getCurrentMills() - startTime);
         byteSender.close();
-        logger.log(processData);
+        if (logger != null && processData != null) {
+            logger.log(processData);
+        }
     }
 
     @Override
     public void finish(BellaException exception) {
-        processData.setResponse(OpenapiResponse.errorResponse(exception.convertToOpenapiError()));
-        finish();
+        if (finished.get()) {
+            return;
+        }
+        if (processData != null) {
+            processData.setResponse(OpenapiResponse.errorResponse(exception.convertToOpenapiError()));
+        }
+        complete();
+    }
+
+    private void recordMetric(String key, long value) {
+        if (processData != null && processData.getMetrics() != null) {
+            processData.getMetrics().put(key, value);
+        }
     }
 }

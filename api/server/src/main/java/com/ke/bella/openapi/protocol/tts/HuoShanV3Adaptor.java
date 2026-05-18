@@ -118,16 +118,9 @@ public class HuoShanV3Adaptor implements TtsAdaptor<HuoShanV3Property> {
 
         private final HuoShanV3StreamTtsCallback delegate = new HuoShanV3StreamTtsCallback(bufferSender, null, null) {
             @Override
-            public void finish() {
-                // 只做行缓冲刷新和关闭 sender，跳过 metrics 和 logger
-                flushLineBuffer();
-                bufferSender.close();
-            }
-
-            @Override
             public void finish(BellaException exception) {
                 error = exception;
-                finish();
+                super.finish(exception);
             }
         };
 
