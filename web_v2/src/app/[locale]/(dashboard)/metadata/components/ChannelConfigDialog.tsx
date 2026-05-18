@@ -23,6 +23,33 @@ function isTokenBased(schema: JsonSchema, existingUnit?: string): boolean {
   )
 }
 
+function removeEmptyChannelInfoFields(channelInfo: string): string {
+  if (!channelInfo) return channelInfo
+
+  try {
+    const parsed = JSON.parse(channelInfo)
+    const fieldsToRemove = new Set([
+      'queueName',
+      'messageEndpointUrl',
+      'encodingType',
+      'defaultMaxToken',
+      'anthropicVersion',
+      'deployName',
+    ])
+
+    const filtered = Object.fromEntries(
+      Object.entries(parsed).filter(([key, value]) => {
+        if (!fieldsToRemove.has(key)) return true
+        return value !== '' && value !== 0 && value != null
+      })
+    )
+
+    return JSON.stringify(filtered)
+  } catch {
+    return channelInfo
+  }
+}
+
 
 interface ChannelConfigDialogProps {
   open: boolean
@@ -566,11 +593,7 @@ export function ChannelConfigDialog({
     // 3. 压缩 channelInfo 为单行 JSON，避免 pretty-print 换行存入数据库
     let finalChannelInfo = formData.channelInfo
     if (finalChannelInfo) {
-      try {
-        finalChannelInfo = JSON.stringify(JSON.parse(finalChannelInfo))
-      } catch {
-        // 解析失败则使用原始值
-      }
+      finalChannelInfo = removeEmptyChannelInfoFields(finalChannelInfo)
     }
 
     // 4. 设置加载状态
