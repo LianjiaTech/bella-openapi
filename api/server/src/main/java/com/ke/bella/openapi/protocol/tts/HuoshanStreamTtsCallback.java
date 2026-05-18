@@ -266,12 +266,65 @@ public class HuoshanStreamTtsCallback implements Callbacks.WebSocketCallback {
     @Data
     public static class AudioParams {
         @JsonProperty("speech_rate")
-        Double speechRate;
+        Number speechRate;
         String format;
 
         public AudioParams(TtsRequest request) {
-            this.speechRate = request.speed;
+            this.speechRate = resolveSpeechRate(request);
             this.format = request.responseFormat;
+        }
+
+        private Number resolveSpeechRate(TtsRequest request) {
+            Number speechRate = getSpeechRateFromRequestAudioParams(request);
+            if(speechRate != null) {
+                return speechRate;
+            }
+            speechRate = getSpeechRateFromAudioParams(request);
+            if(speechRate != null) {
+                return speechRate;
+            }
+            return convertSpeedToSpeechRate(request.speed);
+        }
+
+        private Number getSpeechRateFromRequestAudioParams(TtsRequest request) {
+            if(request.getExtra_body() == null || !request.getExtra_body().containsKey("request")) {
+                return null;
+            }
+            Object requestObj = request.getExtra_body().get("request");
+            if(!(requestObj instanceof Map)) {
+                return null;
+            }
+            Object audioParamsObj = ((Map<String, Object>) requestObj).get("audio_params");
+            return getSpeechRate(audioParamsObj);
+        }
+
+        private Number getSpeechRateFromAudioParams(TtsRequest request) {
+            if(request.getExtra_body() == null || !request.getExtra_body().containsKey("audio_params")) {
+                return null;
+            }
+            return getSpeechRate(request.getExtra_body().get("audio_params"));
+        }
+
+        private Number getSpeechRate(Object audioParamsObj) {
+            if(!(audioParamsObj instanceof Map)) {
+                return null;
+            }
+            Object speechRate = ((Map<String, Object>) audioParamsObj).get("speech_rate");
+            if(speechRate instanceof Number) {
+                return (Number) speechRate;
+            }
+            if(speechRate instanceof String) {
+                return Double.valueOf((String) speechRate);
+            }
+            return null;
+        }
+
+        private Integer convertSpeedToSpeechRate(Double speed) {
+            if(speed == null || Double.compare(speed, 1.0) == 0) {
+                return null;
+            }
+            int speechRate = (int) Math.round((speed - 1.0) * 100);
+            return Math.max(-50, Math.min(100, speechRate));
         }
     }
 
