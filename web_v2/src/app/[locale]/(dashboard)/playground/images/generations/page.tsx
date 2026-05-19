@@ -86,24 +86,6 @@ export default function ImageGenerationsPage() {
       if (user?.userId) body.user = user.userId;
       const response = await generateImagesApi(body);
       setResponse(response);
-
-      // const res = await fetch(`${protocol}//${host}/v1/images/generations`, {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify(body),
-      //   credentials: "include",
-      // });
-
-      // if (!res.ok) {
-      //   const errData = await res.json().catch(() => ({}));
-      //   throw new Error(
-      //     `请求失败: ${res.status} ${errData.error?.message || "未知错误"}`
-      //   );
-      // }
-
-      // const data = await res.json();
-      // console.log(data,'reddd')
-      // setResponse(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "未知错误");
     } finally {
