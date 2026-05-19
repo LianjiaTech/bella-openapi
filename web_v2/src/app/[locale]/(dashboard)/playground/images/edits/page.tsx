@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useMemo, useCallback } from "react";
+import React, { useState, useRef, useMemo, useCallback, useEffect } from "react";
 import { TopBar } from "@/components/layout";
 import { Card } from "@/components/common/card";
 import { Button } from "@/components/common/button";
@@ -18,7 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/common/ta
 import { ModelSelector } from "../../components";
 import { useAuth } from "@/components/providers/auth-provider";
 import { ImageOverlay, ImageResultCard } from "../components";
-import { parseFeatures, parsePriceRows } from "@/lib/utils/image";
+import { parseFeatures, parseImagePlaygroundConfig, parsePriceRows, resolveImageParameterValue } from "@/lib/utils/image";
 import { Badge } from "@/components/common/badge";
 import { getTagColor } from "@/lib/constants/theme";
 import {
@@ -54,15 +54,25 @@ export default function ImageEditsPage() {
   const [model, setModel] = useState("");
   const [prompt, setPrompt] = useState("一只可爱的小猫在草地上玩耍，阳光明媚");
   const [size, setSize] = useState("1024x1024");
+  const [quality, setQuality] = useState("standard");
+  const [style, setStyle] = useState("vivid");
   // TODO: 多图生成开放后改回 useState(1)
   const n = 1;
 
   const [selectedModel, setSelectedModel] = useState<import("@/lib/types/openapi").Model | undefined>(undefined);
   const features = useMemo(() => parseFeatures(selectedModel?.features), [selectedModel]);
-  const supportsQuality = features.has("quality") || features.has("highQuality");
-  const supportsStyle = features.has("style") || features.has("multipleStyles");
+  const imageConfig = useMemo(
+    () => parseImagePlaygroundConfig(selectedModel?.properties, 'edits'),
+    [selectedModel]
+  );
   const priceRows = useMemo(() => parsePriceRows(selectedModel?.priceDetails?.displayPrice), [selectedModel]);
   const handleModelChange = useCallback((m: import("@/lib/types/openapi").Model | undefined) => setSelectedModel(m), []);
+
+  useEffect(() => {
+    setSize((current) => resolveImageParameterValue(current, imageConfig.size));
+    setQuality((current) => resolveImageParameterValue(current, imageConfig.quality));
+    setStyle((current) => resolveImageParameterValue(current, imageConfig.style));
+  }, [imageConfig]);
 
   const [images, setImages] = useState<ImageItem[]>([]);
   const [urlInput, setUrlInput] = useState("");
@@ -205,7 +215,9 @@ export default function ImageEditsPage() {
       if (model) formData.append("model", model);
       if (user?.userId) formData.append("user", String(user.userId));
       formData.append("n", String(n));
-      formData.append("size", size);
+      if (imageConfig.size.enabled && size) formData.append("size", size);
+      if (imageConfig.quality.enabled && quality) formData.append("quality", quality);
+      if (imageConfig.style.enabled && style) formData.append("style", style);
 
       images.filter((img) => img.file).forEach((img) => formData.append("image", img.file!));
       images.filter((img) => img.url && !img.file).forEach((img) => formData.append("image_url", img.url!));
@@ -446,45 +458,49 @@ export default function ImageEditsPage() {
                   />
                 </div>
 
-                <div>
-                  <Label className="mb-2 block">图像尺寸</Label>
-                  <Select value={size} onValueChange={setSize}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="256x256">256 × 256</SelectItem>
-                      <SelectItem value="512x512">512 × 512</SelectItem>
-                      <SelectItem value="1024x1024">1024 × 1024 (方形)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {supportsQuality && (
+                {imageConfig.size.enabled && (
                   <div>
-                    <Label className="mb-2 block">图像质量</Label>
-                    <Select defaultValue="standard">
+                    <Label className="mb-2 block">图像尺寸</Label>
+                    <Select value={size} onValueChange={setSize}>
                       <SelectTrigger className="w-full">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="hd">HD（高清）</SelectItem>
-                        <SelectItem value="standard">Standard（标准）</SelectItem>
+                        {imageConfig.size.options.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
                 )}
 
-                {supportsStyle && (
+                {imageConfig.quality.enabled && (
                   <div>
-                    <Label className="mb-2 block">风格</Label>
-                    <Select defaultValue="vivid">
+                    <Label className="mb-2 block">图像质量</Label>
+                    <Select value={quality} onValueChange={setQuality}>
                       <SelectTrigger className="w-full">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="vivid">Vivid（鲜艳）</SelectItem>
-                        <SelectItem value="natural">Natural（自然）</SelectItem>
+                        {imageConfig.quality.options.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {imageConfig.style.enabled && (
+                  <div>
+                    <Label className="mb-2 block">风格</Label>
+                    <Select value={style} onValueChange={setStyle}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {imageConfig.style.options.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>

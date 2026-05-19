@@ -1,9 +1,31 @@
 import { ChannelDetails } from "./metadata";
 
+export type ImageParameterOption = string | {
+    value: string;
+    label?: string;
+};
+
+export interface ImageParameterProperties {
+    enabled?: boolean;
+    default?: string;
+    options?: ImageParameterOption[];
+}
+
+export interface ImageEndpointProperties {
+    parameters?: {
+        size?: ImageParameterProperties;
+        quality?: ImageParameterProperties;
+        style?: ImageParameterProperties;
+    };
+}
+
 export interface ModelProperties {
     max_input_context?: number;
     max_output_context?: number;
-    // 其他模型属性可以根据实际需求扩展
+    image?: {
+        generations?: ImageEndpointProperties;
+        edits?: ImageEndpointProperties;
+    };
 }
 
 export interface Model {

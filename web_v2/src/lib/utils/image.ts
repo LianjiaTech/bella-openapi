@@ -1,4 +1,19 @@
 import { shouldConvertTokenPrice, convertTokenPriceLabel, convertTokenPrice } from './price'
+import { ImageEndpointProperties, ImageParameterProperties, ModelProperties } from '@/lib/types/openapi'
+
+export type ImagePlaygroundEndpoint = 'generations' | 'edits'
+
+export interface NormalizedImageParameterConfig {
+  enabled: boolean
+  defaultValue?: string
+  options: Array<{ value: string; label: string }>
+}
+
+export interface ImagePlaygroundConfig {
+  size: NormalizedImageParameterConfig
+  quality: NormalizedImageParameterConfig
+  style: NormalizedImageParameterConfig
+}
 
 /**
  * 解析模型 features 字段（兼容 JSON 对象格式和逗号分隔字符串）
@@ -22,6 +37,70 @@ export function parseFeatures(raw: string | undefined | null): Set<string> {
     // fallback
   }
   return new Set(raw.split(",").map((f) => f.trim()).filter(Boolean));
+}
+
+export function parseModelProperties(raw: string | undefined | null): ModelProperties {
+  if (!raw) return {}
+  try {
+    const parsed = JSON.parse(raw)
+    if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+      return parsed as ModelProperties
+    }
+  } catch {
+  }
+  return {}
+}
+
+function normalizeParameterConfig(
+  config: ImageParameterProperties | undefined
+): NormalizedImageParameterConfig {
+  if (config?.enabled !== true) {
+    return { enabled: false, options: [] }
+  }
+
+  const options = (config.options || [])
+    .map((option) => {
+      if (typeof option === 'string') {
+        return { value: option, label: option }
+      }
+      if (option && typeof option.value === 'string' && option.value) {
+        return { value: option.value, label: option.label || option.value }
+      }
+      return null
+    })
+    .filter((option): option is { value: string; label: string } => option !== null)
+
+  return {
+    enabled: true,
+    defaultValue: config.default,
+    options,
+  }
+}
+
+export function parseImagePlaygroundConfig(
+  raw: string | undefined | null,
+  endpoint: ImagePlaygroundEndpoint
+): ImagePlaygroundConfig {
+  const endpointConfig: ImageEndpointProperties | undefined = parseModelProperties(raw).image?.[endpoint]
+  const parameters = endpointConfig?.parameters || {}
+
+  return {
+    size: normalizeParameterConfig(parameters.size),
+    quality: normalizeParameterConfig(parameters.quality),
+    style: normalizeParameterConfig(parameters.style),
+  }
+}
+
+export function resolveImageParameterValue(
+  currentValue: string,
+  config: NormalizedImageParameterConfig
+): string {
+  if (!config.enabled) return ''
+  if (config.options.some((option) => option.value === currentValue)) return currentValue
+  if (config.defaultValue && config.options.some((option) => option.value === config.defaultValue)) {
+    return config.defaultValue
+  }
+  return config.options[0]?.value || config.defaultValue || ''
 }
 
 /**

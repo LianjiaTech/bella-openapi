@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { TopBar } from "@/components/layout";
 import { Card } from "@/components/common/card";
 import { Button } from "@/components/common/button";
@@ -17,7 +17,7 @@ import {
 import { ModelSelector } from "../../components";
 import { useAuth } from "@/components/providers/auth-provider";
 import { ImageOverlay, ImageResultCard } from "../components";
-import { parseFeatures, parsePriceRows } from "@/lib/utils/image";
+import { parseFeatures, parseImagePlaygroundConfig, parsePriceRows, resolveImageParameterValue } from "@/lib/utils/image";
 import { Badge } from "@/components/common/badge";
 import { getTagColor } from "@/lib/constants/theme";
 import { Wand2, ImageIcon } from "lucide-react";
@@ -54,10 +54,18 @@ export default function ImageGenerationsPage() {
 
   const [selectedModel, setSelectedModel] = useState<import("@/lib/types/openapi").Model | undefined>(undefined);
   const features = useMemo(() => parseFeatures(selectedModel?.features), [selectedModel]);
-  const supportsQuality = features.has("quality") || features.has("highQuality");
-  const supportsStyle = features.has("style") || features.has("multipleStyles");
+  const imageConfig = useMemo(
+    () => parseImagePlaygroundConfig(selectedModel?.properties, 'generations'),
+    [selectedModel]
+  );
   const priceRows = useMemo(() => parsePriceRows(selectedModel?.priceDetails?.displayPrice), [selectedModel]);
   const handleModelChange = useCallback((m: import("@/lib/types/openapi").Model | undefined) => setSelectedModel(m), []);
+
+  useEffect(() => {
+    setSize((current) => resolveImageParameterValue(current, imageConfig.size));
+    setQuality((current) => resolveImageParameterValue(current, imageConfig.quality));
+    setStyle((current) => resolveImageParameterValue(current, imageConfig.style));
+  }, [imageConfig]);
 
   const generateImages = async () => {
     if (!prompt.trim()) return;
@@ -67,18 +75,16 @@ export default function ImageGenerationsPage() {
     setResponse(null);
 
     try {
-      const protocol = typeof window !== "undefined" ? window.location.protocol : "http:";
-      const host = window.location.host;
-
       const body: Record<string, unknown> = {
         prompt,
         model,
         n,
-        size
       };
+      if (imageConfig.size.enabled && size) body.size = size;
+      if (imageConfig.quality.enabled && quality) body.quality = quality;
+      if (imageConfig.style.enabled && style) body.style = style;
       if (user?.userId) body.user = user.userId;
       const response = await generateImagesApi(body);
-      console.log('res>>>', response);
       setResponse(response);
 
       // const res = await fetch(`${protocol}//${host}/v1/images/generations`, {
@@ -215,23 +221,23 @@ export default function ImageGenerationsPage() {
                   />
                 </div>
 
-                <div>
-                  <Label className="mb-2 block">图像尺寸</Label>
-                  <Select value={size} onValueChange={setSize}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="256x256">256 × 256</SelectItem>
-                      <SelectItem value="512x512">512 × 512</SelectItem>
-                      <SelectItem value="1024x1024">1024 × 1024 (方形)</SelectItem>
-                      <SelectItem value="1792x1024">1792 × 1024 (横向)</SelectItem>
-                      <SelectItem value="1024x1792">1024 × 1792 (纵向)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                {imageConfig.size.enabled && (
+                  <div>
+                    <Label className="mb-2 block">图像尺寸</Label>
+                    <Select value={size} onValueChange={setSize}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {imageConfig.size.options.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
-                {supportsQuality && (
+                {imageConfig.quality.enabled && (
                   <div>
                     <Label className="mb-2 block">图像质量</Label>
                     <Select value={quality} onValueChange={setQuality}>
@@ -239,14 +245,15 @@ export default function ImageGenerationsPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="hd">HD（高清）</SelectItem>
-                        <SelectItem value="standard">Standard（标准）</SelectItem>
+                        {imageConfig.quality.options.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
                 )}
 
-                {supportsStyle && (
+                {imageConfig.style.enabled && (
                   <div>
                     <Label className="mb-2 block">风格</Label>
                     <Select value={style} onValueChange={setStyle}>
@@ -254,8 +261,9 @@ export default function ImageGenerationsPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="vivid">Vivid（鲜艳）</SelectItem>
-                        <SelectItem value="natural">Natural（自然）</SelectItem>
+                        {imageConfig.style.options.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
