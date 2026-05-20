@@ -114,7 +114,7 @@ export function ModelFilterPanel({
       />
 
       {/* 快速筛选标签 */}
-      <div className="mb-8">
+      <div className="mb-4">
         <div className="mb-3 flex items-center gap-2">
           <Layers className="h-4 w-4 text-muted-foreground" />
           <span className="text-sm font-medium text-muted-foreground">
