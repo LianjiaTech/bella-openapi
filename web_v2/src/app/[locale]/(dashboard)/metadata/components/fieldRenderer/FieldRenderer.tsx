@@ -14,6 +14,7 @@ import type { TypeSchema } from '@/lib/types/metadata'
 import { MapField } from './components/MapField'
 import { ArrayField } from './components/ArrayField'
 import { BatchDiscount } from './components/BatchDiscount'
+import { SupplierDiscount } from './components/SupplierDiscount'
 import { PriceRangeConfig } from './components/PriceRangeConfig/PriceRangeConfig'
 import { ToolPriceConfig } from './components/toolPriceConfig'
 
@@ -75,6 +76,9 @@ export const FieldRenderer = ({
       // 职责：处理数字类型字段，为 batchDiscount 提供 0-1 范围限制和默认值 0.5
       if (schema.code === 'batchDiscount') {
         return <BatchDiscount mode={mode} value={value} onChange={(value) => onChange(value)} />
+      }
+      if (schema.code === 'supplierDiscount') {
+        return <SupplierDiscount mode={mode} value={value} onChange={(value) => onChange(value)} />
       }
       return (
         <div className="text-left space-y-1.5">

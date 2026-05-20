@@ -20,6 +20,7 @@ import type { Model } from '@/lib/types/openapi'
 import type { JsonSchema } from '@/lib/types/metadata'
 import axios from 'axios'
 import { FieldRenderer } from './fieldRenderer/FieldRenderer'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/common/select'
 
 interface CreateModelDialogProps {
   mode: 'create'
@@ -34,6 +35,12 @@ const ownerTypeOptions = [
   { value: 'org', label: 'Org(组织用户)' },
 ]
 
+const opennessTypeOptions = [
+  { value: '0', label: '未知' },
+  { value: '1', label: '闭源' },
+  { value: '2', label: '开源' },
+]
+
 export function CreateModelDialog({ mode, open, onClose, onSuccess }: CreateModelDialogProps) {
   // 获取能力点数据
   const { endpoints, loading: endpointsLoading, error: endpointsError, refetch } = useEndpoints()
@@ -46,6 +53,7 @@ export function CreateModelDialog({ mode, open, onClose, onSuccess }: CreateMode
     capability: [] as string[],
     modelName: '',
     documentUrl: '',
+    opennessType: 0,
     ownerType: '',
     ownerCode: '',
     ownerName: '',
@@ -88,6 +96,7 @@ export function CreateModelDialog({ mode, open, onClose, onSuccess }: CreateMode
       capability: [],
       modelName: '',
       documentUrl: '',
+      opennessType: 0,
       ownerType: '',
       ownerCode: '',
       ownerName: '',
@@ -314,6 +323,7 @@ export function CreateModelDialog({ mode, open, onClose, onSuccess }: CreateMode
         ownerType: formData.ownerType,
         ownerCode: formData.ownerCode,
         ownerName: formData.ownerName,
+        opennessType: formData.opennessType,
         endpoints: formData.capability,
         features: JSON.stringify(featureValues),
         properties: JSON.stringify(propertyValues),
@@ -440,6 +450,31 @@ export function CreateModelDialog({ mode, open, onClose, onSuccess }: CreateMode
               value={formData.documentUrl}
               onChange={handleInputChange('documentUrl')}
             />
+          </div>
+
+          {/* 开放程度 */}
+          <div className="space-y-2">
+            <Label htmlFor="opennessType" className="mb-4 block">开放程度</Label>
+            <Select
+              value={String(formData.opennessType)}
+              onValueChange={(value) => {
+                setFormData((prev) => ({
+                  ...prev,
+                  opennessType: Number(value),
+                }))
+              }}
+            >
+              <SelectTrigger id="opennessType">
+                <SelectValue placeholder="选择开放程度" />
+              </SelectTrigger>
+              <SelectContent>
+                {opennessTypeOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* 模型特性 - 动态渲染 */}

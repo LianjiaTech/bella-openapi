@@ -41,6 +41,7 @@ public class ResponsesPriceInfo implements IProtocolProperty {
      * 示例: {"web_search": 0.5, "code_interpreter": 1.0}
      */
     private Map<String, BigDecimal> toolPrices;
+    private double supplierDiscount = 1.0;
 
     @Override
     public Map<String, String> description() {

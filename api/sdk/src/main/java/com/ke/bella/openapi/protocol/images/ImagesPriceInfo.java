@@ -15,6 +15,7 @@ public class ImagesPriceInfo implements IPriceInfo, Serializable {
     private static final long serialVersionUID = 1L;
     ImagesPriceInfoDetailsList details;
     private double batchDiscount = 1.0;
+    private double supplierDiscount = 1.0;
 
     @Override
     public String getUnit() {

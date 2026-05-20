@@ -74,6 +74,11 @@ export function ModelCard({ model, onAddChannel, selectedCapability }: ModelCard
                     {formatBatchDiscount(priceInfo.batchDiscount)}
                   </div>
                 )}
+                {formatBatchDiscount(priceInfo.supplierDiscount) && (
+                  <div className="text-xs text-right">
+                    供应商折扣：{formatBatchDiscount(priceInfo.supplierDiscount)}
+                  </div>
+                )}
               </>
             ) : priceInfo.tag === 'textToImage' ? (
               <TextToImageCard data={Array.isArray(priceInfo.data) ? priceInfo.data : []} discount={priceInfo.batchDiscount}/>
@@ -89,7 +94,7 @@ export function ModelCard({ model, onAddChannel, selectedCapability }: ModelCard
                 </div>
               </>
             ) : priceInfo.tag === 'displayPrice' ? (
-              <DisplayPriceCard data={priceInfo.data} batchDiscount={priceInfo.batchDiscount} unit={priceInfo.unit}/>
+              <DisplayPriceCard data={priceInfo.data} batchDiscount={priceInfo.batchDiscount} supplierDiscount={priceInfo.supplierDiscount} unit={priceInfo.unit}/>
             ) : 
             (
               <>

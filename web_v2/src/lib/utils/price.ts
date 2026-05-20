@@ -153,6 +153,7 @@ export function formatPrice(
   export function formatPriceInfo(priceDetails?: {
     priceInfo?: {
       batchDiscount?: number
+      supplierDiscount?: number
       tiers?: any[]
       input?: number
       output?: number
@@ -179,6 +180,7 @@ export function formatPrice(
           // tiers 仅在 分/千token 单位时才进行价格字段换算
           tiers: isTokenBased ? convertTiers(tiers) : tiers,
           batchDiscount: priceDetails?.priceInfo?.batchDiscount,
+          supplierDiscount: priceDetails?.priceInfo?.supplierDiscount,
           unit,
         }
       }
@@ -189,6 +191,7 @@ export function formatPrice(
         unit,
         price: fmt(priceInfo.price),
         batchDiscount: priceInfo?.batchDiscount,
+        supplierDiscount: priceInfo?.supplierDiscount,
       }
     }
     if(priceInfo?.basicSearchPrice && priceInfo?.advancedSearchPrice) {
@@ -198,6 +201,7 @@ export function formatPrice(
         basicSearchPrice: fmt(priceInfo.basicSearchPrice),
         advancedSearchPrice: fmt(priceInfo.advancedSearchPrice),
         batchDiscount: priceInfo?.batchDiscount,
+        supplierDiscount: priceInfo?.supplierDiscount,
       }
     }
 
@@ -216,6 +220,7 @@ export function formatPrice(
         tag: 'textToImage',
         data: convertedDetails.length > 0 ? [convertedDetails[0]] : [],
         batchDiscount: priceDetails?.priceInfo?.batchDiscount,
+        supplierDiscount: priceDetails?.priceInfo?.supplierDiscount,
         unit,
       }
     }
@@ -226,6 +231,7 @@ export function formatPrice(
         data: transformedPrice,
         unit,
         batchDiscount: priceDetails?.priceInfo?.batchDiscount,
+        supplierDiscount: priceDetails?.priceInfo?.supplierDiscount,
       }
     }
     return {

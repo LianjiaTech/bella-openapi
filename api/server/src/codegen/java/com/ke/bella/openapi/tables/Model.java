@@ -19,7 +19,7 @@ import org.jooq.Identity;
 import org.jooq.Index;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row17;
+import org.jooq.Row18;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -70,6 +70,11 @@ public class Model extends TableImpl<ModelRecord> {
      * The column <code>model.visibility</code>. 是否公开(private/public)
      */
     public final TableField<ModelRecord, String> VISIBILITY = createField(DSL.name("visibility"), SQLDataType.VARCHAR(64).nullable(false).defaultValue(DSL.inline("private", SQLDataType.VARCHAR)), this, "是否公开(private/public)");
+
+    /**
+     * The column <code>model.openness_type</code>. 开放程度(0:未知/1:闭源/2:开源)
+     */
+    public final TableField<ModelRecord, Byte> OPENNESS_TYPE = createField(DSL.name("openness_type"), SQLDataType.TINYINT.nullable(false).defaultValue(DSL.inline("0", SQLDataType.TINYINT)), this, "开放程度(0:未知/1:闭源/2:开源)");
 
     /**
      * The column <code>model.owner_type</code>. 所有者类型（系统/组织/个人）
@@ -221,11 +226,11 @@ public class Model extends TableImpl<ModelRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row17 type methods
+    // Row18 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row17<Long, String, String, String, String, String, String, String, String, String, String, Long, String, Long, String, LocalDateTime, LocalDateTime> fieldsRow() {
-        return (Row17) super.fieldsRow();
+    public Row18<Long, String, String, String, Byte, String, String, String, String, String, String, String, Long, String, Long, String, LocalDateTime, LocalDateTime> fieldsRow() {
+        return (Row18) super.fieldsRow();
     }
 }

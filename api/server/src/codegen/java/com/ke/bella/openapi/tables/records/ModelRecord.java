@@ -11,8 +11,8 @@ import java.time.LocalDateTime;
 
 import org.jooq.Field;
 import org.jooq.Record1;
-import org.jooq.Record17;
-import org.jooq.Row17;
+import org.jooq.Record18;
+import org.jooq.Row18;
 import org.jooq.impl.UpdatableRecordImpl;
 
 
@@ -20,7 +20,7 @@ import org.jooq.impl.UpdatableRecordImpl;
  * 模型
  */
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
-public class ModelRecord extends UpdatableRecordImpl<ModelRecord> implements Operator, Record17<Long, String, String, String, String, String, String, String, String, String, String, Long, String, Long, String, LocalDateTime, LocalDateTime> {
+public class ModelRecord extends UpdatableRecordImpl<ModelRecord> implements Operator, Record18<Long, String, String, String, Byte, String, String, String, String, String, String, String, Long, String, Long, String, LocalDateTime, LocalDateTime> {
 
     private static final long serialVersionUID = 1L;
 
@@ -81,185 +81,199 @@ public class ModelRecord extends UpdatableRecordImpl<ModelRecord> implements Ope
     }
 
     /**
+     * Setter for <code>model.openness_type</code>. 开放程度(0:未知/1:闭源/2:开源)
+     */
+    public void setOpennessType(Byte value) {
+        set(4, value);
+    }
+
+    /**
+     * Getter for <code>model.openness_type</code>. 开放程度(0:未知/1:闭源/2:开源)
+     */
+    public Byte getOpennessType() {
+        return (Byte) get(4);
+    }
+
+    /**
      * Setter for <code>model.owner_type</code>. 所有者类型（系统/组织/个人）
      */
     public void setOwnerType(String value) {
-        set(4, value);
+        set(5, value);
     }
 
     /**
      * Getter for <code>model.owner_type</code>. 所有者类型（系统/组织/个人）
      */
     public String getOwnerType() {
-        return (String) get(4);
+        return (String) get(5);
     }
 
     /**
      * Setter for <code>model.owner_code</code>. 所有者系统号
      */
     public void setOwnerCode(String value) {
-        set(5, value);
+        set(6, value);
     }
 
     /**
      * Getter for <code>model.owner_code</code>. 所有者系统号
      */
     public String getOwnerCode() {
-        return (String) get(5);
+        return (String) get(6);
     }
 
     /**
      * Setter for <code>model.owner_name</code>. 所有者名称
      */
     public void setOwnerName(String value) {
-        set(6, value);
+        set(7, value);
     }
 
     /**
      * Getter for <code>model.owner_name</code>. 所有者名称
      */
     public String getOwnerName() {
-        return (String) get(6);
+        return (String) get(7);
     }
 
     /**
      * Setter for <code>model.status</code>. 状态(active/inactive)
      */
     public void setStatus(String value) {
-        set(7, value);
+        set(8, value);
     }
 
     /**
      * Getter for <code>model.status</code>. 状态(active/inactive)
      */
     public String getStatus() {
-        return (String) get(7);
+        return (String) get(8);
     }
 
     /**
      * Setter for <code>model.properties</code>. 属性
      */
     public void setProperties(String value) {
-        set(8, value);
+        set(9, value);
     }
 
     /**
      * Getter for <code>model.properties</code>. 属性
      */
     public String getProperties() {
-        return (String) get(8);
+        return (String) get(9);
     }
 
     /**
      * Setter for <code>model.features</code>. 特性
      */
     public void setFeatures(String value) {
-        set(9, value);
+        set(10, value);
     }
 
     /**
      * Getter for <code>model.features</code>. 特性
      */
     public String getFeatures() {
-        return (String) get(9);
+        return (String) get(10);
     }
 
     /**
      * Setter for <code>model.linked_to</code>. 模型软链
      */
     public void setLinkedTo(String value) {
-        set(10, value);
+        set(11, value);
     }
 
     /**
      * Getter for <code>model.linked_to</code>. 模型软链
      */
     public String getLinkedTo() {
-        return (String) get(10);
+        return (String) get(11);
     }
 
     /**
      * Setter for <code>model.cuid</code>. 创建人id
      */
     public void setCuid(Long value) {
-        set(11, value);
+        set(12, value);
     }
 
     /**
      * Getter for <code>model.cuid</code>. 创建人id
      */
     public Long getCuid() {
-        return (Long) get(11);
+        return (Long) get(12);
     }
 
     /**
      * Setter for <code>model.cu_name</code>. 创建人姓名
      */
     public void setCuName(String value) {
-        set(12, value);
+        set(13, value);
     }
 
     /**
      * Getter for <code>model.cu_name</code>. 创建人姓名
      */
     public String getCuName() {
-        return (String) get(12);
+        return (String) get(13);
     }
 
     /**
      * Setter for <code>model.muid</code>. 编辑人id
      */
     public void setMuid(Long value) {
-        set(13, value);
+        set(14, value);
     }
 
     /**
      * Getter for <code>model.muid</code>. 编辑人id
      */
     public Long getMuid() {
-        return (Long) get(13);
+        return (Long) get(14);
     }
 
     /**
      * Setter for <code>model.mu_name</code>. 编辑人姓名
      */
     public void setMuName(String value) {
-        set(14, value);
+        set(15, value);
     }
 
     /**
      * Getter for <code>model.mu_name</code>. 编辑人姓名
      */
     public String getMuName() {
-        return (String) get(14);
+        return (String) get(15);
     }
 
     /**
      * Setter for <code>model.ctime</code>.
      */
     public void setCtime(LocalDateTime value) {
-        set(15, value);
+        set(16, value);
     }
 
     /**
      * Getter for <code>model.ctime</code>.
      */
     public LocalDateTime getCtime() {
-        return (LocalDateTime) get(15);
+        return (LocalDateTime) get(16);
     }
 
     /**
      * Setter for <code>model.mtime</code>.
      */
     public void setMtime(LocalDateTime value) {
-        set(16, value);
+        set(17, value);
     }
 
     /**
      * Getter for <code>model.mtime</code>.
      */
     public LocalDateTime getMtime() {
-        return (LocalDateTime) get(16);
+        return (LocalDateTime) get(17);
     }
 
     // -------------------------------------------------------------------------
@@ -272,17 +286,17 @@ public class ModelRecord extends UpdatableRecordImpl<ModelRecord> implements Ope
     }
 
     // -------------------------------------------------------------------------
-    // Record17 type implementation
+    // Record18 type implementation
     // -------------------------------------------------------------------------
 
     @Override
-    public Row17<Long, String, String, String, String, String, String, String, String, String, String, Long, String, Long, String, LocalDateTime, LocalDateTime> fieldsRow() {
-        return (Row17) super.fieldsRow();
+    public Row18<Long, String, String, String, Byte, String, String, String, String, String, String, String, Long, String, Long, String, LocalDateTime, LocalDateTime> fieldsRow() {
+        return (Row18) super.fieldsRow();
     }
 
     @Override
-    public Row17<Long, String, String, String, String, String, String, String, String, String, String, Long, String, Long, String, LocalDateTime, LocalDateTime> valuesRow() {
-        return (Row17) super.valuesRow();
+    public Row18<Long, String, String, String, Byte, String, String, String, String, String, String, String, Long, String, Long, String, LocalDateTime, LocalDateTime> valuesRow() {
+        return (Row18) super.valuesRow();
     }
 
     @Override
@@ -306,67 +320,72 @@ public class ModelRecord extends UpdatableRecordImpl<ModelRecord> implements Ope
     }
 
     @Override
-    public Field<String> field5() {
-        return Model.MODEL.OWNER_TYPE;
+    public Field<Byte> field5() {
+        return Model.MODEL.OPENNESS_TYPE;
     }
 
     @Override
     public Field<String> field6() {
-        return Model.MODEL.OWNER_CODE;
+        return Model.MODEL.OWNER_TYPE;
     }
 
     @Override
     public Field<String> field7() {
-        return Model.MODEL.OWNER_NAME;
+        return Model.MODEL.OWNER_CODE;
     }
 
     @Override
     public Field<String> field8() {
-        return Model.MODEL.STATUS;
+        return Model.MODEL.OWNER_NAME;
     }
 
     @Override
     public Field<String> field9() {
-        return Model.MODEL.PROPERTIES;
+        return Model.MODEL.STATUS;
     }
 
     @Override
     public Field<String> field10() {
-        return Model.MODEL.FEATURES;
+        return Model.MODEL.PROPERTIES;
     }
 
     @Override
     public Field<String> field11() {
+        return Model.MODEL.FEATURES;
+    }
+
+    @Override
+    public Field<String> field12() {
         return Model.MODEL.LINKED_TO;
     }
 
     @Override
-    public Field<Long> field12() {
+    public Field<Long> field13() {
         return Model.MODEL.CUID;
     }
 
     @Override
-    public Field<String> field13() {
+    public Field<String> field14() {
         return Model.MODEL.CU_NAME;
     }
 
     @Override
-    public Field<Long> field14() {
+    public Field<Long> field15() {
         return Model.MODEL.MUID;
     }
 
     @Override
-    public Field<String> field15() {
+    public Field<String> field16() {
         return Model.MODEL.MU_NAME;
     }
 
     @Override
-    public Field<LocalDateTime> field16() {
+    public Field<LocalDateTime> field17() {
         return Model.MODEL.CTIME;
     }
 
     @Override
-    public Field<LocalDateTime> field17() {
+    public Field<LocalDateTime> field18() {
         return Model.MODEL.MTIME;
     }
 
@@ -391,67 +410,72 @@ public class ModelRecord extends UpdatableRecordImpl<ModelRecord> implements Ope
     }
 
     @Override
-    public String component5() {
-        return getOwnerType();
+    public Byte component5() {
+        return getOpennessType();
     }
 
     @Override
     public String component6() {
-        return getOwnerCode();
+        return getOwnerType();
     }
 
     @Override
     public String component7() {
-        return getOwnerName();
+        return getOwnerCode();
     }
 
     @Override
     public String component8() {
-        return getStatus();
+        return getOwnerName();
     }
 
     @Override
     public String component9() {
-        return getProperties();
+        return getStatus();
     }
 
     @Override
     public String component10() {
-        return getFeatures();
+        return getProperties();
     }
 
     @Override
     public String component11() {
+        return getFeatures();
+    }
+
+    @Override
+    public String component12() {
         return getLinkedTo();
     }
 
     @Override
-    public Long component12() {
+    public Long component13() {
         return getCuid();
     }
 
     @Override
-    public String component13() {
+    public String component14() {
         return getCuName();
     }
 
     @Override
-    public Long component14() {
+    public Long component15() {
         return getMuid();
     }
 
     @Override
-    public String component15() {
+    public String component16() {
         return getMuName();
     }
 
     @Override
-    public LocalDateTime component16() {
+    public LocalDateTime component17() {
         return getCtime();
     }
 
     @Override
-    public LocalDateTime component17() {
+    public LocalDateTime component18() {
         return getMtime();
     }
 
@@ -476,67 +500,72 @@ public class ModelRecord extends UpdatableRecordImpl<ModelRecord> implements Ope
     }
 
     @Override
-    public String value5() {
-        return getOwnerType();
+    public Byte value5() {
+        return getOpennessType();
     }
 
     @Override
     public String value6() {
-        return getOwnerCode();
+        return getOwnerType();
     }
 
     @Override
     public String value7() {
-        return getOwnerName();
+        return getOwnerCode();
     }
 
     @Override
     public String value8() {
-        return getStatus();
+        return getOwnerName();
     }
 
     @Override
     public String value9() {
-        return getProperties();
+        return getStatus();
     }
 
     @Override
     public String value10() {
-        return getFeatures();
+        return getProperties();
     }
 
     @Override
     public String value11() {
+        return getFeatures();
+    }
+
+    @Override
+    public String value12() {
         return getLinkedTo();
     }
 
     @Override
-    public Long value12() {
+    public Long value13() {
         return getCuid();
     }
 
     @Override
-    public String value13() {
+    public String value14() {
         return getCuName();
     }
 
     @Override
-    public Long value14() {
+    public Long value15() {
         return getMuid();
     }
 
     @Override
-    public String value15() {
+    public String value16() {
         return getMuName();
     }
 
     @Override
-    public LocalDateTime value16() {
+    public LocalDateTime value17() {
         return getCtime();
     }
 
     @Override
-    public LocalDateTime value17() {
+    public LocalDateTime value18() {
         return getMtime();
     }
 
@@ -565,85 +594,91 @@ public class ModelRecord extends UpdatableRecordImpl<ModelRecord> implements Ope
     }
 
     @Override
-    public ModelRecord value5(String value) {
-        setOwnerType(value);
+    public ModelRecord value5(Byte value) {
+        setOpennessType(value);
         return this;
     }
 
     @Override
     public ModelRecord value6(String value) {
-        setOwnerCode(value);
+        setOwnerType(value);
         return this;
     }
 
     @Override
     public ModelRecord value7(String value) {
-        setOwnerName(value);
+        setOwnerCode(value);
         return this;
     }
 
     @Override
     public ModelRecord value8(String value) {
-        setStatus(value);
+        setOwnerName(value);
         return this;
     }
 
     @Override
     public ModelRecord value9(String value) {
-        setProperties(value);
+        setStatus(value);
         return this;
     }
 
     @Override
     public ModelRecord value10(String value) {
-        setFeatures(value);
+        setProperties(value);
         return this;
     }
 
     @Override
     public ModelRecord value11(String value) {
+        setFeatures(value);
+        return this;
+    }
+
+    @Override
+    public ModelRecord value12(String value) {
         setLinkedTo(value);
         return this;
     }
 
     @Override
-    public ModelRecord value12(Long value) {
+    public ModelRecord value13(Long value) {
         setCuid(value);
         return this;
     }
 
     @Override
-    public ModelRecord value13(String value) {
+    public ModelRecord value14(String value) {
         setCuName(value);
         return this;
     }
 
     @Override
-    public ModelRecord value14(Long value) {
+    public ModelRecord value15(Long value) {
         setMuid(value);
         return this;
     }
 
     @Override
-    public ModelRecord value15(String value) {
+    public ModelRecord value16(String value) {
         setMuName(value);
         return this;
     }
 
     @Override
-    public ModelRecord value16(LocalDateTime value) {
+    public ModelRecord value17(LocalDateTime value) {
         setCtime(value);
         return this;
     }
 
     @Override
-    public ModelRecord value17(LocalDateTime value) {
+    public ModelRecord value18(LocalDateTime value) {
         setMtime(value);
         return this;
     }
 
     @Override
-    public ModelRecord values(Long value1, String value2, String value3, String value4, String value5, String value6, String value7, String value8, String value9, String value10, String value11, Long value12, String value13, Long value14, String value15, LocalDateTime value16, LocalDateTime value17) {
+    public ModelRecord values(Long value1, String value2, String value3, String value4, Byte value5, String value6, String value7, String value8, String value9, String value10, String value11, String value12, Long value13, String value14, Long value15, String value16, LocalDateTime value17, LocalDateTime value18) {
         value1(value1);
         value2(value2);
         value3(value3);
@@ -661,6 +696,7 @@ public class ModelRecord extends UpdatableRecordImpl<ModelRecord> implements Ope
         value15(value15);
         value16(value16);
         value17(value17);
+        value18(value18);
         return this;
     }
 
@@ -678,13 +714,14 @@ public class ModelRecord extends UpdatableRecordImpl<ModelRecord> implements Ope
     /**
      * Create a detached, initialised ModelRecord
      */
-    public ModelRecord(Long id, String modelName, String documentUrl, String visibility, String ownerType, String ownerCode, String ownerName, String status, String properties, String features, String linkedTo, Long cuid, String cuName, Long muid, String muName, LocalDateTime ctime, LocalDateTime mtime) {
+    public ModelRecord(Long id, String modelName, String documentUrl, String visibility, Byte opennessType, String ownerType, String ownerCode, String ownerName, String status, String properties, String features, String linkedTo, Long cuid, String cuName, Long muid, String muName, LocalDateTime ctime, LocalDateTime mtime) {
         super(Model.MODEL);
 
         setId(id);
         setModelName(modelName);
         setDocumentUrl(documentUrl);
         setVisibility(visibility);
+        setOpennessType(opennessType);
         setOwnerType(ownerType);
         setOwnerCode(ownerCode);
         setOwnerName(ownerName);

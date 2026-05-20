@@ -132,7 +132,7 @@ public class ModelService {
         }
         checkPropertyAndFeatures(op.getProperties(), op.getFeatures(), op.getEndpoints(), op.getModelName());
         if(StringUtils.isNotEmpty(op.getDocumentUrl()) || StringUtils.isNotEmpty(op.getProperties())
-                || StringUtils.isNotEmpty(op.getFeatures())) {
+                || StringUtils.isNotEmpty(op.getFeatures()) || op.getOpennessType() != null) {
             modelRepo.update(op, op.getModelName());
         }
         updateModelCache(op.getModelName(), null);

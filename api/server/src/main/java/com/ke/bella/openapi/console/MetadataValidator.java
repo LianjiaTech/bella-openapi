@@ -103,7 +103,8 @@ public class MetadataValidator {
             Assert.isTrue(CollectionUtils.isNotEmpty(op.getEndpoints())
                     || StringUtils.isNotBlank(op.getDocumentUrl())
                     || StringUtils.isNotBlank(op.getProperties())
-                    || StringUtils.isNotBlank(op.getFeatures()), "可修改字段全部为空，无法修改");
+                    || StringUtils.isNotBlank(op.getFeatures())
+                    || op.getOpennessType() != null, "可修改字段全部为空，无法修改");
         }
         if(StringUtils.isNotEmpty(op.getOwnerType())) {
             Assert.isTrue(OWNER_TYPES.contains(op.getOwnerType()), "错误的所有者类型");

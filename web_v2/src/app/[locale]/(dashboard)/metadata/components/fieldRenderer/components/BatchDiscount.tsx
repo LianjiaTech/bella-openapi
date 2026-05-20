@@ -50,6 +50,13 @@ export const BatchDiscount = ({ mode, value, onChange }: { mode: 'create' | 'edi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // 职责：edit 模式下，当 value 从外部变化（切换编辑对象）时同步 enableDiscount
+  useEffect(() => {
+    if (mode === 'edit') {
+      setEnableDiscount(typeof value === 'number' && value < 1)
+    }
+  }, [value, mode])
+
   return (
     <div className="rounded-lg border border-border/60 bg-muted/30 p-4 space-y-3">
     <div className="flex items-center justify-between">
@@ -85,7 +92,7 @@ export const BatchDiscount = ({ mode, value, onChange }: { mode: 'create' | 'edi
           min={0.5}
           max={1}
           step={0.1}
-          value={displayValue}
+          value={displayValue ?? ''}
           onChange={(e) =>
             handleDiscountChange(Number(e.target.value))
           }
@@ -93,7 +100,9 @@ export const BatchDiscount = ({ mode, value, onChange }: { mode: 'create' | 'edi
           placeholder="请输入折扣比例"
         />
         <span className="text-xs text-muted-foreground mt-1.5">
-          {displayValue * 10}折
+          {typeof displayValue === 'number' && !isNaN(displayValue)
+            ? `${parseFloat((displayValue * 10).toFixed(2))}折`
+            : ''}
         </span>
       </div>
     )}

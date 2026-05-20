@@ -1,7 +1,7 @@
 import React from 'react'
 import { formatBatchDiscount } from '@/lib/utils/price'
 
-export const DisplayPriceCard = ({data, batchDiscount, unit}: {data: any, batchDiscount: number | undefined, unit: string | undefined}) => {
+export const DisplayPriceCard = ({data, batchDiscount, supplierDiscount, unit}: {data: any, batchDiscount: number | undefined, supplierDiscount: number | undefined, unit: string | undefined}) => {
   return (
     <div>
       {data?.map((item: any) => (
@@ -13,6 +13,11 @@ export const DisplayPriceCard = ({data, batchDiscount, unit}: {data: any, batchD
       {formatBatchDiscount(batchDiscount) && (
         <div className="text-xs text-right pt-2">
           {formatBatchDiscount(batchDiscount)}
+        </div>
+      )}
+      {formatBatchDiscount(supplierDiscount) && (
+        <div className="text-xs text-right pt-2">
+          供应商折扣：{formatBatchDiscount(supplierDiscount)}
         </div>
       )}
       <div className="text-xs text-right pt-2">单位: {unit}</div>

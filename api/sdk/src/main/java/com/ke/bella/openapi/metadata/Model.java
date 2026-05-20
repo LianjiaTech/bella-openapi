@@ -15,6 +15,7 @@ public class Model extends BaseDto {
     private String modelName;
     private String documentUrl;
     private String visibility;
+    private Integer opennessType;
     private String ownerType;
     private String ownerCode;
     private String ownerName;

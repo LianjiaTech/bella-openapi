@@ -209,7 +209,9 @@ export function ChannelConfigDialog({
           // 初始化价格信息字段默认值
           const initialPriceValues: Record<string, any> = {}
           priceSchema.params.forEach((param) => {
-            if (param.valueType === 'number') {
+            if (param.code === 'supplierDiscount') {
+              initialPriceValues[param.code] = 1
+            } else if (param.valueType === 'number') {
               initialPriceValues[param.code] = 0
             } else if (param.valueType === 'string') {
               initialPriceValues[param.code] = param.code === 'unit' ? '分/千token' : ''
@@ -239,6 +241,8 @@ export function ChannelConfigDialog({
     // 编辑模式: 立即回填表单,后台加载协议列表
     else if (mode === 'edit' && initialData) {
       console.log('ChannelConfigDialog edit', initialData)
+      // 切换编辑对象时先清空旧渠道的价格字段，避免渠道间状态污染
+      setPriceInfoValues({})
       // 1. 立即回填表单数据
       setFormData({
         url: initialData.url || '',
@@ -659,7 +663,9 @@ export function ChannelConfigDialog({
   const handleCancel = () => {
     onOpenChange(false)
   }
-  console.log(priceInfoSchema,'ChannelConfigDialog', priceInfoValues)
+  const supplierDiscountParam = priceInfoSchema.params.find((param) => param.code === 'supplierDiscount')
+  const priceInfoParams = priceInfoSchema.params.filter((param) => param.code !== 'supplierDiscount')
+
   return (
     <Dialog
       open={open}
@@ -977,10 +983,21 @@ export function ChannelConfigDialog({
               <div className="text-sm text-red-600">加载价格配置失败: {priceInfoError}</div>
             )}
 
+            {supplierDiscountParam && (
+              <div className="space-y-2">
+                <FieldRenderer
+                  mode={mode}
+                  schema={supplierDiscountParam}
+                  value={priceInfoValues[supplierDiscountParam.code]}
+                  onChange={(value) => handlePriceInfoFieldChange(supplierDiscountParam.code, value)}
+                />
+              </div>
+            )}
+
             {/* 动态渲染价格信息字段 */}
-            {!priceInfoLoading && !priceInfoError && priceInfoSchema.params.length > 0 && (
+            {!priceInfoLoading && !priceInfoError && priceInfoParams.length > 0 && (
               <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
-                {priceInfoSchema.params.map((param) => (
+                {priceInfoParams.map((param) => (
                   <div key={param.code} className="space-y-2">
                     <FieldRenderer
                       mode={mode}

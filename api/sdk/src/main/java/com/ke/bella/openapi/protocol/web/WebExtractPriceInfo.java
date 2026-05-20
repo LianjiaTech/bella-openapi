@@ -30,6 +30,7 @@ public class WebExtractPriceInfo implements IPriceInfo, Serializable {
     private BigDecimal advancedExtractionPrice;
 
     private double batchDiscount = 1.0;
+    private double supplierDiscount = 1.0;
 
     @Override
     public String getUnit() {

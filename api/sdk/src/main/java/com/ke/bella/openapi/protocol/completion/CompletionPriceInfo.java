@@ -21,6 +21,7 @@ public class CompletionPriceInfo implements IPriceInfo, Serializable {
 
     private String unit = "分/千token";
     private double batchDiscount = 1.0;
+    private double supplierDiscount = 1.0;
     private List<Tier> tiers;
     private Map<String, BigDecimal> toolPrices;
 
@@ -28,6 +29,7 @@ public class CompletionPriceInfo implements IPriceInfo, Serializable {
     public Map<String, String> description() {
         Map<String, String> map = new LinkedHashMap<>();
         map.put("batchDiscount", "批量折扣");
+        map.put("supplierDiscount", "供应商折扣");
         map.put("tiers", "区间价格列表");
         map.put("toolPrices", "工具调用价格配置(Map<工具名,单价(分/次)>,可选),如:{\"web_search\":0.035}");
         return map;
@@ -128,6 +130,11 @@ public class CompletionPriceInfo implements IPriceInfo, Serializable {
 
         // 验证batchDiscount: 必须在(0, 1]范围内
         if(batchDiscount <= 0 || batchDiscount > 1) {
+            return false;
+        }
+
+        // 验证supplierDiscount: 必须在(0, 1]范围内
+        if(supplierDiscount <= 0 || supplierDiscount > 1) {
             return false;
         }
 

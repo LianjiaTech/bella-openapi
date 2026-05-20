@@ -22,6 +22,7 @@ public class ModelDB implements Operator, Serializable {
     private String        modelName;
     private String        documentUrl;
     private String        visibility;
+    private Byte          opennessType;
     private String        ownerType;
     private String        ownerCode;
     private String        ownerName;
@@ -43,6 +44,7 @@ public class ModelDB implements Operator, Serializable {
         this.modelName = value.modelName;
         this.documentUrl = value.documentUrl;
         this.visibility = value.visibility;
+        this.opennessType = value.opennessType;
         this.ownerType = value.ownerType;
         this.ownerCode = value.ownerCode;
         this.ownerName = value.ownerName;
@@ -63,6 +65,7 @@ public class ModelDB implements Operator, Serializable {
         String        modelName,
         String        documentUrl,
         String        visibility,
+        Byte          opennessType,
         String        ownerType,
         String        ownerCode,
         String        ownerName,
@@ -81,6 +84,7 @@ public class ModelDB implements Operator, Serializable {
         this.modelName = modelName;
         this.documentUrl = documentUrl;
         this.visibility = visibility;
+        this.opennessType = opennessType;
         this.ownerType = ownerType;
         this.ownerCode = ownerCode;
         this.ownerName = ownerName;
@@ -150,6 +154,20 @@ public class ModelDB implements Operator, Serializable {
      */
     public void setVisibility(String visibility) {
         this.visibility = visibility;
+    }
+
+    /**
+     * Getter for <code>model.openness_type</code>. 开放程度(0:未知/1:闭源/2:开源)
+     */
+    public Byte getOpennessType() {
+        return this.opennessType;
+    }
+
+    /**
+     * Setter for <code>model.openness_type</code>. 开放程度(0:未知/1:闭源/2:开源)
+     */
+    public void setOpennessType(Byte opennessType) {
+        this.opennessType = opennessType;
     }
 
     /**
@@ -342,6 +360,7 @@ public class ModelDB implements Operator, Serializable {
         sb.append(", ").append(modelName);
         sb.append(", ").append(documentUrl);
         sb.append(", ").append(visibility);
+        sb.append(", ").append(opennessType);
         sb.append(", ").append(ownerType);
         sb.append(", ").append(ownerCode);
         sb.append(", ").append(ownerName);

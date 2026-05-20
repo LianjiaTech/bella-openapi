@@ -14,6 +14,7 @@ public class TtsPriceInfo implements IPriceInfo, Serializable {
     private BigDecimal input;
     private String unit = "分/万字";
     private double batchDiscount = 1.0;
+    private double supplierDiscount = 1.0;
 
     @Override
     public Map<String, String> description() {

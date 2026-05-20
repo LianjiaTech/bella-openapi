@@ -187,6 +187,9 @@ export const TiersTable = ({ data, discount }: { data: any, discount: number | u
                 {formatBatchDiscount(data?.batchDiscount) && (
                   <span>批量折扣：{formatBatchDiscount(data?.batchDiscount)}</span>
                 )}
+                {formatBatchDiscount(data?.supplierDiscount) && (
+                  <span>供应商折扣：{formatBatchDiscount(data?.supplierDiscount)}</span>
+                )}
                 <span>
                     单位: {data?.unit}
                 </span>

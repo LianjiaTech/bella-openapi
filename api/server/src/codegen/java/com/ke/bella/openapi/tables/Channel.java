@@ -133,7 +133,7 @@ public class Channel extends TableImpl<ChannelRecord> {
     /**
      * The column <code>channel.price_info</code>. 单价
      */
-    public final TableField<ChannelRecord, String> PRICE_INFO = createField(DSL.name("price_info"), SQLDataType.VARCHAR(256).nullable(false).defaultValue(DSL.inline("{}", SQLDataType.VARCHAR)), this, "单价");
+    public final TableField<ChannelRecord, String> PRICE_INFO = createField(DSL.name("price_info"), SQLDataType.VARCHAR(8192).nullable(false).defaultValue(DSL.inline("{}", SQLDataType.VARCHAR)), this, "单价");
 
     /**
      * The column <code>channel.queue_mode</code>. 队列模式(0:无队列;1:pull模式;2:route模式;3:pull+route模式)

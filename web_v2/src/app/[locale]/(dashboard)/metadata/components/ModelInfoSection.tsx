@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Badge } from "@/components/common/badge"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/common/select"
 import { Button } from "@/components/common/button"
 import { Card, CardContent } from "@/components/common/card"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/common/collapsible"
@@ -23,6 +24,18 @@ interface InfoFieldProps {
   isEditing?: boolean
   onChange?: (value: string) => void
 }
+
+const opennessTypeLabelMap: Record<number, string> = {
+  0: '未知',
+  1: '闭源',
+  2: '开源',
+}
+
+const opennessTypeOptions = [
+  { value: '0', label: opennessTypeLabelMap[0] },
+  { value: '1', label: opennessTypeLabelMap[1] },
+  { value: '2', label: opennessTypeLabelMap[2] },
+]
 
 /**
  * InfoField 组件
@@ -72,6 +85,7 @@ export function ModelInfoSection({ modelInfo, onUpdate }: ModelInfoSectionProps)
     setEditedData({
       linkedTo: modelInfo?.linkedTo ?? '',
       documentUrl: modelInfo?.documentUrl ?? '',
+      opennessType: modelInfo?.opennessType ?? 0,
       properties: modelInfo?.properties ?? '',
       features: modelInfo?.features ?? '',
       ownerType: modelInfo?.ownerType ?? '',
@@ -82,7 +96,7 @@ export function ModelInfoSection({ modelInfo, onUpdate }: ModelInfoSectionProps)
   }
 
   // 更新单个字段
-  const handleFieldChange = (field: keyof ModelInfo, value: string) => {
+  const handleFieldChange = (field: keyof ModelInfo, value: string | number) => {
     setEditedData(prev => ({ ...prev, [field]: value }))
   }
 
@@ -199,6 +213,30 @@ export function ModelInfoSection({ modelInfo, onUpdate }: ModelInfoSectionProps)
                   isEditing={isEditing}
                   onChange={(value) => handleFieldChange('documentUrl', value)}
                 />
+                <div className="py-4 px-4 bg-muted/30 rounded-lg">
+                  <p className="text-sm font-medium text-muted-foreground mb-1">开放程度</p>
+                  {isEditing ? (
+                    <Select
+                      value={String(editedData.opennessType ?? 0)}
+                      onValueChange={(value) => handleFieldChange('opennessType', Number(value))}
+                    >
+                      <SelectTrigger className="bg-white">
+                        <SelectValue placeholder="选择开放程度" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {opennessTypeOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <p className="text-sm text-foreground break-all">
+                      {opennessTypeLabelMap[modelInfo?.opennessType ?? 0] || '-'}
+                    </p>
+                  )}
+                </div>
                 <InfoField
                   label="属性"
                   value={isEditing ? (editedData.properties ?? '') : (modelInfo?.properties ?? '')}

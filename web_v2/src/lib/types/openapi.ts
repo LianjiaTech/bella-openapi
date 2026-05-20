@@ -38,6 +38,7 @@ export interface Model {
     ownerCode:string;
     ownerName: string;
     visibility: string;
+    opennessType?: number;
     status: string;
     linkedTo: string;
     endpoints: string[];
@@ -51,7 +52,7 @@ export interface Model {
     mtime?: string;             // 修改时间，格式 "YYYY-MM-DD HH:mm:ss"
     muName?: string;            // 修改人名称
     muid?: number;              // 修改人ID
-   
+
 }
 export interface MetadataFeature {
     code: string;

@@ -49,6 +49,7 @@ public class MetaDataOps {
         private String ownerCode;
         private String ownerName;
         private String documentUrl;
+        private Integer opennessType;
         private String properties;
         private String features;
     }

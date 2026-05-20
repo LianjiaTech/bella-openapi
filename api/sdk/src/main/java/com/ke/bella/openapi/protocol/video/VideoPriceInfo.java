@@ -19,6 +19,8 @@ public class VideoPriceInfo implements IPriceInfo, Serializable {
 
     private BigDecimal output;
 
+    private double supplierDiscount = 1.0;
+
     @Override
     public String getUnit() {
         return "分/千token";
