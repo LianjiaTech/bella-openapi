@@ -1,7 +1,5 @@
 package com.ke.bella.openapi.endpoints;
 
-import com.ke.bella.job.queue.JobQueueClient;
-import com.ke.bella.job.queue.api.entity.response.TaskResp;
 import com.ke.bella.job.queue.config.JobQueueProperties;
 import com.ke.bella.openapi.EndpointContext;
 import com.ke.bella.openapi.EndpointProcessData;
@@ -37,6 +35,9 @@ import com.ke.bella.openapi.protocol.tts.TtsRequest;
 import com.ke.bella.openapi.service.EndpointDataService;
 import com.ke.bella.openapi.tables.pojos.ChannelDB;
 import com.ke.bella.openapi.utils.JacksonUtils;
+import com.ke.bella.queue.QueueClient;
+import com.theokanning.openai.queue.Put;
+import com.theokanning.openai.queue.Task;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -66,9 +67,7 @@ import java.io.OutputStream;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import static com.ke.bella.openapi.common.AudioFormat.getContentType;
 
@@ -78,6 +77,8 @@ import static com.ke.bella.openapi.common.AudioFormat.getContentType;
 @Tag(name = "audio能力点")
 @Slf4j
 public class AudioController {
+    private static final int DEFAULT_QUEUE_TIMEOUT_SECONDS = 60 * 60 * 72;
+
     @Autowired
     private ChannelRouter router;
     @Autowired
@@ -216,10 +217,16 @@ public class AudioController {
     public AudioTranscriptionResp transcribeAudio(@RequestBody AudioTranscriptionReq audioTranscriptionReq) {
         validateRequestParams(audioTranscriptionReq);
         String endpoint = EndpointContext.getRequest().getRequestURI();
-        JobQueueClient client = JobQueueClient.getInstance(jobQueueProperties.getUrl());
+        QueueClient client = QueueClient.getInstance(jobQueueProperties.getUrl());
+        Put put = Put.builder()
+                .data(JacksonUtils.toMap(audioTranscriptionReq))
+                .endpoint(endpoint)
+                .queue(audioTranscriptionReq.getModel())
+                .level(1)
+                .timeout(getQueueTimeout(audioTranscriptionReq))
+                .build();
         String taskId = client
-                .put(client.buildTaskPutRequest(audioTranscriptionReq, null, endpoint, audioTranscriptionReq.getModel()),
-                        EndpointContext.getProcessData().getApikey(), TaskResp.TaskPutResp.class)
+                .put(put, EndpointContext.getProcessData().getApikey())
                 .getTaskId();
         return AudioTranscriptionResp.builder()
                 .taskId(taskId)
@@ -235,21 +242,16 @@ public class AudioController {
     }
 
     private QueueTaskGetResultResp getTaskResult(List<String> taskIds, String apikey) {
-        JobQueueClient client = JobQueueClient.getInstance(jobQueueProperties.getUrl());
+        QueueClient client = QueueClient.getInstance(jobQueueProperties.getUrl());
         List<Object> result = new ArrayList<>();
         for (String taskId : taskIds) {
-            TaskResp.DetailData data = client.getTaskDetail(taskId, apikey).getData();
-            if(data == null) {
+            Task task = client.getTaskDetail(taskId, apikey);
+            if(task == null) {
                 continue;
             }
-            Object outputData = data.getOutputData();
-            String outputFileId = data.getOutputFileId();
+            Object outputData = client.getOutputData(task);
             if(outputData != null) {
                 result.add(outputData);
-            } else if(outputFileId != null && !outputFileId.isEmpty()) {
-                Map<String, String> map = new HashMap<>();
-                map.put("file_id", outputFileId);
-                result.add(map);
             }
         }
 
@@ -266,6 +268,17 @@ public class AudioController {
 
         private List<Object> data;
 
+    }
+
+    private Integer getQueueTimeout(AudioTranscriptionReq audioTranscriptionReq) {
+        Object timeout = audioTranscriptionReq.getExtraBody() == null ? null : audioTranscriptionReq.getExtraBody().get("timeout");
+        if(timeout instanceof Number) {
+            return ((Number) timeout).intValue();
+        }
+        if(timeout instanceof String && StringUtils.isNotBlank((String) timeout)) {
+            return Integer.parseInt((String) timeout);
+        }
+        return DEFAULT_QUEUE_TIMEOUT_SECONDS;
     }
 
     private void validateRequestParams(AudioTranscriptionReq audioTranscriptionReq) {
