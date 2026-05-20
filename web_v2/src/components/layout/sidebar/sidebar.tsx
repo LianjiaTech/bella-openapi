@@ -20,7 +20,6 @@ import {
   WorkflowIcon,
   ScanText,
   Settings,
-  FolderTree,
   type LucideIcon,
   LogOut,
   Wand2,
@@ -29,10 +28,13 @@ import {
   KeySquare,
   Database,
   Users,
+  X,
 } from "lucide-react"
 import { useLanguage } from "../../providers/language-provider"
 import { useAuth } from "../../providers/auth-provider"
+import { useSidebar } from "../../providers/sidebar-provider"
 import { cn } from "@/lib/utils"
+import { Button } from "@/components/common/button"
 import { SettingsDialog } from "./settings-dialog"
 import { logout } from '@/lib/api/auth';
 import { hasPermission } from '@/lib/utils/permission';
@@ -44,7 +46,6 @@ interface NavItem {
   children?: NavItem[];
 }
 
-/** 所有用户可见的基础菜单（静态，无需权限判断） */
 const BASE_NAV_ITEMS: NavItem[] = [
   { label: 'home', href: '/overview', icon: Home },
   { label: 'models', href: '/models', icon: FlaskConical },
@@ -62,7 +63,6 @@ const BASE_NAV_ITEMS: NavItem[] = [
       { label: 'imageToImage', href: '/playground/images/edits', icon: Wand2 },
       { label: 'documentParsing', href: '/playground/docparse', icon: FileText },
       { label: 'aiWorkflow', href: '/playground/workflow', icon: WorkflowIcon },
-      // { label: 'search', href: '/playground/search', icon: Search },
       { label: 'ocr', href: '/playground/ocr', icon: ScanText },
     ]
   },
@@ -78,14 +78,12 @@ const BASE_NAV_ITEMS: NavItem[] = [
   { label: 'modelStatus', href: '/status', icon: HelpCircle },
 ];
 
-/** 管理员专属菜单组（仅 hasPermission('/console/**') 时追加） */
 const ADMIN_NAV_GROUP: NavItem = {
   label: '管理员',
   icon: Shield,
   children: [
     { label: 'API Key 管理', href: '/apikey-admin', icon: KeySquare },
     { label: '元数据管理', href: '/metadata', icon: Database },
-    // 未来可在此追加：管理者管理、Model 限制管理等
   ],
 };
 
@@ -93,13 +91,19 @@ export default function Sidebar() {
   const pathname = usePathname();
   const { t } = useLanguage();
   const { user } = useAuth();
+  const {
+    isDesktop,
+    isSidebarOpen,
+    closeSidebar,
+    isSidebarExpanded,
+    isSidebarManuallyCollapsed,
+  } = useSidebar();
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const shouldSuppressSidebar = isSidebarManuallyCollapsed;
+  const shouldSuppressMobileSidebar = !isDesktop && shouldSuppressSidebar;
+  const isMobileSidebarOpen = !shouldSuppressMobileSidebar && isSidebarOpen;
 
-  /**
-   * 动态菜单列表：基础菜单 + 管理员分组（按权限）
-   * 仅在 user 变化时重算，避免每次渲染重新构建数组引用
-   */
   const navItems = useMemo((): NavItem[] => {
     if (hasPermission(user, '/console/**')) {
       return [...BASE_NAV_ITEMS, ADMIN_NAV_GROUP];
@@ -119,7 +123,12 @@ export default function Sidebar() {
     });
   };
 
-  // 自动展开：当前路径在某个子路由组下时，展开对应父项
+  const handleNavigation = () => {
+    if (!isDesktop) {
+      closeSidebar();
+    }
+  };
+
   useEffect(() => {
     if (pathname?.startsWith('/playground/')) {
       setExpandedItems(prev => new Set(prev).add('playground'));
@@ -132,25 +141,26 @@ export default function Sidebar() {
     }
   }, [pathname]);
 
-
-  return (
-    <aside className="w-64 bg-sidebar border-r border-sidebar-border flex flex-col h-screen fixed left-0 top-0">
-      {/* Logo */}
-      <div className="flex h-16 items-center border-b border-sidebar-border px-6">
-        <Link href="/" className="flex items-center gap-2">
+  const sidebarContent = (
+    <>
+      <div className="flex h-16 items-center justify-between border-b border-sidebar-border px-6">
+        <Link href="/" className="flex items-center gap-2" onClick={handleNavigation}>
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
             <Sparkles className="h-5 w-5 text-primary-foreground" />
           </div>
           <span className="text-lg font-semibold text-sidebar-foreground">OpenAPI 服务平台</span>
         </Link>
+        {!isDesktop && (
+          <Button variant="ghost" size="icon" onClick={closeSidebar} aria-label={t("close")}>
+            <X className="h-5 w-5" />
+          </Button>
+        )}
       </div>
 
-      {/* Navigation */}
       <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
         {navItems.map((item) => {
           const Icon = item.icon;
 
-          // Check if this item has children
           if (item.children) {
             const isExpanded = expandedItems.has(item.label);
             const isAnyChildActive = item.children.some(
@@ -159,7 +169,6 @@ export default function Sidebar() {
 
             return (
               <div key={item.label}>
-                {/* Parent button (collapsible) */}
                 <button
                   onClick={() => toggleExpanded(item.label)}
                   className={cn(
@@ -181,7 +190,6 @@ export default function Sidebar() {
                   />
                 </button>
 
-                {/* Children (collapsible) */}
                 <div
                   className={cn(
                     "overflow-hidden transition-all duration-200 ease-in-out",
@@ -197,6 +205,7 @@ export default function Sidebar() {
                         <Link
                           key={child.href}
                           href={child.href!}
+                          onClick={handleNavigation}
                           className={cn(
                             "flex items-center space-x-3 px-4 py-2 rounded-lg transition-colors text-sm",
                             isChildActive
@@ -215,13 +224,13 @@ export default function Sidebar() {
             );
           }
 
-          // Regular item without children (unchanged)
           const isActive = pathname === item.href || pathname?.startsWith(item.href + '/');
 
           return (
             <Link
               key={item.href}
               href={item.href!}
+              onClick={handleNavigation}
               className={cn(
                 "flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors text-sm",
                 isActive
@@ -236,9 +245,7 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* Bottom Navigation */}
       <div className="border-t border-sidebar-border p-3 space-y-1">
-        {/* 设置按钮 - 使用弹窗 */}
         <button
           onClick={() => setIsSettingsOpen(true)}
           className={cn(
@@ -250,9 +257,11 @@ export default function Sidebar() {
           {t("settings")}
         </button>
 
-        {/* 登出按钮 - 保持原有 Link 行为 */}
         <button
           onClick={() => {
+            if (!isDesktop) {
+              closeSidebar();
+            }
             logout();
             window.location.href = '/login';
           }}
@@ -268,11 +277,46 @@ export default function Sidebar() {
         </button>
       </div>
 
-      {/* 设置弹窗 */}
       <SettingsDialog
         open={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
       />
-    </aside>
+    </>
+  )
+
+  return (
+    <>
+      {!isDesktop && !shouldSuppressMobileSidebar && (
+        <div
+          onClick={closeSidebar}
+          className={cn(
+            "fixed inset-0 z-40 bg-black/40 transition-opacity duration-200",
+            isMobileSidebarOpen ? "opacity-100" : "pointer-events-none opacity-0"
+          )}
+        />
+      )}
+      <aside
+        className={cn(
+          "bg-sidebar border-sidebar-border flex flex-col h-screen top-0 overflow-hidden",
+          isDesktop
+            ? cn(
+                "fixed left-0 z-30 border-r",
+                shouldSuppressSidebar ? "transition-none" : "transition-[width] duration-200",
+                isSidebarExpanded ? "w-64" : "w-0 border-r-0"
+              )
+            : cn(
+                "fixed left-0 z-50 w-64 border-r shadow-xl",
+                shouldSuppressSidebar
+                  ? "pointer-events-none -translate-x-full transition-none"
+                  : "transition-transform duration-200 ease-out"
+              ),
+          !isDesktop &&
+            !shouldSuppressMobileSidebar &&
+            (isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full")
+        )}
+      >
+        {sidebarContent}
+      </aside>
+    </>
   );
 }

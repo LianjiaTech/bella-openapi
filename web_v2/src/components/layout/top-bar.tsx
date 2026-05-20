@@ -3,8 +3,9 @@
 import { useLanguage } from "../providers/language-provider"
 import { Button } from "@/components/common/button"
 import type React from "react"
-import { Sun, Moon } from "lucide-react"
+import { Menu, Sun, Moon } from "lucide-react"
 import { useTheme } from "../providers/theme-provider"
+import { useSidebar } from "../providers/sidebar-provider"
 
 interface TopBarProps {
   title?: string
@@ -16,11 +17,23 @@ interface TopBarProps {
 export function TopBar({ title, description, leftAction, action }: TopBarProps) {
   const { theme, setTheme } = useTheme()
   const { t } = useLanguage()
+  const { isDesktop, isSidebarExpanded, toggleSidebar, toggleSidebarExpanded } = useSidebar()
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-sidebar-border bg-background/95 px-6 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      {leftAction && <div className="flex items-center gap-2">{leftAction}</div>}
-      
+      <div className="flex items-center gap-2">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={isDesktop ? toggleSidebarExpanded : toggleSidebar}
+          title={isDesktop ? (isSidebarExpanded ? "折叠菜单" : "展开菜单") : t("menu")}
+          aria-label={isDesktop ? (isSidebarExpanded ? "折叠菜单" : "展开菜单") : t("menu")}
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
+        {leftAction}
+      </div>
+
       {title && (
         <div className="flex flex-1 flex-col justify-center">
           <h1 className="text-lg font-semibold">{title}</h1>
