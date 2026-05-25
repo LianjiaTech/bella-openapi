@@ -519,19 +519,11 @@ public class TransferFromCompletionsUtils {
             if(delta != null && CollectionUtils.isNotEmpty(delta.getTool_calls())) {
                 Message.ToolCall toolCallChunk = delta.getTool_calls().get(0);
 
-                if(toolCallChunk.getFunction() != null && StringUtils.isNotEmpty(toolCallChunk.getFunction().getName())) { // Start
-                                                                                                                           // of
-                                                                                                                           // a
-                                                                                                                           // new
-                                                                                                                           // tool
-                                                                                                                           // call
-                    contentIndex = contentIndex + 1;
+                if(toolCallChunk.getFunction() != null && StringUtils.isNotEmpty(toolCallChunk.getFunction().getName())) {
                     responseList.add(StreamMessageResponse.contentBlockStart(contentIndex,
                             new MessageResponse.ResponseToolUseBlock(toolCallChunk.getId(), toolCallChunk.getFunction().getName(), new HashMap<>())));
                 }
-                if(toolCallChunk.getFunction() != null && toolCallChunk.getFunction().getArguments() != null) { // Delta
-                                                                                                                // for
-                                                                                                                // arguments
+                if(toolCallChunk.getFunction() != null && toolCallChunk.getFunction().getArguments() != null) {
                     responseList.add(StreamMessageResponse.contentBlockDelta(contentIndex,
                             new StreamMessageResponse.InputJsonDelta(toolCallChunk.getFunction().getArguments())));
                 }

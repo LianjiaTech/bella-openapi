@@ -52,6 +52,23 @@ public class StreamMessagesCallback extends StreamCompletionCallback {
             if(CollectionUtils.isNotEmpty(streamChoice.getDelta().getTool_calls())) {
                 isToolCall = true;
             }
+            int currentStage = getCurrentStage(streamChoice);
+            if(currentStage == 0) {
+                List<StreamMessageResponse> messages = TransferFromCompletionsUtils.convertStreamResponse(msg, isToolCall, contentIndex);
+                if(CollectionUtils.isNotEmpty(messages)) {
+                    if(first) {
+                        send(StreamMessageResponse.messageStart(StreamMessageResponse.initial(msg, processData.getModel())));
+                        first = false;
+                    }
+                    if(messages.get(messages.size() - 1).getType().equals("message_delta") && !isSendFinish) {
+                        isSendFinish = true;
+                        messages.add(messages.size() - 1, StreamMessageResponse.contentBlockStop(contentIndex));
+                    }
+                    messages.forEach(this::send);
+                }
+                updateBuffer(msg.getStandardFormat() == null ? msg : msg.getStandardFormat());
+                return;
+            }
             if(curChoiceIndex != streamChoice.getIndex()) {
                 contentIndex += 1;
             }
@@ -64,6 +81,7 @@ public class StreamMessagesCallback extends StreamCompletionCallback {
             }
             if(CollectionUtils.isNotEmpty(msg.getChoices())) {
                 StreamCompletionResponse.Choice streamChoice = msg.getChoices().get(0);
+                int currentStage = getCurrentStage(streamChoice);
                 if(curChoiceIndex != streamChoice.getIndex()) {
                     if(curChoiceIndex >= 0) {
                         send(StreamMessageResponse.contentBlockStop(contentIndex - 1));
@@ -79,26 +97,28 @@ public class StreamMessagesCallback extends StreamCompletionCallback {
                         send(StreamMessageResponse.contentBlockStart(contentIndex, contentBlock));
                     }
                     curChoiceIndex = streamChoice.getIndex();
-                    stage = getCurrentStage(streamChoice);
+                    stage = currentStage;
                 } else {
-                    int currentStage = getCurrentStage(streamChoice);
                     if(stage == 3 && currentStage == 3) {
                         if(messages.get(0).getType().equals("content_block_start")) {
+                            contentIndex += 1;
                             int index = getTargetIndex(messages, stage);
-                            messages.add(index, StreamMessageResponse.contentBlockStop(contentIndex));
-                            curChoiceIndex += 1;
+                            messages.add(index, StreamMessageResponse.contentBlockStop(contentIndex - 1));
+                            messages.forEach(streamMessageResponse -> streamMessageResponse.setIndex(contentIndex));
                         }
                     } else if(currentStage != stage) {
-                        stage = currentStage;
                         int index = getTargetIndex(messages, stage);
                         contentIndex += 1;
                         if(currentStage != 3) {
                             MessageResponse.ContentBlock contentBlock = currentStage == 2 ? new MessageResponse.ResponseTextBlock("")
-                                    : new MessageResponse.ResponseThinkingBlock("", null);;
+                                    : new MessageResponse.ResponseThinkingBlock("", null);
                             messages.add(index, StreamMessageResponse.contentBlockStart(contentIndex, contentBlock));
+                            messages.forEach(streamMessageResponse -> streamMessageResponse.setIndex(contentIndex));
+                        } else {
                             messages.forEach(streamMessageResponse -> streamMessageResponse.setIndex(contentIndex));
                         }
                         messages.add(index, StreamMessageResponse.contentBlockStop(contentIndex - 1));
+                        stage = currentStage;
                     }
                 }
             }
