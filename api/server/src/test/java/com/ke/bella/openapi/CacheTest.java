@@ -57,7 +57,7 @@ public class CacheTest {
 
     public void deleteCache() {
         //替换为真实ak code
-        String akCode = "ak-0d0b8f35-4dcb-4019-8f05-a2a52f438cef";
+        String akCode = "ak-test-placeholder-for-cache-deletion";
         String month = DateTimeUtils.getCurrentMonth();
         cacheRepoTest.deleteCost(akCode, month);
     }
