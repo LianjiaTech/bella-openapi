@@ -41,6 +41,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static com.ke.bella.openapi.common.EntityConstants.ACTIVE;
@@ -72,6 +73,7 @@ public class ModelService {
     private ApplicationContext applicationContext;
     private static final String modelTerminalCacheKey = "model:terminal:";
     private static final String modelMapCacheKey = "model:map:";
+    private static final Pattern DIGIT_UNDERSCORE_DIGIT = Pattern.compile("(\\d)_(\\d)");
 
     @PostConstruct
     public void postConstruct() {
@@ -265,7 +267,27 @@ public class ModelService {
     @Cached(name = modelTerminalCacheKey, key = "#modelName")
     public String fetchTerminalModelName(String modelName) {
         List<String> path = getPath(modelName);
-        return CollectionUtils.isEmpty(path) ? modelName : path.get(path.size() - 1);
+        if (!CollectionUtils.isEmpty(path)) {
+            return path.get(path.size() - 1);
+        }
+        String normalized = tryNormalizeModelName(modelName);
+        if (!normalized.equals(modelName)) {
+            path = getPath(normalized);
+            if (!CollectionUtils.isEmpty(path)) {
+                log.info("Model name normalized: {} -> {}", modelName, normalized);
+                return path.get(path.size() - 1);
+            }
+        }
+        return modelName;
+    }
+
+    private String tryNormalizeModelName(String modelName) {
+        String candidate = DIGIT_UNDERSCORE_DIGIT.matcher(modelName).replaceAll("$1.$2");
+        if (candidate.equals(modelName)) {
+            return modelName;
+        }
+        Map<String, ModelDB> map = applicationContext.getBean(ModelService.class).queryWithCache("all");
+        return map.containsKey(candidate) ? candidate : modelName;
     }
 
     @Cached(name = modelMapCacheKey, key = "#key")
