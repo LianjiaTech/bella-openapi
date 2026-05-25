@@ -328,9 +328,15 @@ build_services() {
                 --platform $PLATFORMS \
                 --build-arg VERSION=${VERSION:-v1.0.0} \
                 --build-arg REGISTRY=${REGISTRY:-bellatop} \
+                --build-arg NODE_ENV=${NODE_ENV:-production} \
+                --build-arg DEPLOY_ENV=${DEPLOY_ENV:-production} \
+                --build-arg NEXT_PUBLIC_API_ORIGIN=${NEXT_PUBLIC_API_ORIGIN:-} \
+                --build-arg NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL:-} \
+                --build-arg NEXT_PUBLIC_API_HOST=${NEXT_PUBLIC_API_HOST:-} \
+                --build-arg BACKEND_API_URL=${BACKEND_API_URL:-} \
                 -t ${REGISTRY:-bellatop}/bella-openapi-web:${VERSION:-v1.0.0} \
                 -t ${REGISTRY:-bellatop}/bella-openapi-web:latest \
-                --push ./web
+                --push ./web_v2
                 
             echo "验证多架构镜像..."
             docker buildx imagetools inspect ${REGISTRY:-bellatop}/bella-openapi-api:${VERSION:-v1.0.0}
@@ -355,10 +361,10 @@ build_services() {
         echo "本地构建，使用 docker-compose..."
         if [ -n "$NO_CACHE" ]; then
             echo "强制重新构建（不使用缓存）..."
-            docker-compose -f "$COMPOSE_FILE_PATH" build --no-cache --build-arg VERSION=${VERSION:-v1.0.0} --build-arg REGISTRY=${REGISTRY:-bellatop} --build-arg NODE_ENV=$NODE_ENV --build-arg DEPLOY_ENV=$DEPLOY_ENV
+            docker-compose -f "$COMPOSE_FILE_PATH" build --no-cache --build-arg VERSION=${VERSION:-v1.0.0} --build-arg REGISTRY=${REGISTRY:-bellatop} --build-arg NODE_ENV=${NODE_ENV:-production} --build-arg DEPLOY_ENV=${DEPLOY_ENV:-production} --build-arg NEXT_PUBLIC_API_ORIGIN=${NEXT_PUBLIC_API_ORIGIN:-} --build-arg NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL:-} --build-arg NEXT_PUBLIC_API_HOST=${NEXT_PUBLIC_API_HOST:-} --build-arg BACKEND_API_URL=${BACKEND_API_URL:-}
         else
             echo "重新构建..."
-            docker-compose -f "$COMPOSE_FILE_PATH" build --build-arg VERSION=${VERSION:-v1.0.0} --build-arg REGISTRY=${REGISTRY:-bellatop} --build-arg NODE_ENV=$NODE_ENV --build-arg DEPLOY_ENV=$DEPLOY_ENV
+            docker-compose -f "$COMPOSE_FILE_PATH" build --build-arg VERSION=${VERSION:-v1.0.0} --build-arg REGISTRY=${REGISTRY:-bellatop} --build-arg NODE_ENV=${NODE_ENV:-production} --build-arg DEPLOY_ENV=${DEPLOY_ENV:-production} --build-arg NEXT_PUBLIC_API_ORIGIN=${NEXT_PUBLIC_API_ORIGIN:-} --build-arg NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL:-} --build-arg NEXT_PUBLIC_API_HOST=${NEXT_PUBLIC_API_HOST:-} --build-arg BACKEND_API_URL=${BACKEND_API_URL:-}
         fi
     fi
 }
@@ -471,38 +477,6 @@ done
 export PROJECT_ROOT="$(pwd)"
 COMPOSE_FILE_PATH="${COMPOSE_DIR}/${COMPOSE_FILE}"
 
-pre_pull_images
-
-# 执行构建（如果需要）
-if [ -n "$BUILD" ] || [ -n "$FORCE_RECREATE" ]; then
-    echo "构建服务..."
-    build_services
-fi
-
-# 如果指定了重启特定服务
-if [ -n "$RESTART_SERVICE" ]; then
-    echo "重启 $RESTART_SERVICE 服务..."
-    docker-compose -f "$COMPOSE_FILE_PATH" restart $RESTART_SERVICE
-    echo "$RESTART_SERVICE 服务已重启"
-    exit 0
-fi
-
-# 生成动态服务配置
-if [ -n "$SERVICES" ]; then
-    echo "生成动态服务配置..."
-    # 生成动态服务配置并写入到文件中
-    DYNAMIC_SERVICE_CONFIGS=$(generate_service_configs)
-else
-    # 如果没有配置服务，创建一个只包含注释的配置文件
-    DYNAMIC_SERVICE_CONFIGS="# 没有配置动态服务"
-fi
-# 创建nginx配置目录（如果不存在）
-mkdir -p ./nginx/conf.d
-# 删除旧的配置文件
-rm -rf ./nginx/conf.d/dynamic-services.conf
-# 将动态服务配置写入到单独的配置文件中
-echo "$DYNAMIC_SERVICE_CONFIGS" > ./nginx/conf.d/dynamic-services.conf
-
 # 处理OAuth配置
 if [ -n "$GITHUB_OAUTH" ]; then
     # 验证格式是否正确 (CLIENT_ID:CLIENT_SECRET)
@@ -595,13 +569,13 @@ fi
 export VERSION=$VERSION
 export NGINX_PORT=$NGINX_PORT
 
-# 验证环境参数
+# 验证环境参数（必须在构建前完成，否则 build-arg 会为空）
 if [[ "$ENV" != "dev" && "$ENV" != "test" && "$ENV" != "prod" ]]; then
     echo "错误: 环境必须是 dev, test 或 prod"
     exit 1
 fi
 
-# 根据环境设置映射关系
+# 根据环境设置映射关系（供构建和运行阶段共用）
 case $ENV in
     dev)
         NODE_ENV="test"
@@ -627,6 +601,38 @@ echo "镜像版本: $VERSION"
 export SPRING_PROFILES_ACTIVE=$SPRING_PROFILE
 export NODE_ENV=$NODE_ENV
 export DEPLOY_ENV=$DEPLOY_ENV
+
+pre_pull_images
+
+# 执行构建（如果需要）
+if [ -n "$BUILD" ] || [ -n "$FORCE_RECREATE" ]; then
+    echo "构建服务..."
+    build_services
+fi
+
+# 如果指定了重启特定服务
+if [ -n "$RESTART_SERVICE" ]; then
+    echo "重启 $RESTART_SERVICE 服务..."
+    docker-compose -f "$COMPOSE_FILE_PATH" restart $RESTART_SERVICE
+    echo "$RESTART_SERVICE 服务已重启"
+    exit 0
+fi
+
+# 生成动态服务配置
+if [ -n "$SERVICES" ]; then
+    echo "生成动态服务配置..."
+    # 生成动态服务配置并写入到文件中
+    DYNAMIC_SERVICE_CONFIGS=$(generate_service_configs)
+else
+    # 如果没有配置服务，创建一个只包含注释的配置文件
+    DYNAMIC_SERVICE_CONFIGS="# 没有配置动态服务"
+fi
+# 创建nginx配置目录（如果不存在）
+mkdir -p ./nginx/conf.d
+# 删除旧的配置文件
+rm -rf ./nginx/conf.d/dynamic-services.conf
+# 将动态服务配置写入到单独的配置文件中
+echo "$DYNAMIC_SERVICE_CONFIGS" > ./nginx/conf.d/dynamic-services.conf
 
 # 检查 docker 和 docker-compose 是否安装
 if ! command -v docker &> /dev/null; then

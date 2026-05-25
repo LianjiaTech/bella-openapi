@@ -49,16 +49,23 @@ export default function ApiKeysPage() {
   const [showSafeLevelDialog, setShowSafeLevelDialog] = useState(false);
   const [editingAkCode, setEditingAkCode] = useState<string>("");
 
-  const { user } = useAuth();
+  const { user, isLoading: authLoading, isInitialized } = useAuth();
 
   // 获取当前用户的 API Keys 列表
   const fetchApiKeys = useCallback(async (currentPage: number, search: string) => {
     if (showTransferDialog) return;
-    if (!user?.userId) return;
+    if (authLoading || !isInitialized) return;
+    if (!user) {
+      setApiKeys([]);
+      setHasMore(false);
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       setError(null);
-      const response = await getApiKeys(user.userId.toString(), search, currentPage, "");
+      const ownerCode = user.userId ? user.userId.toString() : undefined;
+      const response = await getApiKeys(ownerCode, search, currentPage, "");
       setApiKeys(response.data || []);
       setHasMore(response.has_more);
 
@@ -78,7 +85,7 @@ export default function ApiKeysPage() {
     } finally {
       setLoading(false);
     }
-  }, [showTransferDialog, user?.userId]);
+  }, [showTransferDialog, user?.userId, authLoading, isInitialized]);
 
   // 搜索防抖 - 500ms 延迟
   useEffect(() => {

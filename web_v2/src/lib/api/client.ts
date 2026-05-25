@@ -145,11 +145,19 @@ apiClient.interceptors.response.use(
         case 401:
           error.message = extractErrorMessage('未授权访问');
 
+          // 与旧版 web 对齐：用户信息探测接口的 401 不主动重定向
+          // 避免在登录页初始化阶段被强制拉起 CAS/OAuth 跳转
+          const requestUrl = error.config?.url || '';
+          const responseUrl = typeof (error.request as any)?.responseURL === 'string'
+            ? (error.request as any).responseURL
+            : '';
+          const isUserInfoRequest = requestUrl.includes('/console/userInfo') || responseUrl.includes('/console/userInfo');
+
           // 401 自动重定向逻辑
           // 检查是否有 X-Redirect-Login 响应头（CAS企业登录模式）
           const loginUrl = error.response.headers['X-Redirect-Login'] || error.response.headers['x-redirect-login'];
 
-          if (loginUrl && typeof window !== 'undefined') {
+          if (!isUserInfoRequest && loginUrl && typeof window !== 'undefined') {
 
             // CAS模式：直接跳转到企业登录页
             // 添加回跳 URL 参数（包含当前页面地址）

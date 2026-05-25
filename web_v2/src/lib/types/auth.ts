@@ -54,7 +54,7 @@ export interface LoginRequest {
  * 对应后端: POST /openapi/login 返回的数据结构
  */
 export interface LoginResponse {
-  success: boolean
+  success?: boolean
   user?: UserInfo
   message?: string
 }

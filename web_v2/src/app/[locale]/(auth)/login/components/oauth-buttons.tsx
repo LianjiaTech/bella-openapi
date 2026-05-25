@@ -51,21 +51,6 @@ export function OAuthButtons({ redirect = '/overview' }: OAuthButtonsProps) {
     )
   }
 
-  if (providers.length === 0) {
-    // CAS企业登录模式：后端不返回OAuth配置
-    // 用户访问受保护页面时会自动跳转到企业登录页
-    return (
-      <div className="text-center space-y-3 py-4">
-        <div className="text-sm text-muted-foreground">
-          正在跳转到企业登录页面...
-        </div>
-        <div className="text-xs text-muted-foreground">
-          如果没有自动跳转，请刷新页面或联系管理员
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="space-y-3">
       {providers.map((provider) => (
