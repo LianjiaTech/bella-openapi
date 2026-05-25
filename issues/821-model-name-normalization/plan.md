@@ -6,6 +6,13 @@ Related to #821
 
 在 model name 解析阶段增加标准化逻辑，使得 hermes 等外部系统传入的下划线版本号格式（如 `claude_opus_4_7`）能够正确匹配到数据库中以点号分隔的模型名（如 `claude_opus_4.7`）。
 
+## 方案选择
+
+经讨论（MR !838），确认采用**代码层 normalize 方案**，而非 `linked_to` 模型软链方案。理由：
+- 一次编码自动覆盖所有模型，无需逐个维护别名记录
+- 不增加 model 表数据膨胀
+- 逻辑集中，未来 hermes 修复后可安全移除
+
 ## 非目标
 
 - 不修改数据库中已有的 model_name 格式和存储方式
@@ -76,6 +83,7 @@ public String fetchTerminalModelName(String modelName) {
     if (!normalized.equals(modelName)) {
         path = getPath(normalized);
         if (!CollectionUtils.isEmpty(path)) {
+            log.info("Model name normalized: {} -> {}", modelName, normalized);
             return path.get(path.size() - 1);
         }
     }
@@ -85,7 +93,9 @@ public String fetchTerminalModelName(String modelName) {
 
 注意：由于采用「先查后替」策略，原始名称能直接命中时不会触发标准化逻辑，性能影响为零。仅在找不到时才执行一次正则替换和二次查找。
 
-缓存处理：`getPath` 本身已有缓存，因此 `fetchTerminalModelName` 外层不再需要单独缓存层。如果原设计使用 `@Cached`，需评估是否仍需要（因为 fallback 分支会产生两个不同的 cache key 指向同一结果）。推荐保留 `getPath` 级别的缓存即可。
+缓存处理：保留 `fetchTerminalModelName` 上的 `@Cached` 注解。当 `claude_opus_4_7` 首次查不到原始名称时走 fallback 路径，返回的 `claude_opus_4.7` 会被缓存到 key=`claude_opus_4_7`，后续相同请求直接命中缓存，不会重复触发 fallback。这是正确行为，无需额外处理。
+
+可观测性：当 fallback 替换生效时，添加一条 INFO 级别日志 `"Model name normalized: {} -> {}"`，便于上线后确认逻辑被正确触发以及未来评估是否可移除。
 
 **验证方式**: 启动应用后用两种格式调用同一模型，验证：
 - 原始名称存在时直接返回，不触发替换逻辑
