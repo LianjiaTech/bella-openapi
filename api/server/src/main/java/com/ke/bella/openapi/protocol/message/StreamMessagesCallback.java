@@ -2,6 +2,7 @@ package com.ke.bella.openapi.protocol.message;
 
 import com.ke.bella.openapi.EndpointProcessData;
 import com.ke.bella.openapi.apikey.ApikeyInfo;
+import com.ke.bella.openapi.protocol.completion.Message;
 import com.ke.bella.openapi.protocol.completion.StreamCompletionResponse;
 import com.ke.bella.openapi.protocol.completion.callback.StreamCompletionCallback;
 import com.ke.bella.openapi.protocol.log.EndpointLogger;
@@ -11,6 +12,7 @@ import com.ke.bella.openapi.utils.DateTimeUtils;
 import com.ke.bella.openapi.utils.SseHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
@@ -49,7 +51,7 @@ public class StreamMessagesCallback extends StreamCompletionCallback {
         msg.setCreated(DateTimeUtils.getCurrentSeconds());
         if(CollectionUtils.isNotEmpty(msg.getChoices())) {
             StreamCompletionResponse.Choice streamChoice = msg.getChoices().get(0);
-            if(CollectionUtils.isNotEmpty(streamChoice.getDelta().getTool_calls())) {
+            if(hasToolCalls(streamChoice)) {
                 isToolCall = true;
             }
             int currentStage = getCurrentStage(streamChoice);
@@ -60,7 +62,7 @@ public class StreamMessagesCallback extends StreamCompletionCallback {
                         send(StreamMessageResponse.messageStart(StreamMessageResponse.initial(msg, processData.getModel())));
                         first = false;
                     }
-                    if(messages.get(messages.size() - 1).getType().equals("message_delta") && !isSendFinish) {
+                    if(messages.get(messages.size() - 1).getType().equals("message_delta") && !isSendFinish && contentIndex >= 0) {
                         isSendFinish = true;
                         messages.add(messages.size() - 1, StreamMessageResponse.contentBlockStop(contentIndex));
                     }
@@ -88,8 +90,9 @@ public class StreamMessagesCallback extends StreamCompletionCallback {
                     }
                     if(!messages.get(0).getType().equals("content_block_start")) {
                         MessageResponse.ContentBlock contentBlock;
-                        if(streamChoice.getDelta().getReasoning_content() != null
-                                || streamChoice.getDelta().getReasoning_content_signature() != null) {
+                        Message delta = streamChoice.getDelta();
+                        if(delta != null && (delta.getReasoning_content() != null
+                                || delta.getReasoning_content_signature() != null)) {
                             contentBlock = new MessageResponse.ResponseThinkingBlock("", null);
                         } else {
                             contentBlock = new MessageResponse.ResponseTextBlock("");
@@ -104,7 +107,11 @@ public class StreamMessagesCallback extends StreamCompletionCallback {
                             contentIndex += 1;
                             int index = getTargetIndex(messages, stage);
                             messages.add(index, StreamMessageResponse.contentBlockStop(contentIndex - 1));
-                            messages.forEach(streamMessageResponse -> streamMessageResponse.setIndex(contentIndex));
+                            for (int i = 0; i < messages.size(); i++) {
+                                if(i != index) {
+                                    messages.get(i).setIndex(contentIndex);
+                                }
+                            }
                         }
                     } else if(currentStage != stage) {
                         int index = getTargetIndex(messages, stage);
@@ -123,7 +130,7 @@ public class StreamMessagesCallback extends StreamCompletionCallback {
                 }
             }
 
-            if(messages.get(messages.size() - 1).getType().equals("message_delta") && !isSendFinish) {
+            if(messages.get(messages.size() - 1).getType().equals("message_delta") && !isSendFinish && contentIndex >= 0) {
                 isSendFinish = true;
                 messages.add(messages.size() - 1, StreamMessageResponse.contentBlockStop(contentIndex));
             }
@@ -133,14 +140,29 @@ public class StreamMessagesCallback extends StreamCompletionCallback {
     }
 
     private int getCurrentStage(StreamCompletionResponse.Choice streamChoice) {
-        return streamChoice.getDelta() == null ? 0
-                : streamChoice.getDelta().getTool_calls() != null ? 3
-                        : streamChoice.getDelta().getContent() != null ? 2
-                                : streamChoice.getDelta().getReasoning_content() != null
-                                        || streamChoice.getDelta().getReasoning_content_signature() != null
-                                        || streamChoice.getDelta().getRedacted_reasoning_content() != null
-                                                ? 1
-                                                : 0;
+        Message delta = streamChoice.getDelta();
+        if(delta == null) {
+            return 0;
+        }
+        if(CollectionUtils.isNotEmpty(delta.getTool_calls())) {
+            return 3;
+        }
+        if(delta.getContent() instanceof String && StringUtils.isNotEmpty((String) delta.getContent())) {
+            return 2;
+        }
+        if(delta.getContent() != null && !(delta.getContent() instanceof String)) {
+            return 2;
+        }
+        if(StringUtils.isNotEmpty(delta.getReasoning_content())
+                || StringUtils.isNotEmpty(delta.getReasoning_content_signature())
+                || StringUtils.isNotEmpty(delta.getRedacted_reasoning_content())) {
+            return 1;
+        }
+        return 0;
+    }
+
+    private boolean hasToolCalls(StreamCompletionResponse.Choice streamChoice) {
+        return streamChoice.getDelta() != null && CollectionUtils.isNotEmpty(streamChoice.getDelta().getTool_calls());
     }
 
     private int getTargetIndex(List<StreamMessageResponse> messages, int stage) {
@@ -171,7 +193,9 @@ public class StreamMessagesCallback extends StreamCompletionCallback {
             return;
         }
         if(!isSendFinish) {
-            send(StreamMessageResponse.contentBlockStop(contentIndex));
+            if(contentIndex >= 0) {
+                send(StreamMessageResponse.contentBlockStop(contentIndex));
+            }
             StreamMessageResponse.StreamUsage streamUsage = StreamMessageResponse.StreamUsage.builder()
                     .outputTokens(1)
                     .inputTokens(1)
