@@ -127,9 +127,53 @@ public class StreamMessagesCallbackTest {
         assertValidCompleteMessageStream(events);
     }
 
+    @Test
+    public void emptyTextDeltaBeforeNormalTextDoesNotOpenExtraBlock() {
+        CollectingStreamMessagesCallback callback = new CollectingStreamMessagesCallback();
+
+        callback.callback(emptyTextChunk());
+        callback.callback(textChunk("hello"));
+        callback.callback(finishChunk("stop"));
+        callback.done();
+
+        List<StreamMessageResponse> events = callback.events;
+        assertEvent(events.get(1), "content_block_start", 0);
+        assertEvent(events.get(2), "content_block_delta", 0);
+        assertEvent(events.get(3), "content_block_stop", 0);
+        assertTrue(events.stream().noneMatch(event -> "content_block_start".equals(event.getType()) && event.getIndex() == 1));
+        assertValidCompleteMessageStream(events);
+    }
+
+    @Test
+    public void thinkingThenTextClosesThinkingBlockBeforeTextBlock() {
+        CollectingStreamMessagesCallback callback = new CollectingStreamMessagesCallback();
+
+        callback.callback(thinkingChunk("let me think"));
+        callback.callback(textChunk("answer"));
+        callback.callback(finishChunk("stop"));
+        callback.done();
+
+        List<StreamMessageResponse> events = callback.events;
+        assertEvent(events.get(1), "content_block_start", 0);
+        assertTrue(events.get(1).getContentBlock() instanceof MessageResponse.ResponseThinkingBlock);
+        assertEvent(events.get(2), "content_block_delta", 0);
+        assertEvent(events.get(3), "content_block_stop", 0);
+        assertEvent(events.get(4), "content_block_start", 1);
+        assertTrue(events.get(4).getContentBlock() instanceof MessageResponse.ResponseTextBlock);
+        assertEvent(events.get(5), "content_block_delta", 1);
+        assertEvent(events.get(6), "content_block_stop", 1);
+        assertValidCompleteMessageStream(events);
+    }
+
     private static StreamCompletionResponse textChunk(String text) {
         return streamResponse(Message.builder()
                 .content(text)
+                .build(), null);
+    }
+
+    private static StreamCompletionResponse thinkingChunk(String thinking) {
+        return streamResponse(Message.builder()
+                .reasoning_content(thinking)
                 .build(), null);
     }
 
