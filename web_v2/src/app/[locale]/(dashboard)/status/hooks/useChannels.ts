@@ -112,30 +112,30 @@ export function useChannels({
     let totalCompleted = 0
     let totalErrors = 0
     let totalRequestTooMany = 0
-    const ttftValues: number[] = []
+    let totalTtft = 0
 
     metricsData.forEach((timePoint) => {
-      if (!channelCode || channelCode === "") {
-        // 全部渠道：使用汇总数据
-        totalCompleted += timePoint.metrics.completed || 0
-        totalErrors += timePoint.metrics.errors || 0
-        totalRequestTooMany += timePoint.metrics.request_too_many || 0
-        if (timePoint.metrics.ttft) ttftValues.push(timePoint.metrics.ttft)
-        if (timePoint.metrics.ttlt) ttftValues.push(timePoint.metrics.ttlt)
-      } else {
-        if(timePoint?.channel_code === channelCode){
-          totalCompleted += timePoint.metrics.completed || 0
-          totalErrors += timePoint.metrics.errors || 0
-          totalRequestTooMany += timePoint.metrics.request_too_many || 0
-          if (timePoint.metrics.ttft) ttftValues.push(timePoint.metrics.ttft)
-          if (timePoint.metrics.ttlt) ttftValues.push(timePoint.metrics.ttlt)
+      const metrics = (() => {
+        if (!channelCode || channelCode === "") {
+          return timePoint.metrics
         }
-      }
+        if (timePoint?.channel_code === channelCode) {
+          return timePoint.metrics
+        }
+        return null
+      })()
+
+      if (!metrics) return
+
+      totalCompleted += metrics.completed || 0
+      totalErrors += metrics.errors || 0
+      totalRequestTooMany += metrics.request_too_many || 0
+      totalTtft += metrics.ttft || 0
     })
-    const avgTtft =
-      ttftValues.length > 0
-        ? Math.round(ttftValues.reduce((sum, v) => sum + v, 0) / ttftValues.length)
-        : 0
+
+    const avgTtft = totalCompleted > 0
+      ? Math.round(totalTtft / totalCompleted)
+      : 0
 
     return {
       totalRequests: totalCompleted,
