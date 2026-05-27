@@ -2,6 +2,7 @@
 
 import React, { createContext, useState, useEffect, useContext, useCallback, useRef } from "react"
 import { getUserInfo, login as apiLogin, logout as apiLogout, getOAuthConfig as apiGetOAuthConfig } from "@/lib/api/auth"
+import { isLoginPath } from "@/i18n/routing"
 import type { UserInfo, OAuthConfig } from "@/lib/types/auth"
 
 /**
@@ -28,13 +29,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 type AuthProviderProps = {
   children: React.ReactNode
-}
-
-function isLoginPath(pathname: string): boolean {
-  if (pathname === '/login' || pathname.startsWith('/login/')) {
-    return true
-  }
-  return /^\/(zh-CN|en-US)\/login(?:\/|$)/.test(pathname)
 }
 
 /**

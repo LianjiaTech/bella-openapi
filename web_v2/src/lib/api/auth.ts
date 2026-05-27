@@ -19,6 +19,22 @@ function getApiPath(path: string): string {
   return useMock ? `/api${path}` : path
 }
 
+function isValidUserInfoPayload(data: unknown): data is Partial<UserInfo> {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+    return false
+  }
+
+  const user = data as Partial<UserInfo>
+
+  return (
+    user.userId !== undefined ||
+    Boolean(user.userName) ||
+    Boolean(user.email) ||
+    Boolean(user.sourceId) ||
+    Boolean(user.managerAk)
+  )
+}
+
 /**
  * 获取当前用户信息
  *
@@ -36,7 +52,7 @@ export async function getUserInfo(): Promise<UserInfo | null> {
 
     // 与 web 版本对齐：只要后端返回了用户对象就视为已登录
     // 某些登录来源下 userId 可能为空/0，此时由业务侧决定是否传 ownerCode
-    if (data && typeof data === 'object') {
+    if (isValidUserInfoPayload(data)) {
       return {
         ...data,
         userId: data.userId || 0,

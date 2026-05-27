@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server'
 import createMiddleware from 'next-intl/middleware'
-import { routing } from './i18n/routing'
+import { routing, stripLocalePrefix } from './i18n/routing'
 
 /**
  * 公开路径（无需登录）
@@ -64,9 +64,7 @@ export default async function middleware(request: NextRequest) {
   }
 
   // 2. 提取locale后的真实路径
-  // pathname可能是: /zh-CN/dashboard, /en-US/settings, 或 /dashboard
-  const localeMatch = pathname.match(/^\/(zh-CN|en-US)(.*)$/)
-  const realPath = localeMatch ? localeMatch[2] || '/' : pathname
+  const realPath = stripLocalePrefix(pathname)
 
   // 3. 公开路径直接通过（但仍需处理国际化）
   if (PUBLIC_PATHS.some(path => realPath === path || realPath.startsWith(path + '/'))) {

@@ -142,7 +142,7 @@ apiClient.interceptors.response.use(
         case 400:
           error.message = extractErrorMessage('请求参数错误');
           break;
-        case 401:
+        case 401: {
           error.message = extractErrorMessage('未授权访问');
 
           // 与旧版 web 对齐：用户信息探测接口的 401 不主动重定向
@@ -170,6 +170,7 @@ apiClient.interceptors.response.use(
           // OAuth模式：没有X-Redirect-Login响应头
           // 由AuthGuard组件处理重定向到/login页面
           break;
+        }
         case 403:
           error.message = extractErrorMessage('禁止访问');
           break;
