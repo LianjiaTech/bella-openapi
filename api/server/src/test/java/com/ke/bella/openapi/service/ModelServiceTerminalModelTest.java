@@ -4,7 +4,10 @@ import com.ke.bella.openapi.common.exception.BizParamCheckException;
 import com.ke.bella.openapi.tables.pojos.ModelDB;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.MockitoJUnitRunner;
+import org.springframework.context.ApplicationContext;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -12,11 +15,20 @@ import java.util.Map;
 import static com.ke.bella.openapi.common.EntityConstants.ACTIVE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-@RunWith(JUnit4.class)
+@RunWith(MockitoJUnitRunner.class)
 public class ModelServiceTerminalModelTest {
 
-    private final ModelService modelService = new ModelService();
+    @InjectMocks
+    private ModelService modelService;
+
+    @Mock
+    private ApplicationContext applicationContext;
+
+    @Mock
+    private ModelService cachedModelService;
 
     @Test
     public void resolveTerminalModelNameReturnsTerminalForActivePath() {
@@ -55,7 +67,8 @@ public class ModelServiceTerminalModelTest {
 
         assertThatThrownBy(() -> modelService.resolveTerminalModelName("inactive-model", map))
                 .isInstanceOf(BizParamCheckException.class)
-                .hasMessage("模型已下线");    }
+                .hasMessage("模型已下线");
+    }
 
     @Test
     public void resolveTerminalModelNameRejectsPathWithInactiveLinkedModel() {
@@ -65,7 +78,24 @@ public class ModelServiceTerminalModelTest {
 
         assertThatThrownBy(() -> modelService.resolveTerminalModelName("alias", map))
                 .isInstanceOf(BizParamCheckException.class)
-                .hasMessage("模型已下线");    }
+                .hasMessage("模型已下线");
+    }
+
+    @Test
+    public void fetchTerminalModelNameRejectsInactivePathAfterCacheHit() {
+        Map<String, ModelDB> map = new HashMap<>();
+        map.put("alias", model("alias", "terminal", ACTIVE));
+        map.put("terminal", model("terminal", null, "inactive"));
+        when(applicationContext.getBean(ModelService.class)).thenReturn(cachedModelService);
+        when(cachedModelService.fetchTerminalModelNameWithCache("alias")).thenReturn("terminal");
+        when(cachedModelService.queryWithCache("all")).thenReturn(map);
+
+        assertThatThrownBy(() -> modelService.fetchTerminalModelName("alias"))
+                .isInstanceOf(BizParamCheckException.class)
+                .hasMessage("模型已下线");
+
+        verify(cachedModelService).fetchTerminalModelNameWithCache("alias");
+    }
 
     @Test
     public void resolveTerminalModelNameUsesSelfWhenRestoredModelClearsLinkedTo() {

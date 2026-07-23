@@ -331,28 +331,42 @@ public class ModelService {
         doUpdateModelCache(op.getModelName(), terminal);
     }
 
-    @Cached(name = modelTerminalCacheKey, key = "#modelName")
     public String fetchTerminalModelName(String modelName) {
+        ModelService modelService = applicationContext.getBean(ModelService.class);
+        String terminalModelName = modelService.fetchTerminalModelNameWithCache(modelName);
+        Map<String, ModelDB> map = modelService.queryWithCache("all");
+        assertActiveModelPath(resolveModelPath(modelName, map), map);
+        return terminalModelName;
+    }
+
+    @Cached(name = modelTerminalCacheKey, key = "#modelName")
+    public String fetchTerminalModelNameWithCache(String modelName) {
         Map<String, ModelDB> map = applicationContext.getBean(ModelService.class).queryWithCache("all");
         return resolveTerminalModelName(modelName, map);
     }
 
     String resolveTerminalModelName(String modelName, Map<String, ModelDB> map) {
-        List<String> path = getPath(modelName, map);
+        List<String> path = resolveModelPath(modelName, map);
         assertActiveModelPath(path, map);
         if(!CollectionUtils.isEmpty(path)) {
             return path.get(path.size() - 1);
         }
+        return modelName;
+    }
+
+    private List<String> resolveModelPath(String modelName, Map<String, ModelDB> map) {
+        List<String> path = getPath(modelName, map);
+        if(!CollectionUtils.isEmpty(path)) {
+            return path;
+        }
         String normalized = tryNormalizeModelName(modelName, map);
         if(!normalized.equals(modelName)) {
             path = getPath(normalized, map);
-            assertActiveModelPath(path, map);
             if(!CollectionUtils.isEmpty(path)) {
                 log.info("Model name normalized: {} -> {}", modelName, normalized);
-                return path.get(path.size() - 1);
             }
         }
-        return modelName;
+        return path;
     }
 
     private void assertActiveModelPath(List<String> path, Map<String, ModelDB> map) {
@@ -369,7 +383,8 @@ public class ModelService {
                 .map(map::get)
                 .anyMatch(model -> !ACTIVE.equals(model.getStatus()));
         if(containsInactive) {
-            throw new BizParamCheckException("模型已下线");        }
+            throw new BizParamCheckException("模型已下线");
+        }
     }
 
     private String tryNormalizeModelName(String modelName, Map<String, ModelDB> map) {
