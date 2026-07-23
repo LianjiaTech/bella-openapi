@@ -55,8 +55,7 @@ public class ModelServiceTerminalModelTest {
 
         assertThatThrownBy(() -> modelService.resolveTerminalModelName("inactive-model", map))
                 .isInstanceOf(BizParamCheckException.class)
-                .hasMessage("模型不可用");
-    }
+                .hasMessage("模型已下线");    }
 
     @Test
     public void resolveTerminalModelNameRejectsPathWithInactiveLinkedModel() {
@@ -66,8 +65,7 @@ public class ModelServiceTerminalModelTest {
 
         assertThatThrownBy(() -> modelService.resolveTerminalModelName("alias", map))
                 .isInstanceOf(BizParamCheckException.class)
-                .hasMessage("模型不可用");
-    }
+                .hasMessage("模型已下线");    }
 
     @Test
     public void resolveTerminalModelNameUsesSelfWhenRestoredModelClearsLinkedTo() {

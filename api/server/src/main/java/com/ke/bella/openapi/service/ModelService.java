@@ -369,8 +369,7 @@ public class ModelService {
                 .map(map::get)
                 .anyMatch(model -> !ACTIVE.equals(model.getStatus()));
         if(containsInactive) {
-            throw new BizParamCheckException("模型不可用");
-        }
+            throw new BizParamCheckException("模型已下线");        }
     }
 
     private String tryNormalizeModelName(String modelName, Map<String, ModelDB> map) {
