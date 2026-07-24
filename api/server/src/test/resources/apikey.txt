@@ -1,0 +1,124 @@
+POST /console/apikey/apply
+{"Authorization":"Bearer {testApikey}"}
+{"ownerType":"person", "ownerCode":"10000000", "ownerName":"test"}
+200
+
+GET /console/apikey/page?ownerType=person&ownerCode=10000000
+{"Authorization":"Bearer {testApikey}"}
+{}
+skip
+
+POST /console/apikey/apply
+{"Authorization":"Bearer %{1}%"}
+{"ownerType":"person", "ownerCode":"10000000", "ownerName":"test", "role_code":"low"}
+401
+
+POST /console/apikey/role/update
+{"Authorization":"Bearer %{1}%"}
+{"code":"%{6-data-0-code}%", "roleCode":"low"}
+401
+
+POST /console/apikey/role/update
+{"Authorization":"Bearer {testApikey}"}
+{"code":"%{6-data-0-code}%", "roleCode":"console"}
+200
+
+POST /console/apikey/role/update
+{"Authorization":"Bearer %{1}%"}
+{"code":"%{6-data-0-code}%", "roleCode":"xxxxxx不存在"}
+400
+
+POST /console/apikey/role/update
+{"Authorization":"Bearer %{1}%"}
+{"code":"%{6-data-0-code}%", "paths":["/v*/**", "/console/**"]}
+200
+
+POST /console/apikey/role/update
+{"Authorization":"Bearer %{1}%"}
+{"code":"%{6-data-0-code}%", "roleCode":"console"}
+200
+
+POST /console/apikey/reset
+{"Authorization":"Bearer %{1}%"}
+{"code":"%{6-data-0-code}%"}
+200
+
+POST /console/apikey/role/update
+{"Authorization":"Bearer %{1}%"}
+{"code":"%{6-data-0-code}%", "roleCode":"console"}
+401
+
+POST /console/apikey/role/update
+{"Authorization":"Bearer %{41}%"}
+{"code":"%{6-data-0-code}%", "roleCode":"console"}
+200
+
+POST /console/apikey/quota/update
+{"Authorization":"Bearer %{41}%"}
+{"code":"%{6-data-0-code}%", "monthQuota":5000}
+200
+
+POST /console/apikey/certify
+{"Authorization":"Bearer %{41}%"}
+{"code":"%{6-data-0-code}%", "certifyCode":"ahhadjhajdja"}
+200
+
+POST /console/apikey/inactivate
+{"Authorization":"Bearer %{41}%"}
+{"code":"%{6-data-0-code}%"}
+200
+
+POST /console/apikey/activate
+{"Authorization":"Bearer %{41}%"}
+{"code":"%{6-data-0-code}%"}
+200
+
+POST /console/apikey/apply
+{"Authorization":"Bearer {testApikey}"}
+{"ownerType":"person", "ownerCode":"10000000", "ownerName":"test"}
+200
+
+GET /console/apikey/page?ownerType=person&ownerCode=10000000
+{"Authorization":"Bearer {testApikey}"}
+{}
+skip
+
+POST /v1/apikey/create
+{"Authorization":"Bearer %{76}%"}
+{"parentCode":"%{81-data-0-code}%", "outEntityCode":"10009999", "safetyLevel":0, "roleCode":"low", "monthQuota":0 }
+401
+
+POST /console/apikey/role/update
+{"Authorization":"Bearer {testApikey}"}
+{"code":"%{81-data-0-code}%", "roleCode":"high"}
+200
+
+POST /v1/apikey/create
+{"Authorization":"Bearer %{76}%"}
+{"parentCode":"%{81-data-0-code}%", "outEntityCode":"10009999", "safetyLevel":0, "roleCode":"low", "monthQuota":0 }
+200
+
+POST /v1/apikey/create
+{"Authorization":"Bearer %{76}%"}
+{"parentCode":"%{81-data-0-code}%", "outEntityCode":"10009999", "safetyLevel":0, "paths":["/console/**", "/v1/**"]}
+400
+
+POST /v1/apikey/create
+{"Authorization":"Bearer %{76}%"}
+{"parentCode":"%{81-data-0-code}%", "outEntityCode":"10009999", "safetyLevel":0, "paths":["/v1/**"], "monthQuota":0 }
+200
+
+POST /v1/apikey/create
+{"Authorization":"Bearer %{76}%"}
+{"parentCode":"%{81-data-0-code}%", "outEntityCode":"10009999", "safetyLevel":0, "monthQuota":0 }
+400
+
+POST /v1/apikey/create
+{"Authorization":"Bearer %{76}%"}
+{"parentCode":"%{81-data-0-code}%", "outEntityCode":"10009999", "safetyLevel":1, "roleCode":"low", "monthQuota":2000}
+400
+
+POST /v1/apikey/create
+{"Authorization":"Bearer %{76}%"}
+{"parentCode":"%{81-data-0-code}%", "outEntityCode":"10009999", "safetyLevel":1, "roleCode":"low", "monthQuota":100}
+200

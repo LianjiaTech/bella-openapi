@@ -1,0 +1,254 @@
+'use client'
+import { TopBar } from "@/components/layout"
+import { useLanguage } from "@/components/providers/language-provider"
+import { useSidebar } from "@/components/providers/sidebar-provider"
+import { useMemo, useDeferredValue } from "react"
+import { cn } from "@/lib/utils"
+import { ModelFilterPanel } from "@/components/ui/modelFilterPanel/index"
+import { useSearchParams } from "next/navigation"
+import { useState, useEffect, useCallback } from "react"
+import { useEndpointData } from "./hooks/useEndpointData"
+import { getInitialEndpoint } from "@/lib/utils"
+import { Model } from "@/lib/types/openapi"
+import { Loader, AlertCircle, ChevronDown } from "lucide-react"
+import { ModelCard } from "./components/modelCard"
+import { Button } from "@/components/common/button"
+import { VirtualGrid } from "@/components/ui/virtualGrid/index"
+import { SearchBar } from "@/components/ui/modelFilterPanel/components/SearchBar"
+import { ConfigureModelPanel } from "../metadata/components/ConfigureModelPanel"
+
+const FILTER_AUTO_COLLAPSE_SCROLL_TOP = 96
+const FILTER_AUTO_EXPAND_SCROLL_TOP = 16
+
+/**
+ * 模型目录页面组件
+ */
+const ModelsPage = () => {
+  const searchParams = useSearchParams()
+  const { t } = useLanguage()
+  const { categoryTrees } = useSidebar()
+  const [selectedCapability, setSelectedCapability] = useState<string>("")
+  const [searchQuery, setSearchQuery] = useState("")
+  const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [selectedModel, setSelectedModel] = useState<Model | null>(null)
+  const [isFilterCollapsed, setIsFilterCollapsed] = useState(false)
+  const [isFilterManuallyToggled, setIsFilterManuallyToggled] = useState(false)
+  // 使用自定义 Hook 获取端点数据
+  const { features, models, initialLoading, modelsLoading, error, refetch } = useEndpointData(selectedCapability, selectedTags)
+
+  // 使用 useDeferredValue 实现搜索防抖，优化大数据量场景下的性能
+  const deferredSearchQuery = useDeferredValue(searchQuery)
+
+  /**
+   * 根据搜索关键词筛选模型列表
+   * 使用 deferredSearchQuery 而不是 searchQuery，避免用户快速输入时频繁计算
+   */
+  const filteredModels = useMemo(() => {
+    if (!models) return []
+    if (!deferredSearchQuery.trim()) return models
+
+    const query = deferredSearchQuery.toLowerCase().trim()
+    return models.filter((model) => {
+      // 搜索模型名称
+      if (model.modelName?.toLowerCase().includes(query)) return true
+      // 搜索拥有者名称
+      if (model.ownerName?.toLowerCase().includes(query)) return true
+      // 搜索端点
+      if (model.endpoints?.some(ep => ep.toLowerCase().includes(query))) return true
+      // 搜索特性标签
+      const modelFeatures = typeof model.features === 'string'
+        ? model.features.split(',').map(f => f.trim())
+        : model.features || []
+      if (modelFeatures.some(f => f.toLowerCase().includes(query))) return true
+      return false
+    })
+  }, [models, deferredSearchQuery])
+
+  /**
+   * 初始化选中的能力分类选项 endpoint
+   */
+  useEffect(() => {
+    const endpoint = getInitialEndpoint(searchParams.get("endpoint"))
+    setSelectedCapability(endpoint)
+  }, [searchParams])
+
+  /**
+   * 处理能力分类变化
+   */
+  const handleCapabilityChange = useCallback((endpoint: string) => {
+    console.log('endpoint', endpoint);
+    setSelectedCapability(endpoint)
+    setSelectedTags([])
+    setSearchQuery("")
+  }, [])
+
+  /**
+   * 处理标签变化
+   */
+  const handleTagsChange = useCallback((tags: string[]) => {
+    setSelectedTags(tags)
+  }, [])
+
+  /**
+   * 处理搜索变化
+   */
+  const handleSearchChange = useCallback((query: string) => {
+    setSearchQuery(query)
+  }, [])
+
+  const handleGridScroll = useCallback((event: React.UIEvent<HTMLDivElement>) => {
+    if (isFilterManuallyToggled) return
+    const { scrollTop } = event.currentTarget
+    setIsFilterCollapsed((prev) => {
+      if (!prev && scrollTop > FILTER_AUTO_COLLAPSE_SCROLL_TOP) return true
+      if (prev && scrollTop < FILTER_AUTO_EXPAND_SCROLL_TOP) return false
+      return prev
+    })
+  }, [isFilterManuallyToggled])
+
+  const handleToggleFilterPanel = useCallback(() => {
+    setIsFilterManuallyToggled(true)
+    setIsFilterCollapsed((prev) => !prev)
+  }, [])
+
+  useEffect(() => {
+    setIsFilterCollapsed(false)
+    setIsFilterManuallyToggled(false)
+  }, [selectedCapability, selectedTags, searchQuery])
+
+  /**
+   * 处理添加私有渠道操作：进入该模型的私有渠道配置面板
+   */
+  const handleAddChannel = useCallback((model: Model) => {
+    setSelectedModel(model)
+  }, [])
+
+  /**
+   * 返回模型目录列表
+   */
+  const handleBackToList = useCallback(() => {
+    setSelectedModel(null)
+  }, [])
+
+
+  return (
+    <>
+      {selectedModel && (
+        <div className="animate-in fade-in duration-300">
+          <ConfigureModelPanel
+            model={selectedModel}
+            onBack={handleBackToList}
+            isPrivate={true}
+            endpoint={selectedCapability}
+          />
+        </div>
+      )}
+
+      {!selectedModel && <><TopBar title={t("modelCatalog")} description={t("modelCatalogDesc")} />
+      <div className=" flex h-[calc(100vh-4rem)] flex-col overflow-hidden">
+        {/* 筛选面板区域（固定不滚动） */}
+        <div className="flex-shrink-0 border-b bg-background">
+          <div className="px-6 pt-4">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex-shrink-0">
+                <h2 className="text-sm font-medium text-muted-foreground whitespace-nowrap">
+                  {t("foundModels")} {filteredModels.length} {t("modelsCount")}
+                </h2>
+              </div>
+              <div>
+                <SearchBar
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                  onClear={() => setSearchQuery("")}
+                  placeholder={t("searchModels")}
+                  className="mb-0"
+                />
+              </div>
+            </div>
+
+            <div
+              className={cn(
+                "overflow-hidden transition-all duration-200 ease-in-out",
+                isFilterCollapsed ? "max-h-0 opacity-0 pt-0" : "max-h-[420px] opacity-100 pt-4"
+              )}
+            >
+              <ModelFilterPanel
+                categoryTrees={categoryTrees}
+                features={features}
+                initialEndpoint={selectedCapability}
+                initialTags={selectedTags}
+                isLoadingFeatures={initialLoading}
+                onCapabilityChange={handleCapabilityChange}
+                onTagsChange={handleTagsChange}
+              />
+
+              {error && (
+                <div className="mt-4 rounded-lg border border-red-500/20 bg-red-500/10 p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-500" />
+                      <p className="text-sm text-red-500">{error.message}</p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={refetch}
+                      className="ml-4 flex-shrink-0"
+                    >
+                      {t("retry")}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-center">
+              <button
+                type="button"
+                onClick={handleToggleFilterPanel}
+                aria-label={isFilterCollapsed ? "展开筛选面板" : "折叠筛选面板"}
+                className="cursor-pointer flex h-6 w-10 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              >
+                <ChevronDown
+                  className={cn(
+                    "h-4 w-4 transition-transform duration-200",
+                    isFilterCollapsed ? "rotate-180" : "rotate-0"
+                  )}
+                />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* 虚拟滚动容器（可滚动区域）estimateItemSize={estimateModelCardHeight} */}
+        <div className="flex-1 overflow-hidden">
+          {modelsLoading ? (
+            <div className="flex items-center justify-center h-full text-muted-foreground">
+              <Loader className="h-6 w-6 animate-spin mr-2" />
+              <span className="text-sm">{t("loadingModels")}</span>
+            </div>
+          ) : (
+            <VirtualGrid
+              items={filteredModels}
+              overscan={5}
+              getItemKey={(model) => model.modelName}
+              renderItem={(model) => (
+                <ModelCard model={model} onAddChannel={handleAddChannel} selectedCapability={selectedCapability}/>
+              )}
+              emptyElement={
+                <div className="flex items-center justify-center h-full text-muted-foreground">
+                  <p className="text-sm">{t("noModelsFound")}</p>
+                </div>
+              }
+              className="px-6 py-6"
+              onScroll={handleGridScroll}
+            />
+          )}
+        </div>
+      </div>
+      </>}
+    </>
+  )
+}
+
+export default ModelsPage

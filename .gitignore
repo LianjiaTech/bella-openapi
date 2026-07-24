@@ -1,0 +1,102 @@
+build/
+out/
+target/
+release/
+release.tar.gz
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**
+!**/src/test/**
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+
+### VS Code ###
+.vscode/
+
+*.log
+
+.DS_Store
+
+
+#### web ####
+# dependencies
+web/node_modules/
+
+
+# next.js
+web/.next/
+web/out/
+# production
+web/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+web/yarn-debug.log*
+web/yarn-error.log*
+
+# local env files
+*.env.local
+*.env.development.local
+
+# vercel
+.vercel
+
+
+api/config-cache/bella-openapi/config-cache/bella-openapi\+default\+application.properties
+api/logs/
+
+mysql/data/
+
+redis/data/
+
+system-apikey.txt
+
+
+node_modules/
+
+nginx/conf.d/dynamic-services.conf
+
+web/.env
+web/bin
+
+
+*.tsbuildinfo
+
+private-loggers.xml
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/
+tests/.auth/
+
+# Generated K8s credentials and test reports
+/.test/kubeconfig
+/.test/k8s-ca.crt
+/.test/unit-test-report/

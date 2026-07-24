@@ -1,0 +1,20 @@
+package com.ke.bella.openapi.apikey;
+
+public enum AkOperation {
+    QUERY,
+    RESET,
+    RENAME,
+    UPDATE_ROLE,
+    UPDATE_MANAGER,
+    CERTIFY,
+    UPDATE_QUOTA,
+    UPDATE_QPS,
+    CHANGE_STATUS,
+    CREATE_CHILD,
+    CHANGE_OWNER,
+    CHANGE_PARENT,
+    TRANSFER,
+    VIEW_TRANSFER_HISTORY,
+    VIEW_CHANGE_HISTORY,
+    BIND_SERVICE
+}

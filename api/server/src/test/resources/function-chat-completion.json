@@ -1,0 +1,36 @@
+{
+  "model": "xxxx",
+  "user": "100000",
+  "messages": [{
+    "role": "user",
+    "content": "北京的天气和贝壳的股价"
+  }],
+  "tools": [{
+    "type": "function",
+    "function": {
+      "name": "web_search_tavily",
+      "description": "一个用于谷歌搜索并提取片段和网页的工具",
+      "parameters": {
+        "type": "object",
+        "required": ["query"],
+        "properties": {
+          "query": {
+            "title": "Query",
+            "description": "查询语句",
+            "type": "string"
+          }
+        }
+      }
+    }
+  }],
+  "tool_choice": "auto",
+  "temperature": 0.01,
+  "top_p": 1.0,
+  "stream": true,
+  "stream_options": {
+    "include_usage": true
+  },
+  "response_format": {
+    "type": "text"
+  }
+}

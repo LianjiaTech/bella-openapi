@@ -1,0 +1,63 @@
+package com.ke.bella.openapi.protocol;
+
+import com.ke.bella.openapi.IDescription;
+import com.ke.bella.openapi.protocol.asr.diarization.SpeakerDiarizationPriceInfo;
+import com.ke.bella.openapi.protocol.asr.flash.FlashAsrPriceInfo;
+import com.ke.bella.openapi.protocol.asr.transcription.TranscriptionsAsrPriceInfo;
+import com.ke.bella.openapi.protocol.realtime.RealTimePriceInfo;
+import com.ke.bella.openapi.protocol.completion.CompletionPriceInfo;
+import com.ke.bella.openapi.protocol.embedding.EmbeddingPriceInfo;
+import com.ke.bella.openapi.protocol.speaker.SpeakerEmbeddingPriceInfo;
+import com.ke.bella.openapi.protocol.tts.TtsPriceInfo;
+import com.ke.bella.openapi.protocol.images.ImagesPriceInfo;
+import com.ke.bella.openapi.protocol.images.ImagesEditsPriceInfo;
+import com.ke.bella.openapi.protocol.ocr.OcrPriceInfo;
+import com.ke.bella.openapi.protocol.rerank.RerankPriceInfo;
+import com.ke.bella.openapi.protocol.video.VideoPriceInfo;
+import com.ke.bella.openapi.protocol.web.WebCrawlPriceInfo;
+import com.ke.bella.openapi.protocol.web.WebExtractPriceInfo;
+import com.ke.bella.openapi.protocol.web.WebSearchPriceInfo;
+import com.ke.bella.openapi.utils.MatchUtils;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
+public interface IPriceInfo extends IDescription {
+    String getUnit();
+
+    @AllArgsConstructor
+    @Getter
+    enum EndpointPriceInfoType {
+        COMPLETION("/v1/chat/completions", CompletionPriceInfo.class),
+        EMBEDDING("/v1/embeddings", EmbeddingPriceInfo.class),
+        RERANK("/v1/reranks", RerankPriceInfo.class),
+        TTS("/v1/audio/speech", TtsPriceInfo.class),
+        REALTIME_TTS("/v1/audio/tts/stream", TtsPriceInfo.class),
+        FLASH_ASR("/v1/audio/asr/flash", FlashAsrPriceInfo.class),
+        REALTIME_ASR("/v1/audio/asr/stream", RealTimePriceInfo.class),
+        REALTIME("/v1/audio/realtime", RealTimePriceInfo.class),
+        TRANSCRIPTION_ASR("/v1/audio/transcriptions", TranscriptionsAsrPriceInfo.class),
+        SPEAKER_EMBEDDING("/v1/audio/speaker/embedding", SpeakerEmbeddingPriceInfo.class),
+        SPEAKER_DIARIZATION("/v1/audio/speaker/diarization", SpeakerDiarizationPriceInfo.class),
+        IMAGES("/v1/images/generations", ImagesPriceInfo.class),
+        IMAGES_EDIT("/v1/images/edits", ImagesEditsPriceInfo.class),
+        VIDEOS("/v1/videos", VideoPriceInfo.class),
+        OCR("/v1/ocr/*", OcrPriceInfo.class),
+        WEB_SEARCH("/v1/web/search", WebSearchPriceInfo.class),
+        WEB_CRAWL("/v1/web/crawl", WebCrawlPriceInfo.class),
+        WEB_EXTRACT("/v1/web/extract", WebExtractPriceInfo.class),
+        ;
+
+        private final String endpoint;
+        private final Class<? extends IPriceInfo> type;
+
+        public static Class<? extends IPriceInfo> fetchType(String endpoint) {
+            for (EndpointPriceInfoType t : EndpointPriceInfoType.values()) {
+                if(MatchUtils.matchUrl(t.endpoint, endpoint)) {
+                    return t.type;
+                }
+            }
+            return null;
+        }
+
+    }
+}

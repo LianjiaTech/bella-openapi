@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <define name="INSTANCE_IDENTIFIER" class="com.ke.bella.openapi.server.InstanceIdentifierPropertyDefiner"/>
+    <property name="LOG_FILE_MAX_HISTORY" value="7"/>
+    <property name="FILE_MAX_SIZE" value="300MB"/>
+    <property name="LOG_TOTAL_FILE_SIZE" value="2GB"/>
+    <property name="LOG_PATH" value="${LOG_PATH:-${LOG_TEMP:-${java.io.tmpdir:-/tmp}}/}"/>
+    <property name="FULL_LOG_PATH" value="${FULL_LOG_PATH:-${LOG_TEMP:-${java.io.tmpdir:-/tmp}}/}"/>
+    <property name="FILE_LOG_PATTERN"
+              value="%d{yyyy/MM/dd-HH:mm:ss:SSS} [%X{SW_TRACE_ID}] [%X{SW_TRACE_SEGMENT_ID}][%X{SW_TRACE_SPAN_ID}] %X{sessionTokenId} [%thread] %-5level %logger- %msg%n"/>
+    
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+
+    <logger name="ShardingSphere-SQL" level="OFF"/>
+    <logger name="druid" level="DEBUG"/>
+    <logger name="executableSql" level="DEBUG"/>
+    <logger name="com.alibaba.druid.filter.stat" level="INFO"/>
+    
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>${FILE_LOG_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+    <springProfile name="dev">
+        <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <file>app.log</file>
+            <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+                <fileNamePattern>app-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+                <maxFileSize>${FILE_MAX_SIZE}</maxFileSize>
+                <totalSizeCap>${LOG_TOTAL_FILE_SIZE}</totalSizeCap>
+                <maxHistory>${LOG_FILE_MAX_HISTORY}</maxHistory>
+            </rollingPolicy>
+            <encoder>
+                <pattern>${FILE_LOG_PATTERN}</pattern>
+            </encoder>
+        </appender>
+        <root level="INFO">
+            <appender-ref ref="FILE"/>
+        </root>
+    </springProfile>
+    <springProfile name="test,preview,prod">
+        <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <file>${LOG_PATH}/app.log</file>
+            <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+                <fileNamePattern>${LOG_PATH}/app-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+                <maxFileSize>${FILE_MAX_SIZE}</maxFileSize>
+                <totalSizeCap>${LOG_TOTAL_FILE_SIZE}</totalSizeCap>
+                <maxHistory>${LOG_FILE_MAX_HISTORY}</maxHistory>
+            </rollingPolicy>
+            <encoder>
+                <pattern>${FILE_LOG_PATTERN}</pattern>
+            </encoder>
+        </appender>
+        <appender name="SQL_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <file>${LOG_PATH}/sql.log</file>
+            <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+                <fileNamePattern>${LOG_PATH}/sql-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+                <maxFileSize>${FILE_MAX_SIZE}</maxFileSize>
+                <totalSizeCap>${LOG_TOTAL_FILE_SIZE}</totalSizeCap>
+                <maxHistory>${LOG_FILE_MAX_HISTORY}</maxHistory>
+            </rollingPolicy>
+            <encoder>
+                <pattern>${FILE_LOG_PATTERN}</pattern>
+            </encoder>
+        </appender>
+        <appender name="SLOW_SQL_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <file>${LOG_PATH}/sql-slow.log</file>
+            <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+                <fileNamePattern>${LOG_PATH}/sql-slow-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+                <maxFileSize>${FILE_MAX_SIZE}</maxFileSize>
+                <totalSizeCap>${LOG_TOTAL_FILE_SIZE}</totalSizeCap>
+                <maxHistory>${LOG_FILE_MAX_HISTORY}</maxHistory>
+            </rollingPolicy>
+            <encoder>
+                <pattern>${FILE_LOG_PATTERN}</pattern>
+            </encoder>
+        </appender>
+        <appender name="DUBBO_CONSUMER_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <file>${LOG_PATH}/dubbo/dubbo-consumer.log</file>
+            <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+                <fileNamePattern>${LOG_PATH}/dubbo-consumer-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+                <maxFileSize>${FILE_MAX_SIZE}</maxFileSize>
+                <totalSizeCap>${LOG_TOTAL_FILE_SIZE}</totalSizeCap>
+                <maxHistory>${LOG_FILE_MAX_HISTORY}</maxHistory>
+            </rollingPolicy>
+            <encoder>
+                <pattern>${FILE_LOG_PATTERN}</pattern>
+            </encoder>
+        </appender>
+        <appender name="DUBBO_PROVIDER_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <file>${LOG_PATH}/dubbo/dubbo-provider.log</file>
+            <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+                <fileNamePattern>${LOG_PATH}/dubbo-provider-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+                <maxFileSize>${FILE_MAX_SIZE}</maxFileSize>
+                <totalSizeCap>${LOG_TOTAL_FILE_SIZE}</totalSizeCap>
+                <maxHistory>${LOG_FILE_MAX_HISTORY}</maxHistory>
+            </rollingPolicy>
+            <encoder>
+                <pattern>${FILE_LOG_PATTERN}</pattern>
+            </encoder>
+        </appender>
+
+        <!-- 异步输出 -->
+        <appender name="ASYNC_FILE" class="ch.qos.logback.classic.AsyncAppender">
+            <!-- 是否阻塞，避免引起业务线程阻塞 -->
+            <neverBlock>true</neverBlock>
+            <!-- 不丢失日志.默认如果队列的80%已满(<discardingThreshold >20</discardingThreshold>),则会丢弃       TRACT、DEBUG、INFO级别的日志 -->
+            <discardingThreshold>0</discardingThreshold>
+            <!-- 更改默认的队列的深度,该值会影响性能.默认值为256 -->
+            <queueSize>1024</queueSize>
+            <!-- 添加附加的appender,最多只能添加一个 -->
+            <appender-ref ref="FILE"/>
+        </appender>
+
+        <logger name="druid" level="DEBUG" additivity="false">
+            <appender-ref ref="SQL_FILE"/>
+        </logger>
+        <logger name="executableSql" level="DEBUG" additivity="false">
+            <appender-ref ref="SQL_FILE"/>
+        </logger>
+        <logger name="com.alibaba.druid.filter.stat" level="INFO" additivity="false">
+            <appender-ref ref="SLOW_SQL_FILE"/>
+        </logger>
+        <logger name="dubboConsumerLogger" level="INFO" additivity="false">
+            <appender-ref ref="DUBBO_CONSUMER_FILE"/>
+        </logger>
+        <logger name="dubboProviderLogger" level="INFO" additivity="false">
+            <appender-ref ref="DUBBO_PROVIDER_FILE"/>
+        </logger>
+
+        <!-- 引入私有 Logger 配置（可选，不存在不会报错） -->
+        <include optional="true" resource="private-loggers.xml"/>
+
+        <root level="INFO">
+            <appender-ref ref="ASYNC_FILE"/>
+        </root>
+    </springProfile>
+</configuration>

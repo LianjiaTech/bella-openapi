@@ -1,0 +1,30 @@
+package com.ke.bella.openapi.protocol.ocr.tmpidcard;
+
+import java.io.Serializable;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.ke.bella.openapi.protocol.ocr.provider.yidao.YidaoBaseResponse;
+
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+
+@Data
+@EqualsAndHashCode(callSuper = true)
+public class YidaoResponse extends YidaoBaseResponse<YidaoResponse.ResultData> {
+    private static final long serialVersionUID = 1L;
+
+    @Data
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public static class ResultData implements Serializable {
+        private static final long serialVersionUID = 1L;
+
+        private FieldData name;
+        private FieldData gender;
+        private FieldData nationality;
+        private FieldData birthdate;
+        private FieldData address;
+        private FieldData idno;
+        private FieldData issued;
+        private FieldData valid;
+    }
+}
