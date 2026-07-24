@@ -1,0 +1,79 @@
+# syntax=docker/dockerfile:1
+
+ARG MAVEN_BASE_IMAGE=maven:3.8.8-eclipse-temurin-8
+ARG RUNTIME_BASE_IMAGE=openjdk:8
+
+FROM ${MAVEN_BASE_IMAGE} AS maven-base
+
+WORKDIR /workspace/api
+
+ARG MAVEN_MIRROR_URL=""
+
+ENV TZ=Asia/Shanghai \
+    MAVEN_OPTS="-Xmx2g -Djava.awt.headless=true" \
+    JAVA_TOOL_OPTIONS="-Dfile.encoding=UTF-8 -Duser.timezone=Asia/Shanghai"
+
+RUN if [ -n "$MAVEN_MIRROR_URL" ]; then \
+      mkdir -p /root/.m2 && \
+      printf '%s\n' \
+        '<settings>' \
+        '  <mirrors>' \
+        '    <mirror>' \
+        '      <id>internal-maven</id>' \
+        '      <name>Internal Maven Mirror</name>' \
+        "      <url>${MAVEN_MIRROR_URL}</url>" \
+        '      <mirrorOf>*</mirrorOf>' \
+        '    </mirror>' \
+        '  </mirrors>' \
+        '</settings>' \
+        > /root/.m2/settings.xml; \
+    fi
+
+RUN mkdir -p sdk spi server
+
+COPY pom.xml ./pom.xml
+COPY sdk/pom.xml ./sdk/pom.xml
+COPY spi/pom.xml ./spi/pom.xml
+COPY server/pom.xml ./server/pom.xml
+
+RUN mvn -B -ntp -DskipTests dependency:go-offline
+RUN mvn -B -ntp org.apache.maven.plugins:maven-dependency-plugin:3.1.2:get \
+      -Dartifact=org.apache.maven.surefire:surefire-testng:2.22.2
+RUN mvn -B -ntp org.jacoco:jacoco-maven-plugin:0.8.12:help -Ddetail=false
+
+FROM maven-base AS source
+
+COPY . .
+
+FROM source AS unit-test
+
+RUN mvn -B -ntp -DskipTests test-compile
+RUN find /root/.m2/repository \( -name _remote.repositories -o -name "*.lastUpdated" \) -delete
+
+CMD ["mvn", "-B", "-ntp", "-o", "test"]
+
+FROM source AS release-builder
+
+RUN ./build.sh
+
+FROM ${RUNTIME_BASE_IMAGE} AS acceptance
+
+ENV IDC zeus
+ENV MODULE bella-openapi
+ENV ENVTYPE test
+ENV DEBUGPORT 9008
+ENV JMXPORT 9009
+ENV MATRIX_CODE_DIR /opt/bella-openapi/htdocs
+ENV MATRIX_APPLOGS_DIR /opt/bella-openapi/applogs
+ENV MATRIX_ACCESSLOGS_DIR /opt/bella-openapi/logs
+ENV MATRIX_LOGS_DIR /opt/bella-openapi/logs
+ENV MATRIX_CACHE_DIR /opt/bella-openapi/cache
+ENV MATRIX_PRIVDATA_DIR /opt/bella-openapi/privdata
+
+COPY --from=release-builder /workspace/api/release/ /opt/bella-openapi/htdocs/
+RUN chmod +x /opt/bella-openapi/htdocs/bin/*.sh
+
+EXPOSE 8080 9008 9009
+WORKDIR /opt/bella-openapi/htdocs
+VOLUME ["/opt/bella-openapi/applogs", "/opt/bella-openapi/logs", "/opt/bella-openapi/cache", "/opt/bella-openapi/privdata", "/opt/bella-openapi/config-cache"]
+CMD ["/bin/bash", "-x", "/opt/bella-openapi/htdocs/bin/run.sh"]

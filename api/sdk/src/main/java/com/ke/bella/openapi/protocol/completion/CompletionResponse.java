@@ -1,0 +1,248 @@
+package com.ke.bella.openapi.protocol.completion;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.ke.bella.openapi.protocol.OpenapiResponse;
+import com.ke.bella.openapi.protocol.completion.Message.ToolCall;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
+import org.apache.commons.collections4.CollectionUtils;
+import org.springframework.util.Assert;
+
+import java.io.Serializable;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+@Data
+@JsonInclude(Include.NON_NULL)
+@NoArgsConstructor
+@AllArgsConstructor
+@SuperBuilder
+public class CompletionResponse extends OpenapiResponse {
+
+    private List<Choice> choices;
+    /**
+     * 时间戳
+     */
+    private long created;
+    /**
+     * 唯一id
+     */
+    private String id;
+    /**
+     * 调用模型
+     */
+    private String model;
+
+    /**
+     * This fingerprint represents the backend configuration that the model runs
+     * with.<br/>
+     * <br/>
+     * Can be used in conjunction with the seed request
+     * parameter to understand when backend changes have been made that might
+     * impact determinism.
+     */
+    private String system_fingerprint;
+
+    /**
+     * 调用接口
+     */
+    private String object;
+
+    private TokenUsage usage;
+
+    public String content() {
+        if(CollectionUtils.isNotEmpty(choices)) {
+            return choices.get(0).content();
+        } else {
+            return "";
+        }
+    }
+
+    public String reasoning() {
+        if(CollectionUtils.isNotEmpty(choices)) {
+            return choices.get(0).reasoning();
+        } else {
+            return "";
+        }
+    }
+
+    public String finishReason() {
+        if(CollectionUtils.isNotEmpty(choices)) {
+            return choices.get(0).getFinish_reason();
+        } else {
+            return null;
+        }
+    }
+
+    public void setContent(String content) {
+        Assert.notEmpty(choices, "choices must not be null");
+        choices.get(0).setContent(content);
+    }
+
+    public void setReasoning(String reasoning) {
+        Assert.notNull(choices, "choices must not be null");
+        choices.get(0).setReasoning(reasoning);
+    }
+
+    @Data
+    @JsonInclude(Include.NON_NULL)
+    @SuperBuilder
+    @NoArgsConstructor
+    public static class Choice implements Serializable {
+
+        /**
+         * Every response will include a finish_reason. The possible values for
+         * finish_reason are:
+         * <p>
+         * stop: API returned complete message, or a message terminated by one
+         * of the stop sequences provided via the stop parameter length:
+         * Incomplete model output due to max_tokens parameter or token limit
+         * function_call: The model decided to call a function content_filter:
+         * Omitted content due to a flag from our content filters null: API
+         * response still in progress or incomplete
+         */
+        private String finish_reason;
+        private int index;
+        private Message message;
+        private Logprobs logprobs;
+        private Object grounding_metadata;
+
+        public String content() {
+            if(message != null && message.getContent() != null) {
+                return message.getContent().toString();
+            } else {
+                return "";
+            }
+        }
+
+        public String reasoning() {
+            if(message != null) {
+                return message.getReasoning_content();
+            } else {
+                return "";
+            }
+        }
+
+        public void setContent(String content) {
+            Assert.notNull(message, "message must not be null");
+            message.setContent(content);
+        }
+
+        public void setReasoning(String reasoning) {
+            Assert.notNull(message, "message must not be null");
+            message.setReasoning_content(reasoning);
+        }
+    }
+
+    public static Choice toolcallChoice(String reasoning, List<ToolCall> calls) {
+        Choice c = Choice.builder()
+                .message(Message.builder()
+                        .role("assistant")
+                        .reasoning_content(reasoning)
+                        .tool_calls(calls)
+                        .build())
+                .build();
+        return c;
+    }
+
+    public static Choice assistantMessageChoice(String reasoning, String content) {
+        Choice c = Choice.builder()
+                .message(Message.builder()
+                        .role("assistant")
+                        .reasoning_content(reasoning)
+                        .content(content)
+                        .build())
+                .build();
+        return c;
+    }
+
+    @Data
+    @JsonInclude(Include.NON_NULL)
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class TokenUsage implements Serializable {
+        private int completion_tokens;
+        private int prompt_tokens;
+        private int total_tokens;
+        private int cache_creation_tokens;
+        private int cache_read_tokens;
+        private TokensDetail completion_tokens_details;
+        private TokensDetail prompt_tokens_details;
+        private Map<String, Integer> tool_usage;
+
+        public TokenUsage add(TokenUsage u) {
+            this.completion_tokens += u.completion_tokens;
+            this.prompt_tokens += u.prompt_tokens;
+            this.total_tokens += u.total_tokens;
+            if(u.tool_usage != null) {
+                if(this.tool_usage == null) {
+                    this.tool_usage = new HashMap<>();
+                }
+                u.tool_usage.forEach((k, v) -> this.tool_usage.merge(k, v, Integer::sum));
+            }
+            return this;
+        }
+
+        @Deprecated
+        public TokenUsage validate() {
+            if(this.completion_tokens_details != null && this.completion_tokens < this.completion_tokens_details.reasoning_tokens) {
+                this.completion_tokens += this.completion_tokens_details.reasoning_tokens;
+            }
+            return this;
+        }
+    }
+
+    @Data
+    public static class TokensDetail implements Serializable {
+        private int reasoning_tokens;
+        private int cached_tokens;
+        private int cache_creation_tokens;
+        private int audio_tokens;
+        private int image_tokens;
+    }
+
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    @Builder
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public static class Logprobs implements Serializable {
+        private List<Content> content;
+        private List<Content> refusal;
+
+        @Data
+        @AllArgsConstructor
+        @NoArgsConstructor
+        @Builder
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        public static class Content implements Serializable {
+            private String token;
+            private Double logprob;
+            private List<Integer> bytes;
+            private List<TopLogprob> top_logprobs;
+        }
+
+        @Data
+        @AllArgsConstructor
+        @NoArgsConstructor
+        @Builder
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        public static class TopLogprob implements Serializable {
+            private String token;
+            private Double logprob;
+            private List<Integer> bytes;
+        }
+    }
+
+    @Override
+    public boolean supportClone() {
+        return CollectionUtils.isNotEmpty(choices) && choices.stream().anyMatch(choice -> choice.getLogprobs() != null);
+    }
+
+}
