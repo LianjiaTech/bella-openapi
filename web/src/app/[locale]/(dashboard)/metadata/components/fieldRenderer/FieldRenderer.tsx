@@ -26,6 +26,18 @@ const BILLING_MODE_OPTIONS = [
   { value: 'mixed', label: 'mixed（按张 + token）' },
 ]
 
+const VIDEO_BILLING_MODE_OPTIONS = [
+  { value: 'token', label: '按token' },
+  { value: 'duration', label: '按second' },
+]
+
+function getFieldDisplayName(schema: TypeSchema, endpoint?: string): string {
+  if (endpoint === '/v1/videos' && schema.code === 'pricePerSecond') {
+    return '输出单价（元/秒）'
+  }
+  return schema.name
+}
+
 interface FieldRendererProps {
   schema: TypeSchema
   value: any
@@ -33,6 +45,7 @@ interface FieldRendererProps {
   error?: string
   mode: 'create' | 'edit'
   hideLabel?: boolean
+  endpoint?: string
 }
 
 export const FieldRenderer = ({
@@ -40,12 +53,14 @@ export const FieldRenderer = ({
   schema,
   value,
   hideLabel = false,
+  endpoint,
   onChange,
   error,
 }: FieldRendererProps): React.ReactElement => {
   const commonProps = {
     className: `w-full ${error ? 'border-red-600' : ''}`,
   }
+  const displayName = getFieldDisplayName(schema, endpoint)
 
   if (schema.code === 'toolPrices') {
     return <ToolPriceConfig toolPrices={value} onToolPricesChange={onChange} />
@@ -73,19 +88,20 @@ export const FieldRenderer = ({
 
     case 'string':
       if (schema.code === 'billingMode') {
-        const selectedValue = value || BILLING_MODE_LEGACY_VALUE
+        const options = endpoint === '/v1/videos' ? VIDEO_BILLING_MODE_OPTIONS : BILLING_MODE_OPTIONS
+        const selectedValue = value || (endpoint === '/v1/videos' ? 'token' : BILLING_MODE_LEGACY_VALUE)
         return (
           <div className="text-left">
-            {hideLabel ? null : <Label className="text-sm font-medium text-gray-700 block mb-1.5">{schema.name}</Label>}
+            {hideLabel ? null : <Label className="text-sm font-medium text-gray-700 block mb-1.5">{displayName}</Label>}
             <Select
               value={selectedValue}
-              onValueChange={(selected) => onChange(selected === BILLING_MODE_LEGACY_VALUE ? '' : selected)}
+              onValueChange={(selected) => onChange(endpoint === '/v1/videos' ? selected : selected === BILLING_MODE_LEGACY_VALUE ? '' : selected)}
             >
               <SelectTrigger className={commonProps.className}>
-                <SelectValue placeholder={`选择 ${schema.name}`} />
+                <SelectValue placeholder={`选择 ${displayName}`} />
               </SelectTrigger>
               <SelectContent>
-                {BILLING_MODE_OPTIONS.map((option) => (
+                {options.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
                   </SelectItem>
@@ -98,12 +114,12 @@ export const FieldRenderer = ({
       }
       return (
         <div className="text-left">
-          {hideLabel ? null : <Label className="text-sm font-medium text-gray-700 block mb-1.5">{schema.name}</Label>}
+          {hideLabel ? null : <Label className="text-sm font-medium text-gray-700 block mb-1.5">{displayName}</Label>}
           <Input
             {...commonProps}
             value={value || ''}
             onChange={(e) => onChange(e.target.value)}
-            placeholder={`输入 ${schema.name}`}
+            placeholder={`输入 ${displayName}`}
           />
           {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
         </div>
@@ -119,13 +135,13 @@ export const FieldRenderer = ({
       }
       return (
         <div className="text-left space-y-1.5">
-          {hideLabel ? null : <Label className="text-sm font-medium text-gray-700 block">{schema.name}</Label>}
+          {hideLabel ? null : <Label className="text-sm font-medium text-gray-700 block">{displayName}</Label>}
           <Input
             {...commonProps}
             type="number"
             value={value || ''}
             onChange={(e) => onChange(parseFloat(e.target.value))}
-            placeholder={`输入 ${schema.name}`}
+            placeholder={`输入 ${displayName}`}
           />
           {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
         </div>
@@ -146,7 +162,7 @@ export const FieldRenderer = ({
       )
 
     case 'array':
-      return <ArrayField mode={mode} schema={schema} value={value} onChange={onChange} error={error} />
+      return <ArrayField mode={mode} schema={schema} value={value} onChange={onChange} error={error} endpoint={endpoint} />
 
     case 'object':
       // 职责:处理对象类型字段,为 tiers 定价信息提供专用的 PriceInfo 组件
@@ -166,6 +182,7 @@ export const FieldRenderer = ({
                       schema: param,
                       value: value?.[param.code],
                       hideLabel: true,
+                      endpoint,
                       onChange: (nestedValue) => {
                         const newValue = { ...value, [param.code]: nestedValue }
                         onChange(newValue)
