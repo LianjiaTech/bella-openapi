@@ -13,10 +13,9 @@ interface ArrayFieldProps {
   value: any
   onChange: (value: any) => void
   error?: string
-  endpoint?: string
 }
 
-export const ArrayField = ({ mode, schema, value, onChange, error, endpoint }: ArrayFieldProps) => {
+export const ArrayField = ({ mode, schema, value, onChange, error }: ArrayFieldProps) => {
   const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set())
   const arrayValue = Array.isArray(value) ? value : []
 
@@ -100,9 +99,7 @@ export const ArrayField = ({ mode, schema, value, onChange, error, endpoint }: A
                 {isExpanded && (
                   <div className="space-y-3 pt-2 border-t border-gray-200">
                     {schema.child!.params.map((param) => {
-                      const labelText = endpoint === '/v1/videos' && param.code === 'pricePerSecond'
-                        ? '输出单价（元/秒）'
-                        : param.description ?? param.name
+                      const labelText = param.description ?? param.name
                       return (
                         <div key={param.code} className="space-y-2">
                           <Label className="text-sm font-medium text-gray-700 block">{labelText}</Label>
@@ -111,7 +108,6 @@ export const ArrayField = ({ mode, schema, value, onChange, error, endpoint }: A
                             schema: param,
                             value: item?.[param.code],
                             hideLabel: true,
-                            endpoint,
                             onChange: (nestedValue) => {
                               const newItem = { ...item, [param.code]: nestedValue }
                               updateItem(index, newItem)

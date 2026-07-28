@@ -1,5 +1,8 @@
 package com.ke.bella.openapi.endpoints;
 
+import java.util.Arrays;
+import java.util.List;
+
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletResponse;
 
@@ -15,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.ke.bella.openapi.EndpointContext;
 import com.ke.bella.openapi.annotations.EndpointAPI;
@@ -26,6 +30,7 @@ import com.ke.bella.openapi.protocol.video.VideoRemixRequest;
 import com.ke.bella.openapi.server.OpenAiServiceFactory;
 import com.ke.bella.openapi.server.OpenapiProperties;
 import com.ke.bella.openapi.service.VideoService;
+import com.theokanning.openai.file.File;
 import com.theokanning.openai.file.FileUrl;
 import com.theokanning.openai.service.OpenAiService;
 
@@ -63,14 +68,77 @@ public class VideoController {
                 VIDEO_FILE_CONNECT_TIMEOUT, VIDEO_FILE_READ_TIMEOUT);
     }
 
+    @PostMapping(consumes = "multipart/form-data")
+    public VideoJob createVideo(
+            @RequestParam("prompt") String prompt,
+            @RequestParam("model") String model,
+            @RequestParam(value = "input_reference", required = false) MultipartFile inputReference,
+            @RequestParam(value = "seconds", required = false) String seconds,
+            @RequestParam(value = "size", required = false) String size) {
+
+        Assert.hasText(prompt, "prompt is required");
+        Assert.hasText(model, "model is required");
+
+        if(seconds != null) {
+            try {
+                int sec = Integer.parseInt(seconds);
+                Assert.isTrue(sec >= 1 && sec <= 12,
+                        "seconds must be between 1 and 10");
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("seconds must be a valid integer: " + seconds);
+            }
+        }
+
+        if(size != null) {
+            List<String> validSizes = Arrays.asList("1920x1080", "1280x720", "1080x1920");
+            Assert.isTrue(validSizes.contains(size),
+                    "size must be one of: " + String.join(", ", validSizes));
+        }
+
+        String inputReferenceFileId = null;
+        if(inputReference != null && !inputReference.isEmpty()) {
+            try {
+                File file = videoFileService.uploadFile(
+                        "temp",
+                        inputReference.getBytes(),
+                        inputReference.getOriginalFilename());
+                inputReferenceFileId = file.getId();
+                log.info("[VideoJob] Uploaded input_reference file: {} -> {}", inputReference.getOriginalFilename(), inputReferenceFileId);
+            } catch (Exception e) {
+                log.error("[VideoJob] Failed to upload input_reference file", e);
+                throw new IllegalStateException("failed to upload input_reference file: " + e.getMessage());
+            }
+        }
+
+        VideoCreateRequest request = VideoCreateRequest.builder()
+                .prompt(prompt)
+                .model(model)
+                .input_reference(inputReferenceFileId)
+                .seconds(seconds)
+                .size(size)
+                .build();
+
+        String apikey = EndpointContext.getProcessData().getApikey();
+        return vs.createVideoJob(request, apikey);
+    }
+
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     public VideoJob createVideo(@RequestBody VideoCreateRequest request) {
         Assert.notNull(request, "request is required");
         Assert.hasText(request.getModel(), "model is required");
-        Assert.isTrue(request.getExtra_body() != null && !request.getExtra_body().isEmpty(), "request body is required");
+        Assert.isTrue(hasTextPrompt(request) || hasExtraBodyContent(request),
+                "prompt or content is required");
 
         String apikey = EndpointContext.getProcessData().getApikey();
         return vs.createVideoJob(request, apikey);
+    }
+
+    private boolean hasTextPrompt(VideoCreateRequest request) {
+        return request.getPrompt() != null && !request.getPrompt().trim().isEmpty();
+    }
+
+    private boolean hasExtraBodyContent(VideoCreateRequest request) {
+        return request.getExtra_body() != null && request.getExtra_body().containsKey("content");
     }
 
     @GetMapping("/{id}")

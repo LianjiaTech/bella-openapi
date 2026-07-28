@@ -250,28 +250,6 @@ export async function getManagerApiKeys(
 }
 
 /**
- * “我管理的”顶层 AK：查询当前用户拥有或管理的非 Console 类型 AK。
- * 普通用户的实际 userCode 由后端按登录态重新解析，前端参数不能扩大查询范围。
- */
-export async function getOwnedOrManagedApiKeys(
-    page: number,
-    currentUserCode: string,
-    search?: string,
-    ownerType?: 'person' | 'org' | 'project'
-): Promise<Page<ApikeyInfo>> {
-    const response = await apiClient.get('/console/apikey/page', {
-        params: {
-            status: 'active',
-            ownerOrManagerCode: currentUserCode,
-            page,
-            ...(search ? { searchParam: search } : {}),
-            ...(ownerType ? { ownerType } : {}),
-        }
-    });
-    return response as unknown as Page<ApikeyInfo>;
-}
-
-/**
  * 设置 AK 的管理人
  * POST /console/apikey/manager/update
  * 传 code + managerUserId，后端自动关联 managerCode/managerName；reason 用于审计历史；syncChildren 控制是否同步子 AK
