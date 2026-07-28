@@ -20,6 +20,6 @@ class VideoEndpointMetadataTest {
         Set<String> fields = JsonSchema.toSchema(priceInfoType).getParams().stream()
                 .map(schema -> schema.getCode())
                 .collect(Collectors.toSet());
-        assertEquals(new HashSet<>(Arrays.asList("input", "output")), fields);
+        assertEquals(new HashSet<>(Arrays.asList("input", "output", "billingMode", "details")), fields);
     }
 }
