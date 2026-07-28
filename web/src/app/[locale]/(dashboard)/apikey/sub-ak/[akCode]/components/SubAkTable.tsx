@@ -19,11 +19,10 @@
  */
 
 import { Button } from "@/components/common/button";
-import { Copy, MoreVertical, Info, RotateCcw, Trash2, Key, Pencil, Users } from "lucide-react";
+import { Copy, MoreVertical, RotateCcw, Trash2, Key, Pencil, Users } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/common/table";
 import { ApikeyInfo } from "@/lib/types/apikeys";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/common/popover";
-import { TooltipProvider, TooltipTrigger } from "@/components/common/tooltip";
 import { Pagination } from "@/components/ui/pagination";
 import { SearchInput } from "../../../components/SearchInput";
 import { getApiKeys, getAdminApiKeys, getApiKeyBalance } from "@/lib/api/apiKeys";
@@ -31,7 +30,7 @@ import { useState, useEffect, useCallback, forwardRef, useImperativeHandle } fro
 import { TableLoadingRow } from "@/components/ui/table/TableLoadingRow";
 import { QuotaUsageDisplay } from "@/components/ui/QuotaUsageDisplay";
 import type { SubAkCapability } from "../hooks/useSubAkCapability";
-import { Tooltip, TooltipContent } from "@/components/common/tooltip";
+import { TruncatedText } from "@/components/common/truncated-text";
 
 interface SubAkTableProps {
     ownerCode: string;
@@ -39,7 +38,7 @@ interface SubAkTableProps {
     /** 操作能力对象，由父组件 useSubAkCapability 计算后传入 */
     capability: SubAkCapability;
     onCopy: (text: string) => void;
-    onEdit: (apiKey: ApikeyInfo) => void;
+    onEditField: (apiKey: ApikeyInfo, field: 'name' | 'outEntityCode' | 'safetyLevel' | 'remark') => void;
     onEditQuota: (apiKey: ApikeyInfo) => void;
     onReset: (akCode: string) => void;
     onDelete: (akCode: string) => void;
@@ -66,7 +65,7 @@ export const SubAkTable = forwardRef<SubAkTableRef, SubAkTableProps>(({
     parentCode,
     capability,
     onCopy,
-    onEdit,
+    onEditField,
     onEditQuota,
     onReset,
     onDelete,
@@ -210,18 +209,44 @@ export const SubAkTable = forwardRef<SubAkTableRef, SubAkTableProps>(({
                                         {apiKey.akDisplay}
                                     </span>
                                 </TableCell>
-                                <TableCell className="text-sm">{apiKey.name || '-'}</TableCell>
-                                <TableCell className="text-sm">{apiKey.outEntityCode || '-'}</TableCell>
+                                <TableCell className="text-sm">
+                                    <div className="flex items-center gap-1">
+                                        <TruncatedText value={apiKey.name} />
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-5 w-5 p-0 opacity-50 hover:opacity-100 shrink-0"
+                                            onClick={() => onEditField(apiKey, 'name')}
+                                            aria-label={`修改名称 ${apiKey.code}`}
+                                        >
+                                            <Pencil className="h-3 w-3" />
+                                        </Button>
+                                    </div>
+                                </TableCell>
+                                <TableCell className="text-sm">
+                                    <div className="flex items-center gap-1">
+                                        <TruncatedText value={apiKey.outEntityCode} />
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-5 w-5 p-0 opacity-50 hover:opacity-100 shrink-0"
+                                            onClick={() => onEditField(apiKey, 'outEntityCode')}
+                                            aria-label={`修改用途标识 ${apiKey.code}`}
+                                        >
+                                            <Pencil className="h-3 w-3" />
+                                        </Button>
+                                    </div>
+                                </TableCell>
                                 <TableCell className="text-sm">
                                     <div className="flex items-center gap-1">
                                         <span>{formatSafetyLevel(apiKey.safetyLevel)}</span>
-                                        {/* 安全等级仍走完整编辑弹窗 */}
                                         {capability.canEditQuota && (
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
                                                 className="h-5 w-5 p-0 opacity-50 hover:opacity-100"
-                                                onClick={() => onEdit(apiKey)}
+                                                onClick={() => onEditField(apiKey, 'safetyLevel')}
+                                                aria-label={`修改安全等级 ${apiKey.code}`}
                                             >
                                                 <Pencil className="h-3 w-3" />
                                             </Button>
@@ -248,13 +273,18 @@ export const SubAkTable = forwardRef<SubAkTableRef, SubAkTableProps>(({
                                     <QuotaUsageDisplay balance={apiKey.balance} />
                                 </TableCell>
                                 <TableCell className="text-sm">
-                                    <TooltipProvider>
-                                        <Tooltip><TooltipTrigger asChild><div className="truncate max-w-[150px]">
-                                        {apiKey.remark || '-'}
-                                        </div></TooltipTrigger>
-                                    <TooltipContent>{apiKey.remark || '-'}</TooltipContent>
-                                    </Tooltip>
-                                    </TooltipProvider>
+                                    <div className="flex items-center gap-1">
+                                        <TruncatedText value={apiKey.remark} />
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-5 w-5 p-0 opacity-50 hover:opacity-100 shrink-0"
+                                            onClick={() => onEditField(apiKey, 'remark')}
+                                            aria-label={`修改备注 ${apiKey.code}`}
+                                        >
+                                            <Pencil className="h-3 w-3" />
+                                        </Button>
+                                    </div>
                                 </TableCell>
                                 {/* 管理者列：展示当前管理者，点击"设置管理人"可更换 */}
                                 {capability.canSetManager && (
@@ -283,13 +313,6 @@ export const SubAkTable = forwardRef<SubAkTableRef, SubAkTableProps>(({
                                         </PopoverTrigger>
                                         <PopoverContent align="end" className="w-48 p-2">
                                             <div className="flex flex-col gap-1">
-                                                <button
-                                                    className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent rounded cursor-pointer hover:text-white"
-                                                    onClick={() => onEdit(apiKey)}
-                                                >
-                                                    <Info className="h-4 w-4" />
-                                                    编辑
-                                                </button>
                                                 {/* 重置：由 canReset 控制 */}
                                                 {capability.canReset && (
                                                     <button

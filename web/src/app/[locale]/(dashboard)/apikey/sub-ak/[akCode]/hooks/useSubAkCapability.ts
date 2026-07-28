@@ -81,8 +81,8 @@ export function useSubAkCapability(
             default: // 'user' 或无参数：AK owner，可为子 AK 设置管理者
                 return {
                     fetchMode: 'user',
-                    backHref: '/apikey',
-                    backLabel: 'API Keys 列表',
+                    backHref: '/manager',
+                    backLabel: 'AK 管理',
                     canCreate: true,
                     canEditQuota: true,
                     canEditModelWhitelist: false,

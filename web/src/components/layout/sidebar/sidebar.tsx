@@ -29,7 +29,6 @@ import {
   Shield,
   KeySquare,
   Database,
-  Users,
   X,
   Activity,
   ReceiptText,
@@ -44,7 +43,7 @@ import { Button } from "@/components/common/button"
 import { SettingsDialog } from "./settings-dialog"
 import { logout } from '@/lib/api/auth';
 import { hasPermission } from '@/lib/utils/permission';
-import { getSidebarActivePathname } from './sidebar-active';
+import { API_KEY_NAV_ITEM, getSidebarActivePathname } from './sidebar-active';
 
 interface NavItem {
   label: string;
@@ -75,14 +74,7 @@ const BASE_NAV_ITEMS: NavItem[] = [
       { label: 'ocr', href: '/playground/ocr', icon: ScanText },
     ]
   },
-  {
-    label: 'apiKeys',
-    icon: Key,
-    children: [
-      { label: '我的密钥', href: '/apikey', icon: Key },
-      { label: '组织/项目密钥', href: '/manager', icon: Users },
-    ]
-  },
+  { ...API_KEY_NAV_ITEM, icon: Key },
   { label: 'logs', href: '/logs', icon: ScrollText },
   { label: 'billing', href: '/billing', icon: ReceiptText },
   { label: 'modelStatus', href: '/status', icon: HelpCircle },
@@ -153,9 +145,6 @@ export default function Sidebar() {
     }
     if (activePathname?.startsWith('/apikey-admin') || activePathname?.startsWith('/billing-admin') || activePathname?.startsWith('/metadata') || activePathname?.startsWith('/ops-tools')) {
       setExpandedItems(prev => new Set(prev).add('管理员'));
-    }
-    if (activePathname?.startsWith('/apikey') || activePathname?.startsWith('/manager')) {
-      setExpandedItems(prev => new Set(prev).add('apiKeys'));
     }
   }, [activePathname]);
 

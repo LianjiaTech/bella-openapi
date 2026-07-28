@@ -15,6 +15,7 @@ import com.ke.bella.openapi.apikey.AkOperation;
 import com.ke.bella.openapi.apikey.ApikeyChangeLog;
 import com.ke.bella.openapi.apikey.ApikeyCreateOp;
 import com.ke.bella.openapi.apikey.ApikeyInfo;
+import com.ke.bella.openapi.apikey.ApikeyBrief;
 import com.ke.bella.openapi.apikey.ApikeyOps;
 import com.ke.bella.openapi.apikey.ApikeyTransferLog;
 import com.ke.bella.openapi.apikey.SubApikeyUpdateOp;
@@ -255,7 +256,7 @@ public class ApikeyService {
         ApikeyInfo apikey = queryByCode(subApikey.getParentCode(), false);
         Assert.notNull(apikey, "父ak不存在");
         checkPermission(subApikey.getParentCode(), AkOperation.CREATE_CHILD);
-        if(StringUtils.isNotEmpty(op.getRoleCode())) {
+        if(op.getRoleCode() != null) {
             apikeyRoleRepo.checkExist(op.getRoleCode(), true);
         }
         if(op.getMonthQuota() != null) {
@@ -265,7 +266,7 @@ public class ApikeyService {
         if(op.getSafetyLevel() != null) {
             Assert.isTrue(op.getSafetyLevel() <= apikey.getSafetyLevel(), "安全等级超出ak的最高等级");
         }
-        apikeyRepo.update(op, op.getCode());
+        apikeyRepo.updateSubApikeyFields(op);
         if(CollectionUtils.isNotEmpty(op.getPaths())) {
             boolean match = op.getPaths().stream()
                     .allMatch(url -> apikey.getRolePath().getIncluded().stream().anyMatch(pattern -> MatchUtils.matchUrl(pattern, url))
@@ -292,11 +293,13 @@ public class ApikeyService {
 
     @Transactional
     public void rename(ApikeyOps.NameOp op) {
+        checkPermission(op.getCode(), AkOperation.RENAME);
         apikeyRepo.update(op, op.getCode());
     }
 
     @Transactional
     public void bindService(ApikeyOps.ServiceOp op) {
+        checkPermission(op.getCode(), AkOperation.BIND_SERVICE);
         apikeyRepo.update(op, op.getCode());
     }
 
@@ -404,6 +407,33 @@ public class ApikeyService {
             return null;
         }
         return apikeyInfo;
+    }
+
+    public ApikeyInfo queryByCodeWithPermission(String code, boolean onlyActive) {
+        ApikeyInfo apikeyInfo = queryByCode(code, onlyActive);
+        if(apikeyInfo != null) {
+            akPermissionChecker.check(apikeyInfo, AkOperation.QUERY);
+        }
+        return apikeyInfo;
+    }
+
+    public ApikeyBrief queryParentQuotaInfoForChild(String childCode) {
+        ApikeyInfo child = queryByCode(childCode, true);
+        if(child == null) {
+            throw new BellaException.AuthorizationException("没有操作权限");
+        }
+        akPermissionChecker.check(child, AkOperation.QUERY);
+        Assert.hasText(child.getParentCode(), "只支持查询子AK的父AK信息");
+
+        ApikeyInfo parent = queryByCode(child.getParentCode(), true);
+        Assert.notNull(parent, "父AK不存在或已停用");
+        ApikeyBrief brief = new ApikeyBrief();
+        brief.setCode(parent.getCode());
+        brief.setName(parent.getName());
+        brief.setOwnerType(parent.getOwnerType());
+        brief.setManagerCode(parent.getManagerCode());
+        brief.setManagerName(parent.getManagerName());
+        return brief;
     }
 
     @Transactional
@@ -689,6 +719,7 @@ public class ApikeyService {
 
     private void checkPermission(String code, AkOperation operation) {
         ApikeyDB db = apikeyRepo.queryByUniqueKey(code);
+        Assert.notNull(db, "AK不存在");
         akPermissionChecker.check(db, operation);
     }
 

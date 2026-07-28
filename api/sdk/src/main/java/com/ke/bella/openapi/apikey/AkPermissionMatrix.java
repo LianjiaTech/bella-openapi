@@ -35,7 +35,7 @@ public final class AkPermissionMatrix {
 
         // console
         Set<AkOperation> consoleSameOrg = Collections.unmodifiableSet(EnumSet.of(
-                AkOperation.QUERY, AkOperation.RESET, AkOperation.RENAME, AkOperation.CHANGE_STATUS));
+                AkOperation.QUERY, AkOperation.RESET, AkOperation.RENAME, AkOperation.BIND_SERVICE, AkOperation.CHANGE_STATUS));
         Set<AkOperation> consoleUnrelated = Collections.unmodifiableSet(EnumSet.of(
                 AkOperation.QUERY,
                 AkOperation.CHANGE_OWNER,
@@ -52,6 +52,7 @@ public final class AkPermissionMatrix {
         // high
         Set<AkOperation> highOwner = Collections.unmodifiableSet(EnumSet.of(
                 AkOperation.QUERY, AkOperation.RESET, AkOperation.RENAME,
+                AkOperation.BIND_SERVICE,
                 AkOperation.CERTIFY,
                 AkOperation.CHANGE_STATUS, AkOperation.CREATE_CHILD, AkOperation.TRANSFER,
                 AkOperation.VIEW_TRANSFER_HISTORY, AkOperation.UPDATE_MANAGER));
@@ -65,6 +66,7 @@ public final class AkPermissionMatrix {
         // low
         Set<AkOperation> lowOwner = Collections.unmodifiableSet(EnumSet.of(
                 AkOperation.QUERY, AkOperation.RESET, AkOperation.RENAME,
+                AkOperation.BIND_SERVICE,
                 AkOperation.CERTIFY,
                 AkOperation.CHANGE_STATUS, AkOperation.CREATE_CHILD, AkOperation.TRANSFER,
                 AkOperation.VIEW_TRANSFER_HISTORY, AkOperation.UPDATE_MANAGER));
