@@ -199,7 +199,6 @@ public class ApikeyOps {
         private String searchParam; // name / serviceId的模糊搜索
         private String ownerSearch; // ownerName / ownerCode的模糊搜索
         private String managerCode; // 精确匹配管理人
-        private String ownerOrManagerCode; // 非Console类型AK的所有者或管理人编码，用于“我管理的”顶层AK查询
         private String managerSearch; // managerName / managerCode的模糊搜索
         private String outEntityCode;
         private boolean includeChild;

@@ -117,43 +117,28 @@ else
 
 ### 3.2 查询管理的 AK
 
-
-“我管理的”顶层 AK：
-```
-GET /console/apikey/page
-  ?ownerOrManagerCode={userId}
-  &status=active
-  &page=n
-  [&searchParam=...]
-  [&ownerType=person|org|project]
-```
-
-“分配给我的”子 AK：
-
 ```
 GET /console/apikey/page
   ?managerCode={userId}
-  &onlyChild=true
   &status=active
   &page=n
+  [&searchParam=...]
+  [&onlyChild=true]
 ```
 
 ```
 pageApikey(condition)
   │
   ├─ fillPermissionCode()
-  │    └─ 普通用户 + 传了 managerCode / ownerOrManagerCode
+  │    └─ 普通用户 + 传了 managerCode
   │         → 不叠加 personalCode（否则无法查到他人/组织的AK）
   │
-  ├─ fillManagerCode()
-  │    ├─ SYSTEM 类型 AK → 不受限
-  │    ├─ 管理员（console/all）→ 不受限，支持 managerSearch 模糊查询
-  │    └─ 普通用户
-  │         ├─ managerCode 必须等于自己的 userId
-  │         └─ 禁止使用 managerSearch（防止遍历他人管理关系）
-  │
-  └─ fillOwnerOrManagerCode()
-       └─ 普通用户强制使用后端按 CAS/OAuth 登录态解析出的本人 userCode
+  └─ fillManagerCode()
+       ├─ SYSTEM 类型 AK → 不受限
+       ├─ 管理员（console/all）→ 不受限，支持 managerSearch 模糊查询
+       └─ 普通用户
+            ├─ managerCode 必须等于自己的 userId
+            └─ 禁止使用 managerSearch（防止遍历他人管理关系）
 ```
 
 **`onlyChild` 参数**：`true` 时后端过滤 `parent_code != ''`，直接返回子 AK，分页计数准确，避免前端再次过滤带来的计数偏差。
@@ -166,8 +151,8 @@ pageApikey(condition)
 │                                                     │
 │  ManagerPage（/manager）                            │
 │  └─ ManagedKeysTable                               │
-│       ├─ DelegatedSection（我管理的-顶层AK）         │
-│       │    → getOwnedOrManagedApiKeys(page, userId) │
+│       ├─ DelegatedSection（委托管理-顶层AK）         │
+│       │    → getManagerApiKeys(page, userId)        │
 │       │    → 操作：进入子AK管理页                   │
 │       └─ AssignedSection（分配给我-子AK）            │
 │            → getManagerApiKeys(page, userId,        │
@@ -229,7 +214,7 @@ pageApikey(condition)
 
 | 区块 | 数据来源 | 可执行操作 |
 |------|----------|-----------|
-| 我管理的（顶层AK） | `ownerOrManagerCode=userId`（非 Console 类型 AK 的 owner 或 manager，不含子AK） | 进入子AK管理页 |
+| 委托管理（顶层AK） | `managerCode=userId`（不含子AK） | 进入子AK管理页 |
 | 分配给我（子AK） | `managerCode=userId&onlyChild=true` | 重置密钥 |
 
 两个区块始终挂载（CSS `hidden` 控制显隐），切换 Tab 不触发重新请求。Tab badge 实时显示各区块数量。
@@ -246,3 +231,4 @@ pageApikey(condition)
 | `canSetManager` | ✓ | 可为子AK指定管理者 |
 | `canDelete` | - | 不可删除 |
 | `backHref` | `/manager` | 返回"我管理的AK"页面 |
+

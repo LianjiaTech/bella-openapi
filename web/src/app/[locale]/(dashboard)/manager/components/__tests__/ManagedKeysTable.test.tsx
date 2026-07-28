@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { ManagedKeysTable } from '../ManagedKeysTable';
-import { getApiKeyBalance, getParentQuotaApplyInfo, getManagerApiKeys, getOwnedOrManagedApiKeys } from '@/lib/api/apiKeys';
+import { getApiKeyBalance, getParentQuotaApplyInfo, getManagerApiKeys } from '@/lib/api/apiKeys';
 import { buildChildQuotaApplyUrl } from '@/lib/integrations/apiKeyQuotaApply';
 import { toast } from 'sonner';
 import type { ApikeyInfo } from '@/lib/types/apikeys';
@@ -12,7 +12,6 @@ Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
 
 jest.mock('@/lib/api/apiKeys', () => ({
   getManagerApiKeys: jest.fn(),
-  getOwnedOrManagedApiKeys: jest.fn(),
   getApiKeyBalance: jest.fn(),
   getParentQuotaApplyInfo: jest.fn(),
 }));
@@ -107,19 +106,10 @@ function renderTable() {
 describe('ManagedKeysTable', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.mocked(getOwnedOrManagedApiKeys).mockResolvedValue({
-      data: managedKeys,
+    jest.mocked(getManagerApiKeys).mockImplementation(async (_page, _managerCode, _search, onlyChild) => ({
+      data: onlyChild ? [assignedKey] : managedKeys,
       has_more: false,
-      total: 3,
-      page: 1,
-      limit: 10,
-    });
-    jest.mocked(getManagerApiKeys).mockImplementation(async () => ({
-      data: [assignedKey],
-      has_more: false,
-      total: 1,
-      page: 1,
-      limit: 10,
+      total: onlyChild ? 1 : 3,
     }));
     jest.mocked(getApiKeyBalance).mockResolvedValue({
       akCode: 'ak-default',
@@ -141,7 +131,7 @@ describe('ManagedKeysTable', () => {
     renderTable();
 
     await waitFor(() => {
-      expect(getOwnedOrManagedApiKeys).toHaveBeenCalledWith(1, '1001', undefined, undefined);
+      expect(getManagerApiKeys).toHaveBeenCalledWith(1, '1001', undefined, undefined, undefined);
       expect(getManagerApiKeys).toHaveBeenCalledWith(1, '1001', undefined, true, undefined);
     });
 
@@ -154,8 +144,7 @@ describe('ManagedKeysTable', () => {
   it('filters managed and assigned AKs by independent owner types', async () => {
     renderTable();
 
-    await waitFor(() => expect(getOwnedOrManagedApiKeys).toHaveBeenCalledTimes(1));
-    expect(getManagerApiKeys).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(getManagerApiKeys).toHaveBeenCalledTimes(2));
 
     const managedFilter = screen.getByLabelText('我管理的类型筛选');
     const assignedFilter = screen.getByLabelText('分配给我的类型筛选');
@@ -166,7 +155,7 @@ describe('ManagedKeysTable', () => {
     fireEvent.click(await screen.findByRole('option', { name: '组织' }));
 
     await waitFor(() => {
-      expect(getOwnedOrManagedApiKeys).toHaveBeenCalledWith(1, '1001', undefined, 'org');
+      expect(getManagerApiKeys).toHaveBeenCalledWith(1, '1001', undefined, undefined, 'org');
     });
     expect(managedFilter).toHaveTextContent('组织');
     expect(assignedFilter).toHaveTextContent('全部类型');
@@ -211,20 +200,11 @@ describe('ManagedKeysTable', () => {
       remark: '子密钥备注很长',
       parentCode: 'ak-managed-long',
     });
-    jest.mocked(getOwnedOrManagedApiKeys).mockResolvedValue({
-      data: [managedLongKey],
+    jest.mocked(getManagerApiKeys).mockImplementation(async (_page, _managerCode, _search, onlyChild) => ({
+      data: onlyChild ? [assignedLongKey] : [managedLongKey],
       has_more: false,
       total: 1,
-      page: 1,
-      limit: 10,
-    });
-    jest.mocked(getManagerApiKeys).mockResolvedValue({
-      data: [assignedLongKey],
-      has_more: false,
-      total: 1,
-      page: 1,
-      limit: 10,
-    });
+    }));
 
     renderTable();
 
@@ -271,13 +251,11 @@ describe('ManagedKeysTable', () => {
     openSpy.mockRestore();
   });
   it('uses child manager permission when the parent has a different manager', async () => {
-    jest.mocked(getManagerApiKeys).mockResolvedValue({
-      data: [assignedOrgKey],
+    jest.mocked(getManagerApiKeys).mockImplementation(async (_page, _managerCode, _search, onlyChild) => ({
+      data: onlyChild ? [assignedOrgKey] : managedKeys,
       has_more: false,
-      total: 1,
-      page: 1,
-      limit: 10,
-    });
+      total: onlyChild ? 1 : 3,
+    }));
     const parentQuotaInfo = {
       code: 'ak-org-parent',
       name: '组织父AK',

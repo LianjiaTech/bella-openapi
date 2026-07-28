@@ -108,7 +108,7 @@ public class OtherEndpointsCostDetailsTest {
         String priceInfoJson = JacksonUtils.serialize(priceInfo);
 
         VideoUsage usage = new VideoUsage();
-        usage.setCompletionTokens(5000);  // 5k tokens
+        usage.setCompletion_tokens(5000);  // 5k tokens
 
         CostDetails costDetails = CostCalculator.calculate("/v1/videos", priceInfoJson, usage);
 
@@ -194,7 +194,7 @@ public class OtherEndpointsCostDetailsTest {
         VideoPriceInfo videoPrice = new VideoPriceInfo();
         videoPrice.setOutput(new BigDecimal("1"));
         VideoUsage videoUsage = new VideoUsage();
-        videoUsage.setCompletionTokens(1000);
+        videoUsage.setCompletion_tokens(1000);
         CostDetails videoDetails = CostCalculator.calculate("/v1/videos",
                 JacksonUtils.serialize(videoPrice), videoUsage);
         assertNotNull("Video应返回CostDetails", videoDetails);

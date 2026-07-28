@@ -145,7 +145,7 @@ public class OtherEndpointsCostDetailsTest {
         String priceInfoJson = JacksonUtils.serialize(priceInfo);
 
         VideoUsage usage = new VideoUsage();
-        usage.setCompletionTokens(5000);  // 5k tokens
+        usage.setCompletion_tokens(5000);  // 5k tokens
 
         CostDetails costDetails = CostCalculator.calculate("/v1/videos", priceInfoJson, usage);
 
@@ -157,74 +157,6 @@ public class OtherEndpointsCostDetailsTest {
         assertNull("Video应该没有输入明细（当前实现）", costDetails.getInputDetails());
         assertNull("Video应该没有输出明细", costDetails.getOutputDetails());
         assertNull("Video应该没有工具明细", costDetails.getToolDetails());
-    }
-
-    @Test
-    public void testVideoDurationCostDetails() {
-        VideoPriceInfo priceInfo = new VideoPriceInfo();
-        priceInfo.setBillingMode("duration");
-
-        VideoPriceInfo.DurationPriceDetail lowDetail = new VideoPriceInfo.DurationPriceDetail();
-        lowDetail.setResolution("720");
-        lowDetail.setAudio(false);
-        lowDetail.setPricePerSecond(new BigDecimal("60"));
-        priceInfo.getDetails().add(lowDetail);
-
-        VideoPriceInfo.DurationPriceDetail detail = new VideoPriceInfo.DurationPriceDetail();
-        detail.setResolution("1080");
-        detail.setAudio(true);
-        detail.setPricePerSecond(new BigDecimal("120"));
-        priceInfo.getDetails().add(detail);
-
-        String priceInfoJson = JacksonUtils.serialize(priceInfo);
-
-        VideoUsage usage = new VideoUsage();
-        usage.setDuration(5.0);
-        usage.setSr("1080");
-        usage.setAudio(true);
-        usage.setVideoCount(1);
-
-        CostDetails costDetails = CostCalculator.calculate("/v1/videos", priceInfoJson, usage);
-
-        assertEquals("Video duration 总成本应正确", 0, new BigDecimal("600").compareTo(costDetails.getTotalCost()));
-    }
-
-    @Test
-    public void testVideoDurationCostDetailsReturnsZeroWhenUsageIncomplete() {
-        VideoPriceInfo priceInfo = new VideoPriceInfo();
-        priceInfo.setBillingMode("duration");
-
-        VideoPriceInfo.DurationPriceDetail detail = new VideoPriceInfo.DurationPriceDetail();
-        detail.setResolution("1080");
-        detail.setAudio(true);
-        detail.setPricePerSecond(new BigDecimal("120"));
-        priceInfo.getDetails().add(detail);
-
-        VideoUsage usage = new VideoUsage();
-        usage.setSr("1080");
-        usage.setAudio(true);
-
-        CostDetails costDetails = CostCalculator.calculate("/v1/videos", JacksonUtils.serialize(priceInfo), usage);
-
-        assertEquals("Video duration usage 缺少 duration/video_count 时应返回 0", 0, BigDecimal.ZERO.compareTo(costDetails.getTotalCost()));
-    }
-
-    @Test
-    public void testVideoDurationPriceInfoRequiresEveryDetailPrice() {
-        VideoPriceInfo priceInfo = new VideoPriceInfo();
-        priceInfo.setBillingMode("duration");
-
-        VideoPriceInfo.DurationPriceDetail validDetail = new VideoPriceInfo.DurationPriceDetail();
-        validDetail.setResolution("720");
-        validDetail.setPricePerSecond(new BigDecimal("60"));
-        priceInfo.getDetails().add(validDetail);
-
-        VideoPriceInfo.DurationPriceDetail invalidDetail = new VideoPriceInfo.DurationPriceDetail();
-        invalidDetail.setResolution("1080");
-        priceInfo.getDetails().add(invalidDetail);
-
-        assertFalse("Video duration 每条计费明细都必须配置 pricePerSecond",
-                CostCalculator.validate("/v1/videos", JacksonUtils.serialize(priceInfo)));
     }
 
     /**
@@ -597,7 +529,7 @@ public class OtherEndpointsCostDetailsTest {
         VideoPriceInfo videoPrice = new VideoPriceInfo();
         videoPrice.setOutput(new BigDecimal("1"));
         VideoUsage videoUsage = new VideoUsage();
-        videoUsage.setCompletionTokens(1000);
+        videoUsage.setCompletion_tokens(1000);
         CostDetails videoDetails = CostCalculator.calculate("/v1/videos",
                 JacksonUtils.serialize(videoPrice), videoUsage);
         assertNotNull("Video应返回CostDetails", videoDetails);

@@ -3,7 +3,7 @@
  * 用于统一处理模型价格显示逻辑
  */
 export function shouldConvertTokenPrice(unit?: string, label?: string): boolean {
-  if (unit?.includes('分/千token')) return true
+  if (unit === '分/千token') return true
   return !!label?.includes('千token');
 }
 
@@ -49,16 +49,12 @@ export function convertImagePriceLabel(text: string): string {
   return text.replace("分/张", "元/张")
 }
 
-function convertVideoPriceLabel(text: string): string {
-  return text.replace("分/秒", "元/秒")
-}
-
 /**
  * 替换单位文本：分/千token → 元/百万token；分/张 → 元/张
  */
 function convertUnit(unit: string | undefined): string {
   if (!unit) return "暂无"
-  return convertVideoPriceLabel(convertImagePriceLabel(convertTokenPriceLabel(unit)))
+  return convertImagePriceLabel(convertTokenPriceLabel(unit))
 }
 
 /**
@@ -73,14 +69,6 @@ export const TOKEN_PRICE_FIELDS = new Set([
 export const IMAGE_PRICE_PER_IMAGE_FIELDS = new Set([
   'ldPricePerImage', 'mdPricePerImage', 'hdPricePerImage', 'pricePerEdit',
 ])
-
-function convertVideoPricePerSecond(v: number): number {
-  return parseFloat((v / 100).toFixed(10))
-}
-
-function restoreVideoPricePerSecond(v: number): number {
-  return parseFloat((v * 100).toFixed(10))
-}
 
 /**
  * 递归遍历价格对象，对需要前端展示换算的数值字段进行单位换算
@@ -103,23 +91,6 @@ export function convertPriceObj(obj: any, direction: 'load' | 'save'): any {
         result[key] = direction === 'load' ? convertImagePrice(value) : restoreImagePrice(value)
       } else {
         result[key] = convertPriceObj(value, direction)
-      }
-    }
-    return result
-  }
-  return obj
-}
-
-export function convertVideoDurationPriceObj(obj: any, direction: 'load' | 'save'): any {
-  if (obj === null || obj === undefined) return obj
-  if (Array.isArray(obj)) return obj.map((item) => convertVideoDurationPriceObj(item, direction))
-  if (typeof obj === 'object') {
-    const result: Record<string, any> = {}
-    for (const [key, value] of Object.entries(obj)) {
-      if (key === 'pricePerSecond' && typeof value === 'number') {
-        result[key] = direction === 'load' ? convertVideoPricePerSecond(value) : restoreVideoPricePerSecond(value)
-      } else {
-        result[key] = convertVideoDurationPriceObj(value, direction)
       }
     }
     return result
@@ -171,12 +142,6 @@ interface TextToImagePriceInfo {
   imageInputTokenPrice?: number;
   imageOutputTokenPrice?: number;
   unit?: string;
-}
-
-interface VideoDurationPriceDetail {
-  resolution?: string;
-  audio?: boolean;
-  pricePerSecond?: number;
 }
 
 /**
@@ -243,8 +208,7 @@ export function formatPrice(
       output?: number
       cachedRead?: number
       price?: number
-      billingMode?: string
-      details?: Array<TextToImagePriceInfo | VideoDurationPriceDetail>
+      details?: TextToImagePriceInfo[]
       basicSearchPrice?: number
       advancedSearchPrice?: number
     }
@@ -253,11 +217,8 @@ export function formatPrice(
     const tiers = priceDetails?.priceInfo?.tiers ?? []
     const priceInfo = priceDetails?.priceInfo
     const rawUnit = priceDetails?.unit
+    const unit = convertUnit(rawUnit)
     const isTokenBased = shouldConvertTokenPrice(rawUnit)
-    const isVideoTokenMode = (!priceInfo?.billingMode || priceInfo.billingMode === 'token') && rawUnit?.includes('分/千token')
-    const unit = isVideoTokenMode
-      ? '元/百万token'
-      : convertUnit(rawUnit)
     // 统一换算入口：token 计费时 ×10，否则原样传给 formatPrice
     const fmt = (v?: number) => formatPrice(isTokenBased && v != null ? convertTokenPrice(v) : v)
 
@@ -293,36 +254,7 @@ export function formatPrice(
       }
     }
 
-    if(priceInfo?.billingMode === 'duration' && Array.isArray(priceInfo?.details)) {
-      return {
-        tag: 'displayPrice',
-        data: priceInfo.details.map((detail: any) => ({
-          label: [
-            detail.resolution ? `${detail.resolution}P` : undefined,
-            detail.audio === true ? '有声' : detail.audio === false ? '无声' : undefined,
-          ].filter(Boolean).join(' / ') || '按秒',
-          value: detail.pricePerSecond != null ? convertVideoPricePerSecond(Number(detail.pricePerSecond)) : null,
-        })),
-        unit: '元/秒',
-        batchDiscount: priceDetails?.priceInfo?.batchDiscount,
-        supplierDiscount: priceDetails?.priceInfo?.supplierDiscount,
-      }
-    }
-
-    if(isVideoTokenMode) {
-      return {
-        tag: 'displayPrice',
-        data: [
-          { label: '输入token单价（元/百万token）', value: fmt(priceInfo?.input) },
-          { label: '输出token单价（元/百万token）', value: fmt(priceInfo?.output) },
-        ],
-        unit: '元/百万token',
-        batchDiscount: priceDetails?.priceInfo?.batchDiscount,
-        supplierDiscount: priceDetails?.priceInfo?.supplierDiscount,
-      }
-    }
-
-    if(Array.isArray(priceInfo?.details) && priceInfo.details.length > 0){
+    if(Array.isArray(priceInfo?.details)){
       const convertedDetails = priceInfo.details.map(detail => {
         const result: any = { ...detail }
         TOKEN_PRICE_FIELDS.forEach((f) => {
