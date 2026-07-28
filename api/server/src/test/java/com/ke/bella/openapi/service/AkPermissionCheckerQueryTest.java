@@ -15,8 +15,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
-import static com.ke.bella.openapi.common.EntityConstants.PERSON;
 import static com.ke.bella.openapi.common.EntityConstants.HIGH;
+import static com.ke.bella.openapi.common.EntityConstants.ORG;
+import static com.ke.bella.openapi.common.EntityConstants.PERSON;
+import static com.ke.bella.openapi.common.EntityConstants.PROJECT;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
@@ -41,6 +43,14 @@ public class AkPermissionCheckerQueryTest {
         BellaContext.setOperator(operator(1001L));
 
         assertThatCode(() -> checker.check(target("1001", "2002"), AkOperation.QUERY))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    public void ownerCanQueryOrgApiKeyWhenOwnerCodeMatchesUserCode() {
+        BellaContext.setOperator(operator(1001L));
+
+        assertThatCode(() -> checker.check(target(ORG, "1001", "2002"), AkOperation.QUERY))
                 .doesNotThrowAnyException();
     }
 
@@ -77,6 +87,18 @@ public class AkPermissionCheckerQueryTest {
                 .build());
 
         assertThatCode(() -> checker.check(target("1001", ""), AkOperation.BIND_SERVICE))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    public void personalCallerCanOwnProjectApiKeyWhenOwnerCodeMatches() {
+        EndpointContext.setApikey(ApikeyInfo.builder()
+                .ownerType(PERSON)
+                .ownerCode("1001")
+                .roleCode(HIGH)
+                .build());
+
+        assertThatCode(() -> checker.check(target(PROJECT, "1001", ""), AkOperation.BIND_SERVICE))
                 .doesNotThrowAnyException();
     }
 
@@ -119,8 +141,12 @@ public class AkPermissionCheckerQueryTest {
     }
 
     private ApikeyDB target(String ownerCode, String managerCode) {
+        return target(PERSON, ownerCode, managerCode);
+    }
+
+    private ApikeyDB target(String ownerType, String ownerCode, String managerCode) {
         ApikeyDB target = new ApikeyDB();
-        target.setOwnerType(PERSON);
+        target.setOwnerType(ownerType);
         target.setOwnerCode(ownerCode);
         target.setManagerCode(managerCode);
         return target;

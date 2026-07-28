@@ -1,9 +1,15 @@
 package com.ke.bella.openapi.service;
 
+import com.ke.bella.openapi.BellaContext;
+import com.ke.bella.openapi.Operator;
 import com.ke.bella.openapi.apikey.AkOperation;
 import com.ke.bella.openapi.apikey.ApikeyInfo;
 import com.ke.bella.openapi.apikey.ApikeyBrief;
+import com.ke.bella.openapi.apikey.ApikeyOps;
 import com.ke.bella.openapi.db.repo.ApikeyRepo;
+import com.ke.bella.openapi.db.repo.UserRepo;
+import com.ke.bella.openapi.tables.pojos.UserDB;
+import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
@@ -27,6 +33,14 @@ public class ApikeyServiceQueryPermissionTest {
 
     @Mock
     private AkPermissionChecker akPermissionChecker;
+
+    @Mock
+    private UserRepo userRepo;
+
+    @After
+    public void tearDown() {
+        BellaContext.clearAll();
+    }
 
     @Test
     public void permissionAwareCodeQueryChecksQueryOperation() {
@@ -103,5 +117,43 @@ public class ApikeyServiceQueryPermissionTest {
         assertThatThrownBy(() -> service.queryParentQuotaInfoForChild("ak-child"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("父AK不存在或已停用");
+    }
+
+    @Test
+    public void ownerOrManagerQueryUsesDatabaseUserIdForOauthUser() {
+        Operator operator = Operator.builder()
+                .userId(1001L)
+                .userName("user-1001")
+                .sourceId("cas-1001")
+                .build();
+        UserDB currentUser = new UserDB();
+        currentUser.setId(1001L);
+        currentUser.setSourceId("cas-1001");
+        BellaContext.setOperator(operator);
+        when(userRepo.queryById(1001L)).thenReturn(currentUser);
+        when(akPermissionChecker.hasAdminPermission()).thenReturn(false);
+        ApikeyOps.ApikeyCondition condition = new ApikeyOps.ApikeyCondition();
+        condition.setOwnerOrManagerCode("other-user");
+
+        service.pageApikey(condition);
+
+        assertThat(condition.getOwnerOrManagerCode()).isEqualTo("1001");
+        assertThat(condition.getPersonalCode()).isNull();
+        verify(apikeyRepo).pageAccessKeys(condition);
+    }
+
+    @Test
+    public void ownerOrManagerQueryPreservesExplicitCodeForAdmin() {
+        BellaContext.setOperator(Operator.builder().userId(1001L).userName("admin").build());
+        when(akPermissionChecker.hasAdminPermission()).thenReturn(true);
+        ApikeyOps.ApikeyCondition condition = new ApikeyOps.ApikeyCondition();
+        condition.setOwnerOrManagerCode("target-user");
+
+        service.pageApikey(condition);
+
+        assertThat(condition.getOwnerOrManagerCode()).isEqualTo("target-user");
+        assertThat(condition.getPersonalCode()).isNull();
+        verify(apikeyRepo).pageAccessKeys(condition);
+        verify(userRepo, never()).queryById(1001L);
     }
 }

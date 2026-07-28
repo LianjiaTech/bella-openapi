@@ -24,6 +24,7 @@ import static com.ke.bella.openapi.common.EntityConstants.ALL;
 import static com.ke.bella.openapi.common.EntityConstants.CONSOLE;
 import static com.ke.bella.openapi.common.EntityConstants.ORG;
 import static com.ke.bella.openapi.common.EntityConstants.PERSON;
+import static com.ke.bella.openapi.common.EntityConstants.PROJECT;
 import static com.ke.bella.openapi.common.EntityConstants.SYSTEM;
 
 @Component
@@ -107,7 +108,7 @@ public class AkPermissionChecker {
 
     /**
      * operator（Console 登录用户，无 AK）的独立权限分支。
-     * - OWNER（ownerCode == userId，ownerType ∈ {PERSON, CONSOLE}）→ 允许 OPERATOR_OWNER_OPS
+     * - OWNER（ownerCode == userId，ownerType ∈ {PERSON, CONSOLE, ORG, PROJECT}）→ 允许 OPERATOR_OWNER_OPS
      * - MANAGER（manager_code == userId）→ 允许 OPERATOR_MANAGER_OPS（比 OWNER 少 TRANSFER）
      * - 其余情况拒绝
      */
@@ -121,8 +122,7 @@ public class AkPermissionChecker {
         }
         String userId = op.getUserId().toString();
 
-        boolean isOwner = (PERSON.equals(targetDb.getOwnerType()) || CONSOLE.equals(targetDb.getOwnerType()))
-                && userId.equals(targetDb.getOwnerCode());
+        boolean isOwner = isUserOwner(userId, targetDb);
         if (isOwner) {
             if (!OPERATOR_OWNER_OPS.contains(operation)) {
                 throw new BellaException.AuthorizationException("没有操作权限");
@@ -143,8 +143,7 @@ public class AkPermissionChecker {
         if (StringUtils.isNotEmpty(targetDb.getParentCode())) {
             ApikeyDB parentDb = apikeyRepo.queryByUniqueKey(targetDb.getParentCode());
             if (parentDb != null) {
-                boolean isParentOwner = (PERSON.equals(parentDb.getOwnerType()) || CONSOLE.equals(parentDb.getOwnerType()))
-                        && userId.equals(parentDb.getOwnerCode());
+                boolean isParentOwner = isUserOwner(userId, parentDb);
                 boolean isParentManager = StringUtils.isNotEmpty(parentDb.getManagerCode())
                         && parentDb.getManagerCode().equals(userId);
                 if (isParentOwner) {
@@ -213,14 +212,21 @@ public class AkPermissionChecker {
     private static final Set<String> PERSONAL_OWNER_TYPES = Collections.unmodifiableSet(
             new HashSet<>(Arrays.asList(PERSON, CONSOLE)));
 
+    private static final Set<String> USER_OWNABLE_TYPES = Collections.unmodifiableSet(
+            new HashSet<>(Arrays.asList(PERSON, CONSOLE, ORG, PROJECT)));
+
+    private boolean isUserOwner(String userCode, ApikeyDB target) {
+        return USER_OWNABLE_TYPES.contains(target.getOwnerType())
+                && userCode.equals(target.getOwnerCode());
+    }
+
     private boolean isOwner(ApikeyInfo caller, ApikeyDB target) {
         if (!caller.getOwnerCode().equals(target.getOwnerCode())) {
             return false;
         }
-        // person 和 console 同属一个自然人，ownerType 可以互通
-        if (PERSONAL_OWNER_TYPES.contains(caller.getOwnerType())
-                && PERSONAL_OWNER_TYPES.contains(target.getOwnerType())) {
-            return true;
+        // person/console 表示自然人身份；ownerCode 相同时，可作为个人、组织或项目 AK 的 owner
+        if (PERSONAL_OWNER_TYPES.contains(caller.getOwnerType())) {
+            return USER_OWNABLE_TYPES.contains(target.getOwnerType());
         }
         return caller.getOwnerType().equals(target.getOwnerType());
     }
