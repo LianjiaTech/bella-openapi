@@ -344,9 +344,9 @@ public class HuoshanVideoConverter {
 
         if(queryResponse.getUsage() != null) {
             VideoUsage usage = VideoUsage.builder()
-                    .completion_tokens(queryResponse.getUsage().getCompletion_tokens())
-                    .prompt_tokens(0)
-                    .total_tokens(queryResponse.getUsage().getTotal_tokens())
+                    .completionTokens(queryResponse.getUsage().getCompletion_tokens())
+                    .promptTokens(0)
+                    .totalTokens(queryResponse.getUsage().getTotal_tokens())
                     .build();
             builder.usage(usage);
         }

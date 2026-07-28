@@ -666,14 +666,32 @@ public class CostCalculator {
                 videoUsage = JacksonUtils.deserialize(usageJson, VideoUsage.class);
             }
 
-            int completionTokens = videoUsage.getCompletion_tokens() != null ? videoUsage.getCompletion_tokens() : 0;
+            if(price.isDurationBillingMode()) {
+                if(videoUsage == null || videoUsage.getDuration() == null || videoUsage.getVideoCount() == null) {
+                    log.warn("Video duration billing skipped because usage is incomplete: {}", usage);
+                    return CostDetails.builder().totalCost(BigDecimal.ZERO).build();
+                }
+                BigDecimal totalCost = price.matchPricePerSecond(videoUsage)
+                        .multiply(BigDecimal.valueOf(videoUsage.getDuration()))
+                        .multiply(BigDecimal.valueOf(videoUsage.getVideoCount()))
+                        .multiply(BigDecimal.valueOf(price.getSupplierDiscount()));
+                return CostDetails.builder().totalCost(totalCost).build();
+            }
+
+            int completionTokens = videoUsage.getCompletionTokens() != null ? videoUsage.getCompletionTokens() : 0;
             return CostDetails.builder().totalCost(price.getOutput().multiply(BigDecimal.valueOf(completionTokens / 1000.0))).build();
         }
 
         @Override
         public boolean checkPriceInfo(String priceInfo) {
             VideoPriceInfo price = JacksonUtils.deserialize(priceInfo, VideoPriceInfo.class);
-            return price != null && price.getOutput() != null;
+            if(price == null) {
+                return false;
+            }
+            if(price.isDurationBillingMode()) {
+                return price.hasValidDurationPrice();
+            }
+            return price.getOutput() != null;
         }
     };
 

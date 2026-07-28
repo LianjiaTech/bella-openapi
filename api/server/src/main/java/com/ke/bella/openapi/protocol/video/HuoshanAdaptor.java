@@ -96,7 +96,7 @@ public class HuoshanAdaptor implements VideoAdaptor<HuoshanProperty> {
             com.theokanning.openai.file.File file = openAiService.uploadFile(
                     "temp",
                     videoStream,
-                    "video.mp4");
+                    buildVideoFileName());
 
             return file;
 
