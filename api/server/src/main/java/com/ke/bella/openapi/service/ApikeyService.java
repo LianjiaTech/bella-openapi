@@ -728,11 +728,13 @@ public class ApikeyService {
             fillPermissionCode(condition, false);
         }
         fillManagerCode(condition);
+        fillOwnerOrManagerCode(condition);
         return apikeyRepo.pageAccessKeys(condition);
     }
 
     /**
-     * ApikeyCondition 专属权限填充，处理 parentCode / managerCode 两种无需叠加 personalCode 的场景。
+     * ApikeyCondition 专属权限填充，处理 parentCode / managerCode / ownerOrManagerCode
+     * 三种无需叠加 personalCode 的场景。
      *
      * @return true 表示权限已由本方法完整处理，调用方无需再调 fillPermissionCode；
      *         false 表示本方法未处理，调用方继续走 fillPermissionCode 通用逻辑。
@@ -750,6 +752,10 @@ public class ApikeyService {
         }
         if (StringUtils.isNotEmpty(condition.getManagerCode())) {
             // 按 managerCode 筛选：由 fillManagerCode 负责校验，不叠加 personalCode（否则会过滤掉他人/组织的AK）
+            return true;
+        }
+        if (StringUtils.isNotEmpty(condition.getOwnerOrManagerCode())) {
+            // “我管理的”顶层AK：由 fillOwnerOrManagerCode 限定为当前用户，不叠加 personalCode
             return true;
         }
         return false;
@@ -777,6 +783,18 @@ public class ApikeyService {
         if(StringUtils.isNotEmpty(condition.getManagerSearch())) {
             throw new BellaException.AuthorizationException("没有操作权限");
         }
+    }
+
+    /**
+     * 对 ownerOrManagerCode 筛选进行权限填充：
+     * - Console 登录态普通用户始终使用后端解析出的本人 userCode，忽略前端传入值
+     * - 管理员或 SYSTEM AK 保留显式查询值
+     */
+    private void fillOwnerOrManagerCode(ApikeyOps.ApikeyCondition condition) {
+        if(StringUtils.isEmpty(condition.getOwnerOrManagerCode()) || akPermissionChecker.hasAdminPermission()) {
+            return;
+        }
+        condition.setOwnerOrManagerCode(resolveCurrentUserCode());
     }
 
     public void fillPermissionCode(PermissionCondition condition, boolean apikeyFirst) {

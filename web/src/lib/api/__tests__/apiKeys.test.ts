@@ -1,5 +1,5 @@
 import { apiClient } from '@/lib/api/client';
-import { bindApiKeyService, getApiKeyByCode, getManagerApiKeys, getParentQuotaApplyInfo, renameApiKey } from '../apiKeys';
+import { bindApiKeyService, getApiKeyByCode, getManagerApiKeys, getOwnedOrManagedApiKeys, getParentQuotaApplyInfo, renameApiKey } from '../apiKeys';
 
 jest.mock('@/lib/api/client', () => ({
   apiClient: {
@@ -81,4 +81,25 @@ describe('getManagerApiKeys', () => {
     expect(apiClient.post).toHaveBeenNthCalledWith(2, '/console/apikey/bindService', { code: 'ak-org', serviceId: 'new-service' });
   });
 
+});
+
+describe('getOwnedOrManagedApiKeys', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.mocked(apiClient.get).mockResolvedValue({ data: [], has_more: false, total: 0 });
+  });
+
+  it('queries top-level keys by owner-or-manager with search and owner type', async () => {
+    await getOwnedOrManagedApiKeys(2, '1001', 'demo', 'person');
+
+    expect(apiClient.get).toHaveBeenCalledWith('/console/apikey/page', {
+      params: {
+        status: 'active',
+        ownerOrManagerCode: '1001',
+        page: 2,
+        searchParam: 'demo',
+        ownerType: 'person',
+      },
+    });
+  });
 });

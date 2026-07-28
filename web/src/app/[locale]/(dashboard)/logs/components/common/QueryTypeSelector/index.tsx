@@ -8,7 +8,7 @@ import {
   type PrefixOption,
 } from "@/components/common/prefixed-input"
 import { useAuth } from "@/components/providers/auth-provider"
-import { getManagerApiKeys } from "@/lib/api/apiKeys"
+import { getManagerApiKeys, getOwnedOrManagedApiKeys } from "@/lib/api/apiKeys"
 import type { ApikeyInfo } from "@/lib/types/apikeys"
 import { QueryTypeSelectorProps, QueryType } from "./types"
 
@@ -164,7 +164,7 @@ export function QueryTypeSelector({
     try {
       const search = akSearchValue.trim() || undefined
       const [delegatedResponse, assignedResponse] = await Promise.all([
-        getManagerApiKeys(1, managerCode, search),
+        getOwnedOrManagedApiKeys(1, managerCode, search),
         getManagerApiKeys(1, managerCode, search, true),
       ])
 

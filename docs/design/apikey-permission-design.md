@@ -103,7 +103,7 @@ public enum AkRelation {
 ```
 checkOperatorPermission(targetDb, operation)
   │
-  ├─ isOwner: ownerType ∈ {person,console} && ownerCode == userId
+  ├─ isOwner: ownerType ∈ {person,console,org,project} && ownerCode == userId
   │    └─ → 允许 OPERATOR_OWNER_OPS
   │
   ├─ isManager: manager_code == userId
@@ -216,7 +216,7 @@ Manager 关系存储在 `apikey` 表的 `manager_code` / `manager_name` 字段�
 
 ## 4. 查询权限过滤
 
-分页查询接口（`/console/apikey/page`）在进入 SQL 之前，由 `fillPermissionCode` + `fillManagerCode` 联合控制数据范围：
+分页查询接口（`/console/apikey/page`）在进入 SQL 之前，由 `fillPermissionCode`、`fillManagerCode` 与 `fillOwnerOrManagerCode` 联合控制数据范围：
 
 ```
 ┌─────────────────────────────────────────────┐
@@ -236,6 +236,7 @@ Manager 关系存储在 `apikey` 表的 `manager_code` / `manager_name` 字段�
                (parentCode,    校验managerCode==userId
                 QUERY)         不叠加personalCode
                不叠加personalCode
+     传了ownerOrManagerCode → 后端覆盖为当前用户解析后的userCode，不叠加personalCode
                                │
                                ▼
                     其他：叠加personalCode=userId
@@ -247,6 +248,7 @@ Manager 关系存储在 `apikey` 表的 `manager_code` / `manager_name` 字段�
 | 管理员（roleCode ∈ `console`/`all`） | 任意 | 不叠加所有者过滤，查全量 |
 | 普通用户 | 传了 `parentCode` | 校验对父AK有 QUERY 权限后放行，不叠加 `personalCode` |
 | 普通用户 | 传了 `managerCode` | 校验 `managerCode == userId`，不叠加 `personalCode`（否则无法查到他人/组织的AK） |
+| 普通用户 | 传了 `ownerOrManagerCode` | 覆盖为后端按 CAS/OAuth 登录态解析出的本人编码；非 Console 类型 AK 的 owner 或 manager 命中 |
 | 普通用户 | 其他 | 叠加 `personalCode = userId`，只查自己的AK |
 
 ## 5. 组件交互
