@@ -18,10 +18,11 @@ import { TopBar } from "@/components/layout/top-bar";
 import { Button } from "@/components/common/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/common/dialog";
 import { Input } from "@/components/common/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/common/select";
 import { ArrowLeft, AlertCircle, Plus } from "lucide-react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { useState, useEffect, useRef, useMemo } from "react";
-import { getApiKeys, getApiKeyByCode, resetApiKey, deleteApiKey, updateSubApiKey } from "@/lib/api/apiKeys";
+import { getApiKeyByCode, resetApiKey, deleteApiKey, updateSubApiKey } from "@/lib/api/apiKeys";
 import { ApikeyInfo } from "@/lib/types/apikeys";
 import { SubAkTable, SubAkTableRef } from "./components/SubAkTable";
 import { CreateSubApiKeyDialog } from "./components/CreateSubApiKeyDialog";
@@ -33,6 +34,15 @@ import { copyToClipboard } from "@/lib/utils/clipboard";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useSubAkCapability } from "./hooks/useSubAkCapability";
+
+type SubAkEditableField = 'name' | 'outEntityCode' | 'safetyLevel' | 'remark';
+
+const SUB_AK_FIELD_LABELS: Record<SubAkEditableField, string> = {
+  name: '名称',
+  outEntityCode: '用途标识',
+  safetyLevel: '安全等级',
+  remark: '备注',
+};
 
 export default function SubAkPage() {
   const { toast } = useToast();
@@ -47,7 +57,11 @@ export default function SubAkPage() {
   const [parentApiKey, setParentApiKey] = useState<ApikeyInfo | null>(null);
   const [error, setError] = useState<Error | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [editingSubApiKey, setEditingSubApiKey] = useState<ApikeyInfo | null>(null);
+  const [fieldEditingSubAk, setFieldEditingSubAk] = useState<ApikeyInfo | null>(null);
+  const [fieldEditingName, setFieldEditingName] = useState<SubAkEditableField | null>(null);
+  const [fieldEditingValue, setFieldEditingValue] = useState("");
+  const [fieldEditingError, setFieldEditingError] = useState("");
+  const [fieldEditingSubmitting, setFieldEditingSubmitting] = useState(false);
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [resetingAkCode, setResetingAkCode] = useState<string>("");
   const [resetting, setResetting] = useState(false);
@@ -81,33 +95,69 @@ export default function SubAkPage() {
   }, [akCode, capability.fetchMode]);
 
   /**
-   * 查询父 AK 信息：
-   *   - fetchMode=admin：getAdminApiKeys（不绑定 ownerCode，按 akCode 精确匹配）
-   *   - fetchMode=user：getApiKeys（ownerCode = 当前用户）
+   * 按 code 查询父 AK，权限由后端统一校验。
+   * 避免 owner 深链受列表第一页限制，也支持已委托管理的 owner AK。
    */
   const fetchParentApiKey = async () => {
     try {
-      if (capability.fetchMode === 'admin') {
-        // TODO(manager-viewer): manager 视角下 getApiKeyByCode 同样适用（管理者可查被管理AK详情）
-        // 若未来需要 manager 专属查询（仅查 managerCode 匹配的AK），在此判断 viewer==='manager'
-        const parent = await getApiKeyByCode(akCode);
-        if (parent) setParentApiKey(parent);
-      } else {
-        const ownerCode = user?.userId?.toString() || "";
-        const response = await getApiKeys(ownerCode, "", 1, "");
-        const parent = response.data?.find(key => key.code === akCode);
-        if (parent) setParentApiKey(parent);
-      }
+      const parent = await getApiKeyByCode(akCode);
+      if (parent) setParentApiKey(parent);
     } catch (err) {
       console.error('Failed to fetch parent API key:', err);
+      setError(err instanceof Error ? err : new Error('无法加载父 AK'));
     }
   };
 
   const handleBack = () => router.push(capability.backHref);
 
-  const handleEditSubApiKey = (apiKey: ApikeyInfo) => {
-    setEditingSubApiKey(apiKey);
-    setIsCreateDialogOpen(true);
+  const handleEditField = (apiKey: ApikeyInfo, field: SubAkEditableField) => {
+    setFieldEditingSubAk(apiKey);
+    setFieldEditingName(field);
+    setFieldEditingValue(String(apiKey[field] ?? ''));
+    setFieldEditingError('');
+  };
+
+  const handleEditFieldClose = () => {
+    setFieldEditingSubAk(null);
+    setFieldEditingName(null);
+    setFieldEditingValue('');
+    setFieldEditingError('');
+  };
+
+  const handleEditFieldConfirm = async () => {
+    if (!fieldEditingSubAk || !fieldEditingName) return;
+    const value = fieldEditingValue.trim();
+    if (fieldEditingName !== 'remark' && !value) {
+      setFieldEditingError(`请输入${SUB_AK_FIELD_LABELS[fieldEditingName]}`);
+      return;
+    }
+
+    if (fieldEditingName === 'safetyLevel') {
+      const level = Number(value);
+      if (![10, 20, 30, 40].includes(level)) {
+        setFieldEditingError('请选择有效的安全等级');
+        return;
+      }
+      if (parentApiKey && level > parentApiKey.safetyLevel) {
+        setFieldEditingError('安全等级不能超过父 AK');
+        return;
+      }
+    }
+
+    try {
+      setFieldEditingSubmitting(true);
+      setFieldEditingError('');
+      await updateSubApiKey({
+        code: fieldEditingSubAk.code,
+        [fieldEditingName]: fieldEditingName === 'safetyLevel' ? Number(value) : value,
+      });
+      handleEditFieldClose();
+      subAkTableRef.current?.refresh();
+    } catch (err) {
+      setFieldEditingError(err instanceof Error ? err.message : '修改子密钥失败');
+    } finally {
+      setFieldEditingSubmitting(false);
+    }
   };
 
   const handleEditQuotaClick = (apiKey: ApikeyInfo) => {
@@ -156,7 +206,6 @@ export default function SubAkPage() {
 
   const handleCloseDialog = () => {
     setIsCreateDialogOpen(false);
-    setEditingSubApiKey(null);
   };
 
   const handleCloseCreatedDialog = () => {
@@ -213,10 +262,8 @@ export default function SubAkPage() {
       // 调用删除API
       await deleteApiKey(deletingAkCode);
 
-      // 关闭删除确认对话框
       setShowDeleteDialog(false);
 
-      // 刷新子密钥列表
       subAkTableRef.current?.refresh();
     } catch (err) {
       console.error('删除子密钥失败:', err);
@@ -292,7 +339,7 @@ export default function SubAkPage() {
             parentCode={akCode}
             capability={capability}
             onCopy={handleCopy}
-            onEdit={handleEditSubApiKey}
+            onEditField={handleEditField}
             onEditQuota={handleEditQuotaClick}
             onReset={handleReset}
             onDelete={handleDelete}
@@ -300,21 +347,60 @@ export default function SubAkPage() {
           />
         </div>
 
-        {/* Dialog 同时服务创建（canCreate）和完整编辑两个入口，
-            只要 parentApiKey 已加载即挂载，内部创建按钮由 isEditMode 判断 */}
+        {/* 创建子密钥 */}
         {parentApiKey && (
           <CreateSubApiKeyDialog
             isOpen={isCreateDialogOpen}
             onClose={handleCloseDialog}
             parentCode={akCode}
             parentApiKey={parentApiKey}
-            editingApiKey={editingSubApiKey}
             onSuccess={() => {
               handleCloseDialog();
               subAkTableRef.current?.refresh();
             }}
           />
         )}
+
+        <Dialog open={!!fieldEditingSubAk && !!fieldEditingName} onOpenChange={(open) => !open && handleEditFieldClose()}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle>修改{fieldEditingName ? SUB_AK_FIELD_LABELS[fieldEditingName] : ''}</DialogTitle>
+            </DialogHeader>
+            {fieldEditingName === 'safetyLevel' ? (
+              <Select value={fieldEditingValue} onValueChange={(value) => { setFieldEditingValue(value); setFieldEditingError(''); }}>
+                <SelectTrigger><SelectValue placeholder="请选择安全等级" /></SelectTrigger>
+                <SelectContent>
+                  {[10, 20, 30, 40]
+                    .filter(level => !parentApiKey || level <= parentApiKey.safetyLevel)
+                    .map(level => (
+                      <SelectItem key={level} value={String(level)}>
+                        {({ 10: '极低', 20: '低', 30: '中', 40: '高' } as Record<number, string>)[level]}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Input
+                value={fieldEditingValue}
+                onChange={(event) => { setFieldEditingValue(event.target.value); setFieldEditingError(''); }}
+                placeholder={fieldEditingName ? `请输入${SUB_AK_FIELD_LABELS[fieldEditingName]}` : ''}
+                onKeyDown={(event) => event.key === 'Enter' && handleEditFieldConfirm()}
+                maxLength={fieldEditingName === 'remark' ? 1024 : 64}
+                autoFocus
+              />
+            )}
+            {fieldEditingError && <p className="text-xs text-red-500">{fieldEditingError}</p>}
+            <DialogFooter>
+              <Button variant="outline" onClick={handleEditFieldClose} disabled={fieldEditingSubmitting}>取消</Button>
+              <Button
+                onClick={handleEditFieldConfirm}
+                disabled={fieldEditingSubmitting || (fieldEditingName !== 'remark' && !fieldEditingValue.trim())}
+              >
+                {fieldEditingSubmitting ? '保存中...' : '确认'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* API Key 重置确认对话框 */}
         <ApiKeyResetDialog
@@ -339,6 +425,7 @@ export default function SubAkPage() {
           onConfirm={handleDeleteConfirm}
           loading={deleting}
         />
+
 
         {/* 子 AK 月额度编辑：复用 /v1/apikey/update，仅提交 code + monthQuota */}
         <Dialog open={showQuotaDialog} onOpenChange={handleQuotaClose}>

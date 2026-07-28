@@ -5,15 +5,15 @@
  *
  * 职责：
  *   - Tab 切换展示两个独立区块：
- *     1. DelegatedSection（委托管理）：顶层AK，可重置密钥、进入子AK管理页
+ *     1. ManagedSection（我管理的）：顶层 AK，可重置密钥、进入子 AK 管理页
  *     2. AssignedSection（分配给我）：子AK，可重置密钥
  *   - Tab badge 显示各区块总数（由各 Section 加载完成后上报）
  *
  * 数据获取策略：
- *   - DelegatedSection：getManagerApiKeys(page, managerCode, search)
+ *   - ManagedSection：getManagerApiKeys(page, managerCode, search)
  *     → 不传 includeChild，后端默认 parent_code='' 只返顶层AK
- *   - AssignedSection：getManagerApiKeys(page, managerCode, search, includeChild=true)
- *     → includeChild=true 后端返全量，前端按 parentCode 非空过滤出子AK
+ *   - AssignedSection：getManagerApiKeys(page, managerCode, search, onlyChild=true)
+ *     → onlyChild=true 由后端精确返回 manager_code 匹配的子 AK
  *
  * 防 re-render：
  *   - OWNER_TYPE_BADGE / formatSafetyLevel 均为模块级常量/纯函数
@@ -24,24 +24,54 @@
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/common/button";
 import { Badge } from "@/components/common/badge";
-import { Copy, MoreVertical, Key, RotateCcw, Users, Pencil, UserCog, History, TrendingUp } from "lucide-react";
+import { Copy, MoreVertical, Key, RotateCcw, Users, Pencil, UserCog, History, TrendingUp, Trash2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/common/table";
-import { ApikeyInfo, ApiKeyBalance } from "@/lib/types/apikeys";
+import { ApikeyInfo, ApiKeyBalance, ParentQuotaApplyInfo } from "@/lib/types/apikeys";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/common/popover";
 import Link from "next/link";
 import { TableLoadingRow } from "@/components/ui/table/TableLoadingRow";
 import { QuotaUsageDisplay } from "@/components/ui/QuotaUsageDisplay";
 import { SearchInput } from "@/app/[locale]/(dashboard)/apikey/components/SearchInput";
 import { Pagination } from "@/components/ui/pagination";
-import { getManagerApiKeys, getApiKeyBalance, getApiKeyByCode } from "@/lib/api/apiKeys";
+import { getManagerApiKeys, getApiKeyBalance, getParentQuotaApplyInfo } from "@/lib/api/apiKeys";
 import { cn } from "@/lib/utils";
 import { buildChildQuotaApplyUrl, buildParentQuotaApplyUrl, isApiKeyQuotaApplyEnabled } from "@/lib/integrations/apiKeyQuotaApply";
 import { toast } from "sonner";
+import { TruncatedText } from "@/components/common/truncated-text";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/common/select";
 
 /**
  * 所有者类型 Badge 映射
  * 优先级从高到低：system > org > project > person > console
  */
+type OwnerTypeFilterValue = 'all' | 'person' | 'org' | 'project';
+
+const OWNER_TYPE_OPTIONS: Array<{ value: OwnerTypeFilterValue; label: string }> = [
+    { value: 'all', label: '全部类型' },
+    { value: 'person', label: '个人' },
+    { value: 'org', label: '组织' },
+    { value: 'project', label: '项目' },
+];
+
+function OwnerTypeFilter({ value, onChange, ariaLabel }: {
+    value: OwnerTypeFilterValue;
+    onChange: (value: OwnerTypeFilterValue) => void;
+    ariaLabel: string;
+}) {
+    return (
+        <Select value={value} onValueChange={(nextValue) => onChange(nextValue as OwnerTypeFilterValue)}>
+            <SelectTrigger className="w-28" aria-label={ariaLabel}>
+                <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+                {OWNER_TYPE_OPTIONS.map(option => (
+                    <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                ))}
+            </SelectContent>
+        </Select>
+    );
+}
+
 const OWNER_TYPE_BADGE: Record<string, { label: string; className: string }> = {
     system:  { label: '系统',    className: 'border-transparent bg-red-500/15 text-red-600' },
     org:     { label: '组织',    className: 'border-transparent bg-blue-500/15 text-blue-600' },
@@ -60,7 +90,7 @@ function openQuotaApplyUrl(url: string) {
     window.open(url, "_blank", "noopener,noreferrer");
 }
 
-function hasManagerInfo(apiKey: ApikeyInfo): boolean {
+function hasManagerInfo(apiKey: Pick<ParentQuotaApplyInfo, 'managerCode' | 'managerName'>): boolean {
     return !!apiKey.managerCode && !!apiKey.managerName;
 }
 
@@ -100,6 +130,9 @@ interface ManagedKeysTableProps {
     onEditSafetyLevel: (akCode: string) => void;
     onSetManager: (apiKey: ApikeyInfo) => void;
     onViewHistory: (apiKey: ApikeyInfo) => void;
+    onEditName: (apiKey: ApikeyInfo) => void;
+    onEditService: (apiKey: ApikeyInfo) => void;
+    onDelete: (apiKey: ApikeyInfo) => void;
     /** 外部触发刷新（重置成功后由 page 层递增） */
     refreshToken?: number;
 }
@@ -116,11 +149,26 @@ interface DelegatedSectionProps {
     onEditSafetyLevel: (akCode: string) => void;
     onSetManager: (apiKey: ApikeyInfo) => void;
     onViewHistory: (apiKey: ApikeyInfo) => void;
+    onEditName: (apiKey: ApikeyInfo) => void;
+    onEditService: (apiKey: ApikeyInfo) => void;
+    onDelete: (apiKey: ApikeyInfo) => void;
     onCountChange: (count: number) => void;
     refreshToken?: number;
 }
 
-function DelegatedSection({ managerCode, onCopy, onReset, onEditSafetyLevel, onSetManager, onViewHistory, onCountChange, refreshToken }: DelegatedSectionProps) {
+function DelegatedSection({
+    managerCode,
+    onCopy,
+    onReset,
+    onEditSafetyLevel,
+    onSetManager,
+    onViewHistory,
+    onEditName,
+    onEditService,
+    onDelete,
+    onCountChange,
+    refreshToken,
+}: DelegatedSectionProps) {
     const [apiKeys, setApiKeys] = useState<ApikeyInfo[]>([]);
     const [balances, setBalances] = useState<Record<string, ApiKeyBalance>>({});
     const [loading, setLoading] = useState(true);
@@ -130,6 +178,7 @@ function DelegatedSection({ managerCode, onCopy, onReset, onEditSafetyLevel, onS
     const [search, setSearch] = useState("");
     const [debouncedSearch, setDebouncedSearch] = useState("");
     const [isSearching, setIsSearching] = useState(false);
+    const [ownerType, setOwnerType] = useState<OwnerTypeFilterValue>('all');
 
     // 搜索防抖 500ms
     useEffect(() => {
@@ -145,9 +194,14 @@ function DelegatedSection({ managerCode, onCopy, onReset, onEditSafetyLevel, onS
         if (!managerCode) return;
         try {
             setLoading(true);
-            // 不传 includeChild → 后端只返顶层AK（parent_code=''）
-            // excludeOwnerType=person → 过滤掉个人AK，只显示组织/项目AK
-            const res = await getManagerApiKeys(page, managerCode, debouncedSearch || undefined, undefined, 'person');
+            // 不传 onlyChild → 后端只返 manager_code 匹配的顶层 AK（parent_code=''）
+            const res = await getManagerApiKeys(
+                page,
+                managerCode,
+                debouncedSearch || undefined,
+                undefined,
+                ownerType === 'all' ? undefined : ownerType
+            );
             setApiKeys(res.data || []);
             setHasMore(res.has_more);
             const total = res.total ?? 0;
@@ -165,17 +219,22 @@ function DelegatedSection({ managerCode, onCopy, onReset, onEditSafetyLevel, onS
         } finally {
             setLoading(false);
         }
-    }, [managerCode, page, debouncedSearch, onCountChange]);
+    }, [managerCode, page, debouncedSearch, ownerType, onCountChange]);
 
     useEffect(() => { fetchData(); }, [fetchData]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => { if (refreshToken) fetchData(); }, [refreshToken]);
 
     const handleSearch = (value: string) => { setSearch(value); setPage(1); };
+    const handleOwnerTypeChange = (value: OwnerTypeFilterValue) => { setOwnerType(value); setPage(1); };
     const quotaApplyEnabled = isApiKeyQuotaApplyEnabled();
 
     const handleApplyQuota = (apiKey: ApikeyInfo) => {
         if (!quotaApplyEnabled) return;
+        if (apiKey.ownerType === 'person') {
+            toast.error("个人 AK 不支持提额申请");
+            return;
+        }
         if (!hasManagerInfo(apiKey)) {
             toast.error("当前 AK 缺少负责人信息，无法发起提额审批");
             return;
@@ -195,9 +254,12 @@ function DelegatedSection({ managerCode, onCopy, onReset, onEditSafetyLevel, onS
                 <div className="flex items-center gap-2">
                     <Users className="h-5 w-5" />
                     <h3 className="text-sm font-medium">我管理的</h3>
-                    <span className="text-xs text-muted-foreground">（组织/项目委托我管理的密钥）</span>
+                    <span className="text-xs text-muted-foreground">（由我负责管理的个人、组织和项目父 AK）</span>
                 </div>
-                <SearchInput value={search} onChange={handleSearch} placeholder="搜索..." isSearching={isSearching} />
+                <div className="flex items-center gap-2">
+                    <OwnerTypeFilter value={ownerType} onChange={handleOwnerTypeChange} ariaLabel="我管理的类型筛选" />
+                    <SearchInput value={search} onChange={handleSearch} placeholder="搜索..." isSearching={isSearching} />
+                </div>
             </div>
             <Table>
                 <TableHeader>
@@ -247,12 +309,38 @@ function DelegatedSection({ managerCode, onCopy, onReset, onEditSafetyLevel, onS
                                     </div>
                                 </div>
                             </TableCell>
-                            <TableCell className="text-sm">{apiKey.name || '-'}</TableCell>
-                            <TableCell className="text-sm">{apiKey.serviceId || '-'}</TableCell>
+                            <TableCell className="text-sm">
+                                <div className="flex items-center gap-1">
+                                    <TruncatedText value={apiKey.name} />
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-5 w-5 p-0 opacity-50 hover:opacity-100 shrink-0"
+                                        onClick={() => onEditName(apiKey)}
+                                        aria-label={`修改名称 ${apiKey.code}`}
+                                    >
+                                        <Pencil className="h-3 w-3" />
+                                    </Button>
+                                </div>
+                            </TableCell>
+                            <TableCell className="text-sm">
+                                <div className="flex items-center gap-1">
+                                    <TruncatedText value={apiKey.serviceId} />
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-5 w-5 p-0 opacity-50 hover:opacity-100 shrink-0"
+                                        onClick={() => onEditService(apiKey)}
+                                        aria-label={`修改服务名 ${apiKey.code}`}
+                                    >
+                                        <Pencil className="h-3 w-3" />
+                                    </Button>
+                                </div>
+                            </TableCell>
                             <TableCell className="text-sm">
                                 <MonthlyQuotaCell
                                     quota={apiKey.monthQuota}
-                                    onApply={quotaApplyEnabled ? () => handleApplyQuota(apiKey) : undefined}
+                                    onApply={quotaApplyEnabled && apiKey.ownerType !== 'person' ? () => handleApplyQuota(apiKey) : undefined}
                                 />
                             </TableCell>
                             <TableCell className="text-sm">
@@ -263,15 +351,14 @@ function DelegatedSection({ managerCode, onCopy, onReset, onEditSafetyLevel, onS
                                         size="sm"
                                         className="h-5 w-5 p-0 opacity-50 hover:opacity-100"
                                         onClick={() => onEditSafetyLevel(apiKey.code)}
+                                        aria-label={`修改安全等级 ${apiKey.code}`}
                                     >
                                         <Pencil className="h-3 w-3" />
                                     </Button>
                                 </div>
                             </TableCell>
                             <TableCell><QuotaUsageDisplay balance={balances[apiKey.code]} /></TableCell>
-                            <TableCell className="text-sm">
-                                <div className="truncate max-w-[150px]" title={apiKey.remark}>{apiKey.remark || '-'}</div>
-                            </TableCell>
+                            <TableCell className="text-sm"><TruncatedText value={apiKey.remark} /></TableCell>
                             <TableCell className="text-sm">
                                 <div className="truncate max-w-[120px]" title={apiKey.managerName || apiKey.managerCode}>
                                     {apiKey.managerName || apiKey.managerCode || '-'}
@@ -280,7 +367,9 @@ function DelegatedSection({ managerCode, onCopy, onReset, onEditSafetyLevel, onS
                             <TableCell className="text-center">
                                 <Popover>
                                     <PopoverTrigger asChild>
-                                        <Button variant="ghost" size="sm"><MoreVertical className="h-4 w-4" /></Button>
+                                        <Button variant="ghost" size="sm" aria-label={`打开父 AK 操作菜单 ${apiKey.code}`}>
+                                            <MoreVertical className="h-4 w-4" />
+                                        </Button>
                                     </PopoverTrigger>
                                     <PopoverContent align="end" className="w-48 p-2">
                                         <div className="flex flex-col gap-1">
@@ -296,7 +385,7 @@ function DelegatedSection({ managerCode, onCopy, onReset, onEditSafetyLevel, onS
                                                 onClick={() => onSetManager(apiKey)}
                                             >
                                                 <UserCog className="h-4 w-4" />
-                                                转移管理权
+                                                变更负责人
                                             </button>
                                             <button
                                                 className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent rounded cursor-pointer"
@@ -307,18 +396,27 @@ function DelegatedSection({ managerCode, onCopy, onReset, onEditSafetyLevel, onS
                                             </button>
                                             <button
                                                 className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent rounded cursor-pointer"
-                                                onClick={() => onReset(apiKey.code)}
-                                            >
-                                                <RotateCcw className="h-4 w-4" />
-                                                重置
-                                            </button>
-                                            <button
-                                                className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent rounded cursor-pointer"
                                                 onClick={() => onCopy(apiKey.code)}
                                             >
                                                 <Copy className="h-4 w-4" />
                                                 复制ak code
                                             </button>
+                                            <button
+                                                className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent rounded cursor-pointer"
+                                                onClick={() => onReset(apiKey.code)}
+                                            >
+                                                <RotateCcw className="h-4 w-4" />
+                                                重置
+                                            </button>
+                                            {apiKey.ownerType === 'person' && (
+                                                <button
+                                                    className="flex items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 rounded cursor-pointer"
+                                                    onClick={() => onDelete(apiKey)}
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                    删除
+                                                </button>
+                                            )}
                                         </div>
                                     </PopoverContent>
                                 </Popover>
@@ -350,13 +448,12 @@ interface AssignedSectionProps {
     managerCode: string;
     onCopy: (text: string) => void;
     onReset: (akCode: string) => void;
-    onEditSafetyLevel: (akCode: string) => void;
     onSetManager: (apiKey: ApikeyInfo) => void;
     onCountChange: (count: number) => void;
     refreshToken?: number;
 }
 
-function AssignedSection({ managerCode, onCopy, onReset, onEditSafetyLevel, onSetManager, onCountChange, refreshToken }: AssignedSectionProps) {
+function AssignedSection({ managerCode, onCopy, onReset, onSetManager, onCountChange, refreshToken }: AssignedSectionProps) {
     const [apiKeys, setApiKeys] = useState<ApikeyInfo[]>([]);
     const [balances, setBalances] = useState<Record<string, ApiKeyBalance>>({});
     const [loading, setLoading] = useState(true);
@@ -366,6 +463,7 @@ function AssignedSection({ managerCode, onCopy, onReset, onEditSafetyLevel, onSe
     const [search, setSearch] = useState("");
     const [debouncedSearch, setDebouncedSearch] = useState("");
     const [isSearching, setIsSearching] = useState(false);
+    const [ownerType, setOwnerType] = useState<OwnerTypeFilterValue>('all');
 
     // 搜索防抖 500ms
     useEffect(() => {
@@ -382,7 +480,13 @@ function AssignedSection({ managerCode, onCopy, onReset, onEditSafetyLevel, onSe
         try {
             setLoading(true);
             // onlyChild=true → 后端直接过滤 parent_code != ''，分页计数准确
-            const res = await getManagerApiKeys(page, managerCode, debouncedSearch || undefined, true);
+            const res = await getManagerApiKeys(
+                page,
+                managerCode,
+                debouncedSearch || undefined,
+                true,
+                ownerType === 'all' ? undefined : ownerType
+            );
             setApiKeys(res.data || []);
             setHasMore(res.has_more);
             const total = res.total ?? 0;
@@ -400,13 +504,14 @@ function AssignedSection({ managerCode, onCopy, onReset, onEditSafetyLevel, onSe
         } finally {
             setLoading(false);
         }
-    }, [managerCode, page, debouncedSearch, onCountChange]);
+    }, [managerCode, page, debouncedSearch, ownerType, onCountChange]);
 
     useEffect(() => { fetchData(); }, [fetchData]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => { if (refreshToken) fetchData(); }, [refreshToken]);
 
     const handleSearch = (value: string) => { setSearch(value); setPage(1); };
+    const handleOwnerTypeChange = (value: OwnerTypeFilterValue) => { setOwnerType(value); setPage(1); };
     const quotaApplyEnabled = isApiKeyQuotaApplyEnabled();
 
     const handleApplyQuota = async (apiKey: ApikeyInfo) => {
@@ -417,8 +522,8 @@ function AssignedSection({ managerCode, onCopy, onReset, onEditSafetyLevel, onSe
         }
 
         try {
-            const parentApiKey = await getApiKeyByCode(apiKey.parentCode);
-            if (!parentApiKey || !hasManagerInfo(parentApiKey)) {
+            const parentApiKey = await getParentQuotaApplyInfo(apiKey.code);
+            if (!hasManagerInfo(parentApiKey)) {
                 toast.error("父 AK 缺少负责人信息，无法发起提额审批");
                 return;
             }
@@ -441,14 +546,17 @@ function AssignedSection({ managerCode, onCopy, onReset, onEditSafetyLevel, onSe
                 <div className="flex items-center gap-2">
                     <Key className="h-5 w-5" />
                     <h3 className="text-sm font-medium">分配给我的</h3>
-                    <span className="text-xs text-muted-foreground">（组织/项目分配给我使用的子密钥）</span>
+                    <span className="text-xs text-muted-foreground">（各类父 AK 分配并由我负责的子 AK）</span>
                 </div>
-                <SearchInput value={search} onChange={handleSearch} placeholder="搜索..." isSearching={isSearching} />
+                <div className="flex items-center gap-2">
+                    <OwnerTypeFilter value={ownerType} onChange={handleOwnerTypeChange} ariaLabel="分配给我的类型筛选" />
+                    <SearchInput value={search} onChange={handleSearch} placeholder="搜索..." isSearching={isSearching} />
+                </div>
             </div>
             <Table>
                 <TableHeader>
                     <TableRow>
-                        <TableHead>密钥代码</TableHead>
+                        <TableHead>密钥代码 / 类型</TableHead>
                         <TableHead>密钥ID</TableHead>
                         <TableHead>名称</TableHead>
                         <TableHead>服务名</TableHead>
@@ -471,7 +579,14 @@ function AssignedSection({ managerCode, onCopy, onReset, onEditSafetyLevel, onSe
                     ) : apiKeys.map((apiKey) => (
                         <TableRow key={apiKey.code}>
                             <TableCell className="text-xs">
-                                <span className="truncate max-w-[150px] block" title={apiKey.akDisplay}>{apiKey.akDisplay}</span>
+                                <div className="flex items-center gap-2">
+                                    <span className="truncate max-w-[150px] block" title={apiKey.akDisplay}>{apiKey.akDisplay}</span>
+                                    {OWNER_TYPE_BADGE[apiKey.ownerType] && (
+                                        <Badge className={OWNER_TYPE_BADGE[apiKey.ownerType].className}>
+                                            {OWNER_TYPE_BADGE[apiKey.ownerType].label}
+                                        </Badge>
+                                    )}
+                                </div>
                             </TableCell>
                             {/* AK code：帮助用户知道这个子AK的akcode */}
                             <TableCell className="text-xs">
@@ -498,31 +613,17 @@ function AssignedSection({ managerCode, onCopy, onReset, onEditSafetyLevel, onSe
                                     <span className="text-muted-foreground">-</span>
                                 )}
                             </TableCell>
-                            <TableCell className="text-sm">{apiKey.name || '-'}</TableCell>
-                            <TableCell className="text-sm">{apiKey.serviceId || '-'}</TableCell>
+                            <TableCell className="text-sm"><TruncatedText value={apiKey.name} /></TableCell>
+                            <TableCell className="text-sm"><TruncatedText value={apiKey.serviceId} /></TableCell>
                             <TableCell className="text-sm">
                                 <MonthlyQuotaCell
                                     quota={apiKey.monthQuota}
                                     onApply={quotaApplyEnabled ? () => handleApplyQuota(apiKey) : undefined}
                                 />
                             </TableCell>
-                            <TableCell className="text-sm">
-                                <div className="flex items-center gap-1">
-                                    <span>{formatSafetyLevel(apiKey.safetyLevel)}</span>
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-5 w-5 p-0 opacity-50 hover:opacity-100"
-                                        onClick={() => onEditSafetyLevel(apiKey.code)}
-                                    >
-                                        <Pencil className="h-3 w-3" />
-                                    </Button>
-                                </div>
-                            </TableCell>
+                            <TableCell className="text-sm">{formatSafetyLevel(apiKey.safetyLevel)}</TableCell>
                             <TableCell><QuotaUsageDisplay balance={balances[apiKey.code]} /></TableCell>
-                            <TableCell className="text-sm">
-                                <div className="truncate max-w-[150px]" title={apiKey.remark}>{apiKey.remark || '-'}</div>
-                            </TableCell>
+                            <TableCell className="text-sm"><TruncatedText value={apiKey.remark} /></TableCell>
                             <TableCell className="text-center">
                                 <Popover>
                                     <PopoverTrigger asChild>
@@ -578,7 +679,18 @@ function AssignedSection({ managerCode, onCopy, onReset, onEditSafetyLevel, onSe
 
 type ActiveTab = 'delegated' | 'assigned';
 
-export function ManagedKeysTable({ managerCode, onCopy, onReset, onEditSafetyLevel, onSetManager, onViewHistory, refreshToken }: ManagedKeysTableProps) {
+export function ManagedKeysTable({
+    managerCode,
+    onCopy,
+    onReset,
+    onEditSafetyLevel,
+    onSetManager,
+    onViewHistory,
+    onEditName,
+    onEditService,
+    onDelete,
+    refreshToken,
+}: ManagedKeysTableProps) {
     const [activeTab, setActiveTab] = useState<ActiveTab>('delegated');
     const [delegatedCount, setDelegatedCount] = useState<number | null>(null);
     const [assignedCount, setAssignedCount] = useState<number | null>(null);
@@ -641,6 +753,9 @@ export function ManagedKeysTable({ managerCode, onCopy, onReset, onEditSafetyLev
                     onEditSafetyLevel={onEditSafetyLevel}
                     onSetManager={onSetManager}
                     onViewHistory={onViewHistory}
+                    onEditName={onEditName}
+                    onEditService={onEditService}
+                    onDelete={onDelete}
                     onCountChange={handleDelegatedCount}
                     refreshToken={refreshToken}
                 />
@@ -650,7 +765,6 @@ export function ManagedKeysTable({ managerCode, onCopy, onReset, onEditSafetyLev
                     managerCode={managerCode}
                     onCopy={onCopy}
                     onReset={onReset}
-                    onEditSafetyLevel={onEditSafetyLevel}
                     onSetManager={onSetManager}
                     onCountChange={handleAssignedCount}
                     refreshToken={refreshToken}

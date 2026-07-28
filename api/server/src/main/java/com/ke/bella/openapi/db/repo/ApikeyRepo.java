@@ -2,6 +2,7 @@ package com.ke.bella.openapi.db.repo;
 
 import com.ke.bella.openapi.apikey.ApikeyInfo;
 import com.ke.bella.openapi.apikey.ApikeyOps;
+import com.ke.bella.openapi.apikey.SubApikeyUpdateOp;
 import com.ke.bella.openapi.common.EntityConstants;
 import com.ke.bella.openapi.tables.pojos.ApikeyDB;
 import com.ke.bella.openapi.tables.records.ApikeyRecord;
@@ -39,6 +40,37 @@ public class ApikeyRepo extends StatusRepo<ApikeyDB, ApikeyRecord, String> imple
                 .leftJoin(APIKEY_ROLE).on(APIKEY.ROLE_CODE.eq(APIKEY_ROLE.ROLE_CODE))
                 .where(APIKEY.CODE.eq(code))
                 .fetchOneInto(ApikeyInfo.class);
+    }
+
+    public void updateSubApikeyFields(SubApikeyUpdateOp op) {
+        ApikeyRecord rec = APIKEY.newRecord();
+        if(op.getName() != null) {
+            rec.setName(op.getName());
+        }
+        if(op.getSafetyLevel() != null) {
+            rec.setSafetyLevel(op.getSafetyLevel());
+        }
+        if(op.getOutEntityCode() != null) {
+            rec.setOutEntityCode(op.getOutEntityCode());
+        }
+        if(op.getMonthQuota() != null) {
+            rec.setMonthQuota(op.getMonthQuota());
+        }
+        if(op.getRoleCode() != null) {
+            rec.setRoleCode(op.getRoleCode());
+        }
+        if(op.getRemark() != null) {
+            rec.setRemark(op.getRemark());
+        }
+        if(!rec.changed()) {
+            return;
+        }
+        fillUpdatorInfo(rec);
+        int num = db.update(APIKEY)
+                .set(rec)
+                .where(APIKEY.CODE.eq(op.getCode()))
+                .execute();
+        Assert.isTrue(num == 1, "实体更新失败，请检查实体是否存在");
     }
 
     public void updateRoleBySha(String sha, String roleCode) {

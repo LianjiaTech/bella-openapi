@@ -24,6 +24,8 @@ export interface ApikeyInfo {
     balance?: ApiKeyBalance;
 }
 
+export type ParentQuotaApplyInfo = Pick<ApikeyInfo, 'code' | 'name' | 'ownerType' | 'managerCode' | 'managerName'>;
+
 export interface RolePath {
     included: string[];
     excluded?: string[];

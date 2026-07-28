@@ -38,6 +38,7 @@ public class AkPermissionChecker {
                     AkOperation.QUERY,
                     AkOperation.RESET,
                     AkOperation.RENAME,
+                    AkOperation.BIND_SERVICE,
                     AkOperation.CERTIFY,
                     AkOperation.UPDATE_QPS,
                     AkOperation.CHANGE_STATUS,
@@ -57,6 +58,7 @@ public class AkPermissionChecker {
                     AkOperation.QUERY,
                     AkOperation.RESET,
                     AkOperation.RENAME,
+                    AkOperation.BIND_SERVICE,
                     AkOperation.CERTIFY,
                     AkOperation.UPDATE_QPS,
                     AkOperation.CHANGE_STATUS,
@@ -99,6 +101,7 @@ public class AkPermissionChecker {
         db.setOwnerType(targetInfo.getOwnerType());
         db.setOwnerCode(targetInfo.getOwnerCode());
         db.setManagerCode(targetInfo.getManagerCode());
+        db.setParentCode(targetInfo.getParentCode());
         check(db, operation);
     }
 

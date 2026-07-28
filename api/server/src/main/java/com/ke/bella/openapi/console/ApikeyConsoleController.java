@@ -5,6 +5,7 @@ import com.ke.bella.openapi.Operator;
 import com.ke.bella.openapi.annotations.BellaAPI;
 import com.ke.bella.openapi.apikey.ApikeyChangeLog;
 import com.ke.bella.openapi.apikey.ApikeyInfo;
+import com.ke.bella.openapi.apikey.ApikeyBrief;
 import com.ke.bella.openapi.apikey.ApikeyOps;
 import com.ke.bella.openapi.apikey.ApikeyTransferLog;
 import com.ke.bella.openapi.apikey.TransferApikeyOwnerOp;
@@ -69,7 +70,7 @@ public class ApikeyConsoleController {
     @PostMapping("/bindService")
     public Boolean bindService(@RequestBody ApikeyOps.ServiceOp op) {
         Assert.hasText(op.getCode(), "code不可为空");
-        Assert.notNull(op.getServiceId(), "name不可为null");
+        Assert.notNull(op.getServiceId(), "serviceId不可为null");
         apikeyService.bindService(op);
         return true;
     }
@@ -142,7 +143,12 @@ public class ApikeyConsoleController {
 
     @GetMapping("/fetchByCode")
     public ApikeyInfo fetchByCode(@RequestParam("code") String code, @RequestParam(value = "onlyActive", required = false) boolean onlyActive) {
-        return apikeyService.queryByCode(code, onlyActive);
+        return apikeyService.queryByCodeWithPermission(code, onlyActive);
+    }
+
+    @GetMapping("/parentQuotaInfo")
+    public ApikeyBrief parentQuotaInfo(@RequestParam("childCode") String childCode) {
+        return apikeyService.queryParentQuotaInfoForChild(childCode);
     }
 
     @GetMapping("/fetchBySha")

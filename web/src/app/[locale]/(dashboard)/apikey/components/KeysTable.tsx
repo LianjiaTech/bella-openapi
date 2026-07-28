@@ -26,6 +26,7 @@ interface KeysTableProps {
     onEditName: (code: string, currentName: string) => void;
     onEditService: (code: string, currentServiceId: string) => void;
     onEditSafetyLevel: (akCode: string) => void;
+    title?: string;
 }
 
 function formatSafetyLevel(level: number): string {
@@ -42,6 +43,7 @@ export function KeysTable({
     apiKeys, balances, loading, searchQuery,
     onCopy, onReset, onTransfer, onDelete,
     onEditSafetyLevel, onEditName, onEditService,
+    title = "您的 API Keys",
 }: KeysTableProps) {
     const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
@@ -66,7 +68,7 @@ export function KeysTable({
             <div className="p-4">
                 <div className="flex items-center gap-2 mb-2">
                     <Key className="h-5 w-5" />
-                    <h3 className="text-sm font-medium">您的 API Keys</h3>
+                    <h3 className="text-sm font-medium">{title}</h3>
                 </div>
             </div>
             <Table className="w-full">
@@ -140,6 +142,7 @@ export function KeysTable({
                                             size="sm"
                                             className="h-5 w-5 p-0 opacity-50 hover:opacity-100"
                                             onClick={() => onEditName(apiKey.code, apiKey.name || '')}
+                                            aria-label={`编辑名称 ${apiKey.code}`}
                                         >
                                             <Pencil className="h-3 w-3" />
                                         </Button>
@@ -153,6 +156,7 @@ export function KeysTable({
                                             size="sm"
                                             className="h-5 w-5 p-0 opacity-50 hover:opacity-100"
                                             onClick={() => onEditService(apiKey.code, apiKey.serviceId || '')}
+                                            aria-label={`编辑服务名 ${apiKey.code}`}
                                         >
                                             <Pencil className="h-3 w-3" />
                                         </Button>
@@ -186,7 +190,7 @@ export function KeysTable({
                                 <TableCell className="text-center">
                                     <Popover>
                                         <PopoverTrigger asChild>
-                                            <Button variant="ghost" size="sm">
+                                            <Button variant="ghost" size="sm" aria-label={`打开操作菜单 ${apiKey.code}`}>
                                                 <MoreVertical className="h-4 w-4" />
                                             </Button>
                                         </PopoverTrigger>

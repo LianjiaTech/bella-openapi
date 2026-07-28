@@ -1,6 +1,6 @@
 import { apiClient } from '@/lib/api/client';
 import {  Page } from '../types/openapi';
-import { ApikeyInfo, ApiKeyBalance,UserSearchResult, CreateSubApiKeyRequest, UpdateSubApiKeyRequest, TransferApikeyRequest, UpdateManagerRequest, ChangeApiKeyOwnerRequest, ChangeApiKeyParentRequest, ChangeApiKeyResult, ApikeyChangeLog, OwnerInheritancePreview } from '../types/apikeys';
+import { ApikeyInfo, ApiKeyBalance,UserSearchResult, CreateSubApiKeyRequest, UpdateSubApiKeyRequest, TransferApikeyRequest, UpdateManagerRequest, ChangeApiKeyOwnerRequest, ChangeApiKeyParentRequest, ChangeApiKeyResult, ApikeyChangeLog, OwnerInheritancePreview, ParentQuotaApplyInfo } from '../types/apikeys';
 
 /**
  * 管理员专用查询参数接口
@@ -187,11 +187,16 @@ export async function getAdminApiKeys(page: number, params: AdminApiKeyQueryPara
 }
 
 /**
- * 按 code 精确查询单条 AK 信息（管理员接口，不受 ownerCode 限制）
+ * 按 code 精确查询当前用户有权查看的单条 AK 信息。
  */
 export async function getApiKeyByCode(code: string): Promise<ApikeyInfo> {
     const response = await apiClient.get('/console/apikey/fetchByCode', { params: { code, onlyActive: false } });
     return response as unknown as ApikeyInfo;
+}
+
+export async function getParentQuotaApplyInfo(childCode: string): Promise<ParentQuotaApplyInfo> {
+    const response = await apiClient.get('/console/apikey/parentQuotaInfo', { params: { childCode } });
+    return response as unknown as ParentQuotaApplyInfo;
 }
 
 // 更新月额度（管理员接口）
@@ -222,13 +227,14 @@ export async function updateSafeLevel(params: { certifyCode: string; code: strin
  *
  * @param onlyChild - true：onlyChild=true（后端只返回子AK，parent_code != ''，分页计数准确）
  *                    false/undefined：不传，后端默认只返回顶层AK（parent_code=''）
+ * @param ownerType - 按个人、组织或项目类型过滤；undefined 返回全部类型
  */
 export async function getManagerApiKeys(
     page: number,
     managerCode: string,
     search?: string,
     onlyChild?: boolean,
-    excludeOwnerType?: string
+    ownerType?: 'person' | 'org' | 'project'
 ): Promise<Page<ApikeyInfo>> {
     const response = await apiClient.get('/console/apikey/page', {
         params: {
@@ -237,7 +243,7 @@ export async function getManagerApiKeys(
             page,
             ...(search ? { searchParam: search } : {}),
             ...(onlyChild ? { onlyChild: true } : {}),
-            ...(excludeOwnerType ? { excludeOwnerType } : {}),
+            ...(ownerType ? { ownerType } : {}),
         }
     });
     return response as unknown as Page<ApikeyInfo>;

@@ -20,9 +20,8 @@ import {
   SelectValue,
 } from "@/components/common/select";
 import { DialogDescription } from "@/components/common/dialog";
-import { ApikeyInfo } from "@/lib/types/apikeys";
-import { createSubApiKey, updateSubApiKey } from "@/lib/api/apiKeys";
-import { CreateSubApiKeyRequest, UpdateSubApiKeyRequest } from "@/lib/types/apikeys";
+import { ApikeyInfo, CreateSubApiKeyRequest } from "@/lib/types/apikeys";
+import { createSubApiKey } from "@/lib/api/apiKeys";
 import { ApiKeyCreatedDialog } from "@/app/[locale]/(dashboard)/apikey/components/ApiKeyCreatedDialog";
 
 interface CreateSubApiKeyDialogProps {
@@ -30,7 +29,6 @@ interface CreateSubApiKeyDialogProps {
   onClose: () => void;
   parentCode: string;
   parentApiKey: ApikeyInfo;
-  editingApiKey?: ApikeyInfo | null;
   onSuccess: () => void;
 }
 
@@ -39,7 +37,6 @@ export function CreateSubApiKeyDialog({
   onClose,
   parentCode,
   parentApiKey,
-  editingApiKey,
   onSuccess,
 }: CreateSubApiKeyDialogProps) {
   const [formData, setFormData] = useState({
@@ -59,21 +56,8 @@ export function CreateSubApiKeyDialog({
   // 新增：存储新创建的子 API Key
   const [newSubApiKey, setNewSubApiKey] = useState("");
 
-  // 判断是否为编辑模式
-  const isEditMode = !!editingApiKey;
-
-  // 当对话框打开且存在编辑数据时,回填表单
   useEffect(() => {
-    if (isOpen && editingApiKey) {
-      setFormData({
-        name: editingApiKey.name || "",
-        outEntityCode: editingApiKey.outEntityCode || "",
-        safetyLevel: editingApiKey.safetyLevel.toString(),
-        monthQuota: editingApiKey.monthQuota?.toString() || "",
-        remark: editingApiKey.remark || "",
-      });
-    } else if (isOpen && !editingApiKey) {
-      // 创建模式时重置表单
+    if (isOpen) {
       setFormData({
         name: "",
         outEntityCode: "",
@@ -82,9 +66,8 @@ export function CreateSubApiKeyDialog({
         remark: "",
       });
     }
-    // 清空错误信息
     setErrors({});
-  }, [isOpen, editingApiKey, parentApiKey.monthQuota]);
+  }, [isOpen, parentApiKey.monthQuota]);
 
   // 格式化安全等级，极低，低，中高，高
   const formatSafetyLevel = (level: number) => {
@@ -147,50 +130,22 @@ export function CreateSubApiKeyDialog({
       setIsLoading(true);
       setSubmitError("");
 
-      if (isEditMode && editingApiKey) {
-        // 编辑模式：调用更新接口
-        const updateParams: UpdateSubApiKeyRequest = {
-          code: editingApiKey.code,
-          name: formData.name.trim(),
-          outEntityCode: formData.outEntityCode.trim(),
-          safetyLevel: Number(formData.safetyLevel),
-          monthQuota: Number(formData.monthQuota),
-          roleCode: parentApiKey.roleCode, // 从父密钥继承
-          remark: formData.remark.trim(),
-        };
+      const createParams: CreateSubApiKeyRequest = {
+        name: formData.name.trim(),
+        outEntityCode: formData.outEntityCode.trim(),
+        safetyLevel: Number(formData.safetyLevel),
+        monthQuota: Number(formData.monthQuota),
+        parentCode,
+        roleCode: parentApiKey.roleCode,
+        remark: formData.remark.trim(),
+      };
 
-        await updateSubApiKey(updateParams);
-
-        // 成功后调用 onSuccess 回调刷新列表并关闭对话框
+      const res = await createSubApiKey(createParams);
+      if (res !== null && res !== undefined) {
+        setNewSubApiKey(res);
+        onClose();
+        setShowCreatedDialog(true);
         onSuccess();
-      } else {
-        // 创建模式：调用创建接口
-        const createParams: CreateSubApiKeyRequest = {
-          name: formData.name.trim(),
-          outEntityCode: formData.outEntityCode.trim(),
-          safetyLevel: Number(formData.safetyLevel),
-          monthQuota: Number(formData.monthQuota),
-          parentCode: parentCode,
-          roleCode: parentApiKey.roleCode, // 从父密钥继承
-          remark: formData.remark.trim(),
-        };
-
-        const res = await createSubApiKey(createParams);
-
-        // 判断创建是否成功
-        if (res !== null && res !== undefined) {
-          // TODO: 根据实际接口返回结构调整字段名（可能是 res.apiKey 或 res.ak 等）
-          setNewSubApiKey(res);
-
-          // 先关闭创建表单，再展示密钥弹窗
-          onClose();
-
-          // 展示新创建的子 API Key 弹窗
-          setShowCreatedDialog(true);
-
-          // 成功后调用 onSuccess 回调刷新列表
-          onSuccess();
-        }
       }
 
       // 重置表单
@@ -203,8 +158,8 @@ export function CreateSubApiKeyDialog({
       });
       setErrors({});
     } catch (err) {
-      console.error(`${isEditMode ? '更新' : '创建'}子密钥失败:`, err);
-      setSubmitError(err instanceof Error ? err.message : `${isEditMode ? '更新' : '创建'}子密钥失败，请重试`);
+      console.error(`创建子密钥失败:`, err);
+      setSubmitError(err instanceof Error ? err.message : `创建子密钥失败，请重试`);
     } finally {
       setIsLoading(false);
     }
@@ -245,9 +200,9 @@ export function CreateSubApiKeyDialog({
       <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-h-[80vh]">
         <DialogHeader>
-          <DialogTitle>{isEditMode ? '编辑子密钥' : '创建子密钥'}</DialogTitle>
+          <DialogTitle>创建子密钥</DialogTitle>
           <DialogDescription className="text-xs">
-            {isEditMode ? '修改子密钥信息' : '为 生产环境主密钥 创建一个子密钥'}
+            为 生产环境主密钥 创建一个子密钥
           </DialogDescription>
         </DialogHeader>
 
@@ -273,6 +228,7 @@ export function CreateSubApiKeyDialog({
                 clearError("name");
               }}
               placeholder="请输入名称"
+              maxLength={64}
               className={errors.name ? "border-red-500" : ""}
             />
             {errors.name && (
@@ -293,6 +249,7 @@ export function CreateSubApiKeyDialog({
                 clearError("outEntityCode");
               }}
               placeholder="请输入用途"
+              maxLength={64}
               className={errors.outEntityCode ? "border-red-500" : ""}
             />
             {errors.outEntityCode && (
@@ -361,6 +318,7 @@ export function CreateSubApiKeyDialog({
               }
               placeholder="请输入备注信息"
               rows={3}
+              maxLength={1024}
             />
           </div>
           </div>
@@ -380,7 +338,7 @@ export function CreateSubApiKeyDialog({
             className="cursor-pointer"
             disabled={isLoading}
           >
-            {isLoading ? (isEditMode ? '更新中...' : '创建中...') : (isEditMode ? '确认更新' : '确认创建')}
+            {isLoading ? '创建中...' : '确认创建'}
           </Button>
         </DialogFooter>
       </DialogContent>

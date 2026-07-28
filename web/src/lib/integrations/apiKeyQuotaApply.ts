@@ -1,4 +1,4 @@
-import type { ApikeyInfo } from "@/lib/types/apikeys";
+import type { ApikeyInfo, ParentQuotaApplyInfo } from "@/lib/types/apikeys";
 
 /**
  * Optional external quota-application integration.
@@ -67,7 +67,7 @@ export function buildParentQuotaApplyUrl(apiKey: ApikeyInfo): string | null {
     });
 }
 
-export function buildChildQuotaApplyUrl(childApiKey: ApikeyInfo, parentApiKey: ApikeyInfo): string | null {
+export function buildChildQuotaApplyUrl(childApiKey: ApikeyInfo, parentApiKey: ParentQuotaApplyInfo): string | null {
     return buildUrl({
         REQUEST_TYPE: REQUEST_TYPE.child,
         AK_CODE: childApiKey.code,
