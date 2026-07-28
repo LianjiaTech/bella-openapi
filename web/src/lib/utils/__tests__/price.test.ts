@@ -1,7 +1,23 @@
-import { convertPriceObj, convertSchemaLabels, formatPriceInfo } from '../price'
+import { convertPriceObj, convertSchemaLabels, convertVideoDurationPriceObj, formatPriceInfo } from '../price'
 import { parsePriceRows } from '../image'
 
 describe('image price display conversion', () => {
+  it('converts video duration prices between stored cents per second and displayed yuan per second', () => {
+    const stored = {
+      billingMode: 'duration',
+      details: [
+        { resolution: '720', audio: false, pricePerSecond: 60 },
+        { resolution: '1080', audio: true, pricePerSecond: 120 },
+      ],
+    }
+
+    const display = convertVideoDurationPriceObj(stored, 'load')
+
+    expect(display.details[0].pricePerSecond).toBe(0.6)
+    expect(display.details[1].pricePerSecond).toBe(1.2)
+    expect(convertVideoDurationPriceObj(display, 'save')).toEqual(stored)
+  })
+
   it('converts image per-image prices between stored cents and displayed yuan', () => {
     const stored = {
       details: [
@@ -62,6 +78,44 @@ describe('image price display conversion', () => {
     expect(result.data[0].imageTokenPriceStr).toBe('3.00')
     expect(result.data[0].imageInputTokenPriceStr).toBe('4.00')
     expect(result.data[0].imageOutputTokenPriceStr).toBe('5.00')
+  })
+
+  it('formats video duration model card prices as yuan per second', () => {
+    const result = formatPriceInfo({
+      unit: '分/秒',
+      priceInfo: {
+        billingMode: 'duration',
+        details: [
+          { resolution: '720', audio: false, pricePerSecond: 60 },
+          { resolution: '1080', audio: true, pricePerSecond: 120 },
+        ],
+      },
+    }) as any
+
+    expect(result.tag).toBe('displayPrice')
+    expect(result.unit).toBe('元/秒')
+    expect(result.data).toEqual([
+      { label: '720P / 无声', value: 0.6 },
+      { label: '1080P / 有声', value: 1.2 },
+    ])
+  })
+
+  it('formats video token model card prices as yuan per million tokens', () => {
+    const result = formatPriceInfo({
+      unit: '分/千token 或 分/秒',
+      priceInfo: {
+        input: 1.5,
+        output: 1.5,
+        details: [],
+      },
+    }) as any
+
+    expect(result.tag).toBe('displayPrice')
+    expect(result.unit).toBe('元/百万token')
+    expect(result.data).toEqual([
+      { label: '输入token单价（元/百万token）', value: '15.00' },
+      { label: '输出token单价（元/百万token）', value: '15.00' },
+    ])
   })
 
   it('formats image-edit display prices without converting token fields as per-image prices', () => {

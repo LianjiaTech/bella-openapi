@@ -12,7 +12,7 @@ import type { JsonSchema } from '@/lib/types/metadata'
 import { listProtocols, getPriceInfoSchema, getChannelInfoSchema, createChannel, updateChannel, createPrivateChannel, updatePrivateChannel } from '@/lib/api/metadata'
 import { FieldRenderer } from './fieldRenderer/FieldRenderer'
 import { priorityOptions } from '@/lib/constants/metadata'
-import { TOKEN_PRICE_FIELDS, shouldConvertTokenPrice, convertSchemaLabels, convertPriceObj } from '@/lib/utils/price'
+import { TOKEN_PRICE_FIELDS, shouldConvertTokenPrice, convertSchemaLabels, convertPriceObj, convertVideoDurationPriceObj } from '@/lib/utils/price'
 
 function isTokenBased(schema: JsonSchema, existingUnit?: string): boolean {
   if (shouldConvertTokenPrice(existingUnit)) return true
@@ -152,6 +152,74 @@ function capacityTypeForEndpoint(endpoint?: string): CapacityType {
     return 'realtime'
   }
   return 'qps'
+}
+
+function isVideoEndpoint(endpoint?: string): boolean {
+  return endpoint === '/v1/videos'
+}
+
+function shouldShowVideoPriceParam(paramCode: string, billingMode?: string): boolean {
+  if (paramCode === 'billingMode') {
+    return true
+  }
+  if (billingMode === 'duration') {
+    return paramCode === 'details'
+  }
+  return paramCode === 'input' || paramCode === 'output'
+}
+
+function normalizeVideoPriceValues(values: Record<string, any>): Record<string, any> {
+  return {
+    ...values,
+    billingMode: values.billingMode || 'token',
+  }
+}
+
+function cleanVideoPriceValues(values: Record<string, any>): Record<string, any> {
+  const cleaned = normalizeVideoPriceValues(values)
+  if (cleaned.billingMode === 'duration') {
+    delete cleaned.input
+    delete cleaned.output
+  } else {
+    delete cleaned.details
+  }
+  return cleaned
+}
+
+function convertVideoPriceSchemaLabels(params: JsonSchema['params']): JsonSchema['params'] {
+  return params.map((param) => {
+    if (param.code === 'details') {
+      return {
+        ...param,
+        name: '按秒计费明细',
+        child: {
+          params: (param.child?.params?.length ? param.child.params : [
+            { code: 'resolution', name: '分辨率档位', valueType: 'string', selections: [] },
+            { code: 'audio', name: '是否有声视频', valueType: 'bool', selections: [] },
+            { code: 'pricePerSecond', name: '输出单价（元/秒）', valueType: 'number', selections: [] },
+          ]).map((childParam) => childParam.code === 'pricePerSecond'
+            ? { ...childParam, name: '输出单价（元/秒）' }
+            : childParam),
+        },
+      }
+    }
+    return param
+  })
+}
+
+function convertPriceSchemaLabels(params: JsonSchema['params'], endpoint?: string): JsonSchema['params'] {
+  const converted = convertSchemaLabels(params)
+  return isVideoEndpoint(endpoint) ? convertVideoPriceSchemaLabels(converted) : converted
+}
+
+function sortVideoPriceParams(params: JsonSchema['params']): JsonSchema['params'] {
+  const order = new Map([
+    ['billingMode', 0],
+    ['input', 1],
+    ['output', 2],
+    ['details', 3],
+  ])
+  return [...params].sort((a, b) => (order.get(a.code) ?? 99) - (order.get(b.code) ?? 99))
 }
 
 function isCapacityConfigured(capacityValues: CapacityFormData, capacityType: CapacityType): boolean {
@@ -324,7 +392,7 @@ export function ChannelConfigDialog({
           setProtocolsError(null)
           const tokenBased = isTokenBased(priceSchema)
           setIsPriceTokenBased(tokenBased)
-          setPriceInfoSchema({ ...priceSchema, params: convertSchemaLabels(priceSchema.params) })
+          setPriceInfoSchema({ ...priceSchema, params: convertPriceSchemaLabels(priceSchema.params, endpoint) })
           setPriceInfoError(null)
 
           // 初始化价格信息字段默认值
@@ -338,12 +406,13 @@ export function ChannelConfigDialog({
               initialPriceValues[param.code] = param.code === 'unit' ? '分/千token' : ''
             }
           })
-          setPriceInfoValues(initialPriceValues)
+          const displayPriceValues = isVideoEndpoint(endpoint) ? normalizeVideoPriceValues(initialPriceValues) : initialPriceValues
+          setPriceInfoValues(displayPriceValues)
 
           // 将初始值序列化为 JSON 字符串存入表单
           setFormData((prev) => ({
             ...prev,
-            priceInfo: JSON.stringify(initialPriceValues, null, 2)
+            priceInfo: JSON.stringify(displayPriceValues, null, 2)
           }))
         } catch (error) {
           console.error('获取协议列表或价格信息失败:', error)
@@ -403,9 +472,11 @@ export function ChannelConfigDialog({
               const parsedValues = initialData.priceInfo ? JSON.parse(initialData.priceInfo) : null
               const tokenBased = isTokenBased(schema, parsedValues?.unit)
               setIsPriceTokenBased(tokenBased)
-              setPriceInfoSchema({ ...schema, params: convertSchemaLabels(schema.params) })
+              setPriceInfoSchema({ ...schema, params: convertPriceSchemaLabels(schema.params, endpoint) })
               if (parsedValues) {
-                const displayValues = convertPriceObj(parsedValues, 'load')
+                const displayValues = isVideoEndpoint(endpoint)
+                  ? normalizeVideoPriceValues(convertVideoDurationPriceObj(parsedValues, 'load'))
+                  : convertPriceObj(parsedValues, 'load')
                 setPriceInfoValues(displayValues)
                 setFormData((prev) => ({
                   ...prev,
@@ -441,7 +512,7 @@ export function ChannelConfigDialog({
         }
       }
     }
-  }, [open, mode, initialData, modelName])
+  }, [open, mode, initialData, modelName, endpoint])
 
   /**
    * 重试加载协议列表
@@ -708,7 +779,9 @@ export function ChannelConfigDialog({
     let finalPriceInfo = formData.priceInfo
     try {
       const parsed = JSON.parse(formData.priceInfo)
-      const priceData = convertPriceObj(parsed, 'save')
+      const priceData = isVideoEndpoint(endpoint)
+        ? convertVideoDurationPriceObj(cleanVideoPriceValues(parsed), 'save')
+        : convertPriceObj(parsed, 'save')
       if (isPriceTokenBased && priceInfoSchema.params.some(p =>
         p.code === 'tiers' || shouldConvertTokenPrice(undefined, p.name)
       )) {
@@ -834,7 +907,13 @@ export function ChannelConfigDialog({
     onOpenChange(false)
   }
   const supplierDiscountParam = priceInfoSchema.params.find((param) => param.code === 'supplierDiscount')
-  const priceInfoParams = priceInfoSchema.params.filter((param) => param.code !== 'supplierDiscount')
+  const priceInfoParams = priceInfoSchema.params.filter((param) => {
+    if (param.code === 'supplierDiscount') {
+      return false
+    }
+    return isVideoEndpoint(endpoint) ? shouldShowVideoPriceParam(param.code, priceInfoValues.billingMode) : true
+  })
+  const displayPriceInfoParams = isVideoEndpoint(endpoint) ? sortVideoPriceParams(priceInfoParams) : priceInfoParams
   const capacityType = capacityTypeForEndpoint(endpoint)
 
   return (
@@ -1166,6 +1245,7 @@ export function ChannelConfigDialog({
                         value={channelInfoValues[param.code]}
                         onChange={(value) => handleChannelInfoFieldChange(param.code, value)}
                         hideLabel
+                        endpoint={endpoint}
                       />
                     </div>
                   ))}
@@ -1245,6 +1325,7 @@ export function ChannelConfigDialog({
                   schema={supplierDiscountParam}
                   value={priceInfoValues[supplierDiscountParam.code]}
                   onChange={(value) => handlePriceInfoFieldChange(supplierDiscountParam.code, value)}
+                  endpoint={endpoint}
                 />
               </div>
             )}
@@ -1252,13 +1333,14 @@ export function ChannelConfigDialog({
             {/* 动态渲染价格信息字段 */}
             {!priceInfoLoading && !priceInfoError && priceInfoParams.length > 0 && (
               <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
-                {priceInfoParams.map((param) => (
+                {displayPriceInfoParams.map((param) => (
                   <div key={param.code} className="space-y-2">
                     <FieldRenderer
                       mode={mode}
                       schema={param}
                       value={priceInfoValues[param.code]}
                       onChange={(value) => handlePriceInfoFieldChange(param.code, value)}
+                      endpoint={endpoint}
                     />
                   </div>
                 ))}

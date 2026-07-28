@@ -10,7 +10,7 @@
  *   - Tab badge 显示各区块总数（由各 Section 加载完成后上报）
  *
  * 数据获取策略：
- *   - ManagedSection：getManagerApiKeys(page, managerCode, search)
+ *   - ManagedSection：getOwnedOrManagedApiKeys(page, managerCode, search)
  *     → 不传 includeChild，后端默认 parent_code='' 只返顶层AK
  *   - AssignedSection：getManagerApiKeys(page, managerCode, search, onlyChild=true)
  *     → onlyChild=true 由后端精确返回 manager_code 匹配的子 AK
@@ -33,7 +33,7 @@ import { TableLoadingRow } from "@/components/ui/table/TableLoadingRow";
 import { QuotaUsageDisplay } from "@/components/ui/QuotaUsageDisplay";
 import { SearchInput } from "@/app/[locale]/(dashboard)/apikey/components/SearchInput";
 import { Pagination } from "@/components/ui/pagination";
-import { getManagerApiKeys, getApiKeyBalance, getParentQuotaApplyInfo } from "@/lib/api/apiKeys";
+import { getManagerApiKeys, getOwnedOrManagedApiKeys, getApiKeyBalance, getParentQuotaApplyInfo } from "@/lib/api/apiKeys";
 import { cn } from "@/lib/utils";
 import { buildChildQuotaApplyUrl, buildParentQuotaApplyUrl, isApiKeyQuotaApplyEnabled } from "@/lib/integrations/apiKeyQuotaApply";
 import { toast } from "sonner";
@@ -194,12 +194,11 @@ function DelegatedSection({
         if (!managerCode) return;
         try {
             setLoading(true);
-            // 不传 onlyChild → 后端只返 manager_code 匹配的顶层 AK（parent_code=''）
-            const res = await getManagerApiKeys(
+            // ownerOrManagerCode → 后端返回当前用户拥有或管理的顶层 AK（parent_code=''）
+            const res = await getOwnedOrManagedApiKeys(
                 page,
                 managerCode,
                 debouncedSearch || undefined,
-                undefined,
                 ownerType === 'all' ? undefined : ownerType
             );
             setApiKeys(res.data || []);
