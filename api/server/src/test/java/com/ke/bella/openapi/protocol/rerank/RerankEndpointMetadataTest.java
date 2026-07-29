@@ -19,7 +19,7 @@ class RerankEndpointMetadataTest {
     @Test
     void systemEndpointMatchesRerank() {
         assertEquals("/v*/reranks", EntityConstants.SystemBasicEndpoint.RERANK_ENDPOINT.getEndpoint());
-        assertEquals(EntityConstants.SystemBasicCategory.RERANK, EntityConstants.SystemBasicEndpoint.RERANK_ENDPOINT.getCategory());
-        assertEquals("0009", EntityConstants.SystemBasicEndpoint.RERANK_ENDPOINT.getCategory().getCode());
+        assertEquals(EntityConstants.SystemBasicCategory.CHAT, EntityConstants.SystemBasicEndpoint.RERANK_ENDPOINT.getCategory());
+        assertEquals("0001", EntityConstants.SystemBasicEndpoint.RERANK_ENDPOINT.getCategory().getCode());
     }
 }

@@ -14,7 +14,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -39,8 +38,7 @@ public class MetadataValidator {
             .build(new CacheLoader<String, Pattern>() {
                 @Override
                 public Pattern load(String key) {
-                    String regex = StringUtils.replace(key, "*", "\\d+");
-                    return Pattern.compile(regex);
+                    return compileEndpointPattern(key);
                 }
             });
 
@@ -251,11 +249,28 @@ public class MetadataValidator {
      */
     public static boolean matchPath(String match, String path) {
         try {
-            Matcher matcher = baseEndpointPatternCache.get(match).matcher(path);
-            return matcher.matches();
+            return baseEndpointPatternCache.get(match).matcher(path).matches();
         } catch (ExecutionException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private static Pattern compileEndpointPattern(String endpointPattern) {
+        String[] segments = endpointPattern.split("/", -1);
+        StringBuilder regex = new StringBuilder();
+        for (int i = 0; i < segments.length; i++) {
+            if(i > 0) {
+                regex.append('/');
+            }
+            if("v*".equals(segments[i])) {
+                regex.append("v\\d+");
+            } else if("*".equals(segments[i])) {
+                regex.append("[^/]+");
+            } else {
+                regex.append(Pattern.quote(segments[i]));
+            }
+        }
+        return Pattern.compile(regex.toString());
     }
 
     public static Map<String, Object> json2Map(String jsonStr) {
