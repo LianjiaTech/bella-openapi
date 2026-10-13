@@ -3,10 +3,12 @@ package com.ke.bella.openapi.protocol.images.editor;
 import com.ke.bella.openapi.protocol.images.ImagesEditRequest;
 import com.ke.bella.openapi.protocol.images.ImagesEditorProperty;
 import com.ke.bella.openapi.protocol.images.ImageDataType;
+import com.ke.bella.openapi.protocol.images.ImagesResponse;
 import com.ke.bella.openapi.protocol.AuthorizationProperty;
 import com.ke.bella.openapi.protocol.AuthorizationProperty.AuthType;
 import com.ke.bella.openapi.utils.JacksonUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.sun.net.httpserver.HttpServer;
 import okhttp3.Request;
 import okio.Buffer;
 import org.junit.jupiter.api.BeforeEach;
@@ -16,6 +18,8 @@ import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Map;
 
@@ -154,6 +158,35 @@ class HuoshanAdaptorTest {
 
 		// Verify using URL field instead of BASE64 field
 		assertEquals(Collections.singletonList("http://example.com/image.jpg"), requestMap.get("image"));
+	}
+
+	@Test
+	void doEditImages_WithHuoshanErrorResponse_PreservesErrorMessage() throws IOException {
+		HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
+		byte[] responseBody = ("{\"error\":{\"code\":\"OutputImageSensitiveContentDetected.PolicyViolation\","
+				+ "\"message\":\"The request failed because the output image may be related to copyright restrictions.\","
+				+ "\"param\":\"\",\"type\":\"BadRequest\"}}").getBytes(StandardCharsets.UTF_8);
+		server.createContext("/v1/images/edits", exchange -> {
+			exchange.getResponseHeaders().add("Content-Type", "application/json");
+			exchange.sendResponseHeaders(400, responseBody.length);
+			exchange.getResponseBody().write(responseBody);
+			exchange.close();
+		});
+		server.start();
+		try {
+			String url = "http://localhost:" + server.getAddress().getPort() + "/v1/images/edits";
+
+			ImagesResponse response = huoshanAdaptor.doEditImages(request, url, property, ImageDataType.URL);
+
+			assertNotNull(response.getError());
+			assertEquals("OutputImageSensitiveContentDetected.PolicyViolation", response.getError().getCode());
+			assertEquals(400, response.getError().getHttpCode());
+			assertEquals("The request failed because the output image may be related to copyright restrictions.",
+					response.getError().getMessage());
+			assertEquals("BadRequest", response.getError().getType());
+		} finally {
+			server.stop(0);
+		}
 	}
 
 	private Map<String, Object> requestBody(Request httpRequest) throws IOException {

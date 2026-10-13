@@ -1,5 +1,6 @@
 package com.ke.bella.openapi.protocol.images.editor;
 
+import com.ke.bella.openapi.protocol.Callbacks;
 import com.ke.bella.openapi.protocol.images.ImagesEditRequest;
 import com.ke.bella.openapi.protocol.images.ImagesEditorProperty;
 import com.ke.bella.openapi.protocol.images.ImageDataType;
@@ -18,6 +19,12 @@ import java.util.Map;
  */
 @Component("HuoshanImagesEditor")
 public class HuoshanAdaptor implements ImagesEditorAdaptor<ImagesEditorProperty> {
+
+    private final Callbacks.ChannelErrorCallback<ImagesResponse> errorCallback = (errorResponse, response) -> {
+        if(errorResponse != null && errorResponse.getError() != null) {
+            errorResponse.getError().setHttpCode(response.code());
+        }
+    };
 
     @Override
     public String endpoint() {
@@ -39,7 +46,7 @@ public class HuoshanAdaptor implements ImagesEditorAdaptor<ImagesEditorProperty>
             throws IOException {
         Request httpRequest = buildRequest(request, url, property, dataType);
         clearLargeData(request);
-        return HttpUtils.httpRequest(httpRequest, ImagesResponse.class);
+        return HttpUtils.httpRequest(httpRequest, ImagesResponse.class, errorCallback);
     }
 
     /**
