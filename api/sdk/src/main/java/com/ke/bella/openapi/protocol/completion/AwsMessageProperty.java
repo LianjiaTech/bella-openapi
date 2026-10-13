@@ -1,0 +1,35 @@
+package com.ke.bella.openapi.protocol.completion;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.ke.bella.openapi.protocol.AuthorizationProperty;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public class AwsMessageProperty extends CompletionProperty {
+    String region;
+    String proxyUrl;
+
+    @Override
+    public String getAnthropicVersion() {
+        if(anthropicVersion == null) {
+            return "bedrock-2023-05-31";
+        }
+        return anthropicVersion;
+    }
+
+    @Override
+    public Map<String, String> description() {
+        Map<String, String> map = super.description();
+        map.put("region", "部署区域");
+        map.put("proxyUrl", "代理地址（如 http://user:pass@host:port，仅支持http/https，不支持socks5）");
+        return map;
+    }
+}

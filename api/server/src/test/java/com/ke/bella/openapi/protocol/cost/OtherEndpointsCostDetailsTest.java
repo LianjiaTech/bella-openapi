@@ -1,0 +1,1055 @@
+package com.ke.bella.openapi.protocol.cost;
+
+import com.ke.bella.openapi.EndpointProcessData;
+import com.ke.bella.openapi.protocol.asr.diarization.SpeakerDiarizationLogHandler;
+import com.ke.bella.openapi.protocol.asr.diarization.SpeakerDiarizationPriceInfo;
+import com.ke.bella.openapi.protocol.asr.flash.FlashAsrBillingMode;
+import com.ke.bella.openapi.protocol.asr.flash.FlashAsrPriceInfo;
+import com.ke.bella.openapi.protocol.embedding.EmbeddingPriceInfo;
+import com.ke.bella.openapi.protocol.embedding.EmbeddingResponse;
+import com.ke.bella.openapi.protocol.images.ImagesEditRequest;
+import com.ke.bella.openapi.protocol.images.ImagesEditsPriceInfo;
+import com.ke.bella.openapi.protocol.images.ImagesLogHandler;
+import com.ke.bella.openapi.protocol.images.ImagesPriceInfo;
+import com.ke.bella.openapi.protocol.images.ImagesRequest;
+import com.ke.bella.openapi.protocol.images.ImagesResponse;
+import com.ke.bella.openapi.protocol.ocr.OcrPriceInfo;
+import com.ke.bella.openapi.protocol.speaker.SpeakerEmbeddingLogHandler;
+import com.ke.bella.openapi.protocol.speaker.SpeakerEmbeddingPriceInfo;
+import com.ke.bella.openapi.protocol.tts.TtsPriceInfo;
+import com.ke.bella.openapi.protocol.video.VideoPriceInfo;
+import com.ke.bella.openapi.protocol.video.VideoUsage;
+import com.ke.bella.openapi.utils.JacksonUtils;
+import org.junit.Test;
+
+import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.Map;
+
+import static org.junit.Assert.*;
+
+/**
+ * 其他 Endpoint 的成本详细信息测试
+ * 测试非 Completion/Responses API 的成本明细
+ */
+public class OtherEndpointsCostDetailsTest {
+
+    /**
+     * 测试场景1: Embedding API 成本明细
+     */
+    @Test
+    public void testEmbeddingCostDetails() {
+        EmbeddingPriceInfo priceInfo = new EmbeddingPriceInfo();
+        priceInfo.setInput(new BigDecimal("0.5"));  // 0.5分/千token
+
+        String priceInfoJson = JacksonUtils.serialize(priceInfo);
+
+        EmbeddingResponse.TokenUsage usage = new EmbeddingResponse.TokenUsage();
+        usage.setPrompt_tokens(10000);  // 10k tokens
+        usage.setTotal_tokens(10000);
+
+        CostDetails costDetails = CostCalculator.calculate("/v1/embeddings", priceInfoJson, usage);
+
+        // 验证总成本
+        BigDecimal expectedCost = new BigDecimal("0.5").multiply(new BigDecimal("10"));
+        assertEquals("Embedding总成本应正确", 0, expectedCost.compareTo(costDetails.getTotalCost()));
+
+        // Embedding 只有输入成本，没有输出成本和工具成本
+        assertNull("Embedding应该没有输入明细（当前实现）", costDetails.getInputDetails());
+        assertNull("Embedding应该没有输出明细", costDetails.getOutputDetails());
+        assertNull("Embedding应该没有工具明细", costDetails.getToolDetails());
+    }
+
+    /**
+     * 测试场景2: TTS API 成本明细
+     */
+    @Test
+    public void testTtsCostDetails() {
+        TtsPriceInfo priceInfo = new TtsPriceInfo();
+        priceInfo.setInput(new BigDecimal("10"));  // 10分/万字符
+
+        String priceInfoJson = JacksonUtils.serialize(priceInfo);
+
+        int inputLength = 50000;  // 5万字符
+
+        CostDetails costDetails = CostCalculator.calculate("/v1/audio/speech", priceInfoJson, inputLength);
+
+        // 验证总成本: 50000 / 10000 * 10 = 50
+        BigDecimal expectedCost = new BigDecimal("10").multiply(new BigDecimal("5"));
+        assertEquals("TTS总成本应正确", 0, expectedCost.compareTo(costDetails.getTotalCost()));
+
+        // TTS 当前实现没有明细
+        assertNull("TTS应该没有输入明细（当前实现）", costDetails.getInputDetails());
+        assertNull("TTS应该没有输出明细", costDetails.getOutputDetails());
+        assertNull("TTS应该没有工具明细", costDetails.getToolDetails());
+    }
+
+    @Test
+    public void testRealtimeTtsCostDetailsReuseTtsTextUnit() {
+        TtsPriceInfo priceInfo = new TtsPriceInfo();
+        priceInfo.setInput(new BigDecimal("10"));
+
+        CostDetails costDetails = CostCalculator.calculate("/v1/audio/tts/stream", JacksonUtils.serialize(priceInfo), 50000);
+
+        assertEquals("Realtime TTS should use TTS text pricing", 0, new BigDecimal("50").compareTo(costDetails.getTotalCost()));
+    }
+
+    @Test
+    public void testSpeakerEmbeddingCostUsesCentsPerHour() {
+        SpeakerEmbeddingPriceInfo priceInfo = new SpeakerEmbeddingPriceInfo();
+        priceInfo.setPrice(new BigDecimal("250"));
+        SpeakerEmbeddingLogHandler.SpeakerEmbeddingUsage usage = new SpeakerEmbeddingLogHandler.SpeakerEmbeddingUsage();
+        usage.setDurationUnits(1800000);
+
+        CostDetails costDetails = CostCalculator.calculate(
+                "/v1/audio/speaker/embedding", JacksonUtils.serialize(priceInfo), usage);
+
+        assertEquals("Speaker embedding 成本应按分/小时计算", 0,
+                new BigDecimal("125.0").compareTo(costDetails.getTotalCost()));
+        assertEquals("Speaker embedding 价格单位应为分/小时", "分/小时", priceInfo.getUnit());
+    }
+
+    @Test
+    public void testSpeakerDiarizationCostUsesCentsPerHour() {
+        SpeakerDiarizationPriceInfo priceInfo = new SpeakerDiarizationPriceInfo();
+        priceInfo.setPrice(new BigDecimal("360"));
+        SpeakerDiarizationLogHandler.SpeakerDiarizationUsage usage = new SpeakerDiarizationLogHandler.SpeakerDiarizationUsage();
+        usage.setAudioDurationSeconds(900);
+
+        CostDetails costDetails = CostCalculator.calculate(
+                "/v1/audio/speaker/diarization", JacksonUtils.serialize(priceInfo), usage);
+
+        assertEquals("Speaker diarization 成本应按分/小时计算", 0,
+                new BigDecimal("90.00").compareTo(costDetails.getTotalCost()));
+        assertEquals("Speaker diarization 价格单位应为分/小时", "分/小时", priceInfo.getUnit());
+    }
+
+    @Test
+    public void testFlashAsrDefaultCostDetailsPerRequest() {
+        CostDetails costDetails = CostCalculator.calculate("/v1/audio/asr/flash", "{\"price\":3.5}", 1);
+
+        assertEquals("Flash ASR 默认保持按次计费", 0, new BigDecimal("3.5").compareTo(costDetails.getTotalCost()));
+    }
+
+    @Test
+    public void testFlashAsrDurationCostDetails() {
+        FlashAsrPriceInfo priceInfo = new FlashAsrPriceInfo();
+        priceInfo.setPrice(new BigDecimal("120"));
+        priceInfo.setBillingMode(FlashAsrBillingMode.duration);
+        Map<String, Object> usage = new HashMap<>();
+        usage.put("count", 1);
+        usage.put("duration", 60.0);
+
+        CostDetails costDetails = CostCalculator.calculate("/v1/audio/asr/flash", JacksonUtils.serialize(priceInfo), usage);
+
+        assertEquals("Flash ASR duration 模式应按元/时折算为分", 0, new BigDecimal("200").compareTo(costDetails.getTotalCost()));
+    }
+
+    /**
+     * 测试场景3: OCR API 成本明细
+     */
+    @Test
+    public void testOcrCostDetails() {
+        OcrPriceInfo priceInfo = new OcrPriceInfo();
+        priceInfo.setPricePerRequest(new BigDecimal("0.5"));  // 0.5分/次
+
+        String priceInfoJson = JacksonUtils.serialize(priceInfo);
+
+        int times = 10;  // 10次请求
+
+        CostDetails costDetails = CostCalculator.calculate("/v1/ocr/idcard", priceInfoJson, times);
+
+        // 验证总成本: 10 * 0.5 = 5
+        BigDecimal expectedCost = new BigDecimal("0.5").multiply(new BigDecimal("10"));
+        assertEquals("OCR总成本应正确", 0, expectedCost.compareTo(costDetails.getTotalCost()));
+
+        // OCR 当前实现没有明细
+        assertNull("OCR应该没有输入明细（当前实现）", costDetails.getInputDetails());
+        assertNull("OCR应该没有输出明细", costDetails.getOutputDetails());
+        assertNull("OCR应该没有工具明细", costDetails.getToolDetails());
+    }
+
+    /**
+     * 测试场景4: Video API 成本明细
+     */
+    @Test
+    public void testVideoCostDetails() {
+        VideoPriceInfo priceInfo = new VideoPriceInfo();
+        priceInfo.setOutput(new BigDecimal("20"));  // 20分/千token
+
+        String priceInfoJson = JacksonUtils.serialize(priceInfo);
+
+        VideoUsage usage = new VideoUsage();
+        usage.setPromptTokens(1000);      // 普通 token 模式不计算输入 token
+        usage.setCompletionTokens(5000);  // 5k tokens
+
+        CostDetails costDetails = CostCalculator.calculate("/v1/videos", priceInfoJson, usage);
+
+        // 验证总成本: 5000 / 1000 * 20 = 100
+        BigDecimal expectedCost = new BigDecimal("100");
+        assertEquals("Video总成本应正确", 0, expectedCost.compareTo(costDetails.getTotalCost()));
+
+        assertNull("普通 Video token模式不应包含输入明细", costDetails.getInputDetails());
+        assertNull("普通 Video token模式保持旧逻辑，不生成输出明细", costDetails.getOutputDetails());
+        assertNull("Video应该没有工具明细", costDetails.getToolDetails());
+    }
+
+    @Test
+    public void testGeminiVideoCostDetails() {
+        VideoPriceInfo priceInfo = new VideoPriceInfo();
+        priceInfo.setBillingMode("gemini");
+        priceInfo.setInput(new BigDecimal("1.5"));
+        priceInfo.setTextOutput(new BigDecimal("9"));
+        priceInfo.setVideoOutput(new BigDecimal("17.5"));
+
+        VideoUsage usage = new VideoUsage();
+        usage.setPromptTokens(1000);
+        usage.setTextOutputTokens(2000);
+        usage.setVideoOutputTokens(57920);
+
+        CostDetails costDetails = CostCalculator.calculate("/v1/videos", JacksonUtils.serialize(priceInfo), usage);
+
+        assertEquals("Gemini视频总成本应按输入、文本输出、视频输出分别计费", 0,
+                new BigDecimal("1033.1").compareTo(costDetails.getTotalCost()));
+        assertEquals(Integer.valueOf(1000), costDetails.getInputDetails().get("prompt_tokens").getTokens());
+        assertEquals(Integer.valueOf(2000), costDetails.getOutputDetails().get("text_output_tokens").getTokens());
+        assertEquals(Integer.valueOf(57920), costDetails.getOutputDetails().get("video_output_tokens").getTokens());
+    }
+
+    @Test
+    public void testGeminiVideoCostDoesNotFallbackToCompletionTokens() {
+        VideoPriceInfo priceInfo = new VideoPriceInfo();
+        priceInfo.setBillingMode("gemini");
+        priceInfo.setInput(new BigDecimal("1.5"));
+        priceInfo.setTextOutput(new BigDecimal("9"));
+        priceInfo.setVideoOutput(new BigDecimal("17.5"));
+
+        VideoUsage usage = new VideoUsage();
+        usage.setPromptTokens(1000);
+        usage.setCompletionTokens(57920);
+
+        CostDetails costDetails = CostCalculator.calculate("/v1/videos", JacksonUtils.serialize(priceInfo), usage);
+
+        assertEquals("Gemini 模式没有 video_output_tokens 时不应按 completion_tokens 兜底", 0,
+                new BigDecimal("1.5").compareTo(costDetails.getTotalCost()));
+        assertNull(costDetails.getOutputDetails());
+    }
+
+    @Test
+    public void testVideoDurationCostDetails() {
+        VideoPriceInfo priceInfo = new VideoPriceInfo();
+        priceInfo.setBillingMode("duration");
+
+        VideoPriceInfo.DurationPriceDetail lowDetail = new VideoPriceInfo.DurationPriceDetail();
+        lowDetail.setResolution("720");
+        lowDetail.setAudio(false);
+        lowDetail.setPricePerSecond(new BigDecimal("60"));
+        priceInfo.getDetails().add(lowDetail);
+
+        VideoPriceInfo.DurationPriceDetail detail = new VideoPriceInfo.DurationPriceDetail();
+        detail.setResolution("1080");
+        detail.setAudio(true);
+        detail.setPricePerSecond(new BigDecimal("120"));
+        priceInfo.getDetails().add(detail);
+
+        String priceInfoJson = JacksonUtils.serialize(priceInfo);
+
+        VideoUsage usage = new VideoUsage();
+        usage.setDuration(5.0);
+        usage.setSr("1080");
+        usage.setAudio(true);
+        usage.setVideoCount(1);
+
+        CostDetails costDetails = CostCalculator.calculate("/v1/videos", priceInfoJson, usage);
+
+        assertEquals("Video duration 总成本应正确", 0, new BigDecimal("600").compareTo(costDetails.getTotalCost()));
+    }
+
+    @Test
+    public void testMiniMaxVideoCostDetails() {
+        VideoPriceInfo priceInfo = new VideoPriceInfo();
+        priceInfo.setBillingMode("minimax");
+        priceInfo.setInputImagePricePerImage(new BigDecimal("20"));
+        priceInfo.setFreeInputImageCount(5);
+        VideoPriceInfo.DurationPriceDetail detail = new VideoPriceInfo.DurationPriceDetail();
+        detail.setResolution("2K");
+        detail.setPricePerSecond(new BigDecimal("80"));
+        priceInfo.getDetails().add(detail);
+
+        VideoUsage usage = new VideoUsage();
+        usage.setSr("2K");
+        usage.setInputSeconds(3D);
+        usage.setOutputSeconds(5D);
+        usage.setImageCount(7);
+
+        CostDetails costDetails = CostCalculator.calculate("/v1/videos", JacksonUtils.serialize(priceInfo), usage);
+
+        assertEquals("MiniMax H3 应按分辨率秒价计算输入/输出视频秒数并叠加超额图片", 0,
+                new BigDecimal("680.0").compareTo(costDetails.getTotalCost()));
+    }
+
+    @Test
+    public void testVideoResolutionPriceMatchIgnoresResolutionSuffix() {
+        VideoPriceInfo priceInfo = new VideoPriceInfo();
+        priceInfo.setBillingMode("minimax");
+        priceInfo.setInputImagePricePerImage(new BigDecimal("20"));
+        priceInfo.setFreeInputImageCount(5);
+        VideoPriceInfo.DurationPriceDetail detail = new VideoPriceInfo.DurationPriceDetail();
+        detail.setResolution("768P");
+        detail.setPricePerSecond(new BigDecimal("50"));
+        priceInfo.getDetails().add(detail);
+
+        VideoUsage usage = new VideoUsage();
+        usage.setSr("768");
+        usage.setInputSeconds(0D);
+        usage.setOutputSeconds(5D);
+        usage.setImageCount(0);
+
+        CostDetails costDetails = CostCalculator.calculate("/v1/videos", JacksonUtils.serialize(priceInfo), usage);
+
+        assertEquals("分辨率匹配应兼容 768P 与 768", 0, new BigDecimal("250.0").compareTo(costDetails.getTotalCost()));
+    }
+
+    @Test
+    public void testVideoResolutionPriceMatchDoesNotMixKAndP() {
+        VideoPriceInfo priceInfo = new VideoPriceInfo();
+        priceInfo.setBillingMode("minimax");
+        priceInfo.setInputImagePricePerImage(new BigDecimal("20"));
+        priceInfo.setFreeInputImageCount(5);
+        VideoPriceInfo.DurationPriceDetail detail = new VideoPriceInfo.DurationPriceDetail();
+        detail.setResolution("2P");
+        detail.setPricePerSecond(new BigDecimal("50"));
+        priceInfo.getDetails().add(detail);
+
+        VideoUsage usage = new VideoUsage();
+        usage.setSr("2K");
+        usage.setInputSeconds(0D);
+        usage.setOutputSeconds(5D);
+        usage.setImageCount(0);
+
+        CostDetails costDetails = CostCalculator.calculate("/v1/videos", JacksonUtils.serialize(priceInfo), usage);
+
+        assertEquals("分辨率匹配不应混淆 K/P 档位", 0, BigDecimal.ZERO.compareTo(costDetails.getTotalCost()));
+    }
+
+    @Test
+    public void testMiniMaxVideoCostDetailsTreatsMissingImageCountAsZero() {
+        VideoPriceInfo priceInfo = new VideoPriceInfo();
+        priceInfo.setBillingMode("minimax");
+        priceInfo.setInputImagePricePerImage(new BigDecimal("20"));
+        priceInfo.setFreeInputImageCount(5);
+        VideoPriceInfo.DurationPriceDetail detail = new VideoPriceInfo.DurationPriceDetail();
+        detail.setResolution("2K");
+        detail.setPricePerSecond(new BigDecimal("80"));
+        priceInfo.getDetails().add(detail);
+
+        VideoUsage usage = new VideoUsage();
+        usage.setSr("2K");
+        usage.setInputSeconds(0D);
+        usage.setOutputSeconds(5D);
+
+        CostDetails costDetails = CostCalculator.calculate("/v1/videos", JacksonUtils.serialize(priceInfo), usage);
+
+        assertEquals("MiniMax input_image_count 缺失时应按 0 张图片计费", 0, new BigDecimal("400.0").compareTo(costDetails.getTotalCost()));
+    }
+
+    @Test
+    public void testMiniMaxVideoCostDetailsSupportsFreeInputAudioPrice() {
+        VideoPriceInfo priceInfo = new VideoPriceInfo();
+        priceInfo.setBillingMode("minimax");
+        priceInfo.setInputAudioPricePerSecond(BigDecimal.ZERO);
+        VideoPriceInfo.DurationPriceDetail detail = new VideoPriceInfo.DurationPriceDetail();
+        detail.setResolution("2K");
+        detail.setPricePerSecond(new BigDecimal("80"));
+        priceInfo.getDetails().add(detail);
+
+        VideoUsage usage = new VideoUsage();
+        usage.setSr("2K");
+        usage.setInputSeconds(0D);
+        usage.setOutputSeconds(5D);
+        usage.setInputAudioSeconds(6D);
+
+        CostDetails costDetails = CostCalculator.calculate("/v1/videos", JacksonUtils.serialize(priceInfo), usage);
+
+        assertEquals("MiniMax 输入音频价格配置为 0 时不增加费用", 0, new BigDecimal("400.0").compareTo(costDetails.getTotalCost()));
+        assertTrue("MiniMax 音频价格字段应暴露给价格配置", priceInfo.description().containsKey("inputAudioPricePerSecond"));
+    }
+
+    @Test
+    public void testMiniMaxH3MaxCostDetailsDoesNotChargeInputImages() {
+        VideoPriceInfo priceInfo = new VideoPriceInfo();
+        priceInfo.setBillingMode("minimax");
+        VideoPriceInfo.DurationPriceDetail detail = new VideoPriceInfo.DurationPriceDetail();
+        detail.setResolution("480P");
+        detail.setPricePerSecond(new BigDecimal("33"));
+        priceInfo.getDetails().add(detail);
+
+        VideoUsage usage = new VideoUsage();
+        usage.setSr("480P");
+        usage.setInputSeconds(0D);
+        usage.setOutputSeconds(5D);
+        usage.setImageCount(9);
+
+        CostDetails costDetails = CostCalculator.calculate("/v1/videos", JacksonUtils.serialize(priceInfo), usage);
+
+        assertEquals("MiniMax-H3-Max 输入图片不计费，仅按输出视频秒数计费", 0, new BigDecimal("165.0").compareTo(costDetails.getTotalCost()));
+        assertTrue("MiniMax-H3-Max 图片价格可不配置", CostCalculator.video.checkPriceInfo(JacksonUtils.serialize(priceInfo)));
+    }
+
+    @Test
+    public void testMiniMaxVideoCostDetailsTreatsMissingSecondsAsZero() {
+        VideoPriceInfo priceInfo = new VideoPriceInfo();
+        priceInfo.setBillingMode("minimax");
+        VideoPriceInfo.DurationPriceDetail detail = new VideoPriceInfo.DurationPriceDetail();
+        detail.setResolution("2K");
+        detail.setPricePerSecond(new BigDecimal("80"));
+        priceInfo.getDetails().add(detail);
+
+        VideoUsage usage = new VideoUsage();
+        usage.setSr("2K");
+        usage.setTotalTokens(9090);
+        usage.setPromptTokens(5664);
+        usage.setCompletionTokens(3426);
+
+        CostDetails costDetails = CostCalculator.calculate("/v1/videos", JacksonUtils.serialize(priceInfo), usage);
+
+        assertEquals("MiniMax 秒数字段缺失时应按 0 秒计费", 0, BigDecimal.ZERO.compareTo(costDetails.getTotalCost()));
+    }
+
+    @Test
+    public void testVideoDurationCostDetailsReturnsZeroWhenUsageIncomplete() {
+        VideoPriceInfo priceInfo = new VideoPriceInfo();
+        priceInfo.setBillingMode("duration");
+
+        VideoPriceInfo.DurationPriceDetail detail = new VideoPriceInfo.DurationPriceDetail();
+        detail.setResolution("1080");
+        detail.setAudio(true);
+        detail.setPricePerSecond(new BigDecimal("120"));
+        priceInfo.getDetails().add(detail);
+
+        VideoUsage usage = new VideoUsage();
+        usage.setSr("1080");
+        usage.setAudio(true);
+
+        CostDetails costDetails = CostCalculator.calculate("/v1/videos", JacksonUtils.serialize(priceInfo), usage);
+
+        assertEquals("Video duration usage 缺少 duration/video_count 时应返回 0", 0, BigDecimal.ZERO.compareTo(costDetails.getTotalCost()));
+    }
+
+    @Test
+    public void testVideoDurationPriceInfoRequiresEveryDetailPrice() {
+        VideoPriceInfo priceInfo = new VideoPriceInfo();
+        priceInfo.setBillingMode("duration");
+
+        VideoPriceInfo.DurationPriceDetail validDetail = new VideoPriceInfo.DurationPriceDetail();
+        validDetail.setResolution("720");
+        validDetail.setPricePerSecond(new BigDecimal("60"));
+        priceInfo.getDetails().add(validDetail);
+
+        VideoPriceInfo.DurationPriceDetail invalidDetail = new VideoPriceInfo.DurationPriceDetail();
+        invalidDetail.setResolution("1080");
+        priceInfo.getDetails().add(invalidDetail);
+
+        assertFalse("Video duration 每条计费明细都必须配置 pricePerSecond",
+                CostCalculator.validate("/v1/videos", JacksonUtils.serialize(priceInfo)));
+    }
+
+    /**
+     * 测试场景5: Images API 成本明细（复杂场景）
+     */
+    @Test
+    public void testImagesCostDetails() {
+        ImagesPriceInfo priceInfo = new ImagesPriceInfo();
+        ImagesPriceInfo.ImagesPriceInfoDetailsList details = new ImagesPriceInfo.ImagesPriceInfoDetailsList();
+
+        ImagesPriceInfo.ImagesPriceInfoDetails detail = new ImagesPriceInfo.ImagesPriceInfoDetails();
+        detail.setSize("1024x1024");
+        detail.setHdPricePerImage(new BigDecimal("10"));    // 高清: 10分/张
+        detail.setMdPricePerImage(new BigDecimal("6"));     // 中等: 6分/张
+        detail.setLdPricePerImage(new BigDecimal("3"));     // 低清: 3分/张
+        details.add(detail);
+
+        priceInfo.setDetails(details);
+        String priceInfoJson = JacksonUtils.serialize(priceInfo);
+
+        ImagesResponse.Usage usage = new ImagesResponse.Usage();
+        usage.setQuality("high");  // 高清
+        usage.setSize("1024x1024");
+        usage.setNum(3);  // 生成3张
+
+        CostDetails costDetails = CostCalculator.calculate("/v1/images/generations", priceInfoJson, usage);
+
+        // 验证总成本: 3 * 10 = 30
+        BigDecimal expectedCost = new BigDecimal("10").multiply(new BigDecimal("3"));
+        assertEquals("Images总成本应正确", 0, expectedCost.compareTo(costDetails.getTotalCost()));
+
+        assertNull("纯按张模式不应产生输入明细", costDetails.getInputDetails());
+        assertNotNull("Images应该包含输出明细", costDetails.getOutputDetails());
+        CostDetails.CostDetailItem imageDetail = costDetails.getOutputDetails().get("images");
+        assertNotNull("Images应该包含按张费用明细", imageDetail);
+        assertEquals("Images明细应记录生成张数", Integer.valueOf(3), imageDetail.getQuantity());
+        assertEquals("Images明细应记录单张价格", 0, new BigDecimal("10").compareTo(imageDetail.getUnitPrice()));
+        assertEquals("Images明细费用应正确", 0, expectedCost.compareTo(imageDetail.getCost()));
+        assertNull("Images应该没有工具明细", costDetails.getToolDetails());
+    }
+
+    @Test
+    public void testImagesPriceInfoUnitsUseCentsPerImage() {
+        ImagesPriceInfo priceInfo = new ImagesPriceInfo();
+        ImagesPriceInfo.ImagesPriceInfoDetails detail = new ImagesPriceInfo.ImagesPriceInfoDetails();
+        ImagesEditsPriceInfo editsPriceInfo = new ImagesEditsPriceInfo();
+
+        assertEquals("文生图整体单位应为分/张", "分/张", priceInfo.getUnit());
+        assertEquals("文生图按尺寸价格单位应为分/张", "分/张", detail.getUnit());
+        assertEquals("图生图单位应为分/张", "分/张", editsPriceInfo.getUnit());
+
+        assertTrue("文生图低质量价格描述应标明分/张",
+                detail.description().get("ldPricePerImage").contains("分/张"));
+        assertTrue("文生图高清价格描述应标明分/张",
+                detail.description().get("hdPricePerImage").contains("分/张"));
+        assertTrue("图生图单张价格描述应标明分/张",
+                editsPriceInfo.description().get("pricePerEdit").contains("分/张"));
+
+        assertTrue("文生图文字token价格仍应标明分/千token",
+                detail.description().get("textTokenPrice").contains("分/千token"));
+        assertTrue("文生图输入图片token价格应标明分/千token",
+                detail.description().get("imageInputTokenPrice").contains("分/千token"));
+        assertTrue("文生图输出图片token价格应标明分/千token",
+                detail.description().get("imageOutputTokenPrice").contains("分/千token"));
+        assertTrue("文生图图片token价格仍应标明分/千token",
+                detail.description().get("imageTokenPrice").contains("分/千token"));
+        assertTrue("图生图图片token价格仍应标明分/千token",
+                editsPriceInfo.description().get("imageTokenPrice").contains("分/千token"));
+        assertTrue("图生图文字token价格应标明分/千token",
+                editsPriceInfo.description().get("textTokenPrice").contains("分/千token"));
+        assertTrue("图生图输入图片token价格应标明分/千token",
+                editsPriceInfo.description().get("imageInputTokenPrice").contains("分/千token"));
+        assertTrue("图生图输出图片token价格应标明分/千token",
+                editsPriceInfo.description().get("imageOutputTokenPrice").contains("分/千token"));
+        assertTrue("图生图计费模式描述应包含显式模式",
+                editsPriceInfo.description().get("billingMode").contains("per_image"));
+
+        detail.setTextTokenPrice(new BigDecimal("1"));
+        detail.setImageInputTokenPrice(new BigDecimal("2"));
+        detail.setImageOutputTokenPrice(new BigDecimal("3"));
+        assertTrue("文生图展示字符串应包含文字token价格", detail.toString().contains("文字token价格：1"));
+        assertTrue("文生图展示字符串应包含输入图片token价格", detail.toString().contains("输入图片token价格：2"));
+        assertTrue("文生图展示字符串应包含输出图片token价格", detail.toString().contains("输出图片token价格：3"));
+
+        editsPriceInfo.setBillingMode("token");
+        editsPriceInfo.setTextTokenPrice(new BigDecimal("1"));
+        editsPriceInfo.setImageInputTokenPrice(new BigDecimal("2"));
+        editsPriceInfo.setImageOutputTokenPrice(new BigDecimal("3"));
+        assertTrue("图生图展示字符串应包含计费模式", editsPriceInfo.toString().contains("计费模式：token"));
+        assertTrue("图生图展示字符串应包含文字token价格", editsPriceInfo.toString().contains("文字token价格：1"));
+        assertTrue("图生图展示字符串应包含输入图片token价格", editsPriceInfo.toString().contains("输入图片token价格：2"));
+        assertTrue("图生图展示字符串应包含输出图片token价格", editsPriceInfo.toString().contains("输出图片token价格：3"));
+    }
+
+    @Test
+    public void testImagesCostIncludesPerImageCentsAndTokenPricing() {
+        ImagesPriceInfo priceInfo = new ImagesPriceInfo();
+        ImagesPriceInfo.ImagesPriceInfoDetailsList details = new ImagesPriceInfo.ImagesPriceInfoDetailsList();
+
+        ImagesPriceInfo.ImagesPriceInfoDetails detail = new ImagesPriceInfo.ImagesPriceInfoDetails();
+        detail.setSize("1024x1024");
+        detail.setHdPricePerImage(new BigDecimal("10"));
+        detail.setMdPricePerImage(new BigDecimal("6"));
+        detail.setLdPricePerImage(new BigDecimal("3"));
+        detail.setTextTokenPrice(new BigDecimal("2"));
+        detail.setImageTokenPrice(new BigDecimal("4"));
+        details.add(detail);
+
+        priceInfo.setDetails(details);
+
+        ImagesResponse.Usage usage = new ImagesResponse.Usage();
+        usage.setQuality("high");
+        usage.setSize("1024x1024");
+        usage.setNum(2);
+        ImagesResponse.InputTokensDetails inputTokensDetails = new ImagesResponse.InputTokensDetails();
+        inputTokensDetails.setText_tokens(1500);
+        inputTokensDetails.setImage_tokens(250);
+        usage.setInput_tokens_details(inputTokensDetails);
+
+        CostDetails costDetails = CostCalculator.calculate("/v1/images/generations", JacksonUtils.serialize(priceInfo), usage);
+
+        BigDecimal expectedCost = new BigDecimal("10").multiply(new BigDecimal("2"))
+                .add(new BigDecimal("2").multiply(new BigDecimal("1.5")))
+                .add(new BigDecimal("4").multiply(new BigDecimal("0.25")));
+        assertEquals("Images总成本应直接使用分/张并叠加分/千token成本", 0, expectedCost.compareTo(costDetails.getTotalCost()));
+    }
+
+    @Test
+    public void testGptImageTokenBillingUsesOutputTokensWithoutPerImageCost() {
+        ImagesPriceInfo priceInfo = new ImagesPriceInfo();
+        priceInfo.setBillingMode("token");
+        ImagesPriceInfo.ImagesPriceInfoDetailsList details = new ImagesPriceInfo.ImagesPriceInfoDetailsList();
+        ImagesPriceInfo.ImagesPriceInfoDetails detail = new ImagesPriceInfo.ImagesPriceInfoDetails();
+        detail.setSize("1024x1024");
+        detail.setHdPricePerImage(new BigDecimal("10"));
+        detail.setMdPricePerImage(new BigDecimal("6"));
+        detail.setLdPricePerImage(new BigDecimal("3"));
+        detail.setTextTokenPrice(new BigDecimal("1"));
+        detail.setImageInputTokenPrice(new BigDecimal("2"));
+        detail.setImageOutputTokenPrice(new BigDecimal("8"));
+        details.add(detail);
+        priceInfo.setDetails(details);
+
+        ImagesResponse.Usage usage = new ImagesResponse.Usage();
+        usage.setQuality("high");
+        usage.setSize("1024x1024");
+        usage.setNum(2);
+        usage.setOutput_tokens(500);
+        ImagesResponse.InputTokensDetails inputTokensDetails = new ImagesResponse.InputTokensDetails();
+        inputTokensDetails.setText_tokens(1000);
+        inputTokensDetails.setImage_tokens(250);
+        usage.setInput_tokens_details(inputTokensDetails);
+
+        CostDetails costDetails = CostCalculator.calculate("/v1/images/generations", JacksonUtils.serialize(priceInfo), usage);
+
+        BigDecimal expectedCost = new BigDecimal("1")
+                .add(new BigDecimal("2").multiply(new BigDecimal("0.25")))
+                .add(new BigDecimal("8").multiply(new BigDecimal("0.5")));
+        assertEquals("GPT Image token模式应只计算token且包含output_tokens", 0, expectedCost.compareTo(costDetails.getTotalCost()));
+        assertEquals("文字输入明细应记录token数", Integer.valueOf(1000),
+                costDetails.getInputDetails().get("text_tokens").getTokens());
+        assertEquals("图片输入明细应记录token数", Integer.valueOf(250),
+                costDetails.getInputDetails().get("image_tokens").getTokens());
+        assertEquals("图片输出明细应记录token数", Integer.valueOf(500),
+                costDetails.getOutputDetails().get("image_tokens").getTokens());
+    }
+
+    @Test
+    public void testGptImageTokenBillingUsesLegacyImageTokenPriceAsFallback() {
+        ImagesPriceInfo priceInfo = new ImagesPriceInfo();
+        priceInfo.setBillingMode("token");
+        ImagesPriceInfo.ImagesPriceInfoDetailsList details = new ImagesPriceInfo.ImagesPriceInfoDetailsList();
+        ImagesPriceInfo.ImagesPriceInfoDetails detail = new ImagesPriceInfo.ImagesPriceInfoDetails();
+        detail.setSize("1024x1024");
+        detail.setImageTokenPrice(new BigDecimal("4"));
+        details.add(detail);
+        priceInfo.setDetails(details);
+
+        ImagesResponse.Usage usage = new ImagesResponse.Usage();
+        usage.setSize("1024x1024");
+        usage.setOutput_tokens(1500);
+        ImagesResponse.InputTokensDetails inputTokensDetails = new ImagesResponse.InputTokensDetails();
+        inputTokensDetails.setImage_tokens(500);
+        usage.setInput_tokens_details(inputTokensDetails);
+
+        CostDetails costDetails = CostCalculator.calculate("/v1/images/generations", JacksonUtils.serialize(priceInfo), usage);
+
+        BigDecimal expectedCost = new BigDecimal("4").multiply(new BigDecimal("0.5"))
+                .add(new BigDecimal("4").multiply(new BigDecimal("1.5")));
+        assertEquals("旧imageTokenPrice应作为输入/输出图片token兜底价", 0, expectedCost.compareTo(costDetails.getTotalCost()));
+    }
+
+    @Test
+    public void testImageTokenBillingValidationRequiresOutputTokenPrice() {
+        ImagesPriceInfo priceInfo = new ImagesPriceInfo();
+        priceInfo.setBillingMode("token");
+        ImagesPriceInfo.ImagesPriceInfoDetailsList details = new ImagesPriceInfo.ImagesPriceInfoDetailsList();
+        ImagesPriceInfo.ImagesPriceInfoDetails detail = new ImagesPriceInfo.ImagesPriceInfoDetails();
+        detail.setTextTokenPrice(new BigDecimal("1"));
+        detail.setImageInputTokenPrice(new BigDecimal("2"));
+        details.add(detail);
+        priceInfo.setDetails(details);
+
+        assertFalse("token模式缺少输出图片token单价时校验应失败",
+                CostCalculator.validate("/v1/images/generations", JacksonUtils.serialize(priceInfo)));
+
+        detail.setImageOutputTokenPrice(new BigDecimal("8"));
+        assertTrue("token模式配置imageOutputTokenPrice后校验应通过",
+                CostCalculator.validate("/v1/images/generations", JacksonUtils.serialize(priceInfo)));
+
+        detail.setImageOutputTokenPrice(null);
+        detail.setImageTokenPrice(new BigDecimal("4"));
+        assertTrue("token模式可使用旧imageTokenPrice作为输出图片token兜底价",
+                CostCalculator.validate("/v1/images/generations", JacksonUtils.serialize(priceInfo)));
+    }
+
+    @Test
+    public void testDoubaoSeedreamPerImageBillingIgnoresTokensAndUsesMappedGeneratedImages() {
+        ImagesPriceInfo priceInfo = new ImagesPriceInfo();
+        priceInfo.setBillingMode("per_image");
+        ImagesPriceInfo.ImagesPriceInfoDetailsList details = new ImagesPriceInfo.ImagesPriceInfoDetailsList();
+        ImagesPriceInfo.ImagesPriceInfoDetails detail = new ImagesPriceInfo.ImagesPriceInfoDetails();
+        detail.setSize("1024x1024");
+        detail.setHdPricePerImage(new BigDecimal("9"));
+        detail.setMdPricePerImage(new BigDecimal("5"));
+        detail.setLdPricePerImage(new BigDecimal("2"));
+        detail.setImageOutputTokenPrice(new BigDecimal("100"));
+        details.add(detail);
+        priceInfo.setDetails(details);
+
+        ImagesResponse.Usage usage = JacksonUtils.deserialize(
+                "{\"generated_images\":3,\"quality\":\"high\",\"size\":\"1024x1024\",\"output_tokens\":10000}",
+                ImagesResponse.Usage.class);
+
+        CostDetails costDetails = CostCalculator.calculate("/v1/images/generations", JacksonUtils.serialize(priceInfo), usage);
+
+        assertEquals("Doubao per_image模式应使用映射后的num且忽略token", 0,
+                new BigDecimal("27").compareTo(costDetails.getTotalCost()));
+    }
+
+    @Test
+    public void testDallEPerImageBillingNormalizesStandardQualityToMedium() {
+        ImagesPriceInfo priceInfo = new ImagesPriceInfo();
+        priceInfo.setBillingMode("per_image");
+        ImagesPriceInfo.ImagesPriceInfoDetailsList details = new ImagesPriceInfo.ImagesPriceInfoDetailsList();
+        ImagesPriceInfo.ImagesPriceInfoDetails detail = new ImagesPriceInfo.ImagesPriceInfoDetails();
+        detail.setSize("1792x1024");
+        detail.setHdPricePerImage(new BigDecimal("20"));
+        detail.setMdPricePerImage(new BigDecimal("10"));
+        detail.setLdPricePerImage(new BigDecimal("4"));
+        details.add(detail);
+        priceInfo.setDetails(details);
+
+        ImagesResponse.Usage usage = new ImagesResponse.Usage();
+        usage.setQuality("standard");
+        usage.setSize("1792x1024");
+        usage.setNum(2);
+
+        CostDetails costDetails = CostCalculator.calculate("/v1/images/generations", JacksonUtils.serialize(priceInfo), usage);
+
+        assertEquals("DALL-E standard质量应按medium价格计费", 0, new BigDecimal("20").compareTo(costDetails.getTotalCost()));
+    }
+
+    @Test
+    public void testImagesLogHandlerKeepsLegacyNormalizationWhenBillingModeMissing() {
+        ImagesPriceInfo priceInfo = new ImagesPriceInfo();
+        ImagesPriceInfo.ImagesPriceInfoDetailsList details = new ImagesPriceInfo.ImagesPriceInfoDetailsList();
+        ImagesPriceInfo.ImagesPriceInfoDetails detail = new ImagesPriceInfo.ImagesPriceInfoDetails();
+        detail.setSize("1024x1024");
+        detail.setHdPricePerImage(new BigDecimal("10"));
+        detail.setMdPricePerImage(new BigDecimal("6"));
+        detail.setLdPricePerImage(new BigDecimal("3"));
+        details.add(detail);
+        priceInfo.setDetails(details);
+
+        EndpointProcessData processData = new EndpointProcessData();
+        processData.setPriceInfo(JacksonUtils.serialize(priceInfo));
+        ImagesRequest request = new ImagesRequest();
+        request.setN(4);
+        request.setQuality("standard");
+        request.setSize("1792x1024");
+        processData.setRequest(request);
+        processData.setResponse(new ImagesResponse());
+
+        new ImagesLogHandler() {
+            @Override
+            public String endpoint() {
+                return "/v1/images/generations";
+            }
+        }.process(processData);
+
+        ImagesResponse.Usage usage = (ImagesResponse.Usage) processData.getUsage();
+        assertEquals("legacy模式应保持无data时按1张记录", Integer.valueOf(1), usage.getNum());
+        assertEquals("legacy模式应保持默认high质量", "high", usage.getQuality());
+        assertEquals("legacy模式应保持默认1024x1024尺寸", "1024x1024", usage.getSize());
+    }
+
+    @Test
+    public void testImagesLogHandlerNormalizesRequestForExplicitBillingMode() {
+        ImagesPriceInfo priceInfo = new ImagesPriceInfo();
+        priceInfo.setBillingMode("per_image");
+        ImagesPriceInfo.ImagesPriceInfoDetailsList details = new ImagesPriceInfo.ImagesPriceInfoDetailsList();
+        ImagesPriceInfo.ImagesPriceInfoDetails detail = new ImagesPriceInfo.ImagesPriceInfoDetails();
+        detail.setSize("1792x1024");
+        detail.setHdPricePerImage(new BigDecimal("20"));
+        detail.setMdPricePerImage(new BigDecimal("10"));
+        detail.setLdPricePerImage(new BigDecimal("4"));
+        details.add(detail);
+        priceInfo.setDetails(details);
+
+        ImagesResponse response = new ImagesResponse();
+        response.setUsage(new ImagesResponse.Usage());
+        response.getUsage().setNum(2);
+        EndpointProcessData processData = new EndpointProcessData();
+        processData.setPriceInfo(JacksonUtils.serialize(priceInfo));
+        ImagesRequest request = new ImagesRequest();
+        request.setN(4);
+        request.setQuality("standard");
+        request.setSize("1792x1024");
+        processData.setRequest(request);
+        processData.setResponse(response);
+
+        new ImagesLogHandler() {
+            @Override
+            public String endpoint() {
+                return "/v1/images/generations";
+            }
+        }.process(processData);
+
+        ImagesResponse.Usage usage = (ImagesResponse.Usage) processData.getUsage();
+        assertEquals("显式模式应优先保留usage张数", Integer.valueOf(2), usage.getNum());
+        assertEquals("显式模式应归一化standard为medium", "medium", usage.getQuality());
+        assertEquals("显式模式应保留request尺寸", "1792x1024", usage.getSize());
+    }
+
+    @Test
+    public void testGeneratedImagesUsageMapsToNumWithoutSerializingProviderField() {
+        ImagesResponse.Usage usage = JacksonUtils.deserialize("{\"generated_images\":2}", ImagesResponse.Usage.class);
+
+        assertEquals("上游generated_images应映射到协议内num字段", Integer.valueOf(2), usage.getNum());
+        String serialized = JacksonUtils.serialize(usage);
+        assertTrue("序列化应输出num字段", serialized.contains("\"num\":2"));
+        assertFalse("序列化不应输出上游generated_images字段", serialized.contains("generated_images"));
+    }
+
+    @Test
+    public void testImagesEditsCostUsesPerEditCentsAndTokenPricing() {
+        ImagesEditsPriceInfo priceInfo = new ImagesEditsPriceInfo();
+        priceInfo.setPricePerEdit(new BigDecimal("7"));
+        priceInfo.setImageTokenPrice(new BigDecimal("2"));
+
+        ImagesResponse.Usage usage = new ImagesResponse.Usage();
+        usage.setNum(4);
+        usage.setTotal_tokens(2500);
+
+        CostDetails costDetails = CostCalculator.calculate("/v1/images/edits", JacksonUtils.serialize(priceInfo), usage);
+
+        BigDecimal expectedCost = new BigDecimal("7").multiply(new BigDecimal("4"))
+                .add(new BigDecimal("2").multiply(new BigDecimal("2.5")));
+        assertEquals("Images edits总成本应直接使用分/张并叠加分/千token成本", 0, expectedCost.compareTo(costDetails.getTotalCost()));
+    }
+
+    @Test
+    public void testImagesEditsPerImageBillingIgnoresTokens() {
+        ImagesEditsPriceInfo priceInfo = new ImagesEditsPriceInfo();
+        priceInfo.setBillingMode("per_image");
+        priceInfo.setPricePerEdit(new BigDecimal("7"));
+        priceInfo.setImageOutputTokenPrice(new BigDecimal("100"));
+
+        Map<String, Object> usage = new HashMap<>();
+        usage.put("num", 3);
+        usage.put("output_tokens", 1000);
+        usage.put("total_tokens", 1000);
+
+        CostDetails costDetails = CostCalculator.calculate("/v1/images/edits", JacksonUtils.serialize(priceInfo), usage);
+
+        assertEquals("per_image模式应只按张计费", 0, new BigDecimal("21").compareTo(costDetails.getTotalCost()));
+    }
+
+    @Test
+    public void testImagesEditsTokenBillingUsesDetailedUsage() {
+        ImagesEditsPriceInfo priceInfo = new ImagesEditsPriceInfo();
+        priceInfo.setBillingMode("token");
+        priceInfo.setTextTokenPrice(new BigDecimal("3.5"));
+        priceInfo.setImageTokenPrice(new BigDecimal("21"));
+        priceInfo.setImageInputTokenPrice(new BigDecimal("5.6"));
+        priceInfo.setImageOutputTokenPrice(new BigDecimal("21"));
+
+        ImagesResponse.Usage usage = new ImagesResponse.Usage();
+        usage.setTotal_tokens(1187);
+        usage.setOutput_tokens(215);
+        ImagesResponse.InputTokensDetails inputTokensDetails = new ImagesResponse.InputTokensDetails();
+        inputTokensDetails.setText_tokens(12);
+        inputTokensDetails.setImage_tokens(960);
+        usage.setInput_tokens_details(inputTokensDetails);
+
+        CostDetails costDetails = CostCalculator.calculate("/v1/images/edits", JacksonUtils.serialize(priceInfo), usage);
+
+        BigDecimal expectedCost = new BigDecimal("9.933");
+        assertEquals("token模式应按文本、输入图片和输出图片token分别计费", 0, expectedCost.compareTo(costDetails.getTotalCost()));
+
+        CostDetails.CostDetailItem textInput = costDetails.getInputDetails().get("text_tokens");
+        assertEquals("文字输入明细应记录token数", Integer.valueOf(12), textInput.getTokens());
+        assertEquals("文字输入明细应记录单价", 0, new BigDecimal("3.5").compareTo(textInput.getUnitPrice()));
+        assertEquals("文字输入费用应正确", 0, new BigDecimal("0.042").compareTo(textInput.getCost()));
+
+        CostDetails.CostDetailItem imageInput = costDetails.getInputDetails().get("image_tokens");
+        assertEquals("图片输入明细应记录token数", Integer.valueOf(960), imageInput.getTokens());
+        assertEquals("图片输入明细应记录单价", 0, new BigDecimal("5.6").compareTo(imageInput.getUnitPrice()));
+        assertEquals("图片输入费用应正确", 0, new BigDecimal("5.376").compareTo(imageInput.getCost()));
+
+        CostDetails.CostDetailItem imageOutput = costDetails.getOutputDetails().get("image_tokens");
+        assertEquals("图片输出明细应记录token数", Integer.valueOf(215), imageOutput.getTokens());
+        assertEquals("图片输出明细应记录单价", 0, new BigDecimal("21").compareTo(imageOutput.getUnitPrice()));
+        assertEquals("图片输出费用应正确", 0, new BigDecimal("4.515").compareTo(imageOutput.getCost()));
+    }
+
+    @Test
+    public void testImagesEditsTokenBillingUsesLegacyImageTokenPriceAsFallback() {
+        ImagesEditsPriceInfo priceInfo = new ImagesEditsPriceInfo();
+        priceInfo.setBillingMode("token");
+        priceInfo.setImageTokenPrice(new BigDecimal("4"));
+
+        ImagesResponse.Usage usage = new ImagesResponse.Usage();
+        usage.setOutput_tokens(1500);
+        ImagesResponse.InputTokensDetails inputTokensDetails = new ImagesResponse.InputTokensDetails();
+        inputTokensDetails.setImage_tokens(500);
+        usage.setInput_tokens_details(inputTokensDetails);
+
+        CostDetails costDetails = CostCalculator.calculate("/v1/images/edits", JacksonUtils.serialize(priceInfo), usage);
+
+        assertEquals("旧imageTokenPrice应作为输入和输出图片token兜底价", 0, new BigDecimal("8").compareTo(costDetails.getTotalCost()));
+    }
+
+    @Test
+    public void testImagesEditsMixedBillingCombinesPerImageAndTokens() {
+        ImagesEditsPriceInfo priceInfo = new ImagesEditsPriceInfo();
+        priceInfo.setBillingMode("mixed");
+        priceInfo.setPricePerEdit(new BigDecimal("7"));
+        priceInfo.setTextTokenPrice(new BigDecimal("1"));
+        priceInfo.setImageInputTokenPrice(new BigDecimal("2"));
+        priceInfo.setImageOutputTokenPrice(new BigDecimal("8"));
+
+        ImagesResponse.Usage usage = new ImagesResponse.Usage();
+        usage.setNum(2);
+        usage.setOutput_tokens(500);
+        ImagesResponse.InputTokensDetails inputTokensDetails = new ImagesResponse.InputTokensDetails();
+        inputTokensDetails.setText_tokens(1000);
+        inputTokensDetails.setImage_tokens(250);
+        usage.setInput_tokens_details(inputTokensDetails);
+
+        CostDetails costDetails = CostCalculator.calculate("/v1/images/edits", JacksonUtils.serialize(priceInfo), usage);
+
+        assertEquals("mixed模式应叠加按张和分项token费用", 0, new BigDecimal("19.5").compareTo(costDetails.getTotalCost()));
+        CostDetails.CostDetailItem images = costDetails.getOutputDetails().get("images");
+        assertEquals("mixed模式应记录图片张数", Integer.valueOf(2), images.getQuantity());
+        assertEquals("mixed模式按张费用应正确", 0, new BigDecimal("14").compareTo(images.getCost()));
+        BigDecimal detailsTotal = costDetails.getInputDetails().values().stream()
+                .map(CostDetails.CostDetailItem::getCost)
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .add(costDetails.getOutputDetails().values().stream()
+                        .map(CostDetails.CostDetailItem::getCost)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add));
+        assertEquals("mixed模式明细之和应等于总费用", 0, costDetails.getTotalCost().compareTo(detailsTotal));
+    }
+
+    @Test
+    public void testImagesEditsBillingModeValidation() {
+        ImagesEditsPriceInfo priceInfo = new ImagesEditsPriceInfo();
+        priceInfo.setImageTokenPrice(new BigDecimal("4"));
+        assertFalse("legacy模式仍应要求pricePerEdit",
+                CostCalculator.validate("/v1/images/edits", JacksonUtils.serialize(priceInfo)));
+
+        priceInfo.setPricePerEdit(new BigDecimal("7"));
+        assertTrue("legacy模式配置pricePerEdit后校验应通过",
+                CostCalculator.validate("/v1/images/edits", JacksonUtils.serialize(priceInfo)));
+
+        priceInfo.setBillingMode("token");
+        priceInfo.setPricePerEdit(null);
+        priceInfo.setImageTokenPrice(null);
+        priceInfo.setTextTokenPrice(new BigDecimal("1"));
+        priceInfo.setImageInputTokenPrice(new BigDecimal("2"));
+        assertFalse("token模式缺少输出图片token价格时校验应失败",
+                CostCalculator.validate("/v1/images/edits", JacksonUtils.serialize(priceInfo)));
+
+        priceInfo.setImageOutputTokenPrice(new BigDecimal("8"));
+        assertTrue("token模式不应要求pricePerEdit",
+                CostCalculator.validate("/v1/images/edits", JacksonUtils.serialize(priceInfo)));
+
+        priceInfo.setBillingMode("mixed");
+        assertFalse("mixed模式缺少pricePerEdit时校验应失败",
+                CostCalculator.validate("/v1/images/edits", JacksonUtils.serialize(priceInfo)));
+
+        priceInfo.setPricePerEdit(new BigDecimal("7"));
+        assertTrue("mixed模式同时具备按张和输出token价格时校验应通过",
+                CostCalculator.validate("/v1/images/edits", JacksonUtils.serialize(priceInfo)));
+
+        priceInfo.setBillingMode("per_image");
+        priceInfo.setImageOutputTokenPrice(null);
+        assertTrue("per_image模式只要求pricePerEdit",
+                CostCalculator.validate("/v1/images/edits", JacksonUtils.serialize(priceInfo)));
+
+        priceInfo.setBillingMode("invalid");
+        assertFalse("未知计费模式校验应失败",
+                CostCalculator.validate("/v1/images/edits", JacksonUtils.serialize(priceInfo)));
+    }
+
+    @Test
+    public void testImagesEditsLegacyTiersFallbackDoesNotAffectExplicitMode() {
+        ImagesResponse.Usage legacyUsage = new ImagesResponse.Usage();
+        legacyUsage.setTotal_tokens(2000);
+        String legacyPriceInfo = "{\"tiers\":[{\"inputRangePrice\":{\"imageOutput\":3}}]}";
+
+        CostDetails legacyCost = CostCalculator.calculate("/v1/images/edits", legacyPriceInfo, legacyUsage);
+        assertEquals("tiers-only老配置应继续按total_tokens兜底计费", 0, new BigDecimal("6").compareTo(legacyCost.getTotalCost()));
+
+        ImagesResponse.Usage explicitUsage = new ImagesResponse.Usage();
+        explicitUsage.setTotal_tokens(1000);
+        explicitUsage.setOutput_tokens(1000);
+        String explicitPriceInfo = "{\"billingMode\":\"token\",\"imageOutputTokenPrice\":2,"
+                + "\"tiers\":[{\"inputRangePrice\":{\"imageOutput\":100}}]}";
+
+        CostDetails explicitCost = CostCalculator.calculate("/v1/images/edits", explicitPriceInfo, explicitUsage);
+        assertEquals("显式模式不应读取旧tiers兜底价格", 0, new BigDecimal("2").compareTo(explicitCost.getTotalCost()));
+    }
+
+    @Test
+    public void testImagesEditsLogHandlerNormalizesRequestForExplicitBillingMode() {
+        ImagesEditsPriceInfo priceInfo = new ImagesEditsPriceInfo();
+        priceInfo.setBillingMode("per_image");
+        priceInfo.setPricePerEdit(new BigDecimal("7"));
+
+        EndpointProcessData processData = new EndpointProcessData();
+        processData.setEndpoint("/v1/images/edits");
+        processData.setPriceInfo(JacksonUtils.serialize(priceInfo));
+        ImagesEditRequest request = new ImagesEditRequest();
+        request.setN(4);
+        request.setSize("1792x1024");
+        processData.setRequest(request.summary());
+        processData.setResponse(new ImagesResponse());
+
+        new ImagesLogHandler() {
+            @Override
+            public String endpoint() {
+                return "/v1/images/edits";
+            }
+        }.process(processData);
+
+        ImagesResponse.Usage usage = (ImagesResponse.Usage) processData.getUsage();
+        assertEquals("edits显式模式应从request补齐张数", Integer.valueOf(4), usage.getNum());
+        assertEquals("edits请求未提供quality时应使用默认质量", "high", usage.getQuality());
+        assertEquals("edits显式模式应从request补齐尺寸", "1792x1024", usage.getSize());
+
+        CostDetails costDetails = CostCalculator.calculate("/v1/images/edits", JacksonUtils.serialize(priceInfo), usage);
+        assertEquals("edits按张模式应使用真实请求张数计费", 0, new BigDecimal("28").compareTo(costDetails.getTotalCost()));
+    }
+
+    /**
+     * 测试场景6: 验证所有 endpoint 返回的 CostDetails 结构
+     */
+    @Test
+    public void testAllEndpointsReturnCostDetailsStructure() {
+        // 所有 endpoint 都应该返回 CostDetails 对象（不是 null）
+
+        // Embedding
+        EmbeddingPriceInfo embeddingPrice = new EmbeddingPriceInfo();
+        embeddingPrice.setInput(new BigDecimal("1"));
+        EmbeddingResponse.TokenUsage embeddingUsage = new EmbeddingResponse.TokenUsage();
+        embeddingUsage.setPrompt_tokens(1000);
+        CostDetails embeddingDetails = CostCalculator.calculate("/v1/embeddings",
+                JacksonUtils.serialize(embeddingPrice), embeddingUsage);
+        assertNotNull("Embedding应返回CostDetails", embeddingDetails);
+        assertNotNull("Embedding应有totalCost", embeddingDetails.getTotalCost());
+
+        // TTS
+        TtsPriceInfo ttsPrice = new TtsPriceInfo();
+        ttsPrice.setInput(new BigDecimal("1"));
+        CostDetails ttsDetails = CostCalculator.calculate("/v1/audio/speech",
+                JacksonUtils.serialize(ttsPrice), 1000);
+        assertNotNull("TTS应返回CostDetails", ttsDetails);
+        assertNotNull("TTS应有totalCost", ttsDetails.getTotalCost());
+
+        // OCR
+        OcrPriceInfo ocrPrice = new OcrPriceInfo();
+        ocrPrice.setPricePerRequest(new BigDecimal("1"));
+        CostDetails ocrDetails = CostCalculator.calculate("/v1/ocr/general",
+                JacksonUtils.serialize(ocrPrice), 1);
+        assertNotNull("OCR应返回CostDetails", ocrDetails);
+        assertNotNull("OCR应有totalCost", ocrDetails.getTotalCost());
+
+        // Video
+        VideoPriceInfo videoPrice = new VideoPriceInfo();
+        videoPrice.setOutput(new BigDecimal("1"));
+        VideoUsage videoUsage = new VideoUsage();
+        videoUsage.setCompletionTokens(1000);
+        CostDetails videoDetails = CostCalculator.calculate("/v1/videos",
+                JacksonUtils.serialize(videoPrice), videoUsage);
+        assertNotNull("Video应返回CostDetails", videoDetails);
+        assertNotNull("Video应有totalCost", videoDetails.getTotalCost());
+    }
+}

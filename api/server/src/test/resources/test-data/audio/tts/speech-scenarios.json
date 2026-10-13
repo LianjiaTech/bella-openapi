@@ -1,0 +1,168 @@
+{
+  "speechRequests": [
+    {
+      "scenarioName": "火山TTS基础请求",
+      "description": "使用火山引擎TTS进行语音合成的标准请求",
+      "request": {
+        "user": "1000000031454102",
+        "model": "huoshan-tts",
+        "input": "你好呀 这是一段测试语音",
+        "stream": true,
+        "sample_rate": 24000,
+        "response_format": "pcm"
+      },
+      "expectedResponse": {
+        "contentType": "audio/pcm",
+        "dataLength": 1024
+      },
+      "mockChannel": {
+        "channelInfo": "{\"apiKey\":\"test-key\",\"deployName\":\"huoshan-tts\"}",
+        "protocol": "huoshan",
+        "url": "https://openspeech.bytedance.com/api/v1/tts"
+      },
+      "parameterValidations": [
+        {"field": "model", "expectedValue": "huoshan-tts"},
+        {"field": "user", "expectedValue": "1000000031454102"},
+        {"field": "stream", "expectedValue": true},
+        {"field": "response_format", "expectedValue": "pcm"}
+      ]
+    },
+    {
+      "scenarioName": "Chat-TTS语音合成请求-语音28",
+      "description": "使用Chat-TTS模型进行语音合成，指定语音为28",
+      "request": {
+        "user": "1000000031454102",
+        "model": "Chat-TTS",
+        "input": "你好呀 这是一段测试语音",
+        "stream": true,
+        "voice": "28",
+        "sample_rate": 24000,
+        "response_format": "pcm"
+      },
+      "expectedResponse": {
+        "contentType": "audio/pcm",
+        "dataLength": 1024
+      },
+      "mockChannel": {
+        "channelInfo": "{\"apiKey\":\"test-key\",\"deployName\":\"Chat-TTS\"}",
+        "protocol": "openai",
+        "url": "https://api.openai.com/v1/audio/speech"
+      },
+      "parameterValidations": [
+        {"field": "model", "expectedValue": "Chat-TTS"},
+        {"field": "voice", "expectedValue": "28"},
+        {"field": "stream", "expectedValue": true},
+        {"field": "response_format", "expectedValue": "pcm"}
+      ]
+    },
+    {
+      "scenarioName": "Chat-TTS语音合成请求-语音1723",
+      "description": "使用Chat-TTS模型进行语音合成，指定语音为1723",
+      "request": {
+        "user": "1000000031454102",
+        "model": "Chat-TTS",
+        "input": "你好呀 这是一段测试语音",
+        "stream": true,
+        "voice": "1723",
+        "sample_rate": 24000,
+        "response_format": "pcm"
+      },
+      "expectedResponse": {
+        "contentType": "audio/pcm",
+        "dataLength": 1024
+      },
+      "mockChannel": {
+        "channelInfo": "{\"apiKey\":\"test-key\",\"deployName\":\"Chat-TTS\"}",
+        "protocol": "openai",
+        "url": "https://api.openai.com/v1/audio/speech"
+      },
+      "parameterValidations": [
+        {"field": "model", "expectedValue": "Chat-TTS"},
+        {"field": "voice", "expectedValue": "1723"},
+        {"field": "stream", "expectedValue": true},
+        {"field": "response_format", "expectedValue": "pcm"}
+      ]
+    },
+    {
+      "scenarioName": "豆包OpenSpeech TTS请求",
+      "description": "使用豆包OpenSpeech TTS进行语音合成",
+      "request": {
+        "user": "1000000031454102",
+        "model": "doubao-openspeech-tts",
+        "input": "你好呀 这是一段测试语音",
+        "stream": true,
+        "sample_rate": 24000,
+        "response_format": "pcm"
+      },
+      "expectedResponse": {
+        "contentType": "audio/pcm",
+        "dataLength": 1024
+      },
+      "mockChannel": {
+        "channelInfo": "{\"apiKey\":\"test-key\",\"deployName\":\"doubao-openspeech-tts\"}",
+        "protocol": "huoshan",
+        "url": "https://openspeech.bytedance.com/api/v1/tts"
+      },
+      "parameterValidations": [
+        {"field": "model", "expectedValue": "doubao-openspeech-tts"},
+        {"field": "user", "expectedValue": "1000000031454102"},
+        {"field": "stream", "expectedValue": true},
+        {"field": "response_format", "expectedValue": "pcm"}
+      ]
+    },
+    {
+      "scenarioName": "TTS非流式请求",
+      "description": "TTS非流式语音合成请求",
+      "request": {
+        "user": "1000000031454102",
+        "model": "huoshan-tts",
+        "input": "这是一个非流式请求测试",
+        "stream": false,
+        "sample_rate": 16000,
+        "response_format": "mp3"
+      },
+      "expectedResponse": {
+        "contentType": "audio/mpeg",
+        "dataLength": 2048
+      },
+      "mockChannel": {
+        "channelInfo": "{\"apiKey\":\"test-key\",\"deployName\":\"huoshan-tts\"}",
+        "protocol": "huoshan",
+        "url": "https://openspeech.bytedance.com/api/v1/tts"
+      },
+      "parameterValidations": [
+        {"field": "model", "expectedValue": "huoshan-tts"},
+        {"field": "stream", "expectedValue": false},
+        {"field": "response_format", "expectedValue": "mp3"}
+      ]
+    },
+    {
+      "scenarioName": "TTS速度控制请求",
+      "description": "TTS语音合成时控制语速",
+      "request": {
+        "user": "1000000031454102",
+        "model": "Chat-TTS",
+        "input": "这是一个语速控制测试",
+        "stream": true,
+        "voice": "28",
+        "speed": 1.2,
+        "sample_rate": 24000,
+        "response_format": "pcm"
+      },
+      "expectedResponse": {
+        "contentType": "audio/pcm",
+        "dataLength": 1024
+      },
+      "mockChannel": {
+        "channelInfo": "{\"apiKey\":\"test-key\",\"deployName\":\"Chat-TTS\"}",
+        "protocol": "openai",
+        "url": "https://api.openai.com/v1/audio/speech"
+      },
+      "parameterValidations": [
+        {"field": "model", "expectedValue": "Chat-TTS"},
+        {"field": "speed", "expectedValue": 1.2},
+        {"field": "voice", "expectedValue": "28"}
+      ]
+    }
+  ]
+}

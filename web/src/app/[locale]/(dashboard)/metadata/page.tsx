@@ -1,0 +1,361 @@
+'use client'
+
+import { TopBar } from "@/components/layout"
+import { useLanguage } from "@/components/providers/language-provider"
+import { useSidebar } from "@/components/providers"
+import { useMemo, useDeferredValue } from "react"
+import { cn, getInitialEndpoint } from "@/lib/utils"
+import { ModelFilterPanel } from "@/components/ui/modelFilterPanel"
+import { useRouter, useSearchParams, usePathname } from "next/navigation"
+import { useState, useEffect, useCallback } from "react"
+import { useMetadataData } from "./hooks"
+import { Model } from "@/lib/types/openapi"
+import { Loader, AlertCircle, Plus, ChevronDown } from "lucide-react"
+import { MetadataModelCard } from "./components/MetadataModelCard"
+import { Button } from "@/components/common/button"
+import { CreateModelDialog } from "./components/CreateModelDialog"
+import { ConfigureModelPanel } from "./components/ConfigureModelPanel"
+import { VirtualGrid } from "@/components/ui/virtualGrid"
+import { SearchBar } from "@/components/ui/modelFilterPanel/components/SearchBar"
+import { StatusSelector } from "@/components/ui/status-selector"
+
+const FILTER_AUTO_COLLAPSE_SCROLL_TOP = 96
+const FILTER_AUTO_EXPAND_SCROLL_TOP = 16
+
+/**
+ * 元数据管理页面组件
+ */
+const MetadataPage = () => {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const { t } = useLanguage()
+  const { categoryTrees } = useSidebar()
+  const [selectedCapability, setSelectedCapability] = useState<string>("")
+  const [searchQuery, setSearchQuery] = useState("")
+  const [selectedStatus, setSelectedStatus] = useState<string|null>(null)
+  const [selectedVisibility, setSelectedVisibility] = useState<string|null>(null)
+  const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+  const [selectedModel, setSelectedModel] = useState<Model | null>(null)
+  const [modelParamError, setModelParamError] = useState<string | null>(null)
+  const [isFilterCollapsed, setIsFilterCollapsed] = useState(false)
+  const [isFilterManuallyToggled, setIsFilterManuallyToggled] = useState(false)
+
+  // 使用自定义 Hook 获取元数据
+  const { features, models, initialLoading, modelsLoading, error, refetch } = useMetadataData(selectedCapability, selectedTags, selectedStatus, selectedVisibility)
+
+  // 使用 useDeferredValue 实现搜索防抖，优化大数据量场景下的性能
+  const deferredSearchQuery = useDeferredValue(searchQuery)
+
+  /**
+   * 根据搜索关键词筛选模型列表
+   * 使用 deferredSearchQuery 而不是 searchQuery，避免用户快速输入时频繁计算
+   */
+  const filteredModels = useMemo(() => {
+    if (!models) return []
+    if (!deferredSearchQuery.trim()) return models
+
+    const query = deferredSearchQuery.toLowerCase().trim()
+    return models.filter((model) => {
+      if (model.modelName?.toLowerCase().includes(query)) return true
+      if (model.ownerName?.toLowerCase().includes(query)) return true
+      if (model.endpoints?.some(ep => ep.toLowerCase().includes(query))) return true
+      const modelFeatures = typeof model.features === 'string'
+        ? model.features.split(',').map(f => f.trim())
+        : model.features || []
+      if (modelFeatures.some(f => f.toLowerCase().includes(query))) return true
+      return false
+    })
+  }, [models, deferredSearchQuery])
+
+  const modelFromUrl = searchParams.get("model")?.trim() || ""
+
+  const updateSearchParams = useCallback((updates: Record<string, string | null>) => {
+    const params = new URLSearchParams(searchParams.toString())
+
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value && value.trim()) {
+        params.set(key, value)
+      } else {
+        params.delete(key)
+      }
+    })
+
+    const query = params.toString()
+    router.push(query ? `${pathname}?${query}` : pathname)
+  }, [pathname, router, searchParams])
+
+  /**
+   * 初始化选中的能力分类选项 endpoint
+   */
+  useEffect(() => {
+    const endpoint = getInitialEndpoint(searchParams.get("endpoint"))
+    setSelectedCapability(endpoint)
+  }, [searchParams])
+
+  useEffect(() => {
+    if (!modelFromUrl) {
+      setSelectedModel(null)
+      setModelParamError(null)
+      return
+    }
+
+    if (initialLoading || modelsLoading) {
+      return
+    }
+
+    const matchedModel = models.find(model => model.modelName === modelFromUrl)
+    if (matchedModel) {
+      setSelectedModel(matchedModel)
+      setModelParamError(null)
+      return
+    }
+
+    setSelectedModel(null)
+    setModelParamError(`未找到模型：${modelFromUrl}`)
+  }, [initialLoading, modelFromUrl, models, modelsLoading])
+
+  /**
+   * 处理能力分类变化
+   */
+  const handleCapabilityChange = useCallback((endpoint: string) => {
+    setSelectedCapability(endpoint)
+    setSearchQuery("")
+    setModelParamError(null)
+    updateSearchParams({
+      endpoint,
+      model: null,
+    })
+  }, [updateSearchParams])
+
+  /**
+   * 处理标签变化
+   */
+  const handleTagsChange = useCallback((tags: string[]) => {
+    setSelectedTags(tags)
+  }, [])
+
+  /**
+   * 处理搜索变化
+   */
+  const handleSearchChange = useCallback((query: string) => {
+    setSearchQuery(query)
+  }, [])
+
+  const handleGridScroll = useCallback((event: React.UIEvent<HTMLDivElement>) => {
+    if (isFilterManuallyToggled) return
+    const { scrollTop } = event.currentTarget
+    setIsFilterCollapsed((prev) => {
+      if (!prev && scrollTop > FILTER_AUTO_COLLAPSE_SCROLL_TOP) return true
+      if (prev && scrollTop < FILTER_AUTO_EXPAND_SCROLL_TOP) return false
+      return prev
+    })
+  }, [isFilterManuallyToggled])
+
+  const handleToggleFilterPanel = useCallback(() => {
+    setIsFilterManuallyToggled(true)
+    setIsFilterCollapsed((prev) => !prev)
+  }, [])
+
+  useEffect(() => {
+    setIsFilterCollapsed(false)
+    setIsFilterManuallyToggled(false)
+  }, [selectedCapability, selectedTags, searchQuery, selectedStatus, selectedVisibility])
+
+  /**
+   * 处理新建模型操作
+   */
+  const handleCreateModel = () => {
+    setIsCreateDialogOpen(true)
+  }
+
+  /**
+   * 处理配置模型操作
+   */
+  const handleConfigureModel = (model: Model) => {
+    setSelectedModel(model)
+    setModelParamError(null)
+    updateSearchParams({
+      endpoint: selectedCapability,
+      model: model.modelName,
+    })
+  }
+
+  /**
+   * 处理返回列表操作
+   */
+  const handleBackToList = () => {
+    setSelectedModel(null)
+    setModelParamError(null)
+    updateSearchParams({ model: null })
+  }
+
+  return (
+    <>
+      {/* 条件渲染:列表视图或配置视图 */}
+      {selectedModel? (
+        <div className="animate-in fade-in duration-300">
+          <ConfigureModelPanel
+            model={selectedModel}
+            onBack={handleBackToList}
+            onDeleted={() => {
+              handleBackToList()
+              refetch()
+            }}
+            endpoint={selectedCapability}
+          />
+        </div>
+      ) : (
+        /* 列表视图 - 淡入动画 */
+        <div className="animate-in fade-in duration-300">
+          <TopBar
+            title="元数据管理"
+            description="管理和配置属于您有模型的元数据信息"
+            action={
+              <Button onClick={handleCreateModel} className="gap-2 cursor-pointer">
+                <Plus className="h-4 w-4" />
+                新模型
+              </Button>
+            }
+          />
+          <div className="flex h-[calc(100vh-4rem)] flex-col overflow-hidden">
+            {/* 筛选面板区域（固定不滚动） */}
+            <div className="flex-shrink-0 border-b bg-background">
+              <div className="px-6 pt-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex-shrink-0">
+                    <h2 className="text-sm font-medium text-muted-foreground whitespace-nowrap">
+                      找到 {filteredModels.length} 个模型
+                    </h2>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <StatusSelector
+                      label="状态"
+                      value={selectedStatus}
+                      onChange={setSelectedStatus}
+                      options={[
+                        { value: 'active', label: '启用' },
+                        { value: 'inactive', label: '停用' }
+                      ]}
+                    />
+                    <StatusSelector
+                      label="权限"
+                      value={selectedVisibility}
+                      onChange={setSelectedVisibility}
+                      options={[
+                        { value: 'public', label: '公开' },
+                        { value: 'private', label: '私有' }
+                      ]}
+                    />
+                    <SearchBar
+                      value={searchQuery}
+                      onChange={handleSearchChange}
+                      onClear={() => setSearchQuery("")}
+                      placeholder="搜索模型名称或描述..."
+                      className="mb-0"
+                    />
+                  </div>
+                </div>
+
+                <div
+                  className={cn(
+                    "overflow-hidden transition-all duration-200 ease-in-out",
+                    isFilterCollapsed ? "max-h-0 opacity-0 pt-0" : "max-h-[420px] opacity-100 pt-4"
+                  )}
+                >
+                  <ModelFilterPanel
+                    categoryTrees={categoryTrees}
+                    features={features}
+                    initialEndpoint={selectedCapability}
+                    initialTags={selectedTags}
+                    isLoadingFeatures={initialLoading}
+                    onCapabilityChange={handleCapabilityChange}
+                    onTagsChange={handleTagsChange}
+                  />
+
+                  {error && (
+                    <div className="mt-4 rounded-lg border border-red-500/20 bg-red-500/10 p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-500" />
+                          <p className="text-sm text-red-500">{error.message}</p>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={refetch}
+                          className="ml-4 flex-shrink-0"
+                        >
+                          {t("retry")}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex justify-center">
+                  <button
+                    type="button"
+                    onClick={handleToggleFilterPanel}
+                    aria-label={isFilterCollapsed ? "展开筛选面板" : "折叠筛选面板"}
+                    className="cursor-pointer flex h-6 w-10 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  >
+                    <ChevronDown
+                      className={cn(
+                        "h-4 w-4 transition-transform duration-200",
+                        isFilterCollapsed ? "rotate-180" : "rotate-0"
+                      )}
+                    />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* 虚拟滚动容器（可滚动区域） */}
+            <div className="flex-1 overflow-hidden">
+              {modelsLoading ? (
+                <div className="flex items-center justify-center h-full text-muted-foreground">
+                  <Loader className="h-6 w-6 animate-spin mr-2" />
+                  <span className="text-sm">{t("loadingModels")}</span>
+                </div>
+              ) : (
+                <VirtualGrid
+                  items={filteredModels}
+                  overscan={5}
+                  getItemKey={(model) => model.modelName}
+                  renderItem={(model) => (
+                    <MetadataModelCard
+                      model={model}
+                      onConfigure={handleConfigureModel}
+                    />
+                  )}
+                  emptyElement={
+                    <div className="flex items-center justify-center h-full text-muted-foreground">
+                      <p className="text-sm">暂无模型</p>
+                    </div>
+                  }
+                  className="px-6 py-6"
+                  onScroll={handleGridScroll}
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 新建模型弹窗 */}
+      <CreateModelDialog
+        mode="create"
+        open={isCreateDialogOpen}
+        onClose={() => setIsCreateDialogOpen(false)}
+        onSuccess={() => {
+          // 创建成功后刷新模型列表
+          refetch()
+        }}
+      />
+    </>
+  )
+}
+
+export default MetadataPage
