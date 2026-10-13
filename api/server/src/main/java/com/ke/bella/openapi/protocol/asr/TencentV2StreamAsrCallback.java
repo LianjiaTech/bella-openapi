@@ -7,6 +7,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
 import com.ke.bella.openapi.EndpointProcessData;
@@ -31,7 +32,7 @@ public class TencentV2StreamAsrCallback implements Callbacks.WebSocketCallback {
     private final EndpointLogger logger;
     private final Function<TencentV2RealTimeAsrResponse, List<String>> converter;
     private final CompletableFuture<?> startFlag = new CompletableFuture<>();
-    private boolean end = false;
+    private final AtomicBoolean end = new AtomicBoolean();
     private volatile boolean finalReceived = false;
     private boolean first = true;
     @Getter
@@ -194,13 +195,13 @@ public class TencentV2StreamAsrCallback implements Callbacks.WebSocketCallback {
     }
 
     private void complete() {
-        if(!end) {
+        if(end.compareAndSet(false, true)) {
             processData.getMetrics().put("ttlt", DateTimeUtils.getCurrentMills() - startTime);
             sender.close();
             if(logger != null) {
                 logger.log(processData);
             }
-            end = true;
+
         }
     }
 }

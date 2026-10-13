@@ -10,6 +10,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -82,7 +83,7 @@ public class HuoshanStreamAsrCallback implements Callbacks.WebSocketCallback {
     private volatile AsrWebSocketHandshakeTrace.Values handshakeTrace = AsrWebSocketHandshakeTrace.capture(null, null);
 
     // 状态标志
-    private boolean end = false;
+    private final AtomicBoolean end = new AtomicBoolean();
     private boolean first = true;
     private boolean isRunning = false;
 
@@ -179,13 +180,12 @@ public class HuoshanStreamAsrCallback implements Callbacks.WebSocketCallback {
      * 完成处理并关闭连接
      */
     private void complete() {
-        if(!end) {
+        if(end.compareAndSet(false, true)) {
             processData.getMetrics().put("ttlt", DateTimeUtils.getCurrentMills() - startTime);
             sender.close();
             if(request.isAsync() && logger != null) {
                 logger.log(processData);
             }
-            end = true;
         }
     }
 
@@ -201,9 +201,7 @@ public class HuoshanStreamAsrCallback implements Callbacks.WebSocketCallback {
     private void  onProcessError(BellaException exception) {
         log.warn("ASR error: {}", exception.getMessage(), exception);
         sender.onError(exception);
-        if(!request.isAsync()) {
-            complete();
-        }
+        complete();
     }
 
     /**
@@ -467,9 +465,7 @@ public class HuoshanStreamAsrCallback implements Callbacks.WebSocketCallback {
         log.error("Transcription failed: {}", errorMsg);
         isRunning = false;
         sender.onError(new BellaException.ChannelException(getHttpCode(code), errorMsg));
-        if(!request.isAsync()) {
-            complete();
-        }
+        complete();
     }
 
     private int getHttpCode(int code) {

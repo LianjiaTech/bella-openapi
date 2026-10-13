@@ -18,6 +18,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
 /**
@@ -35,7 +36,7 @@ public class TencentStreamAsrCallback implements Callbacks.WebSocketCallback {
     private final CompletableFuture<?> startFlag = new CompletableFuture<>();
 
     // 状态标志
-    private boolean end = false;
+    private final AtomicBoolean end = new AtomicBoolean();
     private volatile boolean finalReceived = false;
     private boolean first = true;
     private boolean isRunning = false;
@@ -251,13 +252,12 @@ public class TencentStreamAsrCallback implements Callbacks.WebSocketCallback {
      * 完成处理并关闭连接
      */
     private void complete() {
-        if(!end) {
+        if(end.compareAndSet(false, true)) {
             processData.getMetrics().put("ttlt", DateTimeUtils.getCurrentMills() - startTime);
             sender.close();
             if(logger != null) {
                 logger.log(processData);
             }
-            end = true;
         }
     }
 

@@ -94,6 +94,7 @@ public class RealTimeHandler extends TextWebSocketHandler implements SubProtocol
             // 先解析基本消息结构，获取消息类型
             RealTimeMessage realTimeMessage = JacksonUtils.deserialize(payload, RealTimeMessage.class);
             if(realTimeMessage == null || realTimeMessage.getHeader() == null || realTimeMessage.getHeader().getName() == null) {
+                terminateSession(session, 40000000, "消息格式无效");
                 return;
             }
 
@@ -107,7 +108,7 @@ public class RealTimeHandler extends TextWebSocketHandler implements SubProtocol
                 break;
             default:
                 LOGGER.warn("不支持的事件类型: " + realTimeMessage.getHeader().getName());
-                sendErrorResponse(session, 40000000, "不支持的事件类型: " + realTimeMessage.getHeader().getName());
+                terminateSession(session, 40000000, "不支持的事件类型: " + realTimeMessage.getHeader().getName());
                 break;
             }
         } catch (Exception e) {
@@ -115,7 +116,7 @@ public class RealTimeHandler extends TextWebSocketHandler implements SubProtocol
             LOGGER.warn(e.getMessage(), e);
             BellaException exception = BellaException.fromException(e);
             int status = exception.getHttpCode() < 500 ? 40000000 : 50000000;
-            sendErrorResponse(session, status, exception.getMessage());
+            terminateSession(session, status, exception.getMessage());
         }
     }
 
@@ -160,7 +161,7 @@ public class RealTimeHandler extends TextWebSocketHandler implements SubProtocol
 
         } catch (Exception e) {
             LOGGER.warn("处理二进制消息时出错: {}", e.getMessage());
-            sendErrorResponse(session, 50000000, "处理音频数据时出错: " + e.getMessage());
+            terminateSession(session, 50000000, "处理音频数据时出错: " + e.getMessage());
         }
     }
 
@@ -213,6 +214,13 @@ public class RealTimeHandler extends TextWebSocketHandler implements SubProtocol
             // 创建与第三方服务的连接并开始转录
             ws = adaptor.startTranscription(url, property, request, callback);
 
+            if(!session.isOpen() || taskId == null) {
+                if(ws != null) {
+                    adaptor.closeConnection(ws);
+                    ws = null;
+                }
+                return;
+            }
             if(ws == null) {
                 String failedTaskId = taskId;
                 rollbackStart();
@@ -263,7 +271,7 @@ public class RealTimeHandler extends TextWebSocketHandler implements SubProtocol
         boolean success = adaptor.stopTranscription(ws, request, callback);
 
         if(!success) {
-            sendErrorResponse(session, 50000000, "无法停止转录任务");
+            terminateSession(session, 50000000, "无法停止转录任务");
         }
     }
 
@@ -274,6 +282,25 @@ public class RealTimeHandler extends TextWebSocketHandler implements SubProtocol
         recordUpstreamClosed(reason);
         adaptor.closeConnection(ws);
         ws = null;
+    }
+
+    private void terminateSession(WebSocketSession session, int status, String errorMessage) {
+        try {
+            RealTimeMessage response = sendErrorResponse(session, status, errorMessage);
+            if(response != null) {
+                processData.setResponse(response);
+            }
+        } finally {
+            closeUpstream("error");
+            taskId = null;
+            try {
+                if(session.isOpen()) {
+                    session.close();
+                }
+            } catch (IOException e) {
+                LOGGER.warn("关闭客户端连接时出错: {}", e.getMessage());
+            }
+        }
     }
 
     private void recordClientClosed(String reason, String closeCode) {
@@ -353,8 +380,20 @@ public class RealTimeHandler extends TextWebSocketHandler implements SubProtocol
                     }
                 } catch (IOException e) {
                     LOGGER.warn(e.getMessage(), e);
+                    onError(e);
+                    return;
                 }
-                RealTimeMessage message = JacksonUtils.deserialize(text, RealTimeMessage.class);
+                RealTimeMessage message;
+                try {
+                    message = JacksonUtils.deserialize(text, RealTimeMessage.class);
+                } catch (Exception e) {
+                    onError(e);
+                    return;
+                }
+                if(message == null || message.getHeader() == null || message.getHeader().getName() == null) {
+                    onError(new IllegalArgumentException("实时响应格式无效"));
+                    return;
+                }
                 if(message.getHeader().getName().equals(RealTimeEventType.SENTENCE_END.getValue())) {
                     duration.record(message.getPayload());
                 }
@@ -370,21 +409,25 @@ public class RealTimeHandler extends TextWebSocketHandler implements SubProtocol
                     }
                 } catch (IOException e) {
                     LOGGER.warn(e.getMessage(), e);
+                    onError(e);
                 }
             }
 
             @Override
             public void onError(Throwable e) {
                 BellaException exception = BellaException.fromException(e);
-                RealTimeMessage res = sendErrorResponse(session, exception.getHttpCode() < 500 ? 40000000 : 50000000, exception.getMessage());
-                processData.setResponse(res);
+                terminateSession(session, exception.getHttpCode() < 500 ? 40000000 : 50000000, exception.getMessage());
             }
 
             @Override
             public void close() {
                 try {
                     processData.setTranscriptionDuration(duration.seconds());
-                    session.close();
+                    closeUpstream("callback_close");
+                    taskId = null;
+                    if(session.isOpen()) {
+                        session.close();
+                    }
                 } catch (IOException e) {
                     LOGGER.warn(e.getMessage(), e);
                 }

@@ -30,6 +30,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -68,7 +69,7 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
     private final Function<HuoshanLMRealTimeAsrResponse, List<String>> converter;
     private final CompletableFuture<?> startFlag = new CompletableFuture<>();
     private volatile AsrWebSocketHandshakeTrace.Values handshakeTrace = AsrWebSocketHandshakeTrace.capture(null, null);
-    private boolean end = false;
+    private final AtomicBoolean end = new AtomicBoolean();
     private boolean first = true;
     private boolean isRunning = false;
     private long startTime = DateTimeUtils.getCurrentMills();
@@ -240,8 +241,7 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
      * 完成处理并关闭连接
      */
     private void complete() {
-        if(!end) {
-            end = true;
+        if(end.compareAndSet(false, true)) {
             startFlag.completeExceptionally(new BellaException.ChannelException(502, "ASR connection closed before transcription started"));
             processData.getMetrics().put("ttlt", DateTimeUtils.getCurrentMills() - startTime);
             sender.close();
@@ -256,7 +256,7 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
      */
     private void onError(BellaException exception) {
         startFlag.completeExceptionally(exception);
-        if(!end) {
+        if(!end.get()) {
             sender.onError(exception);
             complete();
         }
@@ -266,8 +266,9 @@ public class HuoshanStreamLMAsrCallback extends WebSocketListener implements Cal
      * 处理处理过程中的错误
      */
     private void onProcessError(BellaException exception) {
-        if(!end) {
+        if(!end.get()) {
             sender.onError(exception);
+            complete();
         }
     }
 

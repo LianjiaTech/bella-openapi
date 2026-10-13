@@ -18,6 +18,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.ke.bella.openapi.protocol.realtime.RealTimeEventType.TRANSCRIPTION_STARTED;
 
@@ -33,7 +34,7 @@ public class KeRealtimeCallback implements Callbacks.WebSocketCallback {
 
     private final long startTime = DateTimeUtils.getCurrentMills();
     private final List<Integer> ttsTtfts;
-    private boolean end = false;
+    private final AtomicBoolean end = new AtomicBoolean();
 
     public KeRealtimeCallback(Sender sender, EndpointProcessData processData, EndpointLogger logger, String taskId) {
         this.sender = sender;
@@ -138,11 +139,10 @@ public class KeRealtimeCallback implements Callbacks.WebSocketCallback {
     }
 
     private void complete() {
-        if(!end) {
+        if(end.compareAndSet(false, true)) {
             processData.getMetrics().put("ttlt", DateTimeUtils.getCurrentMills() - startTime);
             sender.close();
             logger.log(processData);
-            end = true;
         }
     }
 }

@@ -116,6 +116,71 @@ public class RealTimeHandlerTest {
         assertEquals(2, accumulator.seconds());
     }
 
+
+    @Test
+    public void invalidMessageClosesClientSession() throws Exception {
+        RealTimeAdaptor<AsrProperty> adaptor = mock(RealTimeAdaptor.class);
+        EndpointProcessData processData = new EndpointProcessData();
+        processData.setEndpoint("/v1/audio/asr/stream");
+        WebSocketSession session = mock(WebSocketSession.class);
+        when(session.isOpen()).thenReturn(true);
+        RealTimeHandler handler = new RealTimeHandler("wss://upstream", new AsrProperty(), processData, null, adaptor,
+                CredentialSession.NOOP, null);
+
+        handler.handleTextMessage(session, new TextMessage("{}"));
+
+        verify(session).sendMessage(any(TextMessage.class));
+        verify(session).close();
+    }
+
+    @Test
+    public void senderErrorClosesClientAndUpstream() throws Exception {
+        RealTimeAdaptor<AsrProperty> adaptor = mock(RealTimeAdaptor.class);
+        Callbacks.WebSocketCallback callback = mock(Callbacks.WebSocketCallback.class);
+        WebSocket upstream = mock(WebSocket.class);
+        ArgumentCaptor<Callbacks.Sender> senderCaptor = ArgumentCaptor.forClass(Callbacks.Sender.class);
+        when(adaptor.createCallback(senderCaptor.capture(), any(), any(), anyString(), any(), any())).thenReturn(callback);
+        when(adaptor.startTranscription(anyString(), any(), any(), any())).thenReturn(upstream);
+
+        EndpointProcessData processData = new EndpointProcessData();
+        processData.setEndpoint("/v1/audio/asr/stream");
+        WebSocketSession session = mock(WebSocketSession.class);
+        when(session.isOpen()).thenReturn(true);
+        RealTimeHandler handler = new RealTimeHandler("wss://upstream", new AsrProperty(), processData, null, adaptor,
+                CredentialSession.NOOP, null);
+
+        handler.handleTextMessage(session, new TextMessage("{\"header\":{\"name\":\"StartTranscription\"}}"));
+        senderCaptor.getValue().onError(new IllegalStateException("upstream failed"));
+
+        verify(adaptor).closeConnection(upstream);
+        verify(session, times(2)).sendMessage(any(TextMessage.class));
+        verify(session).close();
+    }
+
+    @Test
+    public void failedStopClosesClientAndUpstream() throws Exception {
+        RealTimeAdaptor<AsrProperty> adaptor = mock(RealTimeAdaptor.class);
+        Callbacks.WebSocketCallback callback = mock(Callbacks.WebSocketCallback.class);
+        WebSocket upstream = mock(WebSocket.class);
+        when(adaptor.createCallback(any(), any(), any(), anyString(), any(), any())).thenReturn(callback);
+        when(adaptor.startTranscription(anyString(), any(), any(), any())).thenReturn(upstream);
+        when(adaptor.stopTranscription(any(), any(), any())).thenReturn(false);
+
+        EndpointProcessData processData = new EndpointProcessData();
+        processData.setEndpoint("/v1/audio/asr/stream");
+        WebSocketSession session = mock(WebSocketSession.class);
+        when(session.isOpen()).thenReturn(true);
+        RealTimeHandler handler = new RealTimeHandler("wss://upstream", new AsrProperty(), processData, null, adaptor,
+                CredentialSession.NOOP, null);
+
+        handler.handleTextMessage(session, new TextMessage("{\"header\":{\"name\":\"StartTranscription\"}}"));
+        handler.handleTextMessage(session, new TextMessage("{\"header\":{\"name\":\"StopTranscription\"}}"));
+
+        verify(adaptor).closeConnection(upstream);
+        verify(session, times(2)).sendMessage(any(TextMessage.class));
+        verify(session).close();
+    }
+
     @Test
     public void startedResponseIncludesHandshakeTraceFields() {
         Callbacks.WebSocketCallback callback = new Callbacks.WebSocketCallback() {
