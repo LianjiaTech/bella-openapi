@@ -46,6 +46,7 @@ public class SystemOneRequest implements UserRequest, Serializable, IMemoryClear
     }
 
     @Override
+    @JsonIgnore
     public boolean isCleared() {
         return state == null && questions == null;
     }

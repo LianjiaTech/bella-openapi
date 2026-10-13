@@ -4,6 +4,7 @@ import com.ke.bella.openapi.protocol.Callbacks;
 import com.ke.bella.openapi.protocol.OpenapiResponse;
 import com.ke.bella.openapi.utils.HttpUtils;
 import com.ke.bella.openapi.utils.JacksonUtils;
+import org.apache.commons.lang3.StringUtils;
 import okhttp3.MediaType;
 import okhttp3.Request;
 import okhttp3.RequestBody;
@@ -19,6 +20,9 @@ public class TypesafeSystemOneAdaptor implements SystemOneAdaptor<SystemOnePrope
     }
 
     Request buildRequest(SystemOneRequest request, String url, SystemOneProperty property) {
+        if(StringUtils.isNotBlank(property.getDeployName())) {
+            request.setModel(property.getDeployName());
+        }
         return authorizationRequestBuilder(property.getAuth())
                 .url(url)
                 .post(RequestBody.create(MediaType.parse("application/json"), JacksonUtils.toByte(request)))

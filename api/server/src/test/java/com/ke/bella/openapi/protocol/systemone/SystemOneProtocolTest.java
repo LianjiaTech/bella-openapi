@@ -31,6 +31,7 @@ class SystemOneProtocolTest {
         Map<String, Object> body = JacksonUtils.deserialize(JacksonUtils.serialize(request), Map.class);
         assertEquals("payouts failing", body.get("state"));
         assertEquals("jev-latest", body.get("model"));
+        assertTrue(!body.containsKey("cleared"));
         Map<?, ?> question = (Map<?, ?>) ((Map<?, ?>) body.get("questions")).get("is_urgent");
         assertEquals("Does this convey urgency?", ((Map<?, ?>) question.get("instructions")).get("text"));
         Map<?, ?> criteria = (Map<?, ?>) question.get("criteria");
@@ -78,6 +79,20 @@ class SystemOneProtocolTest {
         Buffer buffer = new Buffer();
         upstream.body().writeTo(buffer);
         assertTrue(buffer.readUtf8().contains("\"questions\""));
+    }
+
+    @Test
+    void usesProviderDeploymentNameWhenConfigured() throws Exception {
+        SystemOneRequest request = JacksonUtils.deserialize("{\"model\":\"gateway-alias\"}", SystemOneRequest.class);
+        SystemOneProperty property = new SystemOneProperty();
+        property.setDeployName("jev-1.13.0");
+
+        Request upstream = new TypesafeSystemOneAdaptor().buildRequest(request, "https://api.typesafe.ai/v1/systemone", property);
+
+        Buffer buffer = new Buffer();
+        upstream.body().writeTo(buffer);
+        Map<?, ?> body = JacksonUtils.deserialize(buffer.readUtf8(), Map.class);
+        assertEquals("jev-1.13.0", body.get("model"));
     }
 
     @Test
