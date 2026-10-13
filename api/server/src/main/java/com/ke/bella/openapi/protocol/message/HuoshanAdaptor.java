@@ -19,6 +19,11 @@ public class HuoshanAdaptor implements MessageDelegatorAdaptor<HuoshanProperty> 
     }
 
     @Override
+    public boolean supportOutputConfigEffort(HuoshanProperty property) {
+        return property.isSupportOutputConfigEffort();
+    }
+
+    @Override
     public AnthropicAdaptor anthropicAdaptor() {
         return anthropicAdaptor;
     }

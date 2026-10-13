@@ -4,6 +4,7 @@ import com.ke.bella.openapi.EndpointContext;
 import com.ke.bella.openapi.protocol.Callbacks;
 import com.ke.bella.openapi.protocol.message.MessageRequest;
 import com.ke.bella.openapi.protocol.message.MessageResponse;
+import com.ke.bella.openapi.protocol.message.TransferFromCompletionsUtils;
 import org.junit.After;
 import org.junit.Test;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -98,7 +99,66 @@ public class KeAdaptorTest {
         assertThat(enableThinking(captured)).isEqualTo(false);
     }
 
+    @Test
+    public void messagesOutputConfigEffort_convertsForEnabledKeChannel() {
+        CompletionRequest captured = runMessageRequestThroughKeCompletion(null, "high", true, false);
+
+        assertThat(captured.getReasoning_effort()).isNull();
+        assertThat(enableThinking(captured)).isTrue();
+    }
+
+    @Test
+    public void messagesOutputConfigEffort_isIgnoredWhenChannelSupportIsDisabled() {
+        CompletionRequest captured = runMessageRequestThroughKeCompletion(null, "high", false, false);
+
+        assertThat(captured.getReasoning_effort()).isNull();
+        assertThat(enableThinking(captured)).isFalse();
+    }
+
+    @Test
+    public void messagesThinking_takesPriorityOverOutputConfigEffort() {
+        CompletionRequest captured = runMessageRequestThroughKeCompletion(
+                MessageRequest.ThinkingConfig.builder().type("disabled").build(), "high", true, false);
+
+        assertThat(captured.getReasoning_effort()).isNull();
+        assertThat(enableThinking(captured)).isFalse();
+    }
+
+    @Test
+    public void streamingMessagesOutputConfigEffort_usesSameConversion() {
+        CompletionRequest captured = runMessageRequestThroughKeCompletion(null, "max", true, true);
+
+        assertThat(captured.getReasoning_effort()).isNull();
+        assertThat(enableThinking(captured)).isTrue();
+    }
+
+    @Test
+    public void converter_mapsAllSupportedEffortValuesWhenEnabled() {
+        for(String effort : Arrays.asList("low", "medium", "high", "max")) {
+            MessageRequest request = MessageRequest.builder()
+                    .outputConfig(MessageRequest.OutputConfig.builder().effort(effort).build())
+                    .build();
+
+            assertThat(TransferFromCompletionsUtils.convertRequest(request, false, true).getReasoning_effort())
+                    .isEqualTo(effort);
+        }
+    }
+
+    @Test
+    public void converter_keepsOutputConfigEffortForOtherAdaptorsDisabled() {
+        MessageRequest request = MessageRequest.builder()
+                .outputConfig(MessageRequest.OutputConfig.builder().effort("low").build())
+                .build();
+
+        assertThat(TransferFromCompletionsUtils.convertRequest(request, false, false).getReasoning_effort()).isNull();
+    }
+
     private CompletionRequest runMessageRequestThroughKeCompletion(MessageRequest.ThinkingConfig thinking) {
+        return runMessageRequestThroughKeCompletion(thinking, null, false, false);
+    }
+
+    private CompletionRequest runMessageRequestThroughKeCompletion(MessageRequest.ThinkingConfig thinking,
+            String effort, boolean supportOutputConfigEffort, boolean stream) {
         TestOpenAIAdaptor openAIAdaptor = new TestOpenAIAdaptor();
 
         KeAdaptor completionAdaptor = new KeAdaptor();
@@ -114,10 +174,26 @@ public class KeAdaptorTest {
                         .content("hello")
                         .build()))
                 .thinking(thinking)
+                .outputConfig(effort == null ? null : MessageRequest.OutputConfig.builder().effort(effort).build())
+                .stream(stream)
                 .build();
         EndpointContext.setEndpointData("/v1/messages", request.getModel(), request);
 
-        MessageResponse response = messageAdaptor.createMessages(request, "url", new OpenAIProperty());
+        OpenAIProperty property = new OpenAIProperty();
+        property.setSupportOutputConfigEffort(supportOutputConfigEffort);
+        if(stream) {
+            messageAdaptor.streamMessages(request, "url", property, new Callbacks.StreamCompletionCallback() {
+                @Override public void onOpen() { }
+                @Override public void callback(com.ke.bella.openapi.protocol.completion.StreamCompletionResponse msg) { }
+                @Override public void done() { }
+                @Override public void finish() { }
+                @Override public void finish(com.ke.bella.openapi.common.exception.BellaException exception) { }
+                @Override public void send(Object data) { }
+            });
+            return openAIAdaptor.capturedRequest;
+        }
+
+        MessageResponse response = messageAdaptor.createMessages(request, "url", property);
 
         assertThat(response.getModel()).isEqualTo("ke-model");
         return openAIAdaptor.capturedRequest;

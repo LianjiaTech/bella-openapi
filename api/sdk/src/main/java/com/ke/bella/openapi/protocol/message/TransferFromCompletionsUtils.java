@@ -61,6 +61,11 @@ public class TransferFromCompletionsUtils {
     }
 
     public static CompletionRequest convertRequest(MessageRequest messageRequest, boolean nativeSupport) {
+        return convertRequest(messageRequest, nativeSupport, false);
+    }
+
+    public static CompletionRequest convertRequest(MessageRequest messageRequest, boolean nativeSupport,
+            boolean supportOutputConfigEffort) {
         if(messageRequest == null) {
             return null;
         }
@@ -81,7 +86,7 @@ public class TransferFromCompletionsUtils {
         setToolChoice(builder, messageRequest);
 
         // 处理推理配置
-        setThinkingConfig(builder, messageRequest, nativeSupport);
+        setThinkingConfig(builder, messageRequest, nativeSupport, supportOutputConfigEffort);
 
         return builder.build();
     }
@@ -380,13 +385,21 @@ public class TransferFromCompletionsUtils {
     }
 
     private static void setThinkingConfig(CompletionRequest.CompletionRequestBuilder<?, ?> builder,
-            MessageRequest request, boolean nativeSupport) {
-        if(request.getThinking() != null && request.getThinking().isEnabled()) {
+            MessageRequest request, boolean nativeSupport, boolean supportOutputConfigEffort) {
+        if(request.getThinking() != null) {
+            if(!request.getThinking().isEnabled()) {
+                return;
+            }
             if(nativeSupport) {
                 builder.reasoning_effort(request.getThinking());
             } else {
                 builder.reasoning_effort("medium");
             }
+            return;
+        }
+        if(supportOutputConfigEffort && request.getOutputConfig() != null
+                && StringUtils.isNotBlank(request.getOutputConfig().getEffort())) {
+            builder.reasoning_effort(request.getOutputConfig().getEffort());
         }
     }
 

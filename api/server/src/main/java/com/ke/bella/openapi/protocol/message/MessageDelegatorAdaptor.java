@@ -15,6 +15,10 @@ public interface MessageDelegatorAdaptor<T extends CompletionProperty> extends M
 
     CompletionAdaptor<T> delegator();
 
+    default boolean supportOutputConfigEffort(T property) {
+        return false;
+    }
+
     default void preprocessMessageRequest(MessageRequest request, T property) {
     }
 
@@ -64,7 +68,8 @@ public interface MessageDelegatorAdaptor<T extends CompletionProperty> extends M
 
     default MessageResponse createMessagesWithCompletionAdaptor(MessageRequest request, String url, T property, CompletionAdaptor<T> delegator) {
         preprocessMessageRequest(request, property);
-        CompletionRequest completionRequest = TransferFromCompletionsUtils.convertRequest(request, isNativeSupport());
+        CompletionRequest completionRequest = TransferFromCompletionsUtils.convertRequest(request, isNativeSupport(),
+                supportOutputConfigEffort(property));
         clearLargeData(request);
         CompletionResponse completionResponse = delegator.completion(completionRequest, url, property);
         EndpointContext.getProcessData().setResponse(completionResponse);
@@ -99,7 +104,8 @@ public interface MessageDelegatorAdaptor<T extends CompletionProperty> extends M
     default void streamMessagesWithCompletionAdaptor(MessageRequest request, String url, T property, Callbacks.StreamCompletionCallback callback,
             CompletionAdaptor<T> delegator) {
         preprocessMessageRequest(request, property);
-        CompletionRequest completionRequest = TransferFromCompletionsUtils.convertRequest(request, isNativeSupport());
+        CompletionRequest completionRequest = TransferFromCompletionsUtils.convertRequest(request, isNativeSupport(),
+                supportOutputConfigEffort(property));
         clearLargeData(request);
         delegator.streamCompletion(completionRequest, url, property, callback);
     }

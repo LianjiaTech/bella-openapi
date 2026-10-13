@@ -19,6 +19,11 @@ public class OpenAIAdaptor implements MessageDelegatorAdaptor<OpenAIProperty> {
     }
 
     @Override
+    public boolean supportOutputConfigEffort(OpenAIProperty property) {
+        return property.isSupportOutputConfigEffort();
+    }
+
+    @Override
     public AnthropicAdaptor anthropicAdaptor() {
         return anthropicAdaptor;
     }
