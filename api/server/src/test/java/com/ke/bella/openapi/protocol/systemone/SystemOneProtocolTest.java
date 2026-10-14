@@ -18,6 +18,30 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SystemOneProtocolTest {
     @Test
+    void preservesStructuredStateWhenDeserializedAndForwarded() throws Exception {
+        SystemOneRequest request = JacksonUtils.deserialize("{"
+                + "\"model\":\"jev-latest\","
+                + "\"state\":{\"message\":\"Checkout is down again. This is my third request.\","
+                + "\"customer_contact_count\":3,\"resolved\":false,"
+                + "\"history\":[{\"channel\":\"email\",\"attempt\":1},\"follow-up\"]}"
+                + "}", SystemOneRequest.class);
+
+        SystemOneProperty property = new SystemOneProperty();
+        Request upstream = new TypesafeSystemOneAdaptor().buildRequest(
+                request, "https://api.typesafe.ai/v1/systemone", property);
+
+        Buffer buffer = new Buffer();
+        upstream.body().writeTo(buffer);
+        Map<?, ?> body = JacksonUtils.deserialize(buffer.readUtf8(), Map.class);
+        Map<?, ?> state = (Map<?, ?>) body.get("state");
+        assertEquals("Checkout is down again. This is my third request.", state.get("message"));
+        assertEquals(3, state.get("customer_contact_count"));
+        assertEquals(false, state.get("resolved"));
+        assertEquals("email", ((Map<?, ?>) ((java.util.List<?>) state.get("history")).get(0)).get("channel"));
+        assertEquals("follow-up", ((java.util.List<?>) state.get("history")).get(1));
+    }
+
+    @Test
     void preservesStructuredQuestionsAndAdditionalRequestFields() {
         SystemOneRequest request = JacksonUtils.deserialize("{"
                 + "\"state\":\"payouts failing\","

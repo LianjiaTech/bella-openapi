@@ -17,7 +17,7 @@ import java.util.Map;
 public class SystemOneRequest implements UserRequest, Serializable, IMemoryClearable {
     private static final long serialVersionUID = 1L;
 
-    private String state;
+    private Object state;
     private String model;
     private Object questions;
 

@@ -2,7 +2,7 @@ import { apiClient } from './client'
 
 export interface SystemOneRequest {
   model: string
-  state: string
+  state: unknown
   questions?: Record<string, unknown>
   user?: string
 }
