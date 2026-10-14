@@ -19,6 +19,7 @@ import com.ke.bella.openapi.protocol.web.WebExtractPriceInfo;
 import com.ke.bella.openapi.protocol.web.WebSearchPriceInfo;
 import com.ke.bella.openapi.protocol.systemone.SystemOnePriceInfo;
 import com.ke.bella.openapi.protocol.live.LivePriceInfo;
+import com.ke.bella.openapi.protocol.alpha.search.AlphaSearchPriceInfo;
 import com.ke.bella.openapi.utils.MatchUtils;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -49,6 +50,7 @@ public interface IPriceInfo extends IDescription {
         WEB_SEARCH("/v1/web/search", WebSearchPriceInfo.class),
         WEB_CRAWL("/v1/web/crawl", WebCrawlPriceInfo.class),
         WEB_EXTRACT("/v1/web/extract", WebExtractPriceInfo.class),
+        ALPHA_SEARCH("/v1/alpha/search", AlphaSearchPriceInfo.class),
         ;
 
         private final String endpoint;

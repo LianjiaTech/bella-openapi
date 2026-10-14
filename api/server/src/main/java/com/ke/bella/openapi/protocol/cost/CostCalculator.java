@@ -43,6 +43,8 @@ import com.ke.bella.openapi.protocol.web.WebExtractPriceInfo;
 import com.ke.bella.openapi.protocol.web.WebExtractUsage;
 import com.ke.bella.openapi.protocol.web.WebSearchPriceInfo;
 import com.ke.bella.openapi.protocol.web.WebSearchUsage;
+import com.ke.bella.openapi.protocol.alpha.search.AlphaSearchPriceInfo;
+import com.ke.bella.openapi.protocol.alpha.search.AlphaSearchUsage;
 import com.ke.bella.openapi.utils.JacksonUtils;
 import com.ke.bella.openapi.utils.MatchUtils;
 
@@ -99,6 +101,7 @@ public class CostCalculator {
         WEB_SEARCH("/v*/web/search", webSearch),
         WEB_CRAWL("/v*/web/crawl", webCrawl),
         WEB_EXTRACT("/v*/web/extract", webExtract),
+        ALPHA_SEARCH("/v*/alpha/search", alphaSearch),
         OCR("/v*/ocr/*", ocr),
         VIDEOS("/v*/videos", video),
         ;
@@ -186,6 +189,27 @@ public class CostCalculator {
         public boolean checkPriceInfo(String priceInfo) {
             EmbeddingPriceInfo price = JacksonUtils.deserialize(priceInfo, EmbeddingPriceInfo.class);
             return price != null && price.getInput() != null;
+        }
+    };
+
+    static EndpointCostCalculator alphaSearch = new EndpointCostCalculator() {
+        @Override
+        public CostDetails calculate(String priceInfo, Object usage) {
+            AlphaSearchPriceInfo price = JacksonUtils.deserialize(priceInfo, AlphaSearchPriceInfo.class);
+            AlphaSearchUsage requestUsage = usage instanceof AlphaSearchUsage
+                    ? (AlphaSearchUsage) usage
+                    : JacksonUtils.deserialize(JacksonUtils.serialize(usage), AlphaSearchUsage.class);
+            int count = requestUsage == null ? 0 : requestUsage.getRequestCount();
+            BigDecimal cost = price.getPricePerRequest()
+                    .multiply(BigDecimal.valueOf(count))
+                    .multiply(BigDecimal.valueOf(price.getSupplierDiscount()));
+            return CostDetails.builder().totalCost(cost).build();
+        }
+
+        @Override
+        public boolean checkPriceInfo(String priceInfo) {
+            AlphaSearchPriceInfo price = JacksonUtils.deserialize(priceInfo, AlphaSearchPriceInfo.class);
+            return price != null && price.validate();
         }
     };
 
