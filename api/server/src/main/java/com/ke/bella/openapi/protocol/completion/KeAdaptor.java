@@ -25,7 +25,7 @@ public class KeAdaptor implements CompletionAdaptorDelegator<OpenAIProperty> {
 
     @Override
     public CompletionResponse completion(CompletionRequest request, String url, OpenAIProperty property, Callbacks.HttpDelegator delegator) {
-        normalizeThinkingOptions(request);
+        normalizeThinkingOptions(request, property.isDefaultThinkingEnabled());
         request.setModel(property.getDeployName());
         return openAIAdaptor.completion(request, url, property, delegator);
     }
@@ -33,7 +33,7 @@ public class KeAdaptor implements CompletionAdaptorDelegator<OpenAIProperty> {
     @Override
     public void streamCompletion(CompletionRequest request, String url, OpenAIProperty property, Callbacks.StreamCompletionCallback callback,
             Callbacks.StreamDelegator delegator) {
-        normalizeThinkingOptions(request);
+        normalizeThinkingOptions(request, property.isDefaultThinkingEnabled());
         request.setModel(property.getDeployName());
         openAIAdaptor.streamCompletion(request, url, property, callback, delegator);
     }
@@ -48,8 +48,8 @@ public class KeAdaptor implements CompletionAdaptorDelegator<OpenAIProperty> {
         return OpenAIProperty.class;
     }
 
-    static void normalizeThinkingOptions(CompletionRequest request) {
-        boolean enableThinking = isThinkingEnabled(request);
+    static void normalizeThinkingOptions(CompletionRequest request, boolean defaultThinkingEnabled) {
+        boolean enableThinking = isThinkingEnabled(request, defaultThinkingEnabled);
         request.setThinking(null);
         request.setReasoning_effort(null);
         request.setEnable_thinking(null);
@@ -69,7 +69,7 @@ public class KeAdaptor implements CompletionAdaptorDelegator<OpenAIProperty> {
         extraBody.put("chat_template_kwargs", chatTemplateKwargs);
     }
 
-    private static boolean isThinkingEnabled(CompletionRequest request) {
+    private static boolean isThinkingEnabled(CompletionRequest request, boolean defaultThinkingEnabled) {
         if(request.getEnable_thinking() != null) {
             return request.getEnable_thinking();
         }
@@ -85,6 +85,6 @@ public class KeAdaptor implements CompletionAdaptorDelegator<OpenAIProperty> {
         if(reasoningEffort instanceof String && "none".equalsIgnoreCase((String) reasoningEffort)) {
             return false;
         }
-        return reasoningEffort != null;
+        return reasoningEffort != null || defaultThinkingEnabled;
     }
 }

@@ -16,6 +16,7 @@ public class OpenAIProperty extends CompletionProperty {
     String apiVersion;
     boolean supportStreamOptions = true;
     boolean supportOutputConfigEffort = false;
+    boolean defaultThinkingEnabled = false;
     String[] abandonFields;
 
     @Override
@@ -24,6 +25,7 @@ public class OpenAIProperty extends CompletionProperty {
         map.put("apiVersion", "API版本(url中需要拼接时填写)");
         map.put("supportStreamOptions", "是否支持StreamOptions参数");
         map.put("supportOutputConfigEffort", "是否支持将Messages output_config.effort转换为reasoning_effort");
+        map.put("defaultThinkingEnabled", "未指定thinking参数时是否启用思考");
         map.put("abandonFields", "禁用参数");
         return map;
     }

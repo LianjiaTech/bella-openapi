@@ -29,7 +29,7 @@ public class KeAdaptorTest {
         request.setThinking(mapOf("type", "enabled"));
         request.setReasoning_effort("high");
 
-        KeAdaptor.normalizeThinkingOptions(request);
+        KeAdaptor.normalizeThinkingOptions(request, false);
 
         assertThat(enableThinking(request)).isEqualTo(false);
         assertThat(request.getEnable_thinking()).isNull();
@@ -43,7 +43,7 @@ public class KeAdaptorTest {
         request.setThinking(mapOf("type", "disabled"));
         request.setReasoning_effort("high");
 
-        KeAdaptor.normalizeThinkingOptions(request);
+        KeAdaptor.normalizeThinkingOptions(request, false);
 
         assertThat(enableThinking(request)).isEqualTo(false);
     }
@@ -52,18 +52,46 @@ public class KeAdaptorTest {
     public void normalizeThinking_reasoningEffortEnablesNoneDisablesAndMissingFieldsDefaultsFalse() {
         CompletionRequest reasoningRequest = new CompletionRequest();
         reasoningRequest.setReasoning_effort("medium");
-        KeAdaptor.normalizeThinkingOptions(reasoningRequest);
+        KeAdaptor.normalizeThinkingOptions(reasoningRequest, false);
 
         CompletionRequest noneRequest = new CompletionRequest();
         noneRequest.setReasoning_effort("none");
-        KeAdaptor.normalizeThinkingOptions(noneRequest);
+        KeAdaptor.normalizeThinkingOptions(noneRequest, false);
 
         CompletionRequest defaultRequest = new CompletionRequest();
-        KeAdaptor.normalizeThinkingOptions(defaultRequest);
+        KeAdaptor.normalizeThinkingOptions(defaultRequest, false);
 
         assertThat(enableThinking(reasoningRequest)).isEqualTo(true);
         assertThat(enableThinking(noneRequest)).isEqualTo(false);
         assertThat(enableThinking(defaultRequest)).isEqualTo(false);
+    }
+
+    @Test
+    public void normalizeThinking_usesChannelDefaultWhenThinkingParametersAreMissing() {
+        CompletionRequest request = new CompletionRequest();
+
+        KeAdaptor.normalizeThinkingOptions(request, true);
+
+        assertThat(enableThinking(request)).isTrue();
+    }
+
+    @Test
+    public void normalizeThinking_explicitParametersOverrideChannelDefault() {
+        CompletionRequest enableThinkingRequest = new CompletionRequest();
+        enableThinkingRequest.setEnable_thinking(false);
+        KeAdaptor.normalizeThinkingOptions(enableThinkingRequest, true);
+
+        CompletionRequest thinkingRequest = new CompletionRequest();
+        thinkingRequest.setThinking(mapOf("type", "disabled"));
+        KeAdaptor.normalizeThinkingOptions(thinkingRequest, true);
+
+        CompletionRequest reasoningEffortRequest = new CompletionRequest();
+        reasoningEffortRequest.setReasoning_effort("none");
+        KeAdaptor.normalizeThinkingOptions(reasoningEffortRequest, true);
+
+        assertThat(enableThinking(enableThinkingRequest)).isFalse();
+        assertThat(enableThinking(thinkingRequest)).isFalse();
+        assertThat(enableThinking(reasoningEffortRequest)).isFalse();
     }
 
     @Test
@@ -76,11 +104,25 @@ public class KeAdaptorTest {
         extraBody.put("top_k", 20);
         request.setExtra_body(extraBody);
 
-        KeAdaptor.normalizeThinkingOptions(request);
+        KeAdaptor.normalizeThinkingOptions(request, false);
 
         assertThat(enableThinking(request)).isEqualTo(false);
         assertThat(chatTemplateKwargs(request)).containsEntry("temperature_scale", 0.8);
         assertThat(request.getExtra_body().get("top_k")).isEqualTo(20);
+    }
+
+    @Test
+    public void messagesMissingThinking_usesChannelDefault() {
+        CompletionRequest captured = runMessageRequestThroughKeCompletion(null, null, false, false, true);
+
+        assertThat(enableThinking(captured)).isTrue();
+    }
+
+    @Test
+    public void streamingMessagesMissingThinking_usesChannelDefault() {
+        CompletionRequest captured = runMessageRequestThroughKeCompletion(null, null, false, true, true);
+
+        assertThat(enableThinking(captured)).isTrue();
     }
 
     @Test
@@ -159,6 +201,11 @@ public class KeAdaptorTest {
 
     private CompletionRequest runMessageRequestThroughKeCompletion(MessageRequest.ThinkingConfig thinking,
             String effort, boolean supportOutputConfigEffort, boolean stream) {
+        return runMessageRequestThroughKeCompletion(thinking, effort, supportOutputConfigEffort, stream, false);
+    }
+
+    private CompletionRequest runMessageRequestThroughKeCompletion(MessageRequest.ThinkingConfig thinking,
+            String effort, boolean supportOutputConfigEffort, boolean stream, boolean defaultThinkingEnabled) {
         TestOpenAIAdaptor openAIAdaptor = new TestOpenAIAdaptor();
 
         KeAdaptor completionAdaptor = new KeAdaptor();
@@ -181,6 +228,7 @@ public class KeAdaptorTest {
 
         OpenAIProperty property = new OpenAIProperty();
         property.setSupportOutputConfigEffort(supportOutputConfigEffort);
+        property.setDefaultThinkingEnabled(defaultThinkingEnabled);
         if(stream) {
             messageAdaptor.streamMessages(request, "url", property, new Callbacks.StreamCompletionCallback() {
                 @Override public void onOpen() { }
