@@ -34,6 +34,11 @@ const VIDEO_BILLING_MODE_OPTIONS = [
   { value: 'gemini', label: 'Gemini' },
 ]
 
+const WEB_SEARCH_BILLING_MODE_OPTIONS = [
+  { value: 'request', label: 'request（按请求）' },
+  { value: 'search_type', label: 'search_type（按搜索类型）' },
+]
+
 function getFieldDisplayName(schema: TypeSchema, endpoint?: string): string {
   if (endpoint === '/v1/videos' && schema.code === 'pricePerSecond') {
     return '视频单价（元/秒）'
@@ -98,14 +103,27 @@ export const FieldRenderer = ({
 
     case 'string':
       if (schema.code === 'billingMode') {
-        const options = endpoint === '/v1/videos' ? VIDEO_BILLING_MODE_OPTIONS : BILLING_MODE_OPTIONS
-        const selectedValue = value || (endpoint === '/v1/videos' ? 'token' : BILLING_MODE_LEGACY_VALUE)
+        const isWebSearch = endpoint === '/v1/web/search'
+        const options = endpoint === '/v1/videos'
+          ? VIDEO_BILLING_MODE_OPTIONS
+          : isWebSearch
+            ? WEB_SEARCH_BILLING_MODE_OPTIONS
+            : BILLING_MODE_OPTIONS
+        const selectedValue = value || (endpoint === '/v1/videos'
+          ? 'token'
+          : isWebSearch
+            ? 'request'
+            : BILLING_MODE_LEGACY_VALUE)
         return (
           <div className="text-left">
             {hideLabel ? null : <Label className="text-sm font-medium text-gray-700 block mb-1.5">{displayName}</Label>}
             <Select
               value={selectedValue}
-              onValueChange={(selected) => onChange(endpoint === '/v1/videos' ? selected : selected === BILLING_MODE_LEGACY_VALUE ? '' : selected)}
+              onValueChange={(selected) => onChange(
+                endpoint === '/v1/videos' || isWebSearch
+                  ? selected
+                  : selected === BILLING_MODE_LEGACY_VALUE ? '' : selected
+              )}
             >
               <SelectTrigger className={commonProps.className}>
                 <SelectValue placeholder={`选择 ${displayName}`} />

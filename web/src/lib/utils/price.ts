@@ -252,6 +252,29 @@ interface VideoDurationPriceDetail {
   pricePerSecond?: number;
 }
 
+interface WebSearchPriceInfo {
+  billingMode?: string;
+  basicSearchPrice?: number;
+  advancedSearchPrice?: number;
+  requestPrice?: number;
+  batchDiscount?: number;
+  supplierDiscount?: number;
+}
+
+function formatWebSearchPriceInfo(priceInfo: WebSearchPriceInfo, unit: string, fmt: (value?: number) => string) {
+  const billingMode = priceInfo.billingMode || (priceInfo.requestPrice != null ? 'request' : 'search_type')
+  return {
+    tag: 'webSearch' as const,
+    unit,
+    basicSearchPrice: fmt(priceInfo.basicSearchPrice),
+    advancedSearchPrice: fmt(priceInfo.advancedSearchPrice),
+    requestPrice: fmt(priceInfo.requestPrice),
+    billingMode,
+    batchDiscount: priceInfo.batchDiscount,
+    supplierDiscount: priceInfo.supplierDiscount,
+  }
+}
+
 function formatVideoResolution(resolution?: string): string | undefined {
   if (!resolution) return undefined
   return /^\d+$/.test(resolution) ? `${resolution}P` : resolution
@@ -341,6 +364,7 @@ export function formatPrice(
       freeInputImageCount?: number
       basicSearchPrice?: number
       advancedSearchPrice?: number
+      requestPrice?: number
     }
     unit?: string
   }) {
@@ -408,15 +432,8 @@ export function formatPrice(
         supplierDiscount: priceInfo?.supplierDiscount,
       }
     }
-    if(priceInfo?.basicSearchPrice && priceInfo?.advancedSearchPrice) {
-      return {
-        tag: 'webSearch',
-        unit,
-        basicSearchPrice: fmt(priceInfo.basicSearchPrice),
-        advancedSearchPrice: fmt(priceInfo.advancedSearchPrice),
-        batchDiscount: priceInfo?.batchDiscount,
-        supplierDiscount: priceInfo?.supplierDiscount,
-      }
+    if(priceInfo?.requestPrice != null || priceInfo?.basicSearchPrice != null || priceInfo?.advancedSearchPrice != null) {
+      return formatWebSearchPriceInfo(priceInfo, unit, fmt)
     }
 
     if((priceInfo?.billingMode === 'duration' || priceInfo?.billingMode === 'minimax') && Array.isArray(priceInfo?.details)) {

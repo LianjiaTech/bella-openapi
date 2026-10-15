@@ -6,7 +6,9 @@ import com.ke.bella.openapi.protocol.IProtocolAdaptor;
  * Web Search Adaptor Interface Adaptor interface for web search functionality
  * using Tavily Search API
  */
-public interface WebSearchAdaptor<T extends WebSearchProperty> extends IProtocolAdaptor {
+public interface WebSearchAdaptor<R, T extends com.ke.bella.openapi.protocol.IProtocolProperty> extends IProtocolAdaptor {
+
+    Class<R> getRequestClass();
 
     /**
      * Perform web search
@@ -17,5 +19,5 @@ public interface WebSearchAdaptor<T extends WebSearchProperty> extends IProtocol
      *
      * @return web search response
      */
-    WebSearchResponse search(WebSearchRequest request, String url, T property);
+    com.ke.bella.openapi.protocol.OpenapiResponse search(R request, String url, T property);
 }

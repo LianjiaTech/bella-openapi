@@ -799,14 +799,20 @@ public class CostCalculator {
             // Basic Search: 1 API credit per request
             // Advanced Search: 2 API credits per request
             String searchDepth = searchUsage.getSearchDepth();
-            BigDecimal cost = "advanced".equalsIgnoreCase(searchDepth) ? price.getAdvancedSearchPrice() : price.getBasicSearchPrice();
+            BigDecimal cost;
+            if(price.getRequestPrice() != null) {
+                cost = price.getRequestPrice().multiply(BigDecimal.valueOf(searchUsage.getRequestCount()));
+            } else {
+                cost = "advanced".equalsIgnoreCase(searchDepth) ? price.getAdvancedSearchPrice() : price.getBasicSearchPrice();
+            }
             return CostDetails.builder().totalCost(cost).build();
         }
 
         @Override
         public boolean checkPriceInfo(String priceInfo) {
             WebSearchPriceInfo price = JacksonUtils.deserialize(priceInfo, WebSearchPriceInfo.class);
-            return price != null && price.getBasicSearchPrice() != null && price.getAdvancedSearchPrice() != null;
+            return price != null && (price.getRequestPrice() != null ||
+                    (price.getBasicSearchPrice() != null && price.getAdvancedSearchPrice() != null));
         }
     };
 

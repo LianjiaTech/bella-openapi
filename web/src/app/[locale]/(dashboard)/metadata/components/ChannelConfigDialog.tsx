@@ -163,6 +163,47 @@ function isVideoEndpoint(endpoint?: string): boolean {
   return endpoint === '/v1/videos'
 }
 
+function isWebSearchEndpoint(endpoint?: string): boolean {
+  return endpoint === '/v1/web/search'
+}
+
+function normalizeWebSearchPriceValues(values: Record<string, any>): Record<string, any> {
+  const billingMode = values.billingMode === 'search_type'
+    || (!values.billingMode && values.requestPrice == null
+      && (values.basicSearchPrice != null || values.advancedSearchPrice != null))
+    ? 'search_type'
+    : 'request'
+  return { ...values, billingMode }
+}
+
+function cleanWebSearchPriceValues(values: Record<string, any>): Record<string, any> {
+  const cleaned = normalizeWebSearchPriceValues(values)
+  if (cleaned.billingMode === 'request') {
+    delete cleaned.basicSearchPrice
+    delete cleaned.advancedSearchPrice
+  } else {
+    delete cleaned.requestPrice
+  }
+  return cleaned
+}
+
+function shouldShowWebSearchPriceParam(paramCode: string, billingMode?: string): boolean {
+  if (paramCode === 'billingMode') return true
+  return (billingMode || 'request') === 'search_type'
+    ? paramCode === 'basicSearchPrice' || paramCode === 'advancedSearchPrice'
+    : paramCode === 'requestPrice'
+}
+
+function sortWebSearchPriceParams(params: JsonSchema['params']): JsonSchema['params'] {
+  const order = new Map([
+    ['billingMode', 0],
+    ['requestPrice', 1],
+    ['basicSearchPrice', 2],
+    ['advancedSearchPrice', 3],
+  ])
+  return [...params].sort((a, b) => (order.get(a.code) ?? 99) - (order.get(b.code) ?? 99))
+}
+
 function isTtsEndpoint(endpoint?: string): boolean {
   return endpoint === '/v1/audio/speech' || endpoint === '/v1/audio/tts/stream'
 }
@@ -516,7 +557,11 @@ export function ChannelConfigDialog({
               initialPriceValues[param.code] = param.code === 'unit' ? defaultPriceUnit(endpoint) : ''
             }
           })
-          const displayPriceValues = isVideoEndpoint(endpoint) ? normalizeVideoPriceValues(initialPriceValues) : initialPriceValues
+          const displayPriceValues = isVideoEndpoint(endpoint)
+            ? normalizeVideoPriceValues(initialPriceValues)
+            : isWebSearchEndpoint(endpoint)
+              ? normalizeWebSearchPriceValues(initialPriceValues)
+              : initialPriceValues
           setPriceInfoValues(displayPriceValues)
 
           // 将初始值序列化为 JSON 字符串存入表单
@@ -589,6 +634,8 @@ export function ChannelConfigDialog({
               if (parsedValues) {
                 const displayValues = isVideoEndpoint(endpoint)
                   ? normalizeVideoPriceValues(convertVideoDurationPriceObj(parsedValues, 'load'))
+                  : isWebSearchEndpoint(endpoint)
+                    ? normalizeWebSearchPriceValues(parsedValues)
                   : isTtsEndpoint(endpoint)
                     ? convertTtsPriceObj(parsedValues, 'load')
                     : convertSpeakerHourlyPriceObj(parsedValues, 'load', endpoint)
@@ -768,9 +815,18 @@ export function ChannelConfigDialog({
    * 处理价格信息字段变化
    */
   const handlePriceInfoFieldChange = (fieldCode: string, value: any) => {
-    const updatedValues = {
+    const updatedValues: Record<string, any> = {
       ...priceInfoValues,
       [fieldCode]: value,
+    }
+    if (isWebSearchEndpoint(endpoint) && fieldCode === 'billingMode') {
+      updatedValues.billingMode = value || 'request'
+      if (updatedValues.billingMode === 'request') {
+        delete updatedValues.basicSearchPrice
+        delete updatedValues.advancedSearchPrice
+      } else {
+        delete updatedValues.requestPrice
+      }
     }
     setPriceInfoValues(updatedValues)
 
@@ -958,6 +1014,8 @@ export function ChannelConfigDialog({
       const parsed = JSON.parse(formData.priceInfo)
       const priceData = isVideoEndpoint(endpoint)
         ? convertVideoDurationPriceObj(cleanVideoPriceValues(parsed), 'save')
+        : isWebSearchEndpoint(endpoint)
+          ? cleanWebSearchPriceValues(parsed)
         : isTtsEndpoint(endpoint)
           ? convertTtsPriceObj(parsed, 'save')
           : convertSpeakerHourlyPriceObj(parsed, 'save', endpoint)
@@ -1097,9 +1155,19 @@ export function ChannelConfigDialog({
     if (param.code === 'supplierDiscount') {
       return false
     }
-    return isVideoEndpoint(endpoint) ? shouldShowVideoPriceParam(param.code, priceInfoValues.billingMode) : true
+    if (isVideoEndpoint(endpoint)) {
+      return shouldShowVideoPriceParam(param.code, priceInfoValues.billingMode)
+    }
+    if (isWebSearchEndpoint(endpoint)) {
+      return shouldShowWebSearchPriceParam(param.code, priceInfoValues.billingMode)
+    }
+    return true
   })
-  const displayPriceInfoParams = isVideoEndpoint(endpoint) ? sortVideoPriceParams(priceInfoParams) : priceInfoParams
+  const displayPriceInfoParams = isVideoEndpoint(endpoint)
+    ? sortVideoPriceParams(priceInfoParams)
+    : isWebSearchEndpoint(endpoint)
+      ? sortWebSearchPriceParams(priceInfoParams)
+      : priceInfoParams
   const capacityType = capacityTypeForEndpoint(endpoint)
   const showInputReplacementTexts = Boolean(channelInfoValues.inputReplacementEnabled)
 

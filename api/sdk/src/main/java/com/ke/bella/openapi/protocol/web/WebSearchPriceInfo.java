@@ -28,6 +28,10 @@ public class WebSearchPriceInfo implements IPriceInfo, Serializable {
      */
     private BigDecimal advancedSearchPrice;
 
+    private BigDecimal requestPrice;
+
+    private String billingMode;
+
     private double batchDiscount = 1.0;
     private double supplierDiscount = 1.0;
 
@@ -41,6 +45,8 @@ public class WebSearchPriceInfo implements IPriceInfo, Serializable {
         Map<String, String> map = new LinkedHashMap<>();
         map.put("basicSearchPrice", "基础搜索价格（分/请求）");
         map.put("advancedSearchPrice", "高级搜索价格（分/请求）");
+        map.put("requestPrice", "单次搜索价格（分/请求）");
+        map.put("billingMode", "计费模式：request（按请求）或 search_type（按搜索类型）");
         return map;
     }
 

@@ -13,6 +13,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class WebSearchUsage {
 
+    /** Number of upstream search requests made. Used by Doubao request-based billing. */
+    private int requestCount;
+
     /**
      * The search depth used for this request (basic or advanced)
      * Used to determine billing cost

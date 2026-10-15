@@ -11,7 +11,12 @@ import org.springframework.stereotype.Component;
  * Tavily Web Search Adaptor Implementation for Tavily Search API
  */
 @Component("TavilyWebSearchAdaptor")
-public class TavilySearchAdaptor implements WebSearchAdaptor<WebSearchProperty> {
+public class TavilySearchAdaptor implements WebSearchAdaptor<WebSearchRequest, WebSearchProperty> {
+
+    @Override
+    public Class<WebSearchRequest> getRequestClass() {
+        return WebSearchRequest.class;
+    }
 
     @Override
     public String endpoint() {

@@ -17,6 +17,21 @@ interface ModelCardProps {
   selectedCapability: string
 }
 
+type WebSearchDisplayPrice = {
+  tag: 'webSearch'
+  unit: string
+  basicSearchPrice: string
+  advancedSearchPrice: string
+  requestPrice: string
+  billingMode: string
+  batchDiscount: number | undefined
+  supplierDiscount: number | undefined
+}
+
+function isWebSearchDisplayPrice(priceInfo: ReturnType<typeof formatPriceInfo>): priceInfo is WebSearchDisplayPrice {
+  return priceInfo.tag === 'webSearch'
+}
+
 function formatCompactNumber(value: number | undefined): string {
   if (value == null || !Number.isFinite(value)) return "--"
   const rounded = Math.round(value)
@@ -141,16 +156,23 @@ export function ModelCard({ model, onAddChannel, selectedCapability }: ModelCard
               </>
             ) : priceInfo.tag === 'textToImage' ? (
               <TextToImageCard data={Array.isArray(priceInfo.data) ? priceInfo.data : []} discount={priceInfo.batchDiscount}/>
-            ) : priceInfo.tag === 'webSearch' ? (
+            ) : isWebSearchDisplayPrice(priceInfo) ? (
               <>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">{t("basicSearchPricing")}（{priceInfo.unit}）:</span>
-                  <span className="font-medium">{priceInfo.basicSearchPrice}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">{t("advancedSearchPricing")}（{priceInfo.unit}）:</span>
-                  <span className="font-medium">{priceInfo.advancedSearchPrice}</span>
-                </div>
+                {priceInfo.billingMode === 'request' ? (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">按请求（{priceInfo.unit}）:</span>
+                    <span className="font-medium">{priceInfo.requestPrice}</span>
+                  </div>
+                ) : (<>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">{t("basicSearchPricing")}（{priceInfo.unit}）:</span>
+                    <span className="font-medium">{priceInfo.basicSearchPrice}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">{t("advancedSearchPricing")}（{priceInfo.unit}）:</span>
+                    <span className="font-medium">{priceInfo.advancedSearchPrice}</span>
+                  </div>
+                </>)}
               </>
             ) : priceInfo.tag === 'displayPrice' ? (
               <DisplayPriceCard data={priceInfo.data} batchDiscount={priceInfo.batchDiscount} supplierDiscount={priceInfo.supplierDiscount} unit={priceInfo.unit}/>

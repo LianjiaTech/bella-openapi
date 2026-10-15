@@ -15,13 +15,13 @@ public class WebSearchLogHandler implements EndpointLogHandler {
     @Override
     public void process(EndpointProcessData endpointProcessData) {
         OpenapiResponse openapiResponse = endpointProcessData.getResponse();
+        WebSearchUsage usage = null;
         if(openapiResponse instanceof WebSearchResponse) {
-            WebSearchResponse response = (WebSearchResponse) openapiResponse;
-
-            // Create usage object from request and response data
-            WebSearchUsage usage = createUsageFromResponse(response, endpointProcessData);
-
-            // Set usage in process data for billing (no longer set in response)
+            usage = createUsageFromResponse((WebSearchResponse) openapiResponse, endpointProcessData);
+        } else if(openapiResponse instanceof DoubaoSearchResponse) {
+            usage = createUsageFromDoubaoResponse((DoubaoSearchResponse) openapiResponse, endpointProcessData);
+        }
+        if(usage != null) {
             endpointProcessData.setUsage(usage);
         }
     }
@@ -40,6 +40,7 @@ public class WebSearchLogHandler implements EndpointLogHandler {
         boolean includeImages = response.getImages() != null && !response.getImages().isEmpty();
 
         WebSearchUsage usage = new WebSearchUsage();
+        usage.setRequestCount(1);
         usage.setSearchDepth(searchDepth);
         usage.setResultCount(resultCount);
         usage.setIncludeImages(includeImages);
@@ -66,6 +67,12 @@ public class WebSearchLogHandler implements EndpointLogHandler {
 
         // Default to basic if not specified
         return "basic";
+    }
+
+    private WebSearchUsage createUsageFromDoubaoResponse(DoubaoSearchResponse response, EndpointProcessData processData) {
+        WebSearchUsage usage = new WebSearchUsage();
+        usage.setRequestCount(1);
+        return usage;
     }
 
     @Override

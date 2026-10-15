@@ -4,6 +4,8 @@ import com.ke.bella.openapi.EndpointContext;
 import com.ke.bella.openapi.EndpointProcessData;
 import com.ke.bella.openapi.annotations.EndpointAPI;
 import com.ke.bella.openapi.protocol.AdaptorManager;
+import com.ke.bella.openapi.protocol.OpenapiResponse;
+import com.ke.bella.openapi.protocol.IProtocolProperty;
 import com.ke.bella.openapi.protocol.ChannelRouter;
 import com.ke.bella.openapi.protocol.limiter.LimiterManager;
 import com.ke.bella.openapi.protocol.web.WebCrawlAdaptor;
@@ -21,6 +23,7 @@ import com.ke.bella.openapi.protocol.web.WebSearchResponse;
 import com.ke.bella.openapi.service.EndpointDataService;
 import com.ke.bella.openapi.tables.pojos.ChannelDB;
 import com.ke.bella.openapi.utils.JacksonUtils;
+import com.fasterxml.jackson.databind.JsonNode;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +32,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import javax.servlet.http.HttpServletRequest;
+import java.io.IOException;
+import org.apache.commons.io.IOUtils;
 
 /**
  * Web Search Controller Provides endpoints for web search and crawl
@@ -55,25 +61,37 @@ public class WebController {
      */
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @PostMapping("/search")
-    @Operation(summary = "Web Search", description = "Search the web using Tavily Search API")
-    public WebSearchResponse webSearch(@RequestBody WebSearchRequest request) {
-        String endpoint = EndpointContext.getRequest().getRequestURI();
-        String model = request.getModel();
-        endpointDataService.setEndpointData(endpoint, model, request);
+    @Operation(summary = "Web Search", description = "Search the web Search API")
+    public OpenapiResponse webSearch(HttpServletRequest httpRequest) throws IOException {
+        String endpoint = httpRequest.getRequestURI();
+        byte[] bodyBytes = IOUtils.toByteArray(httpRequest.getInputStream());
+        JsonNode body = JacksonUtils.deserialize(bodyBytes, JsonNode.class);
+        if(body == null || !body.isObject() || body.get("model") == null || body.get("model").isNull()) {
+            return OpenapiResponse.errorResponse(new OpenapiResponse.OpenapiError("invalid_request_error", "model is required", 400));
+        }
+        String model = body.get("model").asText();
         EndpointProcessData processData = EndpointContext.getProcessData();
         ChannelDB channel = router.route(endpoint, model, EndpointContext.getApikey(), processData.isMock());
         endpointDataService.setChannel(channel);
 
-        if(!EndpointContext.getProcessData().isPrivate()) {
-            limiterManager.incrementConcurrentCount(EndpointContext.getProcessData().getAkCode(), model);
-        }
-
-        String protocol = processData.getProtocol();
-        String url = processData.getForwardUrl();
+        String protocol = EndpointContext.getProcessData().getProtocol();
+        String url = EndpointContext.getProcessData().getForwardUrl();
         String channelInfo = channel.getChannelInfo();
 
         WebSearchAdaptor adaptor = adaptorManager.getProtocolAdaptor(endpoint, protocol, WebSearchAdaptor.class);
-        WebSearchProperty property = (WebSearchProperty) JacksonUtils.deserialize(channelInfo, adaptor.getPropertyClass());
+        if(adaptor == null) {
+            return OpenapiResponse.errorResponse(new OpenapiResponse.OpenapiError("invalid_request_error", "unsupported web search protocol: " + protocol, 400));
+        }
+        Object request = JacksonUtils.MAPPER.convertValue(body, adaptor.getRequestClass());
+        if(request == null) {
+            return OpenapiResponse.errorResponse(new OpenapiResponse.OpenapiError("invalid_request_error", "request body must be a JSON object", 400));
+        }
+        endpointDataService.setEndpointData(endpoint, model, request);
+        IProtocolProperty property = (IProtocolProperty) JacksonUtils.deserialize(channelInfo, adaptor.getPropertyClass());
+
+        if(!EndpointContext.getProcessData().isPrivate()) {
+            limiterManager.incrementConcurrentCount(EndpointContext.getProcessData().getAkCode(), model);
+        }
 
         return adaptor.search(request, url, property);
     }
