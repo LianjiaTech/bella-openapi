@@ -6,6 +6,7 @@ import com.ke.bella.openapi.configuration.RequestOptimizationConfig;
 import com.ke.bella.openapi.protocol.completion.CompletionRequest;
 import com.ke.bella.openapi.protocol.embedding.EmbeddingRequest;
 import com.ke.bella.openapi.protocol.message.MessageRequest;
+import com.ke.bella.openapi.protocol.message.MessageConversionOptions;
 import com.ke.bella.openapi.protocol.message.TransferFromCompletionsUtils;
 import com.ke.bella.openapi.protocol.rerank.RerankRequest;
 import com.ke.bella.openapi.protocol.tts.TtsRequest;
@@ -249,7 +250,7 @@ public class StageLoggingProcessor {
      */
     private void extractMessageMetrics(Object request, RequestMetrics.RequestMetricsBuilder builder, String encodingType) {
         if(request instanceof MessageRequest) {
-            CompletionRequest completion = TransferFromCompletionsUtils.convertRequest((MessageRequest) request, false);
+            CompletionRequest completion = TransferFromCompletionsUtils.convertRequest((MessageRequest) request, MessageConversionOptions.builder().build());
             extractCompletionMetrics(completion, builder, encodingType);
         }
     }

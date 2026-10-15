@@ -51,8 +51,10 @@ public class KeAdaptor implements CompletionAdaptorDelegator<OpenAIProperty> {
     static void normalizeThinkingOptions(CompletionRequest request, boolean defaultThinkingEnabled) {
         boolean enableThinking = isThinkingEnabled(request, defaultThinkingEnabled);
         request.setThinking(null);
-        request.setReasoning_effort(null);
         request.setEnable_thinking(null);
+        if(!enableThinking) {
+            request.setReasoning_effort(null);
+        }
 
         Map<String, Object> extraBody = request.getExtra_body();
         if(extraBody == null) {

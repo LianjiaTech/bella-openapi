@@ -8,6 +8,8 @@ import com.ke.bella.openapi.protocol.completion.CompletionAdaptor;
 import com.ke.bella.openapi.protocol.completion.CompletionProperty;
 import com.ke.bella.openapi.protocol.completion.CompletionRequest;
 import com.ke.bella.openapi.protocol.completion.CompletionResponse;
+import com.ke.bella.openapi.protocol.completion.OpenAIProperty;
+import com.ke.bella.openapi.protocol.message.MessageConversionOptions.MessageConversionOptionsBuilder;
 import com.ke.bella.openapi.protocol.completion.ToolCallSimulator;
 import org.apache.commons.lang3.StringUtils;
 
@@ -15,8 +17,16 @@ public interface MessageDelegatorAdaptor<T extends CompletionProperty> extends M
 
     CompletionAdaptor<T> delegator();
 
-    default boolean supportOutputConfigEffort(T property) {
-        return false;
+    default MessageConversionOptions messageConversionOptions(T property) {
+        MessageConversionOptionsBuilder builder = MessageConversionOptions.builder()
+                .nativeSupport(isNativeSupport());
+        if(property instanceof OpenAIProperty) {
+            OpenAIProperty openAIProperty = (OpenAIProperty) property;
+            builder.supportOutputConfigEffort(openAIProperty.isSupportOutputConfigEffort())
+                    .defaultThinkingEnabled(openAIProperty.isDefaultThinkingEnabled())
+                    .defaultThinkingEffort(openAIProperty.getDefaultThinkingEffort());
+        }
+        return builder.build();
     }
 
     default void preprocessMessageRequest(MessageRequest request, T property) {
@@ -68,8 +78,8 @@ public interface MessageDelegatorAdaptor<T extends CompletionProperty> extends M
 
     default MessageResponse createMessagesWithCompletionAdaptor(MessageRequest request, String url, T property, CompletionAdaptor<T> delegator) {
         preprocessMessageRequest(request, property);
-        CompletionRequest completionRequest = TransferFromCompletionsUtils.convertRequest(request, isNativeSupport(),
-                supportOutputConfigEffort(property));
+        CompletionRequest completionRequest = TransferFromCompletionsUtils.convertRequest(request,
+                messageConversionOptions(property));
         clearLargeData(request);
         CompletionResponse completionResponse = delegator.completion(completionRequest, url, property);
         EndpointContext.getProcessData().setResponse(completionResponse);
@@ -104,8 +114,8 @@ public interface MessageDelegatorAdaptor<T extends CompletionProperty> extends M
     default void streamMessagesWithCompletionAdaptor(MessageRequest request, String url, T property, Callbacks.StreamCompletionCallback callback,
             CompletionAdaptor<T> delegator) {
         preprocessMessageRequest(request, property);
-        CompletionRequest completionRequest = TransferFromCompletionsUtils.convertRequest(request, isNativeSupport(),
-                supportOutputConfigEffort(property));
+        CompletionRequest completionRequest = TransferFromCompletionsUtils.convertRequest(request,
+                messageConversionOptions(property));
         clearLargeData(request);
         delegator.streamCompletion(completionRequest, url, property, callback);
     }

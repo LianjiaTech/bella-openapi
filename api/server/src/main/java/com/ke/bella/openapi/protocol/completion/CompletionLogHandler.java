@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableMap;
 import com.ke.bella.openapi.EndpointProcessData;
 import com.ke.bella.openapi.RequestMetrics;
 import com.ke.bella.openapi.protocol.message.MessageRequest;
+import com.ke.bella.openapi.protocol.message.MessageConversionOptions;
 import com.ke.bella.openapi.protocol.message.TransferFromCompletionsUtils;
 import com.ke.bella.openapi.protocol.log.EndpointLogHandler;
 import com.ke.bella.openapi.utils.DateTimeUtils;
@@ -106,7 +107,7 @@ public class CompletionLogHandler implements EndpointLogHandler {
         }
         if(request instanceof MessageRequest) {
             EncodingType encoding = EncodingType.fromName(encodingType).orElse(EncodingType.CL100K_BASE);
-            CompletionRequest completionRequest = TransferFromCompletionsUtils.convertRequest((MessageRequest) request, false);
+            CompletionRequest completionRequest = TransferFromCompletionsUtils.convertRequest((MessageRequest) request, MessageConversionOptions.builder().build());
             int tokens = TokenCalculationUtils.calculateCompletionInputTokens(completionRequest, encoding);
             log.debug("Calculated inputTokens from converted message request: {}", tokens);
             return tokens;

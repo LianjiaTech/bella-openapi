@@ -3,6 +3,7 @@ package com.ke.bella.openapi.protocol.completion;
 import com.ke.bella.openapi.EndpointContext;
 import com.ke.bella.openapi.protocol.Callbacks;
 import com.ke.bella.openapi.protocol.message.MessageRequest;
+import com.ke.bella.openapi.protocol.message.MessageConversionOptions;
 import com.ke.bella.openapi.protocol.message.MessageResponse;
 import com.ke.bella.openapi.protocol.message.TransferFromCompletionsUtils;
 import org.junit.After;
@@ -23,7 +24,7 @@ public class KeAdaptorTest {
     }
 
     @Test
-    public void normalizeThinking_enableThinkingHasHighestPriorityAndClearsTopLevelFields() {
+    public void normalizeThinking_enableThinkingHasHighestPriorityAndClearsDisabledTopLevelFields() {
         CompletionRequest request = new CompletionRequest();
         request.setEnable_thinking(false);
         request.setThinking(mapOf("type", "enabled"));
@@ -116,6 +117,16 @@ public class KeAdaptorTest {
         CompletionRequest captured = runMessageRequestThroughKeCompletion(null, null, false, false, true);
 
         assertThat(enableThinking(captured)).isTrue();
+        assertThat(captured.getReasoning_effort()).isEqualTo("medium");
+    }
+
+    @Test
+    public void messagesMissingThinking_usesConfiguredDefaultEffort() {
+        CompletionRequest captured = runMessageRequestThroughKeCompletion(
+                null, null, false, false, true, "high");
+
+        assertThat(enableThinking(captured)).isTrue();
+        assertThat(captured.getReasoning_effort()).isEqualTo("high");
     }
 
     @Test
@@ -123,6 +134,7 @@ public class KeAdaptorTest {
         CompletionRequest captured = runMessageRequestThroughKeCompletion(null, null, false, true, true);
 
         assertThat(enableThinking(captured)).isTrue();
+        assertThat(captured.getReasoning_effort()).isEqualTo("medium");
     }
 
     @Test
@@ -130,7 +142,44 @@ public class KeAdaptorTest {
         CompletionRequest captured = runMessageRequestThroughKeCompletion(MessageRequest.ThinkingConfig.enabled(1024));
 
         assertThat(enableThinking(captured)).isEqualTo(true);
-        assertThat(captured.getReasoning_effort()).isNull();
+        assertThat(captured.getReasoning_effort()).isEqualTo("medium");
+    }
+
+    @Test
+    public void messagesThinkingEnabled_usesConfiguredDefaultEffort() {
+        CompletionRequest captured = runMessageRequestThroughKeCompletion(
+                MessageRequest.ThinkingConfig.enabled(1024), null, false, false, false, "high");
+
+        assertThat(captured.getReasoning_effort()).isEqualTo("high");
+    }
+
+    @Test
+    public void messagesThinkingEnabled_usesRequestEffortOverConfiguredDefault() {
+        CompletionRequest captured = runMessageRequestThroughKeCompletion(
+                MessageRequest.ThinkingConfig.enabled(1024), "max", true, false, false, "high");
+
+        assertThat(enableThinking(captured)).isEqualTo(true);
+        assertThat(captured.getReasoning_effort()).isEqualTo("max");
+    }
+
+    @Test
+    public void converterThinkingEnabled_defaultsToMediumWhenEffortIsNotConfigured() {
+        MessageRequest request = MessageRequest.builder()
+                .thinking(MessageRequest.ThinkingConfig.enabled(1024))
+                .build();
+
+        assertThat(TransferFromCompletionsUtils.convertRequest(request, MessageConversionOptions.builder().defaultThinkingEffort(null).build()).getReasoning_effort())
+                .isEqualTo("medium");
+    }
+
+    @Test
+    public void converterThinkingDisabled_doesNotSetReasoningEffortWithConfiguredDefault() {
+        MessageRequest request = MessageRequest.builder()
+                .thinking(MessageRequest.ThinkingConfig.builder().type("disabled").build())
+                .build();
+
+        assertThat(TransferFromCompletionsUtils.convertRequest(request, MessageConversionOptions.builder().defaultThinkingEffort("high").build()).getReasoning_effort())
+                .isNull();
     }
 
     @Test
@@ -142,10 +191,37 @@ public class KeAdaptorTest {
     }
 
     @Test
+    public void messagesThinkingDisabled_overridesChannelDefault() {
+        CompletionRequest captured = runMessageRequestThroughKeCompletion(
+                MessageRequest.ThinkingConfig.builder().type("disabled").build(), null, false, false, true);
+
+        assertThat(enableThinking(captured)).isEqualTo(false);
+        assertThat(captured.getReasoning_effort()).isNull();
+    }
+
+    @Test
+    public void messagesThinkingDisabled_overridesRequestEffort() {
+        CompletionRequest captured = runMessageRequestThroughKeCompletion(
+                MessageRequest.ThinkingConfig.builder().type("disabled").build(), "high", true, false, true);
+
+        assertThat(enableThinking(captured)).isEqualTo(false);
+        assertThat(captured.getReasoning_effort()).isNull();
+    }
+
+    @Test
     public void messagesOutputConfigEffort_convertsForEnabledKeChannel() {
         CompletionRequest captured = runMessageRequestThroughKeCompletion(null, "high", true, false);
 
-        assertThat(captured.getReasoning_effort()).isNull();
+        assertThat(captured.getReasoning_effort()).isEqualTo("high");
+        assertThat(enableThinking(captured)).isTrue();
+    }
+
+    @Test
+    public void messagesOutputConfigEffort_overridesConfiguredDefaultEffort() {
+        CompletionRequest captured = runMessageRequestThroughKeCompletion(
+                null, "max", true, false, true, "high");
+
+        assertThat(captured.getReasoning_effort()).isEqualTo("max");
         assertThat(enableThinking(captured)).isTrue();
     }
 
@@ -170,7 +246,7 @@ public class KeAdaptorTest {
     public void streamingMessagesOutputConfigEffort_usesSameConversion() {
         CompletionRequest captured = runMessageRequestThroughKeCompletion(null, "max", true, true);
 
-        assertThat(captured.getReasoning_effort()).isNull();
+        assertThat(captured.getReasoning_effort()).isEqualTo("max");
         assertThat(enableThinking(captured)).isTrue();
     }
 
@@ -181,7 +257,7 @@ public class KeAdaptorTest {
                     .outputConfig(MessageRequest.OutputConfig.builder().effort(effort).build())
                     .build();
 
-            assertThat(TransferFromCompletionsUtils.convertRequest(request, false, true).getReasoning_effort())
+            assertThat(TransferFromCompletionsUtils.convertRequest(request, MessageConversionOptions.builder().supportOutputConfigEffort(true).build()).getReasoning_effort())
                     .isEqualTo(effort);
         }
     }
@@ -192,7 +268,7 @@ public class KeAdaptorTest {
                 .outputConfig(MessageRequest.OutputConfig.builder().effort("low").build())
                 .build();
 
-        assertThat(TransferFromCompletionsUtils.convertRequest(request, false, false).getReasoning_effort()).isNull();
+        assertThat(TransferFromCompletionsUtils.convertRequest(request, MessageConversionOptions.builder().build()).getReasoning_effort()).isNull();
     }
 
     private CompletionRequest runMessageRequestThroughKeCompletion(MessageRequest.ThinkingConfig thinking) {
@@ -201,11 +277,18 @@ public class KeAdaptorTest {
 
     private CompletionRequest runMessageRequestThroughKeCompletion(MessageRequest.ThinkingConfig thinking,
             String effort, boolean supportOutputConfigEffort, boolean stream) {
-        return runMessageRequestThroughKeCompletion(thinking, effort, supportOutputConfigEffort, stream, false);
+        return runMessageRequestThroughKeCompletion(thinking, effort, supportOutputConfigEffort, stream, false, null);
     }
 
     private CompletionRequest runMessageRequestThroughKeCompletion(MessageRequest.ThinkingConfig thinking,
             String effort, boolean supportOutputConfigEffort, boolean stream, boolean defaultThinkingEnabled) {
+        return runMessageRequestThroughKeCompletion(thinking, effort, supportOutputConfigEffort, stream,
+                defaultThinkingEnabled, null);
+    }
+
+    private CompletionRequest runMessageRequestThroughKeCompletion(MessageRequest.ThinkingConfig thinking,
+            String effort, boolean supportOutputConfigEffort, boolean stream, boolean defaultThinkingEnabled,
+            String defaultThinkingEffort) {
         TestOpenAIAdaptor openAIAdaptor = new TestOpenAIAdaptor();
 
         KeAdaptor completionAdaptor = new KeAdaptor();
@@ -229,6 +312,7 @@ public class KeAdaptorTest {
         OpenAIProperty property = new OpenAIProperty();
         property.setSupportOutputConfigEffort(supportOutputConfigEffort);
         property.setDefaultThinkingEnabled(defaultThinkingEnabled);
+        property.setDefaultThinkingEffort(defaultThinkingEffort);
         if(stream) {
             messageAdaptor.streamMessages(request, "url", property, new Callbacks.StreamCompletionCallback() {
                 @Override public void onOpen() { }

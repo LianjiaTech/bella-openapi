@@ -60,12 +60,33 @@ public class TransferFromCompletionsUtils {
         }
     }
 
+    @Deprecated
     public static CompletionRequest convertRequest(MessageRequest messageRequest, boolean nativeSupport) {
-        return convertRequest(messageRequest, nativeSupport, false);
+        return convertRequest(messageRequest, MessageConversionOptions.builder()
+                .nativeSupport(nativeSupport)
+                .build());
     }
 
+    @Deprecated
     public static CompletionRequest convertRequest(MessageRequest messageRequest, boolean nativeSupport,
             boolean supportOutputConfigEffort) {
+        return convertRequest(messageRequest, MessageConversionOptions.builder()
+                .nativeSupport(nativeSupport)
+                .supportOutputConfigEffort(supportOutputConfigEffort)
+                .build());
+    }
+
+    @Deprecated
+    public static CompletionRequest convertRequest(MessageRequest messageRequest, boolean nativeSupport,
+            boolean supportOutputConfigEffort, String defaultThinkingEffort) {
+        return convertRequest(messageRequest, MessageConversionOptions.builder()
+                .nativeSupport(nativeSupport)
+                .supportOutputConfigEffort(supportOutputConfigEffort)
+                .defaultThinkingEffort(defaultThinkingEffort)
+                .build());
+    }
+
+    public static CompletionRequest convertRequest(MessageRequest messageRequest, MessageConversionOptions options) {
         if(messageRequest == null) {
             return null;
         }
@@ -77,8 +98,8 @@ public class TransferFromCompletionsUtils {
 
         // 处理消息转换
         List<Message> chatMessages = new ArrayList<>();
-        processSystemMessage(messageRequest, chatMessages, nativeSupport);
-        processInputMessages(messageRequest, chatMessages, nativeSupport);
+        processSystemMessage(messageRequest, chatMessages, options.isNativeSupport());
+        processInputMessages(messageRequest, chatMessages, options.isNativeSupport());
         builder.messages(chatMessages);
 
         // 处理工具和工具选择
@@ -86,7 +107,7 @@ public class TransferFromCompletionsUtils {
         setToolChoice(builder, messageRequest);
 
         // 处理推理配置
-        setThinkingConfig(builder, messageRequest, nativeSupport, supportOutputConfigEffort);
+        setThinkingConfig(builder, messageRequest, options);
 
         return builder.build();
     }
@@ -385,21 +406,31 @@ public class TransferFromCompletionsUtils {
     }
 
     private static void setThinkingConfig(CompletionRequest.CompletionRequestBuilder<?, ?> builder,
-            MessageRequest request, boolean nativeSupport, boolean supportOutputConfigEffort) {
+            MessageRequest request, MessageConversionOptions options) {
         if(request.getThinking() != null) {
             if(!request.getThinking().isEnabled()) {
+                if(!options.isNativeSupport()) {
+                    builder.enable_thinking(false);
+                }
                 return;
             }
-            if(nativeSupport) {
+            if(options.isSupportOutputConfigEffort() && request.getOutputConfig() != null
+                    && StringUtils.isNotBlank(request.getOutputConfig().getEffort())) {
+                builder.reasoning_effort(request.getOutputConfig().getEffort());
+                return;
+            }
+            if(options.isNativeSupport()) {
                 builder.reasoning_effort(request.getThinking());
             } else {
-                builder.reasoning_effort("medium");
+                builder.reasoning_effort(StringUtils.defaultIfBlank(options.getDefaultThinkingEffort(), "medium"));
             }
             return;
         }
-        if(supportOutputConfigEffort && request.getOutputConfig() != null
+        if(options.isSupportOutputConfigEffort() && request.getOutputConfig() != null
                 && StringUtils.isNotBlank(request.getOutputConfig().getEffort())) {
             builder.reasoning_effort(request.getOutputConfig().getEffort());
+        } else if(!options.isNativeSupport() && options.isDefaultThinkingEnabled()) {
+            builder.reasoning_effort(StringUtils.defaultIfBlank(options.getDefaultThinkingEffort(), "medium"));
         }
     }
 

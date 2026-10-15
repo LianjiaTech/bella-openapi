@@ -17,6 +17,7 @@ public class OpenAIProperty extends CompletionProperty {
     boolean supportStreamOptions = true;
     boolean supportOutputConfigEffort = false;
     boolean defaultThinkingEnabled = false;
+    String defaultThinkingEffort;
     String[] abandonFields;
 
     @Override
@@ -26,6 +27,7 @@ public class OpenAIProperty extends CompletionProperty {
         map.put("supportStreamOptions", "是否支持StreamOptions参数");
         map.put("supportOutputConfigEffort", "是否支持将Messages output_config.effort转换为reasoning_effort");
         map.put("defaultThinkingEnabled", "未指定thinking参数时是否启用思考");
+        map.put("defaultThinkingEffort", "Messages thinking启用时转换的默认思考强度");
         map.put("abandonFields", "禁用参数");
         return map;
     }
