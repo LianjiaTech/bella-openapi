@@ -1,6 +1,7 @@
 package com.ke.bella.openapi;
 
 import com.ke.bella.openapi.protocol.completion.CompletionProperty;
+import com.ke.bella.openapi.protocol.systemone.SystemOneProperty;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -30,5 +31,16 @@ public class TypeSchemaTest {
 
         assertEquals("SessionId Header", sessionId.getName());
         assertEquals("string", sessionId.getValueType());
+    }
+
+    @Test
+    public void systemOneHeadersAreMapConfiguration() {
+        TypeSchema headers = JsonSchema.toSchema(SystemOneProperty.class).getParams().stream()
+                .filter(param -> param.getCode().equals("headers"))
+                .findFirst()
+                .orElseThrow(AssertionError::new);
+
+        assertEquals("额外请求头", headers.getName());
+        assertEquals("map", headers.getValueType());
     }
 }

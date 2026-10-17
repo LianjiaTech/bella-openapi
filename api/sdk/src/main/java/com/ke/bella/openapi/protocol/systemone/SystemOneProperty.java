@@ -11,12 +11,14 @@ import java.util.Map;
 public class SystemOneProperty implements IProtocolProperty {
     private AuthorizationProperty auth;
     private String deployName;
+    private Map<String, String> headers = new LinkedHashMap<>();
 
     @Override
     public Map<String, String> description() {
         Map<String, String> map = new LinkedHashMap<>();
         map.put("auth", "鉴权配置");
         map.put("deployName", "供应商侧部署/模型名称");
+        map.put("headers", "额外请求头");
         return map;
     }
 }

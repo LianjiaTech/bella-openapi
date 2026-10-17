@@ -10,6 +10,7 @@ import okhttp3.Response;
 import okio.Buffer;
 import org.junit.jupiter.api.Test;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -103,6 +104,24 @@ class SystemOneProtocolTest {
         Buffer buffer = new Buffer();
         upstream.body().writeTo(buffer);
         assertTrue(buffer.readUtf8().contains("\"questions\""));
+    }
+
+    @Test
+    void addsConfiguredHeadersWithoutOverridingAuthorization() throws Exception {
+        SystemOneRequest request = JacksonUtils.deserialize("{\"state\":\"hello\",\"questions\":{}}", SystemOneRequest.class);
+        SystemOneProperty property = new SystemOneProperty();
+        property.setAuth(new com.ke.bella.openapi.protocol.AuthorizationProperty(
+                com.ke.bella.openapi.protocol.AuthorizationProperty.AuthType.BEARER, null, "secret", null));
+        Map<String, String> headers = new LinkedHashMap<>();
+        headers.put("ark-beta-systemone-api", "true");
+        headers.put("Authorization", "should-not-override");
+        property.setHeaders(headers);
+
+        Request upstream = new TypesafeSystemOneAdaptor().buildRequest(
+                request, "https://ark.cn-beijing.volces.com/api/v1/systemone", property);
+
+        assertEquals("Bearer secret", upstream.header("Authorization"));
+        assertEquals("true", upstream.header("ark-beta-systemone-api"));
     }
 
     @Test

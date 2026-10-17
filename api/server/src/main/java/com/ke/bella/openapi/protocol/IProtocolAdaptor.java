@@ -3,7 +3,10 @@ package com.ke.bella.openapi.protocol;
 import com.ke.bella.openapi.EndpointContext;
 import com.ke.bella.openapi.ISummary;
 import okhttp3.Request;
+import org.apache.commons.lang3.StringUtils;
+
 import java.util.Arrays;
+import java.util.Map;
 
 public interface IProtocolAdaptor {
 
@@ -26,6 +29,20 @@ public interface IProtocolAdaptor {
         default:
             return builder.header("Authorization", "Bearer " + property.getApiKey());
         }
+    }
+
+    default Request.Builder applyHeaders(Request.Builder builder, Map<String, String> headers,
+            String protectedHeader) {
+        if(headers == null) {
+            return builder;
+        }
+        for(Map.Entry<String, String> header : headers.entrySet()) {
+            if(StringUtils.isNotBlank(header.getKey()) && header.getValue() != null
+                    && (protectedHeader == null || !protectedHeader.equalsIgnoreCase(header.getKey()))) {
+                builder.header(header.getKey(), header.getValue());
+            }
+        }
+        return builder;
     }
 
     /**

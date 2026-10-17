@@ -1,6 +1,7 @@
 package com.ke.bella.openapi.protocol.systemone;
 
 import com.ke.bella.openapi.protocol.Callbacks;
+import com.ke.bella.openapi.protocol.AuthorizationProperty;
 import com.ke.bella.openapi.protocol.OpenapiResponse;
 import com.ke.bella.openapi.utils.HttpUtils;
 import com.ke.bella.openapi.utils.JacksonUtils;
@@ -23,7 +24,10 @@ public class TypesafeSystemOneAdaptor implements SystemOneAdaptor<SystemOnePrope
         if(StringUtils.isNotBlank(property.getDeployName())) {
             request.setModel(property.getDeployName());
         }
-        return authorizationRequestBuilder(property.getAuth())
+        String protectedHeader = property.getAuth() != null
+                && property.getAuth().getType() == AuthorizationProperty.AuthType.CUSTOM
+                ? property.getAuth().getHeader() : "Authorization";
+        return applyHeaders(authorizationRequestBuilder(property.getAuth()), property.getHeaders(), protectedHeader)
                 .url(url)
                 .post(RequestBody.create(MediaType.parse("application/json"), JacksonUtils.toByte(request)))
                 .build();
