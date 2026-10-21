@@ -61,7 +61,7 @@ public class HttpUtils {
             new ThreadPoolExecutor.CallerRunsPolicy());
 
     private static final int defaultConnectionTimeout = 30;
-    private static final int defaultReadTimeout = 300;
+    private static final int defaultReadTimeout = 600;
 
     public static OkHttpClient defaultOkhttpClient() {
         OkHttpClient.Builder builder = clientBuilder()
