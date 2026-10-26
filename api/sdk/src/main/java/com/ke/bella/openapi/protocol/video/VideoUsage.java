@@ -45,6 +45,8 @@ public class VideoUsage implements Serializable {
     @JsonProperty("SR")
     private String sr;
 
+    private String ratio;
+
     private Boolean audio;
 
     @JsonProperty("video_count")

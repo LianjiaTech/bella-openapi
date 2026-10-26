@@ -149,6 +149,7 @@ public class EntityConstants {
         OPENAI_VARIATION("OpenAIVariationAdaptor"),
         PADDLE_OCR("PaddleOCRAdaptor"),
         QWEN("QwenAdaptor"),
+        WAN3_VIDEO("Wan3Video"),
         RESPONSES_API("ResponsesApiAdaptor"),
         TAVILY_CRAWL("TavilyCrawlAdaptor"),
         TAVILY_EXTRACT("TavilyExtractAdaptor"),

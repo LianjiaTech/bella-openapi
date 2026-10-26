@@ -90,7 +90,7 @@ class EntityConstantsTest {
                 "HuoshanJobBatchAdaptor", "HuoshanLMAdaptor", "HuoshanRealtimeTtsAdaptor", "KeAdaptor",
                 "KeRerankAdaptor", "LarkAdaptor", "MiniMaxAdaptor", "MockAdaptor", "OpenAIAdaptor",
                 "OpenAIBatchAdaptor", "OpenAIResponsesAdaptor", "OpenAIVariationAdaptor", "PaddleOCRAdaptor",
-                "QwenAdaptor", "ResponsesApiAdaptor", "TavilyCrawlAdaptor", "TavilyExtractAdaptor",
+                "QwenAdaptor", "Wan3Video", "ResponsesApiAdaptor", "TavilyCrawlAdaptor", "TavilyExtractAdaptor",
                 "TavilySearchAdaptor", "TencentAdaptor", "TypesafeSystemOneAdaptor", "VertexAdaptor", "VertexBatchAdaptor", "YidaoAdaptor"));
 
         Set<String> actual = Arrays.stream(EntityConstants.Protocol.values())
