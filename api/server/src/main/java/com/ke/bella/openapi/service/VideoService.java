@@ -21,6 +21,9 @@ public class VideoService {
     @Resource
     private QueueClient queueClient;
 
+    @Resource
+    private VideoTaskMetadataStore videoTaskMetadataStore;
+
     public VideoJob createVideoJob(VideoCreateRequest request, String apikey) {
         String model = request.getModel();
 
@@ -96,6 +99,10 @@ public class VideoService {
             }
         }
 
+        if(videoJob.getChannelVideoId() == null) {
+            videoJob.setChannelVideoId(videoTaskMetadataStore.getChannelVideoId(task.getTaskId()));
+        }
+
         return videoJob;
     }
 
@@ -103,6 +110,9 @@ public class VideoService {
     private void applyResult(VideoJob videoJob, Map<String, Object> result) {
         if(result.get("status") != null) {
             videoJob.setStatus(String.valueOf(result.get("status")));
+        }
+        if(result.get("channelVideoId") != null) {
+            videoJob.setChannelVideoId(String.valueOf(result.get("channelVideoId")));
         }
         if(result.get("boundFileId") != null) {
             videoJob.setBoundFileId(String.valueOf(result.get("boundFileId")));

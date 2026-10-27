@@ -9,6 +9,7 @@ import com.ke.bella.openapi.protocol.video.VideoAdaptor;
 import com.ke.bella.openapi.protocol.video.VideoCreateRequest;
 import com.ke.bella.openapi.protocol.video.VideoJob;
 import com.ke.bella.openapi.protocol.video.VideoProperty;
+import com.ke.bella.openapi.service.VideoTaskMetadataStore;
 import com.ke.bella.openapi.tables.pojos.ChannelDB;
 import com.ke.bella.openapi.utils.JacksonUtils;
 import com.ke.bella.queue.TaskWrapper;
@@ -41,10 +42,11 @@ public class VideoTaskProcessor implements EndpointTaskProcessor {
 
     private final AdaptorManager adaptorManager;
     private final OpenAiService openAiService;
+    private final VideoTaskMetadataStore videoTaskMetadataStore;
     private volatile PollTask pollTask;
 
     public void start() {
-        pollTask = new PollTask(openAiService, adaptorManager);
+        pollTask = new PollTask(openAiService, adaptorManager, videoTaskMetadataStore);
         TaskExecutor.submit(pollTask);
     }
 
@@ -66,6 +68,7 @@ public class VideoTaskProcessor implements EndpointTaskProcessor {
     @Override
     public TaskProcessResult execute(TaskWrapper taskWrapper, ChannelDB channel, TaskSlot slot) {
         String taskId = taskWrapper.getTask().getTaskId();
+        String channelVideoId = null;
         log.info("Video task started, taskId: {}, channel: {}", taskId, channel.getChannelCode());
         try {
             VideoCreateRequest request = taskWrapper.getPayload(VideoCreateRequest.class);
@@ -73,15 +76,17 @@ public class VideoTaskProcessor implements EndpointTaskProcessor {
             VideoAdaptor<VideoProperty> adaptor = getAdaptor(channel.getProtocol());
             VideoProperty property = getProperty(adaptor, channel.getChannelInfo());
             adaptor.prepareRequest(request, taskWrapper.getTask().getAk());
-            String channelVideoId = adaptor.submitVideoTask(request, channel.getUrl(), property, taskId);
+            channelVideoId = adaptor.submitVideoTask(request, channel.getUrl(), property, taskId);
             log.info("Video task submitted to channel, taskId: {}, channelVideoId: {}", taskId, channelVideoId);
 
+            videoTaskMetadataStore.saveChannelVideoId(taskId, channelVideoId);
             putPollTask(taskId, channelVideoId, channel);
             log.info("Video poll task created, taskId: {}, channelVideoId: {}", taskId, channelVideoId);
             return TaskProcessResult.SYNC_DONE;
         } catch (Exception e) {
             log.error("Video task execution failed, taskId: {}, channel: {}", taskId, channel.getChannelCode(), e);
-            taskWrapper.markComplete(createErrorResult(e));
+            taskWrapper.markComplete(createErrorResult(e, channelVideoId));
+            videoTaskMetadataStore.deleteChannelVideoId(taskId);
             return TaskProcessResult.SYNC_DONE;
         }
     }
@@ -119,11 +124,14 @@ public class VideoTaskProcessor implements EndpointTaskProcessor {
         return (VideoProperty) JacksonUtils.deserialize(channelInfo, adaptor.getPropertyClass());
     }
 
-    private static Map<String, Object> createErrorResult(Exception e) {
+    private static Map<String, Object> createErrorResult(Exception e, String channelVideoId) {
         if(e instanceof BellaException) {
             OpenapiResponse.OpenapiError openapiError = ((BellaException) e).convertToOpenapiError();
             Map<String, Object> body = new HashMap<>();
             body.put("status", VideoJob.Status.failed.name());
+            if(channelVideoId != null) {
+                body.put("channelVideoId", channelVideoId);
+            }
             body.put("error", openapiError);
 
             Map<String, Object> resultMap = new HashMap<>();
@@ -131,12 +139,15 @@ public class VideoTaskProcessor implements EndpointTaskProcessor {
             resultMap.put("body", body);
             return resultMap;
         }
-        return createErrorResult("execution_error", e.getMessage());
+        return createErrorResult("execution_error", e.getMessage(), channelVideoId);
     }
 
-    private static Map<String, Object> createErrorResult(String code, String message) {
+    private static Map<String, Object> createErrorResult(String code, String message, String channelVideoId) {
         Map<String, Object> body = new HashMap<>();
         body.put("status", VideoJob.Status.failed.name());
+        if(channelVideoId != null) {
+            body.put("channelVideoId", channelVideoId);
+        }
         Map<String, String> error = new HashMap<>();
         error.put("code", code);
         error.put("message", message);
@@ -152,13 +163,16 @@ public class VideoTaskProcessor implements EndpointTaskProcessor {
     public static class PollTask implements Runnable {
         private final OpenAiService openAiService;
         private final AdaptorManager adaptorManager;
+        private final VideoTaskMetadataStore videoTaskMetadataStore;
 
         @Getter
         private volatile boolean stopped = false;
 
-        public PollTask(OpenAiService openAiService, AdaptorManager adaptorManager) {
+        public PollTask(OpenAiService openAiService, AdaptorManager adaptorManager,
+                VideoTaskMetadataStore videoTaskMetadataStore) {
             this.openAiService = openAiService;
             this.adaptorManager = adaptorManager;
+            this.videoTaskMetadataStore = videoTaskMetadataStore;
         }
 
         @Override
@@ -218,6 +232,7 @@ public class VideoTaskProcessor implements EndpointTaskProcessor {
             String channelUrl = MapUtils.getString(data, "channelUrl");
             String channelInfo = MapUtils.getString(data, "channelInfo");
             long createdAt = MapUtils.getLongValue(data, "createdAt");
+            boolean originalTaskCompleted = false;
 
             try {
                 ChannelVideoResult result = resolve(taskId, channelVideoId, protocol, channelUrl, channelInfo, createdAt);
@@ -234,14 +249,18 @@ public class VideoTaskProcessor implements EndpointTaskProcessor {
                 }
 
                 Map<String, Object> resultMap = createResult(result);
-                completeTask(taskId, resultMap);
+                originalTaskCompleted = completeTask(taskId, resultMap);
                 completeTask(task.getTaskId(), resultMap);
                 log.info("Video task completed, taskId: {}, status: {}", taskId, result.getStatus());
             } catch (Exception e) {
                 log.error("Error processing video poll task: {}, originalTaskId: {}", task.getTaskId(), taskId, e);
-                Map<String, Object> errorResult = createErrorResult(e);
-                completeTask(taskId, errorResult);
+                Map<String, Object> errorResult = createErrorResult(e, channelVideoId);
+                originalTaskCompleted = completeTask(taskId, errorResult);
                 completeTask(task.getTaskId(), errorResult);
+            } finally {
+                if(originalTaskCompleted) {
+                    videoTaskMetadataStore.deleteChannelVideoId(taskId);
+                }
             }
         }
 
@@ -320,11 +339,13 @@ public class VideoTaskProcessor implements EndpointTaskProcessor {
             return resultMap;
         }
 
-        private void completeTask(String taskId, Map<String, Object> result) {
+        private boolean completeTask(String taskId, Map<String, Object> result) {
             try {
                 openAiService.completeTask(taskId, result);
+                return true;
             } catch (Exception e) {
                 log.error("Failed to complete task, taskId: {}", taskId, e);
+                return false;
             }
         }
 

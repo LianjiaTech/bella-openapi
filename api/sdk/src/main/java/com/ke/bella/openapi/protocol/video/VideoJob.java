@@ -31,6 +31,8 @@ public class VideoJob extends OpenapiResponse {
 
     private String status;
 
+    private String channelVideoId;
+
     private Integer progress;
 
     @JsonProperty("created_at")
