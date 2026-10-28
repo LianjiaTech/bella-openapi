@@ -371,9 +371,24 @@ public class RealtimeTtsHandler extends TextWebSocketHandler implements Realtime
             return;
         }
         taskContext.setState(RealtimeTtsTaskContext.State.SPEECH_STARTED);
-        if(!sender.sendText(RealtimeTtsMessage.started(sessionId, taskContext.getTaskId(), taskContext.getCapability()))) {
+        if(!sender.sendText(RealtimeTtsMessage.started(sessionId, taskContext.getTaskId(), taskContext.getCapability(),
+                upstreamProviderMetadata(taskContext.getUpstreamConnection())))) {
             finalizeClientSendFailure(taskContext);
         }
+    }
+
+    private Map<String, Object> upstreamProviderMetadata(RealtimeTtsUpstreamConnection connection) {
+        if(connection == null) {
+            return null;
+        }
+        Map<String, Object> metadata = new HashMap<>();
+        if(StringUtils.isNotBlank(connection.getUpstreamLogId())) {
+            metadata.put("upstream_log_id", connection.getUpstreamLogId());
+        }
+        if(StringUtils.isNotBlank(connection.getUpstreamConnectId())) {
+            metadata.put("upstream_connect_id", connection.getUpstreamConnectId());
+        }
+        return metadata.isEmpty() ? null : metadata;
     }
 
     @Override

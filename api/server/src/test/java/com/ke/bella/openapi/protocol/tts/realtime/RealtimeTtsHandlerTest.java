@@ -85,6 +85,48 @@ public class RealtimeTtsHandlerTest {
     }
 
     @Test
+    public void speechStartedIncludesCurrentUpstreamMetadata() throws Exception {
+        RealtimeTtsHandler handler = new RealtimeTtsHandler(new EndpointProcessData(), null, null, null,
+                mock(EndpointLogger.class));
+        WebSocketSession clientSession = mock(WebSocketSession.class);
+        when(clientSession.isOpen()).thenReturn(true);
+        handler.afterConnectionEstablished(clientSession);
+        RealtimeTtsTaskContext taskContext = taskContext(null);
+        RealtimeTtsUpstreamConnection connection = upstreamConnection(mock(RealtimeTtsAdaptor.class), null);
+        connection.setUpstreamLogId("log-123");
+        connection.setUpstreamConnectId("connect-123");
+        taskContext.setUpstreamConnection(connection);
+        ReflectionTestUtils.setField(handler, "activeTask", taskContext);
+
+        handler.onSpeechStarted(taskContext);
+
+        ArgumentCaptor<WebSocketMessage> captor = ArgumentCaptor.forClass(WebSocketMessage.class);
+        verify(clientSession).sendMessage(captor.capture());
+        RealtimeTtsMessage started = JacksonUtils.deserialize(((TextMessage) captor.getValue()).getPayload(), RealtimeTtsMessage.class);
+        assertEquals("log-123", started.getPayload().getProviderMetadata().get("upstream_log_id"));
+        assertEquals("connect-123", started.getPayload().getProviderMetadata().get("upstream_connect_id"));
+    }
+
+    @Test
+    public void speechStartedOmitsMissingUpstreamMetadata() throws Exception {
+        RealtimeTtsHandler handler = new RealtimeTtsHandler(new EndpointProcessData(), null, null, null,
+                mock(EndpointLogger.class));
+        WebSocketSession clientSession = mock(WebSocketSession.class);
+        when(clientSession.isOpen()).thenReturn(true);
+        handler.afterConnectionEstablished(clientSession);
+        RealtimeTtsTaskContext taskContext = taskContext(null);
+        taskContext.setUpstreamConnection(upstreamConnection(mock(RealtimeTtsAdaptor.class), null));
+        ReflectionTestUtils.setField(handler, "activeTask", taskContext);
+
+        handler.onSpeechStarted(taskContext);
+
+        ArgumentCaptor<WebSocketMessage> captor = ArgumentCaptor.forClass(WebSocketMessage.class);
+        verify(clientSession).sendMessage(captor.capture());
+        RealtimeTtsMessage started = JacksonUtils.deserialize(((TextMessage) captor.getValue()).getPayload(), RealtimeTtsMessage.class);
+        assertNull(started.getPayload().getProviderMetadata());
+    }
+
+    @Test
     public void connectionEstablishmentDoesNotCloseClientSession() throws Exception {
         EndpointProcessData processData = new EndpointProcessData();
         RealtimeTtsHandler handler = new RealtimeTtsHandler(processData, null, null, null, mock(EndpointLogger.class));

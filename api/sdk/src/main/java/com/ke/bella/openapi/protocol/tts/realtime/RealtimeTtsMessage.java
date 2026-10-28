@@ -56,8 +56,16 @@ public class RealtimeTtsMessage {
     }
 
     public static RealtimeTtsMessage started(String sessionId, String taskId, RealtimeTtsCapability capability) {
+        return started(sessionId, taskId, capability, null);
+    }
+
+    public static RealtimeTtsMessage started(String sessionId, String taskId, RealtimeTtsCapability capability,
+            Map<String, Object> providerMetadata) {
         return response(RealtimeTtsEventType.SPEECH_STARTED, sessionId, taskId, null,
-                STATUS_SUCCESS, "Success", RealtimeTtsPayload.builder().capabilities(capability).build());
+                STATUS_SUCCESS, "Success", RealtimeTtsPayload.builder()
+                        .capabilities(capability)
+                        .providerMetadata(providerMetadata)
+                        .build());
     }
 
     public static RealtimeTtsMessage audioDelta(String sessionId, String taskId, int sequence, String audioId, RealtimeTtsPayload frozen,

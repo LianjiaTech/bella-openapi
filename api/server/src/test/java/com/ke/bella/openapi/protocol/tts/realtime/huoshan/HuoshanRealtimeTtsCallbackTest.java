@@ -151,6 +151,8 @@ public class HuoshanRealtimeTtsCallbackTest {
 
         callback.onOpen(webSocket, response);
 
+        assertEquals("log-123", connection.getUpstreamLogId());
+        assertEquals("connect-123", connection.getUpstreamConnectId());
         assertEquals("log-123", task.getProcessData().getUpstreamLogId());
         assertEquals("connect-123", task.getProcessData().getUpstreamConnectId());
         assertEquals("log-123", task.getProcessData().getChannelRequestId());
