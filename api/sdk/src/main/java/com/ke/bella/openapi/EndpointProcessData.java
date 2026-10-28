@@ -135,6 +135,7 @@ public class EndpointProcessData {
     private boolean overrideInnerLog;
     private String clientIp;
     private String clientid;
+    private String serviceClientCode;
     private CredentialType credentialType;
     private String failureStage;
     private String costExpectation;

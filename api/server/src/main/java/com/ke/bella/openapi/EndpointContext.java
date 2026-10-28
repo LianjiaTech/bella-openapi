@@ -95,6 +95,10 @@ public class EndpointContext {
         setApikey(authResult.getApikeyInfo());
         EndpointContext.getProcessData().setCredentialType(authResult.getCredentialType());
         EndpointContext.getProcessData().setClientid(authResult.getClientid());
+        EndpointContext.getProcessData().setServiceClientCode(authResult.getServiceClientCode());
+        if(authResult.isServiceClient()) {
+            BellaContext.setAuthResult(authResult);
+        }
     }
 
     public static void setEndpointData(String endpoint, String model, ChannelDB channel, Object request) {

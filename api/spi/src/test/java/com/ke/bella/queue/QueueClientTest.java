@@ -1,7 +1,13 @@
 package com.ke.bella.queue;
 
+import com.ke.bella.openapi.BellaContext;
+import com.ke.bella.openapi.apikey.ApikeyInfo;
+import com.ke.bella.openapi.auth.AuthResult;
+import com.ke.bella.openapi.auth.CredentialType;
+import com.ke.bella.openapi.request.BellaInterceptor;
 import com.theokanning.openai.queue.Put;
 import okhttp3.Request;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -17,6 +23,12 @@ public class QueueClientTest {
     @BeforeEach
     public void setUp() {
         queueClient = QueueClient.getInstance("https://test.api.example.com");
+    }
+
+    @AfterEach
+    public void tearDown() {
+        BellaContext.clearAll();
+        BellaInterceptor.configureServiceClient(null, null);
     }
 
     /**
@@ -108,6 +120,22 @@ public class QueueClientTest {
         String authHeader = request.header("Authorization");
         assertNotNull(authHeader, "Authorization header should be present");
         assertEquals("Bearer test-api-key-123", authHeader, "Authorization header should have Bearer token");
+    }
+
+    @Test
+    public void testBuildRequest_WithServiceClientContext() {
+        BellaInterceptor.configureServiceClient("default-client", "service-credential-xxx");
+        BellaContext.setAuthResult(AuthResult.builder()
+                .credentialType(CredentialType.SERVICE_CLIENT)
+                .apikeyInfo(ApikeyInfo.builder().code("ak-user-001").build())
+                .build());
+
+        Request request = queueClient.buildRequest(
+                "https://test.api.example.com/v1/queue/put", "user-api-key", "{}");
+
+        assertEquals("Bearer service-credential-xxx", request.header("Authorization"));
+        assertEquals("default-client", request.header(BellaContext.SERVICE_CLIENT_HEADER));
+        assertEquals("ak-user-001", request.header(BellaContext.EFFECTIVE_API_KEY_CODE_HEADER));
     }
 
     /**

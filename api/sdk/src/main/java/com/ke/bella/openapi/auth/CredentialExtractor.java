@@ -10,6 +10,7 @@ import org.springframework.http.HttpHeaders;
 
 public final class CredentialExtractor {
     public static final String CLIENT_SECRET_PREFIX = "csak-";
+    public static final String SERVICE_CLIENT_PREFIX = "sc-";
 
     private CredentialExtractor() {
     }
@@ -20,6 +21,11 @@ public final class CredentialExtractor {
             return auth.substring(7);
         }
         return auth;
+    }
+
+    public static boolean isServiceClient(String auth) {
+        String credential = stripBearer(auth);
+        return StringUtils.isNotBlank(credential) && credential.startsWith(SERVICE_CLIENT_PREFIX);
     }
 
     public static String extract(HttpServletRequest request) {

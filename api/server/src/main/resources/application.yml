@@ -68,6 +68,9 @@ bella:
       cleanup-cron: "0 0 * * * ?"
   console:
     user-quota-edit-enabled: false
+  service-client:
+    code: default-client
+    # token: <service-client-credential>
   client-secret:
     issuer: bella-openapi
     audience: bella-openapi

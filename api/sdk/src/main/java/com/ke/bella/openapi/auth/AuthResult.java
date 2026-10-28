@@ -15,8 +15,13 @@ public class AuthResult {
     private ApikeyInfo apikeyInfo;
     private CredentialType credentialType;
     private String clientid;
+    private String serviceClientCode;
 
     public boolean isClientSecret() {
         return CredentialType.CLIENT_SECRET == credentialType;
+    }
+
+    public boolean isServiceClient() {
+        return CredentialType.SERVICE_CLIENT == credentialType;
     }
 }

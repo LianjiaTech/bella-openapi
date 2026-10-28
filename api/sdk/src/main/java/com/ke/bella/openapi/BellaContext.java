@@ -15,6 +15,8 @@ public class BellaContext {
     public static final String BELLA_REQUEST_ID_HEADER = "X-BELLA-REQUEST-ID";
     public static final String BELLA_REQUEST_MOCK_HEADER = "X-BELLA-MOCK-REQUEST";
     public static final String BELLA_USER_AK_HEADER = "X-BELLA-USER-AK-CODE";
+    public static final String SERVICE_CLIENT_HEADER = "X-Service-Client";
+    public static final String EFFECTIVE_API_KEY_CODE_HEADER = "X-Effective-Api-Key-Code";
     public static final String BELLA_DIRECT_HEADER = "X-BELLA-DIRECT";
     public static final String BELLA_MODEL_HEADER = "X-BELLA-MODEL";
     public static final String EXTERNAL_REQUEST_ID_HEADER = "X-Req-Id";

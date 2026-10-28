@@ -3,6 +3,7 @@ package com.ke.bella.openapi.server;
 import javax.annotation.PostConstruct;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -17,6 +18,7 @@ import com.ke.bella.openapi.auth.ClientSecretAuthenticator;
 import com.ke.bella.openapi.auth.ClientSecretProperties;
 import com.ke.bella.openapi.client.OpenapiClient;
 import com.ke.bella.openapi.request.BellaRequestFilter;
+import com.ke.bella.openapi.request.BellaInterceptor;
 import com.ke.bella.openapi.server.intercept.AuthorizationInterceptor;
 import com.ke.bella.openapi.server.intercept.ConcurrentStartInterceptor;
 import com.ke.bella.openapi.utils.HttpUtils;
@@ -24,6 +26,12 @@ import com.ke.bella.openapi.utils.HttpUtils;
 @Configuration
 @EnableConfigurationProperties({ OpenapiProperties.class, ClientSecretProperties.class })
 public class BellaServiceConfiguration implements WebMvcConfigurer {
+
+    @Value("${bella.service-client.code:default-client}")
+    private String serviceClientCode;
+
+    @Value("${bella.service-client.token:}")
+    private String serviceClientToken;
 
     @Autowired
     @Lazy
@@ -39,6 +47,7 @@ public class BellaServiceConfiguration implements WebMvcConfigurer {
     @PostConstruct
     public void postConstruct() {
         HttpUtils.setOpenapiHost(openapiProperties.getHost());
+        BellaInterceptor.configureServiceClient(serviceClientCode, serviceClientToken);
     }
 
     @Bean

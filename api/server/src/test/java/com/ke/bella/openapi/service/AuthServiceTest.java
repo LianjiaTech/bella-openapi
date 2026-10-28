@@ -68,4 +68,29 @@ public class AuthServiceTest {
                 .isInstanceOfSatisfying(BellaException.ClientSecretException.class,
                         exception -> assertThat(exception.getCode()).isEqualTo("client_secret_forbidden"));
     }
+
+    @Test
+    public void acceptsLegacyServiceClientCredentialWithEffectiveAkCode() {
+        String token = "sc-service-token";
+        ApikeyInfo effective = ApikeyInfo.builder().code("ak-user-001").build();
+        ReflectionTestUtils.setField(authService, "serviceClientToken", token);
+        ReflectionTestUtils.setField(authService, "serviceClientCode", "default-client");
+        when(apikeyService.verifyAuthByCode("ak-user-001")).thenReturn(effective);
+
+        AuthResult result = authService.authenticateWithEffectiveApiKeyCode(
+                "Bearer " + token, "ak-user-001", null);
+
+        assertThat(result.getCredentialType()).isEqualTo(CredentialType.SERVICE_CLIENT);
+        assertThat(result.getServiceClientCode()).isEqualTo("default-client");
+        assertThat(result.getApikeyInfo()).isSameAs(effective);
+        verify(apikeyService).verifyAuthByCode("ak-user-001");
+    }
+
+    @Test
+    public void rejectsEffectiveAkCodeForOrdinaryApiKey() {
+        assertThatThrownBy(() -> authService.authenticateWithEffectiveApiKeyCode(
+                "Bearer sk-user-token", "ak-user-001", null))
+                .isInstanceOf(BellaException.AuthorizationException.class)
+                .hasMessageContaining("only valid for ServiceClient");
+    }
 }

@@ -1,7 +1,9 @@
 package com.ke.bella.queue;
 
+import com.ke.bella.openapi.BellaContext;
 import com.ke.bella.openapi.protocol.BellaEventSourceListener;
 import com.ke.bella.openapi.protocol.Callbacks;
+import com.ke.bella.openapi.request.BellaInterceptor;
 import com.ke.bella.openapi.utils.HttpUtils;
 import com.ke.bella.openapi.utils.JacksonUtils;
 import com.theokanning.openai.queue.Put;
@@ -95,6 +97,7 @@ public class QueueClient {
         if(apikey != null) {
             builder.header("Authorization", "Bearer " + apikey);
         }
+        BellaInterceptor.addServiceClientHeaders(builder, BellaContext.snapshot());
         return builder.build();
     }
 
@@ -105,6 +108,7 @@ public class QueueClient {
         if(apikey != null) {
             builder.header("Authorization", "Bearer " + apikey);
         }
+        BellaInterceptor.addServiceClientHeaders(builder, BellaContext.snapshot());
         return builder.build();
     }
 
