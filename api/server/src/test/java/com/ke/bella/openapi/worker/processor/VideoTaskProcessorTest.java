@@ -6,10 +6,12 @@ import com.ke.bella.openapi.protocol.video.VideoAdaptor;
 import com.ke.bella.openapi.protocol.video.VideoJob;
 import com.ke.bella.openapi.protocol.video.VideoProperty;
 import com.ke.bella.openapi.protocol.video.QwenProperty;
-import com.ke.bella.openapi.service.VideoTaskMetadataStore;
+import com.ke.bella.openapi.tables.pojos.ChannelDB;
+import com.theokanning.openai.queue.Put;
 import com.theokanning.openai.queue.Task;
 import com.theokanning.openai.service.OpenAiService;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.HashMap;
@@ -22,7 +24,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -32,7 +33,7 @@ public class VideoTaskProcessorTest {
     @SuppressWarnings("unchecked")
     public void pollTaskResultIncludesChannelVideoIdForSuccessfulAndFailedResults() {
         VideoTaskProcessor.PollTask pollTask = new VideoTaskProcessor.PollTask(
-                mock(OpenAiService.class), mock(AdaptorManager.class), mock(VideoTaskMetadataStore.class));
+                mock(OpenAiService.class), mock(AdaptorManager.class));
 
         Map<String, Object> completedResult = ReflectionTestUtils.invokeMethod(pollTask, "createResult",
                 ChannelVideoResult.builder()
@@ -52,11 +53,33 @@ public class VideoTaskProcessorTest {
     }
 
     @Test
+    public void putPollTaskUsesOriginalTaskIdAsTraceId() {
+        OpenAiService openAiService = mock(OpenAiService.class);
+        VideoTaskProcessor processor = VideoTaskProcessor.builder()
+                .openAiService(openAiService)
+                .adaptorManager(mock(AdaptorManager.class))
+                .build();
+        ChannelDB channel = new ChannelDB();
+        channel.setChannelCode("video-channel");
+        channel.setProtocol("test-protocol");
+        channel.setUrl("https://channel");
+        channel.setChannelInfo("{}");
+
+        ReflectionTestUtils.invokeMethod(processor, "putPollTask", "original-task", "vendor-id", channel);
+
+        ArgumentCaptor<Put> putCaptor = ArgumentCaptor.forClass(Put.class);
+        verify(openAiService).putTask(putCaptor.capture());
+        Put pollPut = putCaptor.getValue();
+        assertThat(pollPut.getTraceId()).isEqualTo("original-task");
+        assertThat(pollPut.getData().get("channelCode")).isEqualTo("video-channel");
+        assertThat(pollPut.getData().get("channelVideoId")).isEqualTo("vendor-id");
+    }
+
+    @Test
     @SuppressWarnings("unchecked")
-    public void pollTaskDeletesMetadataAfterWritingTerminalFailureToOriginalTask() {
+    public void pollTaskCompletesBothTasksAfterTerminalFailure() {
         OpenAiService openAiService = mock(OpenAiService.class);
         AdaptorManager adaptorManager = mock(AdaptorManager.class);
-        VideoTaskMetadataStore metadataStore = mock(VideoTaskMetadataStore.class);
         VideoAdaptor<VideoProperty> adaptor = mock(VideoAdaptor.class);
         doReturn(QwenProperty.class).when(adaptor).getPropertyClass();
         when(adaptor.queryVideoTask(eq("vendor-id"), eq("https://channel"), any(VideoProperty.class)))
@@ -67,21 +90,20 @@ public class VideoTaskProcessorTest {
         when(adaptorManager.getProtocolAdaptor(VideoJob.ENDPOINT, "test-protocol")).thenReturn(adaptor);
 
         VideoTaskProcessor.PollTask pollTask = new VideoTaskProcessor.PollTask(
-                openAiService, adaptorManager, metadataStore);
+                openAiService, adaptorManager);
         Task pollQueueTask = pollQueueTask();
 
         ReflectionTestUtils.invokeMethod(pollTask, "processTask", pollQueueTask);
 
         verify(openAiService).completeTask(eq("original-task"), anyMap());
-        verify(metadataStore).deleteChannelVideoId("original-task");
+        verify(openAiService).completeTask(eq("poll-task"), anyMap());
     }
 
     @Test
     @SuppressWarnings("unchecked")
-    public void pollTaskKeepsMetadataWhenOriginalTaskCompletionFails() {
+    public void pollTaskCompletesPollTaskWhenOriginalTaskCompletionFails() {
         OpenAiService openAiService = mock(OpenAiService.class);
         AdaptorManager adaptorManager = mock(AdaptorManager.class);
-        VideoTaskMetadataStore metadataStore = mock(VideoTaskMetadataStore.class);
         VideoAdaptor<VideoProperty> adaptor = mock(VideoAdaptor.class);
         doReturn(QwenProperty.class).when(adaptor).getPropertyClass();
         when(adaptor.queryVideoTask(eq("vendor-id"), eq("https://channel"), any(VideoProperty.class)))
@@ -94,11 +116,10 @@ public class VideoTaskProcessorTest {
                 .when(openAiService).completeTask(eq("original-task"), anyMap());
 
         VideoTaskProcessor.PollTask pollTask = new VideoTaskProcessor.PollTask(
-                openAiService, adaptorManager, metadataStore);
+                openAiService, adaptorManager);
 
         ReflectionTestUtils.invokeMethod(pollTask, "processTask", pollQueueTask());
 
-        verify(metadataStore, never()).deleteChannelVideoId("original-task");
         verify(openAiService).completeTask(eq("poll-task"), anyMap());
     }
 

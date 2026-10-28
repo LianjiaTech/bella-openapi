@@ -11,7 +11,6 @@ import com.ke.bella.openapi.script.LuaScriptExecutor;
 import com.ke.bella.openapi.server.OpenAiServiceFactory;
 import com.ke.bella.openapi.server.OpenapiProperties;
 import com.ke.bella.openapi.service.ChannelService;
-import com.ke.bella.openapi.service.VideoTaskMetadataStore;
 import com.ke.bella.openapi.tables.pojos.ChannelDB;
 import com.ke.bella.queue.QueueMode;
 import com.theokanning.openai.queue.Queue;
@@ -42,8 +41,6 @@ public class WorkerManager {
 
     @Resource
     private ChannelService channelService;
-    @Resource
-    private VideoTaskMetadataStore videoTaskMetadataStore;
     @Resource
     private AdaptorManager adaptorManager;
     @Resource
@@ -197,7 +194,6 @@ public class WorkerManager {
                     .luaScriptExecutor(luaScriptExecutor)
                     .limiterManager(limiterManager)
                     .chatSafetyCheckService(chatSafetyCheckService)
-                    .videoTaskMetadataStore(videoTaskMetadataStore)
                     .workerManager(this)
                     .build();
         } else if(mode == QueueMode.BATCH) {

@@ -1,6 +1,7 @@
 package com.ke.bella.openapi.service;
 
 import com.ke.bella.queue.QueueClient;
+import com.ke.bella.openapi.worker.processor.VideoTaskProcessor;
 import com.theokanning.openai.queue.Task;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -26,9 +27,6 @@ public class VideoServiceTest {
     @Mock
     private QueueClient queueClient;
 
-    @Mock
-    private VideoTaskMetadataStore videoTaskMetadataStore;
-
     @Test
     public void queryVideoJobPrefersChannelVideoIdFromTaskResult() {
         Task task = taskWithResult("task-1", "running", "vendor-id-from-task");
@@ -37,19 +35,27 @@ public class VideoServiceTest {
         assertThat(videoService.queryVideoJob("task-1", "api-key").getChannelVideoId())
                 .isEqualTo("vendor-id-from-task");
 
-        verify(videoTaskMetadataStore, never()).getChannelVideoId("task-1");
+        verify(queueClient, never()).getTaskByTraceId(
+                VideoTaskProcessor.CREATED_VENDOR_VIDEO_QUEUE, "task-1", "api-key");
     }
 
     @Test
-    public void queryVideoJobFallsBackToRedisWhenTaskResultHasNoChannelVideoId() {
+    public void queryVideoJobReadsChannelVideoIdFromPollTaskTrace() {
         Task task = taskWithResult("task-1", "running", null);
+        Task pollTask = org.mockito.Mockito.mock(Task.class);
+        Map<String, Object> pollData = new HashMap<>();
+        pollData.put("channelVideoId", "vendor-id-from-poll-task");
+        when(pollTask.getData()).thenReturn(pollData);
         when(queueClient.getTaskDetail("task-1", "api-key")).thenReturn(task);
-        when(videoTaskMetadataStore.getChannelVideoId("task-1")).thenReturn("vendor-id-from-redis");
+        when(queueClient.getTaskByTraceId(
+                VideoTaskProcessor.CREATED_VENDOR_VIDEO_QUEUE, "task-1", "api-key"))
+                .thenReturn(pollTask);
 
         assertThat(videoService.queryVideoJob("task-1", "api-key").getChannelVideoId())
-                .isEqualTo("vendor-id-from-redis");
+                .isEqualTo("vendor-id-from-poll-task");
 
-        verify(videoTaskMetadataStore).getChannelVideoId("task-1");
+        verify(queueClient).getTaskByTraceId(
+                VideoTaskProcessor.CREATED_VENDOR_VIDEO_QUEUE, "task-1", "api-key");
     }
 
     private Task taskWithResult(String taskId, String status, String channelVideoId) {

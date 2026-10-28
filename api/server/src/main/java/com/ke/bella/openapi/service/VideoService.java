@@ -5,6 +5,7 @@ import com.ke.bella.openapi.protocol.video.VideoCreateRequest;
 import com.ke.bella.openapi.protocol.video.VideoJob;
 import com.ke.bella.openapi.protocol.video.VideoUsage;
 import com.ke.bella.openapi.utils.JacksonUtils;
+import com.ke.bella.openapi.worker.processor.VideoTaskProcessor;
 import com.ke.bella.queue.QueueClient;
 import com.theokanning.openai.queue.Put;
 import com.theokanning.openai.queue.Task;
@@ -20,9 +21,6 @@ public class VideoService {
 
     @Resource
     private QueueClient queueClient;
-
-    @Resource
-    private VideoTaskMetadataStore videoTaskMetadataStore;
 
     public VideoJob createVideoJob(VideoCreateRequest request, String apikey) {
         String model = request.getModel();
@@ -54,7 +52,7 @@ public class VideoService {
         if(task == null) {
             return null;
         }
-        return mapTaskToVideoJob(task);
+        return mapTaskToVideoJob(task, apikey);
     }
 
     public VideoJob cancelVideoJob(String taskId, String apikey) {
@@ -62,11 +60,11 @@ public class VideoService {
         if(task == null) {
             return null;
         }
-        return mapTaskToVideoJob(task);
+        return mapTaskToVideoJob(task, apikey);
     }
 
     @SuppressWarnings("unchecked")
-    private VideoJob mapTaskToVideoJob(Task task) {
+    private VideoJob mapTaskToVideoJob(Task task, String apikey) {
         VideoJob videoJob = new VideoJob();
         videoJob.setId(task.getTaskId());
 
@@ -100,7 +98,13 @@ public class VideoService {
         }
 
         if(videoJob.getChannelVideoId() == null) {
-            videoJob.setChannelVideoId(videoTaskMetadataStore.getChannelVideoId(task.getTaskId()));
+            Task pollTask = queueClient.getTaskByTraceId(VideoTaskProcessor.CREATED_VENDOR_VIDEO_QUEUE, task.getTaskId(), apikey);
+            if(pollTask != null && pollTask.getData() != null) {
+                Object channelVideoId = pollTask.getData().get("channelVideoId");
+                if(channelVideoId != null) {
+                    videoJob.setChannelVideoId(String.valueOf(channelVideoId));
+                }
+            }
         }
 
         return videoJob;

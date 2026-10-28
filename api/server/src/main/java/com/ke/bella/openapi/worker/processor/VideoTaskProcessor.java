@@ -9,7 +9,6 @@ import com.ke.bella.openapi.protocol.video.VideoAdaptor;
 import com.ke.bella.openapi.protocol.video.VideoCreateRequest;
 import com.ke.bella.openapi.protocol.video.VideoJob;
 import com.ke.bella.openapi.protocol.video.VideoProperty;
-import com.ke.bella.openapi.service.VideoTaskMetadataStore;
 import com.ke.bella.openapi.tables.pojos.ChannelDB;
 import com.ke.bella.openapi.utils.JacksonUtils;
 import com.ke.bella.queue.TaskWrapper;
@@ -38,15 +37,14 @@ public class VideoTaskProcessor implements EndpointTaskProcessor {
     private static final long POLL_INTERVAL_MS = 10_000;
     private static final int POLL_PROCESS_TIMEOUT_SECONDS = 60;
     private static final long MAX_POLL_DURATION_MS = TimeUnit.HOURS.toMillis(24);
-    private static final String CREATED_VENDOR_VIDEO_QUEUE = "created_vendor_video_queue";
+    public static final String CREATED_VENDOR_VIDEO_QUEUE = "created_vendor_video_queue";
 
     private final AdaptorManager adaptorManager;
     private final OpenAiService openAiService;
-    private final VideoTaskMetadataStore videoTaskMetadataStore;
     private volatile PollTask pollTask;
 
     public void start() {
-        pollTask = new PollTask(openAiService, adaptorManager, videoTaskMetadataStore);
+        pollTask = new PollTask(openAiService, adaptorManager);
         TaskExecutor.submit(pollTask);
     }
 
@@ -79,14 +77,12 @@ public class VideoTaskProcessor implements EndpointTaskProcessor {
             channelVideoId = adaptor.submitVideoTask(request, channel.getUrl(), property, taskId);
             log.info("Video task submitted to channel, taskId: {}, channelVideoId: {}", taskId, channelVideoId);
 
-            videoTaskMetadataStore.saveChannelVideoId(taskId, channelVideoId);
             putPollTask(taskId, channelVideoId, channel);
             log.info("Video poll task created, taskId: {}, channelVideoId: {}", taskId, channelVideoId);
             return TaskProcessResult.SYNC_DONE;
         } catch (Exception e) {
             log.error("Video task execution failed, taskId: {}, channel: {}", taskId, channel.getChannelCode(), e);
             taskWrapper.markComplete(createErrorResult(e, channelVideoId));
-            videoTaskMetadataStore.deleteChannelVideoId(taskId);
             return TaskProcessResult.SYNC_DONE;
         }
     }
@@ -95,6 +91,7 @@ public class VideoTaskProcessor implements EndpointTaskProcessor {
         Map<String, Object> data = new HashMap<>();
         data.put("taskId", taskId);
         data.put("channelVideoId", channelVideoId);
+        data.put("channelCode", channel.getChannelCode());
         data.put("protocol", channel.getProtocol());
         data.put("channelUrl", channel.getUrl());
         data.put("channelInfo", channel.getChannelInfo());
@@ -105,6 +102,7 @@ public class VideoTaskProcessor implements EndpointTaskProcessor {
                 .level(1)
                 .endpoint(VideoJob.ENDPOINT)
                 .data(data)
+                .traceId(taskId)
                 .timeout(24 * 60 * 60)
                 .build();
         openAiService.putTask(put);
@@ -163,16 +161,13 @@ public class VideoTaskProcessor implements EndpointTaskProcessor {
     public static class PollTask implements Runnable {
         private final OpenAiService openAiService;
         private final AdaptorManager adaptorManager;
-        private final VideoTaskMetadataStore videoTaskMetadataStore;
 
         @Getter
         private volatile boolean stopped = false;
 
-        public PollTask(OpenAiService openAiService, AdaptorManager adaptorManager,
-                VideoTaskMetadataStore videoTaskMetadataStore) {
+        public PollTask(OpenAiService openAiService, AdaptorManager adaptorManager) {
             this.openAiService = openAiService;
             this.adaptorManager = adaptorManager;
-            this.videoTaskMetadataStore = videoTaskMetadataStore;
         }
 
         @Override
@@ -232,8 +227,6 @@ public class VideoTaskProcessor implements EndpointTaskProcessor {
             String channelUrl = MapUtils.getString(data, "channelUrl");
             String channelInfo = MapUtils.getString(data, "channelInfo");
             long createdAt = MapUtils.getLongValue(data, "createdAt");
-            boolean originalTaskCompleted = false;
-
             try {
                 ChannelVideoResult result = resolve(taskId, channelVideoId, protocol, channelUrl, channelInfo, createdAt);
                 log.info("Video task poll result, taskId: {}, channelVideoId: {}, result: {}", taskId, channelVideoId,
@@ -249,18 +242,14 @@ public class VideoTaskProcessor implements EndpointTaskProcessor {
                 }
 
                 Map<String, Object> resultMap = createResult(result);
-                originalTaskCompleted = completeTask(taskId, resultMap);
+                completeTask(taskId, resultMap);
                 completeTask(task.getTaskId(), resultMap);
                 log.info("Video task completed, taskId: {}, status: {}", taskId, result.getStatus());
             } catch (Exception e) {
                 log.error("Error processing video poll task: {}, originalTaskId: {}", task.getTaskId(), taskId, e);
                 Map<String, Object> errorResult = createErrorResult(e, channelVideoId);
-                originalTaskCompleted = completeTask(taskId, errorResult);
+                completeTask(taskId, errorResult);
                 completeTask(task.getTaskId(), errorResult);
-            } finally {
-                if(originalTaskCompleted) {
-                    videoTaskMetadataStore.deleteChannelVideoId(taskId);
-                }
             }
         }
 

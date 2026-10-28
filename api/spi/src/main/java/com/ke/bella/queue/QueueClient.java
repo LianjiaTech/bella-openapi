@@ -81,6 +81,12 @@ public class QueueClient {
         return HttpUtils.httpRequest(request, Task.class);
     }
 
+    public Task getTaskByTraceId(String queue, String traceId, String apikey) {
+        String resultUrl = url + "/v1/queue/" + queue + "/trace/" + traceId;
+        Request request = buildGetRequest(resultUrl, apikey);
+        return HttpUtils.httpRequest(request, Task.class);
+    }
+
     public Request buildRequest(String url, String apikey, String json) {
         RequestBody requestBody = RequestBody.create(MediaType.parse("application/json; charset=utf-8"), json);
         Request.Builder builder = new Request.Builder()
